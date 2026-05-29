@@ -16,7 +16,7 @@ import {
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Control de Tiempos', href: '/control-tiempos', icon: Clock },
-  { label: 'Gestión de Personal', href: '/gestion-personal', icon: Users },
+  { label: 'Gestión de Personal', href: '/employees', icon: Users },
   { label: 'Planificación', href: '/planificacion', icon: CalendarDays },
   { label: 'Permisos', href: '/permisos', icon: ShieldCheck },
   { label: 'Configuración', href: '/configuracion', icon: Settings },
