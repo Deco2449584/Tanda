@@ -26,9 +26,10 @@ const accentStyles = {
 
 interface KpiCardProps {
   metric: KpiMetric;
+  loading?: boolean;
 }
 
-export function KpiCard({ metric }: KpiCardProps) {
+export function KpiCard({ metric, loading = false }: KpiCardProps) {
   const styles = accentStyles[metric.accent];
   const Icon = metric.icon;
   const sparklineMax = metric.sparkline
@@ -43,7 +44,11 @@ export function KpiCard({ metric }: KpiCardProps) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-zinc-400">{metric.title}</p>
           <p className={`mt-2 text-2xl font-bold tracking-tight ${styles.value}`}>
-            {metric.value}
+            {loading ? (
+              <span className="inline-block animate-pulse text-zinc-500">...</span>
+            ) : (
+              metric.value
+            )}
           </p>
           {metric.description && (
             <p className="mt-1 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">

@@ -13,6 +13,7 @@ interface CreateEmployeeModalProps {
 }
 
 const initialForm: CreateEmployeeInput = {
+  employeeId: '',
   name: '',
   email: '',
   department: '',
@@ -42,7 +43,12 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
       return;
     }
 
-    if (!form.name.trim() || !form.email.trim() || !form.department.trim()) {
+    if (
+      !form.employeeId.trim() ||
+      !form.name.trim() ||
+      !form.email.trim() ||
+      !form.department.trim()
+    ) {
       setError('Complete todos los campos obligatorios.');
       return;
     }
@@ -56,6 +62,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
     try {
       await addDoc(collection(db, COLLECTIONS.EMPLOYEES), {
+        employeeId: form.employeeId.trim(),
         name: form.name.trim(),
         email: form.email.trim().toLowerCase(),
         department: form.department.trim(),
@@ -108,6 +115,23 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="emp-id" className="mb-1.5 block text-sm text-zinc-400">
+              ID de Empleado
+            </label>
+            <input
+              id="emp-id"
+              type="text"
+              required
+              value={form.employeeId}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, employeeId: e.target.value }))
+              }
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+              placeholder="0045"
+            />
+          </div>
+
           <div>
             <label htmlFor="emp-name" className="mb-1.5 block text-sm text-zinc-400">
               Nombre

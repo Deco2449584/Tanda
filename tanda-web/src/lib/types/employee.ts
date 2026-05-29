@@ -1,6 +1,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 export interface EmployeeFirestore {
+  employeeId: string;
   name: string;
   email: string;
   department: string;
@@ -15,6 +16,7 @@ export interface Employee extends EmployeeFirestore {
 }
 
 export interface CreateEmployeeInput {
+  employeeId: string;
   name: string;
   email: string;
   department: string;

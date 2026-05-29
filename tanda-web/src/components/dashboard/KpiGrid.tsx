@@ -1,11 +1,20 @@
 import { KpiCard } from './KpiCard';
-import { kpiMetrics } from './mock-data';
+import type { KpiMetric } from './mock-data';
 
-export function KpiGrid() {
+interface KpiGridProps {
+  metrics: KpiMetric[];
+  loadingIds?: string[];
+}
+
+export function KpiGrid({ metrics, loadingIds = [] }: KpiGridProps) {
   return (
     <div className="grid grid-cols-4 gap-4">
-      {kpiMetrics.map((metric) => (
-        <KpiCard key={metric.id} metric={metric} />
+      {metrics.map((metric) => (
+        <KpiCard
+          key={metric.id}
+          metric={metric}
+          loading={loadingIds.includes(metric.id)}
+        />
       ))}
     </div>
   );

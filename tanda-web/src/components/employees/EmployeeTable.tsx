@@ -13,11 +13,6 @@ interface EmployeeTableProps {
   searchQuery: string;
 }
 
-function formatEmployeeId(id: string): string {
-  const slice = id.replace(/\D/g, '').slice(-4) || id.slice(-4);
-  return slice.padStart(4, '0').toUpperCase();
-}
-
 function formatHourlyRate(rate: number): string {
   return `$${rate.toFixed(2)}/hr`;
 }
@@ -59,12 +54,12 @@ export function EmployeeTable({
     if (!query) return employees;
 
     return employees.filter((employee) => {
-      const id = formatEmployeeId(employee.id).toLowerCase();
+      const employeeCode = employee.employeeId.toLowerCase();
       return (
         employee.name.toLowerCase().includes(query) ||
         employee.email.toLowerCase().includes(query) ||
         employee.department.toLowerCase().includes(query) ||
-        id.includes(query)
+        employeeCode.includes(query)
       );
     });
   }, [employees, searchQuery]);
@@ -138,7 +133,7 @@ export function EmployeeTable({
                     </div>
                   </td>
                   <td className="px-4 py-3.5 font-mono text-zinc-400">
-                    {formatEmployeeId(employee.id)}
+                    {employee.employeeId || '—'}
                   </td>
                   <td className="px-4 py-3.5 font-medium text-white">
                     {employee.name}

@@ -7,26 +7,8 @@ import { CreateEmployeeModal } from '@/components/employees/CreateEmployeeModal'
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
-import type { Employee, EmployeeFirestore } from '@/lib/types/employee';
-
-function mapSnapshotToEmployees(
-  docs: { id: string; data: () => Record<string, unknown> }[],
-): Employee[] {
-  return docs.map((document) => {
-    const data = document.data() as Partial<EmployeeFirestore>;
-
-    return {
-      id: document.id,
-      name: data.name ?? 'Sin nombre',
-      email: data.email ?? '',
-      department: data.department ?? '',
-      hourlyRate: typeof data.hourlyRate === 'number' ? data.hourlyRate : 0,
-      active: data.active ?? false,
-      lastAction: data.lastAction ?? 'none',
-      lastTimestampServer: data.lastTimestampServer,
-    };
-  });
-}
+import { mapEmployeeDoc } from '@/lib/employees/map-employee';
+import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -43,11 +25,8 @@ export default function EmployeesPage() {
     const unsubscribe = onSnapshot(
       collection(db, COLLECTIONS.EMPLOYEES),
       (snapshot) => {
-        const mapped = mapSnapshotToEmployees(
-          snapshot.docs.map((document) => ({
-            id: document.id,
-            data: () => document.data(),
-          })),
+        const mapped: Employee[] = snapshot.docs.map((document) =>
+          mapEmployeeDoc(document.id, document.data()),
         );
         setEmployees(
           mapped.sort((a, b) => a.name.localeCompare(b.name, 'es')),
