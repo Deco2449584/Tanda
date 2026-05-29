@@ -7,14 +7,18 @@ import {
   onSnapshot,
   orderBy,
   query,
+  where,
 } from 'firebase/firestore';
-import { CalendarRange, Download, Search } from 'lucide-react';
-import { AttendanceTable } from '@/components/attendance/AttendanceTable';
+import { Download, Search } from 'lucide-react';
+import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
+import { DateRangePicker } from '@/components/attendance/DateRangePicker';
+import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
+import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import {
-  formatAttendanceType,
-  formatRecordDate,
-  formatRecordTime,
-} from '@/lib/attendance/format';
+  getDefaultDateRange,
+  toFirestoreRangeBounds,
+  type DateRange,
+} from '@/lib/attendance/date-range';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { COLLECTIONS } from '@/lib/constants';
@@ -22,71 +26,23 @@ import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
-function getDefaultDateRangeLabel(): string {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - 6);
-
-  const formatter = new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
-  return `${formatter.format(start)} - ${formatter.format(end)}`;
-}
-
-function exportRecordsToCsv(
-  records: AttendanceRecord[],
-  employeeCodes: Record<string, string>,
-) {
-  const headers = [
-    'ID Empleado',
-    'Empleado',
-    'Fecha',
-    'Tipo Registro',
-    'Hora (Server)',
-    'Fuente',
-    'Foto URL',
-  ];
-
-  const rows = records.map((record) => [
-    employeeCodes[record.employeeId] ?? '',
-    record.employeeNameSnapshot,
-    formatRecordDate(record.timestampServer),
-    formatAttendanceType(record.type),
-    formatRecordTime(record.timestampServer),
-    record.source,
-    record.photoUrl,
-  ]);
-
-  const csvContent = [headers, ...rows]
-    .map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
-    )
-    .join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `reporte-asistencia-${Date.now()}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRangeLabel] = useState(getDefaultDateRangeLabel);
+  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!db) {
       setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     let recordsReady = false;
     let employeesReady = false;
@@ -97,10 +53,14 @@ export default function AttendancePage() {
       }
     }
 
+    const { start, end } = toFirestoreRangeBounds(dateRange);
+
     const attendanceQuery = query(
       collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+      where('timestampServer', '>=', start),
+      where('timestampServer', '<=', end),
       orderBy('timestampServer', 'desc'),
-      limit(50),
+      limit(200),
     );
 
     const unsubscribeRecords = onSnapshot(
@@ -113,7 +73,8 @@ export default function AttendancePage() {
         recordsReady = true;
         checkReady();
       },
-      () => {
+      (error) => {
+        console.error('Error al cargar registros de asistencia:', error);
         recordsReady = true;
         checkReady();
       },
@@ -139,28 +100,24 @@ export default function AttendancePage() {
       unsubscribeRecords();
       unsubscribeEmployees();
     };
-  }, []);
+  }, [dateRange]);
 
   const employeeCodes = useMemo(() => {
     const map: Record<string, string> = {};
     employees.forEach((employee) => {
-      map[employee.id] = employee.employeeId || '—';
+      const code = employee.employeeId || '—';
+      map[employee.id] = code;
+      if (employee.employeeId) {
+        map[employee.employeeId] = employee.employeeId;
+      }
     });
     return map;
   }, [employees]);
 
-  const filteredForExport = useMemo(() => {
-    const queryText = searchQuery.trim().toLowerCase();
-    if (!queryText) return records;
-
-    return records.filter((record) => {
-      const code = (employeeCodes[record.employeeId] ?? '').toLowerCase();
-      return (
-        record.employeeNameSnapshot.toLowerCase().includes(queryText) ||
-        code.includes(queryText)
-      );
-    });
-  }, [records, searchQuery, employeeCodes]);
+  const filteredForExport = useMemo(
+    () => filterRecordsByEmployeeName(records, searchQuery),
+    [records, searchQuery],
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -169,13 +126,7 @@ export default function AttendancePage() {
       </h1>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-600"
-        >
-          <CalendarRange className="h-4 w-4 text-emerald-500" />
-          {dateRangeLabel}
-        </button>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:min-w-[280px]">
@@ -194,7 +145,9 @@ export default function AttendancePage() {
 
           <button
             type="button"
-            onClick={() => exportRecordsToCsv(filteredForExport, employeeCodes)}
+            onClick={() =>
+              exportAttendanceRecordsToCsv(filteredForExport, employeeCodes)
+            }
             disabled={loading || filteredForExport.length === 0}
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -209,6 +162,12 @@ export default function AttendancePage() {
         employeeCodes={employeeCodes}
         loading={loading}
         searchQuery={searchQuery}
+        onEdit={setEditingRecord}
+      />
+
+      <EditAttendanceModal
+        record={editingRecord}
+        onClose={() => setEditingRecord(null)}
       />
     </div>
   );

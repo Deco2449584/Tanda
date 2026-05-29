@@ -1,4 +1,4 @@
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import type { AttendanceType } from '@/lib/types/attendance';
 
 export function formatAttendanceType(type: AttendanceType | string): string {
@@ -32,4 +32,33 @@ export function formatRecordTimestamp(timestamp: Timestamp | null): string {
   if (!timestamp) return '—';
 
   return `${formatRecordDate(timestamp)} ${formatRecordTime(timestamp)}`;
+}
+
+function toInputTime(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+export function timestampToFormValues(timestamp: Timestamp | null): {
+  date: string;
+  time: string;
+} {
+  const date = timestamp?.toDate() ?? new Date();
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return {
+    date: `${year}-${month}-${day}`,
+    time: toInputTime(date),
+  };
+}
+
+export function formValuesToTimestamp(date: string, time: string): Timestamp {
+  const [hours, minutes] = time.split(':').map(Number);
+  const parsed = new Date(`${date}T00:00:00`);
+  parsed.setHours(hours || 0, minutes || 0, 0, 0);
+  return Timestamp.fromDate(parsed);
 }
