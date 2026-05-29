@@ -7,6 +7,8 @@ export interface KpiMetric {
   title: string;
   value: string;
   description: string;
+  /** Etiqueta sobre el valor principal (ej. "Costo real"). */
+  valueLabel?: string;
   accent: KpiAccent;
   icon: LucideIcon;
   sparkline?: number[];

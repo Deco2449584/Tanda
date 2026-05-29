@@ -167,6 +167,7 @@ export function useAdminDashboardData() {
     shiftLoadData,
     weeklyHoursData,
     todayShifts,
+    todayAttendance,
     loading,
   };
 }

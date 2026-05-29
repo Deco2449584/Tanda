@@ -70,9 +70,9 @@ export function Header({ onMenuClick }: HeaderProps) {
         <Image
           src="/logo.png"
           alt="Continental Cargo"
-          width={120}
-          height={32}
-          className="h-8 w-auto md:hidden"
+          width={180}
+          height={56}
+          className="h-12 w-auto object-contain md:hidden"
           priority
         />
       </div>

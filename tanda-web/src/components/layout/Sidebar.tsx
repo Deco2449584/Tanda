@@ -36,7 +36,7 @@ const employeeNavItems: NavItem[] = [
   { label: 'Mis Permisos', href: '/my-requests', icon: ShieldCheck },
 ];
 
-function isActive(pathname: string, href: string) {
+function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -47,19 +47,19 @@ interface SidebarProps {
 }
 
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const navItems = role === 'admin' ? adminNavItems : employeeNavItems;
 
   return (
     <>
-      {mobileOpen && (
+      {mobileOpen ? (
         <button
           type="button"
           aria-label="Cerrar menú"
           className="fixed inset-0 z-40 bg-black/60 md:hidden"
           onClick={onClose}
         />
-      )}
+      ) : null}
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col border-r border-zinc-800/80 bg-[#121212] transition-transform duration-200 ease-out md:relative md:z-auto md:translate-x-0 ${
@@ -67,13 +67,13 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         }`}
       >
         <div className="flex items-center justify-between gap-2 border-b border-zinc-800/60 px-5 py-6">
-          <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <Image
               src="/logo.png"
               alt="Continental Cargo"
-              width={120}
-              height={32}
-              className="h-8 w-auto shrink-0"
+              width={180}
+              height={56}
+              className="h-12 w-auto shrink-0 object-contain md:h-14"
               priority
             />
             <span className="hidden text-base font-bold tracking-tight text-white sm:inline">
@@ -84,7 +84,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
+            className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
             aria-label="Cerrar menú lateral"
           >
             <X className="h-5 w-5" />

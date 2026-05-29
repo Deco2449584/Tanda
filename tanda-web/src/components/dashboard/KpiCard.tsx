@@ -43,7 +43,12 @@ export function KpiCard({ metric, loading = false }: KpiCardProps) {
       <div className="flex items-start justify-between gap-3 pl-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-zinc-400">{metric.title}</p>
-          <p className={`mt-2 text-2xl font-bold tracking-tight ${styles.value}`}>
+          {metric.valueLabel && (
+            <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              {metric.valueLabel}
+            </p>
+          )}
+          <p className={`mt-1 text-2xl font-bold tracking-tight ${styles.value}`}>
             {loading ? (
               <span className="inline-block animate-pulse text-zinc-500">...</span>
             ) : (
@@ -51,7 +56,13 @@ export function KpiCard({ metric, loading = false }: KpiCardProps) {
             )}
           </p>
           {metric.description && (
-            <p className="mt-1 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">
+            <p
+              className={`mt-1.5 ${
+                metric.id === 'payroll-cost'
+                  ? 'text-xs font-normal text-zinc-500'
+                  : 'text-[11px] font-semibold uppercase tracking-wide text-zinc-500'
+              }`}
+            >
               {metric.description}
             </p>
           )}

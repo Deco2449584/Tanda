@@ -16,19 +16,15 @@ export function exportAttendanceRecordsToCsv(
     'Empleado',
     'Fecha',
     'Tipo Registro',
-    'Hora (Server)',
-    'Fuente',
-    'Foto URL',
+    'Hora',
   ];
 
   const rows = records.map((record) => [
-    employeeCodes[record.employeeId] ?? '',
+    employeeCodes[record.employeeId] ?? record.employeeId,
     record.employeeNameSnapshot,
     formatRecordDate(record.timestampServer),
     formatAttendanceType(record.type),
     formatRecordTime(record.timestampServer),
-    record.source,
-    record.photoUrl,
   ]);
 
   const csvContent = [headers, ...rows]

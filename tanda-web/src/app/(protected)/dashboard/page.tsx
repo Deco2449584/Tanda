@@ -11,7 +11,7 @@ import { useAdminDashboardData } from '@/hooks/useAdminDashboardData';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   computeActiveStaffKpi,
-  computeScheduledPayrollKpi,
+  computeDualPayrollKpi,
 } from '@/lib/employees/dashboard-kpis';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
@@ -27,6 +27,7 @@ export default function DashboardPage() {
     shiftLoadData,
     weeklyHoursData,
     todayShifts,
+    todayAttendance,
     loading: dashboardLoading,
   } = useAdminDashboardData();
 
@@ -55,7 +56,11 @@ export default function DashboardPage() {
 
   const metrics: KpiMetric[] = useMemo(() => {
     const activeStaff = computeActiveStaffKpi(employees);
-    const payroll = computeScheduledPayrollKpi(employees, todayShifts);
+    const payroll = computeDualPayrollKpi(
+      employees,
+      todayShifts,
+      todayAttendance,
+    );
 
     return baseKpiMetrics.map((metric) => {
       if (metric.id === 'active-staff') {
@@ -69,7 +74,9 @@ export default function DashboardPage() {
       if (metric.id === 'payroll-cost') {
         return {
           ...metric,
-          value: payroll.formatted,
+          value: payroll.actual.formatted,
+          valueLabel: 'Costo real',
+          description: `Proyectado: ${payroll.projected.formatted}`,
         };
       }
 
@@ -89,12 +96,19 @@ export default function DashboardPage() {
 
       return metric;
     });
-  }, [employees, lateAlerts, pendingPermits, todayShifts]);
+  }, [employees, lateAlerts, pendingPermits, todayAttendance, todayShifts]);
 
   const loadingIds = useMemo(() => {
     const ids: string[] = [];
-    if (employeesLoading || dashboardLoading.shifts) {
-      ids.push('active-staff', 'payroll-cost');
+    if (employeesLoading) {
+      ids.push('active-staff');
+    }
+    if (
+      employeesLoading ||
+      dashboardLoading.shifts ||
+      dashboardLoading.attendance
+    ) {
+      ids.push('payroll-cost');
     }
     if (dashboardLoading.leaveRequests) {
       ids.push('pending-permits');

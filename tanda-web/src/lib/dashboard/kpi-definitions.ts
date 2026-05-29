@@ -28,11 +28,11 @@ export const baseKpiMetrics: KpiMetric[] = [
   },
   {
     id: 'payroll-cost',
-    title: 'Costo Nómina Hoy Est.',
+    title: 'Costo Nómina Hoy',
     value: '$0.00',
-    description: '',
+    valueLabel: 'Costo real',
+    description: 'Proyectado: $0.00',
     accent: 'emerald',
     icon: DollarSign,
-    sparkline: [6, 9, 7, 11, 8, 13, 10, 12],
   },
 ];
