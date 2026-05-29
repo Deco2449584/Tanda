@@ -16,5 +16,6 @@ export function mapEmployeeDoc(
     active: employee.active ?? false,
     lastAction: employee.lastAction ?? 'none',
     lastTimestampServer: employee.lastTimestampServer,
+    photoUrl: typeof employee.photoUrl === 'string' ? employee.photoUrl : '',
   };
 }

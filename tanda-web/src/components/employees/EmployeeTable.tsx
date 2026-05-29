@@ -3,27 +3,20 @@
 import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
+import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
-
-interface EmployeeTableProps {
-  employees: Employee[];
-  loading: boolean;
-  searchQuery: string;
-}
 
 function formatHourlyRate(rate: number): string {
   return `$${rate.toFixed(2)}/hr`;
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
+interface EmployeeTableProps {
+  employees: Employee[];
+  loading: boolean;
+  searchQuery: string;
+  onEdit: (employee: Employee) => void;
 }
 
 function StatusBadge({ active }: { active: boolean }) {
@@ -46,6 +39,7 @@ export function EmployeeTable({
   employees,
   loading,
   searchQuery,
+  onEdit,
 }: EmployeeTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -128,9 +122,10 @@ export function EmployeeTable({
                   className="border-b border-zinc-800/80 transition-colors hover:bg-zinc-800/20"
                 >
                   <td className="px-4 py-3.5">
-                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-emerald-400 ring-2 ring-zinc-700">
-                      {getInitials(employee.name) || '?'}
-                    </div>
+                    <EmployeeAvatar
+                      name={employee.name}
+                      photoUrl={employee.photoUrl}
+                    />
                   </td>
                   <td className="px-4 py-3.5 font-mono text-zinc-400">
                     {employee.employeeId || '—'}
@@ -152,6 +147,7 @@ export function EmployeeTable({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
+                        onClick={() => onEdit(employee)}
                         className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
                         aria-label={`Editar ${employee.name}`}
                       >

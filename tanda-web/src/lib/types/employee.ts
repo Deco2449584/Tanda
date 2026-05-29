@@ -9,6 +9,7 @@ export interface EmployeeFirestore {
   active: boolean;
   lastAction: string;
   lastTimestampServer?: Timestamp;
+  photoUrl?: string;
 }
 
 export interface Employee extends EmployeeFirestore {

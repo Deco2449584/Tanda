@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 // Configuración Firebase — las variables de entorno deben usar el prefijo NEXT_PUBLIC_
 // (ej. NEXT_PUBLIC_FIREBASE_API_KEY en .env.local)
@@ -30,3 +31,7 @@ export const auth: Auth = isClient
 export const db: Firestore = isClient
   ? getFirestore(app)
   : (null as unknown as Firestore);
+
+export const storage: FirebaseStorage = isClient
+  ? getStorage(app)
+  : (null as unknown as FirebaseStorage);

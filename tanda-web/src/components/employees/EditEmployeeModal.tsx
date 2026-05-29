@@ -1,29 +1,27 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { FormEvent, useEffect, useState } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
-import type { CreateEmployeeInput } from '@/lib/types/employee';
+import type { CreateEmployeeInput, Employee } from '@/lib/types/employee';
 
-interface CreateEmployeeModalProps {
-  open: boolean;
+interface EditEmployeeModalProps {
+  employee: Employee | null;
   onClose: () => void;
 }
 
-const initialForm: CreateEmployeeInput = {
-  employeeId: '',
-  name: '',
-  email: '',
-  department: '',
-  hourlyRate: 0,
-};
-
-export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps) {
-  const [form, setForm] = useState<CreateEmployeeInput>(initialForm);
+export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps) {
+  const [form, setForm] = useState<CreateEmployeeInput>({
+    employeeId: '',
+    name: '',
+    email: '',
+    department: '',
+    hourlyRate: 0,
+  });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,23 +29,34 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
   const isBusy = isUploading || isSubmitting;
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!employee) return;
 
-  function resetForm() {
-    setForm(initialForm);
+    setForm({
+      employeeId: employee.employeeId,
+      name: employee.name,
+      email: employee.email,
+      department: employee.department,
+      hourlyRate: employee.hourlyRate,
+    });
     setPhotoFile(null);
     setError('');
-  }
+  }, [employee]);
+
+  if (!employee) return null;
 
   function handleClose() {
     if (isBusy) return;
-    resetForm();
+    setPhotoFile(null);
+    setError('');
     onClose();
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
+
+    if (!employee) return;
 
     if (!db) {
       setError('Firebase no está disponible.');
@@ -72,7 +81,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
     setIsSubmitting(true);
 
     try {
-      let photoUrl = '';
+      let photoUrl = employee.photoUrl ?? '';
 
       if (photoFile) {
         setIsUploading(true);
@@ -86,24 +95,21 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
         email: form.email.trim().toLowerCase(),
         department: form.department.trim(),
         hourlyRate: form.hourlyRate,
-        active: true,
-        lastAction: 'none',
-        lastTimestampServer: serverTimestamp(),
       };
 
       if (photoUrl) {
         payload.photoUrl = photoUrl;
       }
 
-      await addDoc(collection(db, COLLECTIONS.EMPLOYEES), payload);
+      await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), payload);
 
-      resetForm();
+      setPhotoFile(null);
       onClose();
     } catch {
       setError(
         isUploading
           ? 'No se pudo subir la imagen. Intente nuevamente.'
-          : 'No se pudo guardar el empleado. Intente nuevamente.',
+          : 'No se pudo actualizar el empleado. Intente nuevamente.',
       );
     } finally {
       setIsUploading(false);
@@ -113,8 +119,8 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
   function getSubmitLabel() {
     if (isUploading) return 'Subiendo imagen...';
-    if (isSubmitting) return 'Guardando...';
-    return 'Guardar empleado';
+    if (isSubmitting) return 'Guardando cambios...';
+    return 'Guardar cambios';
   }
 
   return (
@@ -122,7 +128,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="create-employee-title"
+      aria-labelledby="edit-employee-title"
     >
       <button
         type="button"
@@ -133,11 +139,8 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
       <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
-          <h2
-            id="create-employee-title"
-            className="text-lg font-semibold text-white"
-          >
-            Crear nuevo empleado
+          <h2 id="edit-employee-title" className="text-lg font-semibold text-white">
+            Editar empleado
           </h2>
           <button
             type="button"
@@ -152,17 +155,18 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <EmployeePhotoUpload
+            currentPhotoUrl={employee.photoUrl}
             selectedFile={photoFile}
             onFileChange={setPhotoFile}
             disabled={isBusy}
           />
 
           <div>
-            <label htmlFor="emp-id" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-id" className="mb-1.5 block text-sm text-zinc-400">
               ID de Empleado
             </label>
             <input
-              id="emp-id"
+              id="edit-emp-id"
               type="text"
               required
               value={form.employeeId}
@@ -171,48 +175,45 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               }
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="0045"
             />
           </div>
 
           <div>
-            <label htmlFor="emp-name" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-name" className="mb-1.5 block text-sm text-zinc-400">
               Nombre
             </label>
             <input
-              id="emp-name"
+              id="edit-emp-name"
               type="text"
               required
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="Nombre completo"
             />
           </div>
 
           <div>
-            <label htmlFor="emp-email" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-email" className="mb-1.5 block text-sm text-zinc-400">
               Correo
             </label>
             <input
-              id="emp-email"
+              id="edit-emp-email"
               type="email"
               required
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="correo@empresa.com"
             />
           </div>
 
           <div>
-            <label htmlFor="emp-dept" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-dept" className="mb-1.5 block text-sm text-zinc-400">
               Departamento
             </label>
             <input
-              id="emp-dept"
+              id="edit-emp-dept"
               type="text"
               required
               value={form.department}
@@ -221,16 +222,15 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               }
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="Logística, Operaciones..."
             />
           </div>
 
           <div>
-            <label htmlFor="emp-rate" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-rate" className="mb-1.5 block text-sm text-zinc-400">
               Tarifa hora ($)
             </label>
             <input
-              id="emp-rate"
+              id="edit-emp-rate"
               type="number"
               required
               min="0"
@@ -244,7 +244,6 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               }
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="18.50"
             />
           </div>
 

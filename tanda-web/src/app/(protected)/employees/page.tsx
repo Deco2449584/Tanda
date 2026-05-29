@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { Plus, Search } from 'lucide-react';
 import { CreateEmployeeModal } from '@/components/employees/CreateEmployeeModal';
+import { EditEmployeeModal } from '@/components/employees/EditEmployeeModal';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
@@ -14,7 +15,8 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     if (!db) {
@@ -50,7 +52,7 @@ export default function EmployeesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={() => setCreateModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:bg-emerald-700"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
@@ -76,11 +78,17 @@ export default function EmployeesPage() {
         employees={employees}
         loading={loading}
         searchQuery={searchQuery}
+        onEdit={setEditingEmployee}
       />
 
       <CreateEmployeeModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
+
+      <EditEmployeeModal
+        employee={editingEmployee}
+        onClose={() => setEditingEmployee(null)}
       />
     </div>
   );
