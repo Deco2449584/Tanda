@@ -75,7 +75,7 @@ export default function AttendancePage() {
         checkReady();
       },
       (error) => {
-        console.error('Error al cargar registros de asistencia:', error);
+        console.error('Error loading attendance records:', error);
         recordsReady = true;
         checkReady();
       },
@@ -123,7 +123,7 @@ export default function AttendancePage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Control de tiempos y asistencia (Audit)
+        Time tracking and attendance (Audit)
       </h1>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -139,7 +139,7 @@ export default function AttendancePage() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar Empleado..."
+              placeholder="Search employee..."
               className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-emerald-600/50 focus:ring-1 focus:ring-emerald-600/30"
             />
           </div>
@@ -153,7 +153,7 @@ export default function AttendancePage() {
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            EXPORTAR REPORTE (CSV)
+            EXPORT REPORT (CSV)
           </button>
 
           <button
@@ -165,7 +165,7 @@ export default function AttendancePage() {
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/50 bg-emerald-950/40 px-4 py-2.5 text-sm font-semibold tracking-wide text-emerald-300 transition-colors hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            REPORTE NÓMINA (CSV)
+            PAYROLL REPORT (CSV)
           </button>
         </div>
       </div>

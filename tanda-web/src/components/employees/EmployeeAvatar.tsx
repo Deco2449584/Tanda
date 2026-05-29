@@ -24,7 +24,7 @@ export function EmployeeAvatar({
     return (
       <img
         src={photoUrl}
-        alt={`Foto de ${name}`}
+        alt={`Photo of ${name}`}
         className={`${sizeClass} rounded-full object-cover ring-2 ring-zinc-700`}
         referrerPolicy="no-referrer"
       />

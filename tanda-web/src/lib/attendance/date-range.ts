@@ -24,7 +24,7 @@ export function getDefaultDateRange(): DateRange {
 }
 
 export function formatDateRangeLabel(range: DateRange): string {
-  const formatter = new Intl.DateTimeFormat('es-MX', {
+  const formatter = new Intl.DateTimeFormat('en-AU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

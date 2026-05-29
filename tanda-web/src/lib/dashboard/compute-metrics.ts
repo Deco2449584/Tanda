@@ -47,7 +47,7 @@ export function filterWeekShifts(
 }
 
 export function countPendingLeaveRequests(requests: LeaveRequest[]): number {
-  return requests.filter((request) => request.status === 'Pendiente').length;
+  return requests.filter((request) => request.status === 'Pending').length;
 }
 
 export function computeLateAlerts(
@@ -94,7 +94,7 @@ export function buildShiftLoadByDepartment(todayShifts: Shift[]): ShiftLoadDatum
   const counts = new Map<string, number>();
 
   todayShifts.forEach((shift) => {
-    const department = shift.department.trim() || 'Sin departamento';
+    const department = shift.department.trim() || 'No department';
     counts.set(department, (counts.get(department) ?? 0) + 1);
   });
 

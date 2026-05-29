@@ -17,9 +17,9 @@ export function AdminProfileCard({
 }: AdminProfileCardProps) {
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm md:p-6">
-      <h2 className="text-sm font-semibold text-white">Perfil del administrador</h2>
+      <h2 className="text-sm font-semibold text-white">Administrator profile</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Datos de la cuenta con la que iniciaste sesión.
+        Account details for your signed-in session.
       </p>
 
       <div className="mt-5 space-y-4">
@@ -28,7 +28,7 @@ export function AdminProfileCard({
             htmlFor="admin-name"
             className="mb-1.5 block text-sm text-zinc-400"
           >
-            Nombre
+            Name
           </label>
           <input
             id="admin-name"
@@ -36,7 +36,7 @@ export function AdminProfileCard({
             value={name}
             disabled={loading}
             onChange={(event) => onNameChange(event.target.value)}
-            placeholder="Tu nombre"
+            placeholder="Your name"
             className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-emerald-500/50 disabled:opacity-60"
           />
         </div>
@@ -46,7 +46,7 @@ export function AdminProfileCard({
             htmlFor="admin-email"
             className="mb-1.5 block text-sm text-zinc-400"
           >
-            Correo
+            Email
           </label>
           <input
             id="admin-email"
@@ -63,7 +63,7 @@ export function AdminProfileCard({
           disabled={loading}
           className="rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-emerald-500/40 hover:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Cambiar contraseña
+          Change password
         </button>
       </div>
     </section>

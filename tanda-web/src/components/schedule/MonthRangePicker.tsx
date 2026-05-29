@@ -20,7 +20,7 @@ export function MonthRangePicker({
         type="button"
         onClick={() => onChange(shiftMonth(referenceDate, -1))}
         className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-        aria-label="Mes anterior"
+        aria-label="Previous month"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -33,7 +33,7 @@ export function MonthRangePicker({
         type="button"
         onClick={() => onChange(shiftMonth(referenceDate, 1))}
         className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-        aria-label="Mes siguiente"
+        aria-label="Next month"
       >
         <ChevronRight className="h-4 w-4" />
       </button>

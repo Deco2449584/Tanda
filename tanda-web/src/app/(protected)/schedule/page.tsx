@@ -64,7 +64,7 @@ export default function SchedulePage() {
       (snapshot) => {
         const mapped = snapshot.docs
           .map((document) => mapEmployeeDoc(document.id, document.data()))
-          .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+          .sort((a, b) => a.name.localeCompare(b.name, 'en'));
         setEmployees(mapped);
         employeesReady = true;
         checkReady();
@@ -108,7 +108,7 @@ export default function SchedulePage() {
     const unique = new Set(
       employees.map((employee) => employee.department).filter(Boolean),
     );
-    return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b, 'es'))];
+    return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b, 'en'))];
   }, [employees]);
 
   const activeEmployees = useMemo(
@@ -152,7 +152,7 @@ export default function SchedulePage() {
   return (
     <div className="flex h-full flex-col gap-6 p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Planificación y horarios (Agenda)
+        Scheduling and rosters (Agenda)
       </h1>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -180,7 +180,7 @@ export default function SchedulePage() {
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              Semanal
+              Weekly
             </button>
             <button
               type="button"
@@ -191,7 +191,7 @@ export default function SchedulePage() {
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              Mensual
+              Monthly
             </button>
           </div>
 
@@ -199,11 +199,11 @@ export default function SchedulePage() {
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
             className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-sm text-zinc-200 outline-none focus:border-emerald-600/50"
-            aria-label="Filtrar por departamento"
+            aria-label="Filter by department"
           >
             {departments.map((department) => (
               <option key={department} value={department}>
-                {department === 'all' ? 'Todos los departamentos' : department}
+                {department === 'all' ? 'All departments' : department}
               </option>
             ))}
           </select>

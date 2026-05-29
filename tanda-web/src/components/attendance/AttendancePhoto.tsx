@@ -10,7 +10,7 @@ export function AttendancePhoto({ photoUrl, name }: AttendancePhotoProps) {
     return (
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 ring-2 ring-zinc-700">
         <User className="h-4 w-4 text-zinc-500" aria-hidden />
-        <span className="sr-only">Sin foto de {name}</span>
+        <span className="sr-only">No photo for {name}</span>
       </div>
     );
   }
@@ -18,7 +18,7 @@ export function AttendancePhoto({ photoUrl, name }: AttendancePhotoProps) {
   return (
     <img
       src={photoUrl}
-      alt={`Foto de auditoría de ${name}`}
+      alt={`Audit photo of ${name}`}
       className="h-8 w-8 rounded-full object-cover ring-2 ring-zinc-700"
       referrerPolicy="no-referrer"
     />

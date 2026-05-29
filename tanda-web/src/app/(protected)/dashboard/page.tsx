@@ -67,7 +67,7 @@ export default function DashboardPage() {
         return {
           ...metric,
           value: activeStaff.label,
-          description: 'Empleados en Turno',
+          description: 'Employees on Shift',
         };
       }
 
@@ -75,8 +75,8 @@ export default function DashboardPage() {
         return {
           ...metric,
           value: payroll.actual.formatted,
-          valueLabel: 'Costo real',
-          description: `Proyectado: ${payroll.projected.formatted}`,
+          valueLabel: 'Actual',
+          description: `Projected: ${payroll.projected.formatted}`,
         };
       }
 
@@ -124,7 +124,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Panel de control general
+        General control panel
       </h1>
 
       <KpiGrid metrics={metrics} loadingIds={loadingIds} />

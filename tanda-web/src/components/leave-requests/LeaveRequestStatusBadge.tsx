@@ -4,17 +4,17 @@ const statusStyles: Record<
   LeaveRequestStatus,
   { className: string; label: string }
 > = {
-  Pendiente: {
+  Pending: {
     className: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400',
-    label: 'Pendiente',
+    label: 'Pending',
   },
-  Aprobado: {
+  Approved: {
     className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-    label: 'Aprobado',
+    label: 'Approved',
   },
-  Rechazado: {
+  Rejected: {
     className: 'border-red-500/30 bg-red-500/10 text-red-400',
-    label: 'Rechazado',
+    label: 'Rejected',
   },
 };
 

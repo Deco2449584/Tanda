@@ -1,6 +1,6 @@
 export function formatShortDate(dateStr: string): string {
   const parsed = new Date(`${dateStr}T00:00:00`);
-  return parsed.toLocaleDateString('es-MX', {
+  return parsed.toLocaleDateString('en-AU', {
     day: 'numeric',
     month: 'short',
   });
@@ -17,10 +17,10 @@ export function formatShiftBlockLabel(
   const dayLabel = formatShortDate(date);
 
   if (status === 'completed') {
-    return `${dayLabel}: Entrada ${timeStart} - Salida ${timeEnd} (Finalizado)`;
+    return `${dayLabel}: Clock-in ${timeStart} - Clock-out ${timeEnd} (Completed)`;
   }
 
-  return `${dayLabel}: Entrada ${timeStart} - Salida ${timeEnd}`;
+  return `${dayLabel}: Clock-in ${timeStart} - Clock-out ${timeEnd}`;
 }
 
 function formatTime12h(time: string): string {

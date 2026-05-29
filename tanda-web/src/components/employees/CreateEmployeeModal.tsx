@@ -50,7 +50,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
     setError('');
 
     if (!db) {
-      setError('Firebase no está disponible.');
+      setError('Firebase is not available.');
       return;
     }
 
@@ -60,12 +60,12 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
       !form.email.trim() ||
       !form.department.trim()
     ) {
-      setError('Complete todos los campos obligatorios.');
+      setError('Complete all required fields.');
       return;
     }
 
     if (form.hourlyRate <= 0) {
-      setError('La tarifa por hora debe ser mayor a cero.');
+      setError('Hourly rate must be greater than zero.');
       return;
     }
 
@@ -102,8 +102,8 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
     } catch {
       setError(
         isUploading
-          ? 'No se pudo subir la imagen. Intente nuevamente.'
-          : 'No se pudo guardar el empleado. Intente nuevamente.',
+          ? 'Could not upload the image. Please try again.'
+          : 'Could not save the employee. Please try again.',
       );
     } finally {
       setIsUploading(false);
@@ -112,9 +112,9 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
   }
 
   function getSubmitLabel() {
-    if (isUploading) return 'Subiendo imagen...';
-    if (isSubmitting) return 'Guardando...';
-    return 'Guardar empleado';
+    if (isUploading) return 'Uploading image...';
+    if (isSubmitting) return 'Saving...';
+    return 'Save employee';
   }
 
   return (
@@ -127,7 +127,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Cerrar modal"
+        aria-label="Close modal"
         onClick={handleClose}
       />
 
@@ -137,14 +137,14 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
             id="create-employee-title"
             className="text-lg font-semibold text-white"
           >
-            Crear nuevo empleado
+            Create new employee
           </h2>
           <button
             type="button"
             onClick={handleClose}
             disabled={isBusy}
             className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
-            aria-label="Cerrar"
+            aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
@@ -159,7 +159,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
           <div>
             <label htmlFor="emp-id" className="mb-1.5 block text-sm text-zinc-400">
-              ID de Empleado
+              Employee ID
             </label>
             <input
               id="emp-id"
@@ -177,7 +177,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
           <div>
             <label htmlFor="emp-name" className="mb-1.5 block text-sm text-zinc-400">
-              Nombre
+              Name
             </label>
             <input
               id="emp-name"
@@ -187,13 +187,13 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="Nombre completo"
+              placeholder="Full name"
             />
           </div>
 
           <div>
             <label htmlFor="emp-email" className="mb-1.5 block text-sm text-zinc-400">
-              Correo
+              Email
             </label>
             <input
               id="emp-email"
@@ -203,13 +203,13 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="correo@empresa.com"
+              placeholder="email@company.com"
             />
           </div>
 
           <div>
             <label htmlFor="emp-dept" className="mb-1.5 block text-sm text-zinc-400">
-              Departamento
+              Department
             </label>
             <input
               id="emp-dept"
@@ -221,13 +221,13 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               }
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
-              placeholder="Logística, Operaciones..."
+              placeholder="Logistics, Operations..."
             />
           </div>
 
           <div>
             <label htmlFor="emp-rate" className="mb-1.5 block text-sm text-zinc-400">
-              Tarifa hora ($)
+              Hourly rate ($)
             </label>
             <input
               id="emp-rate"
@@ -261,7 +261,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               disabled={isBusy}
               className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"

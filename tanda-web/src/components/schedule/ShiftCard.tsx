@@ -53,18 +53,18 @@ export function ShiftCard({
           <p className={`text-xs font-semibold ${styles.text}`}>{timeRange}</p>
           {shift.status === 'scheduled' && (
             <p className={`mt-1 text-[10px] ${styles.subtext}`}>
-              Entrada programada {formatTimeLabel(shift.startTime)}
+              Scheduled clock-in {formatTimeLabel(shift.startTime)}
             </p>
           )}
           {shift.status === 'completed' && (
             <p className={`mt-1 text-[10px] ${styles.subtext}`}>
-              Entrada {formatTimeLabel(shift.startTime)} — Salida{' '}
+              Clock-in {formatTimeLabel(shift.startTime)} — Clock-out{' '}
               {formatTimeLabel(shift.endTime)}
             </p>
           )}
           {shift.status === 'absent' && (
             <p className={`mt-1 text-[10px] font-medium ${styles.subtext}`}>
-              {shift.note || 'Ausente (Permiso médico)'}
+              {shift.note || 'Absent (Medical leave)'}
             </p>
           )}
         </div>
@@ -78,7 +78,7 @@ export function ShiftCard({
                 onDelete(shift);
               }}
               className="rounded p-1 text-zinc-400 transition-colors hover:bg-black/20 hover:text-red-400"
-              aria-label={`Eliminar turno de ${employeeName}`}
+              aria-label={`Delete shift for ${employeeName}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

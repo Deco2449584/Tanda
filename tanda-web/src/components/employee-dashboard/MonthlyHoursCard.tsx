@@ -19,7 +19,7 @@ export function MonthlyHoursCard({
   return (
     <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
       <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-        Horas totales mensuales
+        Total monthly hours
       </p>
 
       <div className="mt-3 flex items-center justify-between gap-4">
@@ -31,7 +31,7 @@ export function MonthlyHoursCard({
               `${roundedHours} hrs`
             )}
           </p>
-          <p className="mt-2 text-xs text-zinc-500">Mes en curso</p>
+          <p className="mt-2 text-xs text-zinc-500">Current month</p>
         </div>
 
         <div className="relative h-24 w-24 shrink-0">

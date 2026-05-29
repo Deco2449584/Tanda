@@ -48,21 +48,21 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-zinc-100">
-          Resumen de Horas Semanales
+          Weekly Hours Summary
         </h2>
         <span className="flex items-center gap-1.5 text-xs text-zinc-400">
           <span
             className="h-2 w-2 rounded-full"
             style={{ backgroundColor: COLOR_HORAS_NORMAL }}
           />
-          Horas programadas
+          Scheduled hours
         </span>
       </div>
 
       <div className="relative h-[320px] w-full min-w-0">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/40">
-            <span className="text-xs text-zinc-500">Cargando datos...</span>
+            <span className="text-xs text-zinc-500">Loading data...</span>
           </div>
         )}
 
@@ -102,12 +102,12 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
                 contentStyle={CHART_TOOLTIP_STYLE}
                 labelStyle={{ color: '#fafafa' }}
                 itemStyle={{ color: '#e4e4e7' }}
-                formatter={(value) => [`${value} h`, 'Horas programadas']}
+                formatter={(value) => [`${value} h`, 'Scheduled hours']}
               />
               <Area
                 type="monotone"
                 dataKey="horas"
-                name="Horas programadas"
+                name="Scheduled hours"
                 stroke={COLOR_HORAS_NORMAL}
                 strokeWidth={2}
                 fill="url(#fillHorasProgramadas)"
@@ -123,7 +123,7 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
           </ResponsiveContainer>
         ) : mounted && !loading ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-zinc-800 text-sm text-zinc-500">
-            No hay turnos en la semana actual.
+            No shifts in the current week.
           </div>
         ) : (
           <div className="h-full w-full animate-pulse rounded-lg bg-zinc-800/30" />

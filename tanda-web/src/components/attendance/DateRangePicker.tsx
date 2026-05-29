@@ -43,7 +43,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
 
   function handleApply() {
     if (!isValidDateRange(draft)) {
-      window.alert('La fecha de inicio debe ser anterior o igual a la fecha fin.');
+      window.alert('Start date must be on or before the end date.');
       return;
     }
 
@@ -73,12 +73,12 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       {open && (
         <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow-2xl">
           <p className="mb-3 text-xs font-medium text-zinc-400">
-            Rango de fechas
+            Date range
           </p>
 
           <div className="space-y-3">
             <label className="block">
-              <span className="mb-1 block text-xs text-zinc-500">Desde</span>
+              <span className="mb-1 block text-xs text-zinc-500">From</span>
               <input
                 type="date"
                 value={draft.start}
@@ -90,7 +90,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs text-zinc-500">Hasta</span>
+              <span className="mb-1 block text-xs text-zinc-500">To</span>
               <input
                 type="date"
                 value={draft.end}
@@ -108,14 +108,14 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
               onClick={handleReset}
               className="flex-1 rounded-lg border border-zinc-700 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
             >
-              Últimos 7 días
+              Last 7 days
             </button>
             <button
               type="button"
               onClick={handleApply}
               className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-bold text-white hover:bg-emerald-700"
             >
-              Aplicar
+              Apply
             </button>
           </div>
         </div>

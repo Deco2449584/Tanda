@@ -23,14 +23,14 @@ function StatusBadge({ active }: { active: boolean }) {
   if (active) {
     return (
       <span className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-        Activo
+        Active
       </span>
     );
   }
 
   return (
     <span className="inline-flex rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
-      Inactivo
+      Inactive
     </span>
   );
 }
@@ -62,7 +62,7 @@ export function EmployeeTable({
     if (!db) return;
 
     const confirmed = window.confirm(
-      `¿Eliminar a ${employee.name}? Esta acción no se puede deshacer.`,
+      `Delete ${employee.name}? This action cannot be undone.`,
     );
     if (!confirmed) return;
 
@@ -71,7 +71,7 @@ export function EmployeeTable({
     try {
       await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id));
     } catch {
-      window.alert('No se pudo eliminar el empleado. Intente nuevamente.');
+      window.alert('Could not delete the employee. Please try again.');
     } finally {
       setDeletingId(null);
     }
@@ -80,7 +80,7 @@ export function EmployeeTable({
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 py-16">
-        <p className="text-sm text-zinc-400">Cargando...</p>
+        <p className="text-sm text-zinc-400">Loading...</p>
       </div>
     );
   }
@@ -91,16 +91,16 @@ export function EmployeeTable({
         <table className="w-full min-w-[960px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-900/80">
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Foto</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">ID Empleado</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Nombre Completo</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Correo Electrónico</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Photo</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Employee ID</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Full Name</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Email</th>
               <th className="px-4 py-3.5 font-semibold text-zinc-300">
-                Tarifa Hora (Pagar)
+                Hourly Rate (Pay)
               </th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Área/Dpto</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Estado</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Acciones</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Area/Dept</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Status</th>
+              <th className="px-4 py-3.5 font-semibold text-zinc-300">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -111,8 +111,8 @@ export function EmployeeTable({
                   className="px-4 py-12 text-center text-zinc-500"
                 >
                   {searchQuery
-                    ? 'No se encontraron empleados con ese criterio.'
-                    : 'No hay empleados registrados. Cree el primero.'}
+                    ? 'No employees match that search.'
+                    : 'No employees registered. Create the first one.'}
                 </td>
               </tr>
             ) : (
@@ -149,7 +149,7 @@ export function EmployeeTable({
                         type="button"
                         onClick={() => onEdit(employee)}
                         className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
-                        aria-label={`Editar ${employee.name}`}
+                        aria-label={`Edit ${employee.name}`}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -158,7 +158,7 @@ export function EmployeeTable({
                         onClick={() => handleDelete(employee)}
                         disabled={deletingId === employee.id}
                         className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label={`Eliminar ${employee.name}`}
+                        aria-label={`Delete ${employee.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

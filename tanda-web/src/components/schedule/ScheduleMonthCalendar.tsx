@@ -12,7 +12,7 @@ const STATUS_BAR_CLASS: Record<Shift['status'], string> = {
   absent: 'bg-orange-500',
 };
 
-const WEEKDAY_HEADERS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const WEEKDAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 interface ScheduleMonthCalendarProps {
   days: CalendarDayCell[];
@@ -43,7 +43,7 @@ export function ScheduleMonthCalendar({
   if (loading) {
     return (
       <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60">
-        <p className="text-sm text-zinc-400">Cargando calendario mensual...</p>
+        <p className="text-sm text-zinc-400">Loading monthly calendar...</p>
       </div>
     );
   }
@@ -111,15 +111,15 @@ export function ScheduleMonthCalendar({
       <div className="flex flex-wrap gap-4 border-t border-zinc-800 px-4 py-3 text-[11px] text-zinc-500">
         <span className="flex items-center gap-1.5">
           <span className="h-1.5 w-6 rounded-full bg-blue-500" />
-          Programado
+          Scheduled
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-1.5 w-6 rounded-full bg-emerald-500" />
-          Finalizado
+          Completed
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-1.5 w-6 rounded-full bg-orange-500" />
-          Ausente
+          Absent
         </span>
       </div>
     </div>

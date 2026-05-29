@@ -43,14 +43,14 @@ export function buildPayrollReportRows(
 
     rows.push({
       employeeId,
-      name: employee?.name ?? employeeRecords[0]?.employeeNameSnapshot ?? 'Sin nombre',
+      name: employee?.name ?? employeeRecords[0]?.employeeNameSnapshot ?? 'No name',
       hourlyRate,
       totalHours: roundedHours,
       totalPay: Math.round(roundedHours * hourlyRate * 100) / 100,
     });
   });
 
-  return rows.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  return rows.sort((a, b) => a.name.localeCompare(b.name, 'en'));
 }
 
 export function exportPayrollReportToCsv(
@@ -62,11 +62,11 @@ export function exportPayrollReportToCsv(
   if (rows.length === 0) return;
 
   const headers = [
-    'ID Empleado',
-    'Nombre',
-    'Tarifa Hora ($)',
-    'Total Horas Trabajadas',
-    'Total a Pagar ($)',
+    'Employee ID',
+    'Name',
+    'Hourly Rate ($)',
+    'Total Hours Worked',
+    'Total Pay ($)',
   ];
 
   const csvRows = rows.map((row) => [
@@ -89,7 +89,7 @@ export function exportPayrollReportToCsv(
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `reporte-nomina-${dateRange.start}_${dateRange.end}.csv`;
+  link.download = `payroll-report-${dateRange.start}_${dateRange.end}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }

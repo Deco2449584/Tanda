@@ -52,17 +52,17 @@ export function AssignShiftModal({
     if (!initialData) return;
 
     if (!db) {
-      setError('Firebase no está disponible.');
+      setError('Firebase is not available.');
       return;
     }
 
     if (!department.trim()) {
-      setError('Indique el departamento.');
+      setError('Enter the department.');
       return;
     }
 
     if (startTime >= endTime) {
-      setError('La hora de fin debe ser posterior a la de inicio.');
+      setError('End time must be after start time.');
       return;
     }
 
@@ -80,7 +80,7 @@ export function AssignShiftModal({
 
       onClose();
     } catch {
-      setError('No se pudo asignar el turno. Intente nuevamente.');
+      setError('Could not assign the shift. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -95,13 +95,13 @@ export function AssignShiftModal({
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Cerrar modal"
+        aria-label="Close modal"
         onClick={handleClose}
       />
 
       <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Asignar turno</h2>
+          <h2 className="text-lg font-semibold text-white">Assign shift</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -114,14 +114,14 @@ export function AssignShiftModal({
 
         <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-sm">
           <p className="text-zinc-300">
-            <span className="text-zinc-500">Empleado:</span>{' '}
+            <span className="text-zinc-500">Employee:</span>{' '}
             {initialData.employeeName}
           </p>
           <p className="mt-1 text-zinc-300">
             <span className="text-zinc-500">ID:</span> {initialData.employeeId}
           </p>
           <p className="mt-1 text-zinc-300">
-            <span className="text-zinc-500">Fecha:</span> {initialData.date}
+            <span className="text-zinc-500">Date:</span> {initialData.date}
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export function AssignShiftModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="shift-start" className="mb-1.5 block text-sm text-zinc-400">
-                Hora inicio
+                Start time
               </label>
               <input
                 id="shift-start"
@@ -143,7 +143,7 @@ export function AssignShiftModal({
             </div>
             <div>
               <label htmlFor="shift-end" className="mb-1.5 block text-sm text-zinc-400">
-                Hora fin
+                End time
               </label>
               <input
                 id="shift-end"
@@ -159,7 +159,7 @@ export function AssignShiftModal({
 
           <div>
             <label htmlFor="shift-dept" className="mb-1.5 block text-sm text-zinc-400">
-              Departamento
+              Department
             </label>
             <input
               id="shift-dept"
@@ -169,7 +169,7 @@ export function AssignShiftModal({
               onChange={(e) => setDepartment(e.target.value)}
               disabled={isSubmitting}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 disabled:opacity-60"
-              placeholder="Logística"
+              placeholder="Logistics"
             />
           </div>
 
@@ -186,14 +186,14 @@ export function AssignShiftModal({
               disabled={isSubmitting}
               className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-70"
             >
-              {isSubmitting ? 'Guardando...' : 'Asignar turno'}
+              {isSubmitting ? 'Saving...' : 'Assign shift'}
             </button>
           </div>
         </form>

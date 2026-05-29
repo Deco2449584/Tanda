@@ -6,7 +6,7 @@ export async function uploadEmployeeAvatar(
   file: File,
 ): Promise<string> {
   if (!storage) {
-    throw new Error('Firebase Storage no está disponible.');
+    throw new Error('Firebase Storage is not available.');
   }
 
   const safeCode = employeeCode.trim().replace(/[^\w-]/g, '_');

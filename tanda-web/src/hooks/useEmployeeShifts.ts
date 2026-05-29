@@ -70,7 +70,7 @@ export function useEmployeeShifts({
         console.error('useEmployeeShifts', snapshotError);
         setAllShifts([]);
         setLoading(false);
-        setError('No se pudieron cargar los turnos.');
+        setError('Could not load shifts.');
       },
     );
 

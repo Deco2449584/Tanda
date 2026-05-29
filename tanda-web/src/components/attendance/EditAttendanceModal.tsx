@@ -60,12 +60,12 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
     if (!record) return;
 
     if (!db) {
-      setError('Firebase no está disponible.');
+      setError('Firebase is not available.');
       return;
     }
 
     if (!date || !time) {
-      setError('Indique fecha y hora válidas.');
+      setError('Enter a valid date and time.');
       return;
     }
 
@@ -83,7 +83,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
       });
       onClose();
     } catch {
-      setError('No se pudo actualizar el registro.');
+      setError('Could not update the record.');
     } finally {
       setSaving(false);
     }
@@ -98,13 +98,13 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Cerrar modal"
+        aria-label="Close modal"
         onClick={handleClose}
       />
 
       <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Editar registro</h2>
+          <h2 className="text-lg font-semibold text-white">Edit record</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -118,7 +118,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
         <p className="mb-4 text-sm text-zinc-400">
           <span className="text-zinc-200">{record.employeeNameSnapshot}</span>
           {' · '}
-          Actual: {formatAttendanceType(record.type)} —{' '}
+          Current: {formatAttendanceType(record.type)} —{' '}
           {formatRecordDate(record.timestampServer)}{' '}
           {formatRecordTime(record.timestampServer)}
         </p>
@@ -126,7 +126,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="record-type" className="mb-1.5 block text-sm text-zinc-400">
-              Tipo de registro
+              Record type
             </label>
             <select
               id="record-type"
@@ -142,7 +142,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="record-date" className="mb-1.5 block text-sm text-zinc-400">
-                Fecha
+                Date
               </label>
               <input
                 id="record-date"
@@ -156,7 +156,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
 
             <div>
               <label htmlFor="record-time" className="mb-1.5 block text-sm text-zinc-400">
-                Hora
+                Time
               </label>
               <input
                 id="record-time"
@@ -182,14 +182,14 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
               disabled={saving}
               className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
               className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-70"
             >
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
         </form>

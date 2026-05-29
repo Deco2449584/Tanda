@@ -31,11 +31,11 @@ export function ProtectedShell({ children }: ProtectedShellProps) {
   }, [loading, user, router]);
 
   if (loading) {
-    return <LoadingScreen message="Cargando sesión..." />;
+    return <LoadingScreen message="Loading session..." />;
   }
 
   if (!user || !role) {
-    return <LoadingScreen message="Cerrando sesión..." />;
+    return <LoadingScreen message="Signing out..." />;
   }
 
   return <AuthenticatedShell role={role}>{children}</AuthenticatedShell>;
@@ -73,7 +73,7 @@ function RouteGuard({
   }, [redirectTo, router]);
 
   if (redirectTo) {
-    return <LoadingScreen message="Redirigiendo..." />;
+    return <LoadingScreen message="Redirecting..." />;
   }
 
   return <>{children}</>;

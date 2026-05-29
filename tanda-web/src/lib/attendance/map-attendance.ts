@@ -9,7 +9,7 @@ export function mapAttendanceDoc(
   return {
     id,
     employeeId: record.employeeId ?? '',
-    employeeNameSnapshot: record.employeeNameSnapshot ?? 'Sin nombre',
+    employeeNameSnapshot: record.employeeNameSnapshot ?? 'No name',
     type: record.type === 'check_out' ? 'check_out' : 'check_in',
     timestampServer: record.timestampServer ?? null,
     photoUrl: typeof record.photoUrl === 'string' ? record.photoUrl : '',

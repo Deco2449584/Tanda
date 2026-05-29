@@ -62,7 +62,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           type="button"
           onClick={onMenuClick}
           className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
-          aria-label="Abrir menú"
+          aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -81,7 +81,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <button
           type="button"
           className="hidden rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 sm:inline-flex"
-          aria-label="Mensajes"
+          aria-label="Messages"
         >
           <MessageSquare className="h-5 w-5" />
         </button>
@@ -89,7 +89,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <button
           type="button"
           className="relative rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100"
-          aria-label="Notificaciones"
+          aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0a0a0a]" />
@@ -127,7 +127,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <LogOut className="h-4 w-4" />
-                {signingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+                {signingOut ? 'Signing out...' : 'Sign out'}
               </button>
             </div>
           )}

@@ -21,9 +21,9 @@ export function CompanySettingsCard({
 }: CompanySettingsCardProps) {
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm md:p-6">
-      <h2 className="text-sm font-semibold text-white">Ajustes de empresa</h2>
+      <h2 className="text-sm font-semibold text-white">Company settings</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Configuración general del entorno (almacenamiento local por ahora).
+        General environment configuration (local storage for now).
       </p>
 
       <div className="mt-5 space-y-4">
@@ -32,7 +32,7 @@ export function CompanySettingsCard({
             htmlFor="company-name"
             className="mb-1.5 block text-sm text-zinc-400"
           >
-            Nombre de la empresa
+            Company name
           </label>
           <input
             id="company-name"
@@ -50,7 +50,7 @@ export function CompanySettingsCard({
             htmlFor="company-timezone"
             className="mb-1.5 block text-sm text-zinc-400"
           >
-            Zona horaria
+            Time zone
           </label>
           <input
             id="company-timezone"
@@ -68,7 +68,7 @@ export function CompanySettingsCard({
             htmlFor="check-in-deadline"
             className="mb-1.5 block text-sm text-zinc-400"
           >
-            Hora límite de check-in
+            Check-in deadline
           </label>
           <input
             id="check-in-deadline"
@@ -88,7 +88,7 @@ export function CompanySettingsCard({
           disabled={saving}
           className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {saving ? 'Guardando...' : 'Guardar cambios'}
+          {saving ? 'Saving...' : 'Save changes'}
         </button>
       </div>
     </section>

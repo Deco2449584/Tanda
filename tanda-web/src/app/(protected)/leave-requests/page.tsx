@@ -122,7 +122,7 @@ export default function LeaveRequestsPage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Centro de permisos y solicitudes
+        Leave requests center
       </h1>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -138,9 +138,9 @@ export default function LeaveRequestsPage() {
               setStatusFilter(e.target.value as LeaveRequestStatus | 'all')
             }
             className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-sm text-zinc-200 outline-none focus:border-emerald-600/50"
-            aria-label="Filtrar por estado"
+            aria-label="Filter by status"
           >
-            <option value="all">Estado: Todos</option>
+            <option value="all">Status: All</option>
             {LEAVE_REQUEST_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {status}
@@ -157,7 +157,7 @@ export default function LeaveRequestsPage() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar empleado..."
+              placeholder="Search employee..."
               className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-emerald-600/50 focus:ring-1 focus:ring-emerald-600/30"
             />
           </div>

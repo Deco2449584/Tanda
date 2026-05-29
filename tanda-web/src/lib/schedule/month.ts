@@ -8,7 +8,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enAU } from 'date-fns/locale';
 import { toInputDate } from '@/lib/dates/input-date';
 
 export interface CalendarDayCell {
@@ -38,14 +38,14 @@ export function buildMonthCalendar(referenceDate: Date = new Date()): MonthRange
       date: toInputDate(day),
       dayNumber: day.getDate(),
       isCurrentMonth: isSameMonth(day, referenceDate),
-      label: format(day, 'EEE', { locale: es }),
+      label: format(day, 'EEE', { locale: enAU }),
     }),
   );
 
   return {
     start: toInputDate(monthStart),
     end: toInputDate(monthEnd),
-    label: format(referenceDate, 'MMMM yyyy', { locale: es }),
+    label: format(referenceDate, 'MMMM yyyy', { locale: enAU }),
     days,
   };
 }

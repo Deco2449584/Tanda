@@ -70,7 +70,7 @@ export function AttendanceTable({
       );
       setPendingDelete(null);
     } catch {
-      window.alert('No se pudo eliminar el registro.');
+      window.alert('Could not delete the record.');
     } finally {
       setDeletingId(null);
     }
@@ -79,7 +79,7 @@ export function AttendanceTable({
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 py-16">
-        <p className="text-sm text-zinc-400">Cargando...</p>
+        <p className="text-sm text-zinc-400">Loading...</p>
       </div>
     );
   }
@@ -92,25 +92,25 @@ export function AttendanceTable({
             <thead>
               <tr className="border-b border-emerald-900/50 bg-emerald-950/40">
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                  ID Empleado
+                  Employee ID
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                  Foto
+                  Photo
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                  Empleado
+                  Employee
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                  Fecha
+                  Date
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                  Tipo Registro
+                  Record Type
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
                   Timestamp (Server)
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                  Acciones
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -119,8 +119,8 @@ export function AttendanceTable({
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-zinc-500">
                     {searchQuery
-                      ? 'No se encontraron registros con ese nombre.'
-                      : 'No hay registros en el rango seleccionado.'}
+                      ? 'No records found with that name.'
+                      : 'No records in the selected range.'}
                   </td>
                 </tr>
               ) : (
@@ -162,7 +162,7 @@ export function AttendanceTable({
                           type="button"
                           onClick={() => onEdit(record)}
                           className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
-                          aria-label={`Editar registro de ${record.employeeNameSnapshot}`}
+                          aria-label={`Edit record for ${record.employeeNameSnapshot}`}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -171,7 +171,7 @@ export function AttendanceTable({
                           onClick={() => setPendingDelete(record)}
                           disabled={deletingId === record.id}
                           className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Eliminar registro de ${record.employeeNameSnapshot}`}
+                          aria-label={`Delete record for ${record.employeeNameSnapshot}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -186,7 +186,7 @@ export function AttendanceTable({
 
         <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3 text-xs text-zinc-500">
           <span>
-            Mostrando {filteredRecords.length} de {records.length} registros
+            Showing {filteredRecords.length} of {records.length} records
           </span>
         </div>
       </div>

@@ -48,15 +48,15 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
       <div className="mb-1">
         <h2 className="text-sm font-semibold text-zinc-100">
-          Carga Operativa de Turnos Hoy
+          Today&apos;s Operational Shift Load
         </h2>
-        <p className="text-xs text-zinc-500">Turnos asignados por departamento</p>
+        <p className="text-xs text-zinc-500">Shifts assigned by department</p>
       </div>
 
       <div className="relative mt-4 h-[220px] w-full min-w-0">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/40">
-            <span className="text-xs text-zinc-500">Cargando datos...</span>
+            <span className="text-xs text-zinc-500">Loading data...</span>
           </div>
         )}
 
@@ -89,7 +89,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
                 ticks={yTicks}
                 allowDecimals={false}
                 label={{
-                  value: 'Turnos',
+                  value: 'Shifts',
                   angle: -90,
                   position: 'insideLeft',
                   fill: '#71717a',
@@ -104,7 +104,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
               />
               <Bar
                 dataKey="turnos"
-                name="Turnos"
+                name="Shifts"
                 fill={COLOR_HORAS_NORMAL}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}
@@ -113,7 +113,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
           </ResponsiveContainer>
         ) : mounted && !loading ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-zinc-800 text-sm text-zinc-500">
-            No hay turnos programados para hoy.
+            No shifts scheduled for today.
           </div>
         ) : (
           <div className="h-full w-full animate-pulse rounded-lg bg-zinc-800/30" />

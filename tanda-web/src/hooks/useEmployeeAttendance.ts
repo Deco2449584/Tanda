@@ -81,7 +81,7 @@ export function useEmployeeAttendance({
         console.error('useEmployeeAttendance', snapshotError);
         setRecords([]);
         setLoading(false);
-        setError('No se pudieron cargar los registros de asistencia.');
+        setError('Could not load attendance records.');
       },
     );
 

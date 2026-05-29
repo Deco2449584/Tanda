@@ -1,16 +1,16 @@
 const MONTH_NAMES = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function parseDate(date: string): Date {
@@ -27,7 +27,7 @@ export function formatLeaveDateRange(startDate: string, endDate: string): string
   if (!startDate || !endDate) return '—';
 
   if (startDate === endDate) {
-    return `${formatDayMonthYear(startDate)} (1 día)`;
+    return `${formatDayMonthYear(startDate)} (1 day)`;
   }
 
   const start = parseDate(startDate);

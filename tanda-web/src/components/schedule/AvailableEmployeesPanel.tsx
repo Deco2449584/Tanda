@@ -10,14 +10,14 @@ export function AvailableEmployeesPanel({ employees }: AvailableEmployeesPanelPr
   return (
     <aside className="flex h-full flex-col rounded-xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
       <div className="border-b border-zinc-800 px-4 py-3">
-        <h2 className="text-sm font-semibold text-white">Empleados disponibles</h2>
-        <p className="mt-0.5 text-xs text-zinc-500">{employees.length} activos</p>
+        <h2 className="text-sm font-semibold text-white">Available employees</h2>
+        <p className="mt-0.5 text-xs text-zinc-500">{employees.length} active</p>
       </div>
 
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {employees.length === 0 ? (
           <p className="px-2 py-6 text-center text-xs text-zinc-500">
-            No hay empleados activos.
+            No active employees.
           </p>
         ) : (
           employees.map((employee) => (

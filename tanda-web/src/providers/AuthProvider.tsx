@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOut(auth);
       router.replace('/login');
     } catch {
-      window.alert('No se pudo cerrar la sesión. Intente nuevamente.');
+      window.alert('Could not sign out. Please try again.');
       setLoading(false);
     } finally {
       setSigningOut(false);
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuthContext(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuthContext debe usarse dentro de AuthProvider');
+    throw new Error('useAuthContext must be used within AuthProvider');
   }
   return context;
 }

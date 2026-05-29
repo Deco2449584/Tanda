@@ -47,7 +47,7 @@ export function LeaveRequestsAdminTable({
 
   async function updateStatus(
     requestId: string,
-    status: Exclude<LeaveRequestStatus, 'Pendiente'>,
+    status: Exclude<LeaveRequestStatus, 'Pending'>,
   ) {
     if (!db) return;
 
@@ -58,7 +58,7 @@ export function LeaveRequestsAdminTable({
         status,
       });
     } catch {
-      window.alert('No se pudo actualizar el estado de la solicitud.');
+      window.alert('Could not update the request status.');
     } finally {
       setUpdatingId(null);
     }
@@ -67,7 +67,7 @@ export function LeaveRequestsAdminTable({
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 py-16">
-        <p className="text-sm text-zinc-400">Cargando solicitudes...</p>
+        <p className="text-sm text-zinc-400">Loading requests...</p>
       </div>
     );
   }
@@ -78,24 +78,24 @@ export function LeaveRequestsAdminTable({
         <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-emerald-900/50 bg-emerald-950/30">
-              <th className="px-4 py-3.5 font-semibold text-emerald-100/90">Foto</th>
+              <th className="px-4 py-3.5 font-semibold text-emerald-100/90">Photo</th>
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                ID Empleado
+                Employee ID
               </th>
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                Tipo de permiso
+                Leave type
               </th>
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                Rango de fechas
+                Date range
               </th>
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                Justificación (Resumen)
+                Justification (summary)
               </th>
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                Estado
+                Status
               </th>
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
-                Acciones
+                Actions
               </th>
             </tr>
           </thead>
@@ -103,13 +103,13 @@ export function LeaveRequestsAdminTable({
             {filteredRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-zinc-500">
-                  No hay solicitudes con los filtros actuales.
+                  No requests match the current filters.
                 </td>
               </tr>
             ) : (
               filteredRequests.map((request, index) => {
                 const employee = employeesByCode[request.employeeId];
-                const isPending = request.status === 'Pendiente';
+                const isPending = request.status === 'Pending';
                 const isUpdating = updatingId === request.id;
 
                 return (
@@ -149,21 +149,21 @@ export function LeaveRequestsAdminTable({
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
-                            onClick={() => updateStatus(request.id, 'Aprobado')}
+                            onClick={() => updateStatus(request.id, 'Approved')}
                             disabled={isUpdating}
                             className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
                           >
                             <Check className="h-3.5 w-3.5" />
-                            APROBAR
+                            APPROVE
                           </button>
                           <button
                             type="button"
-                            onClick={() => updateStatus(request.id, 'Rechazado')}
+                            onClick={() => updateStatus(request.id, 'Rejected')}
                             disabled={isUpdating}
                             className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
                           >
                             <X className="h-3.5 w-3.5" />
-                            RECHAZAR
+                            REJECT
                           </button>
                         </div>
                       ) : (
@@ -171,14 +171,14 @@ export function LeaveRequestsAdminTable({
                           <button
                             type="button"
                             className="rounded-lg p-2 text-emerald-500/80 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
-                            aria-label="Editar solicitud"
+                            aria-label="Edit request"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
                             className="rounded-lg p-2 text-emerald-500/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
-                            aria-label="Eliminar solicitud"
+                            aria-label="Delete request"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

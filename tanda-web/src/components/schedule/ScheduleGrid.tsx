@@ -66,7 +66,7 @@ export function ScheduleGrid({
       await deleteDoc(doc(db, COLLECTIONS.SHIFTS, pendingDelete.shift.id));
       setPendingDelete(null);
     } catch {
-      window.alert('No se pudo eliminar el turno.');
+      window.alert('Could not delete the shift.');
     } finally {
       setDeletingId(null);
     }
@@ -75,7 +75,7 @@ export function ScheduleGrid({
   if (loading) {
     return (
       <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60">
-        <p className="text-sm text-zinc-400">Cargando agenda...</p>
+        <p className="text-sm text-zinc-400">Loading schedule...</p>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function ScheduleGrid({
           <div className="min-w-[900px]">
             <div className="grid grid-cols-8 border-b border-zinc-800 bg-emerald-950/30">
               <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-emerald-100/80">
-                Empleado
+                Employee
               </div>
               {weekDays.map((day) => (
                 <div
@@ -102,7 +102,7 @@ export function ScheduleGrid({
 
             {employees.length === 0 ? (
               <div className="px-4 py-12 text-center text-sm text-zinc-500">
-                No hay empleados para mostrar en esta semana.
+                No employees to show this week.
               </div>
             ) : (
               employees.map((employee) => (

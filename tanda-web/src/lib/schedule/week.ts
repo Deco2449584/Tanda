@@ -9,7 +9,7 @@ export interface WeekRange {
   days: WeekDay[];
 }
 
-const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function toInputDate(date: Date): string {
   const year = date.getFullYear();
@@ -48,7 +48,7 @@ export function buildWeekRange(referenceDate: Date = new Date()): WeekRange {
 }
 
 export function formatWeekRangeLabel(week: WeekRange): string {
-  const formatter = new Intl.DateTimeFormat('es-MX', {
+  const formatter = new Intl.DateTimeFormat('en-AU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

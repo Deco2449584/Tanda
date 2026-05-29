@@ -7,9 +7,9 @@ import { db } from '@/lib/firebase';
 import type { LeaveRequestType, NewLeaveRequestInput } from '@/lib/types/leave-request';
 
 const LEAVE_TYPES: LeaveRequestType[] = [
-  'Vacaciones',
-  'Permiso Médico',
-  'Calamidad Doméstica',
+  'Vacation',
+  'Medical Leave',
+  'Family Emergency',
   'Personal',
 ];
 
@@ -19,7 +19,7 @@ interface NewLeaveRequestFormProps {
 }
 
 const initialForm: NewLeaveRequestInput = {
-  type: 'Vacaciones',
+  type: 'Vacation',
   startDate: '',
   endDate: '',
   justification: '',
@@ -40,22 +40,22 @@ export function NewLeaveRequestForm({
     setSuccess('');
 
     if (!db) {
-      setError('Firebase no está disponible.');
+      setError('Firebase is not available.');
       return;
     }
 
     if (!form.startDate || !form.endDate) {
-      setError('Seleccione el rango de fechas.');
+      setError('Select a date range.');
       return;
     }
 
     if (form.startDate > form.endDate) {
-      setError('La fecha "Hasta" debe ser posterior o igual a "Desde".');
+      setError('The "To" date must be on or after the "From" date.');
       return;
     }
 
     if (!form.justification.trim()) {
-      setError('Escriba una justificación.');
+      setError('Enter a justification.');
       return;
     }
 
@@ -68,14 +68,14 @@ export function NewLeaveRequestForm({
         endDate: form.endDate,
         type: form.type,
         justification: form.justification.trim(),
-        status: 'Pendiente',
+        status: 'Pending',
         createdAt: serverTimestamp(),
       });
 
       setForm(initialForm);
-      setSuccess('Solicitud enviada correctamente.');
+      setSuccess('Request submitted successfully.');
     } catch {
-      setError('No se pudo enviar la solicitud. Intente nuevamente.');
+      setError('Could not submit the request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -83,15 +83,15 @@ export function NewLeaveRequestForm({
 
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
-      <h2 className="text-sm font-semibold text-white">Nueva solicitud</h2>
+      <h2 className="text-sm font-semibold text-white">New request</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Complete el formulario para enviar su permiso.
+        Complete the form to submit your leave request.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <div>
           <label htmlFor="leave-type" className="mb-1.5 block text-sm text-zinc-400">
-            Tipo de permiso
+            Leave type
           </label>
           <select
             id="leave-type"
@@ -116,7 +116,7 @@ export function NewLeaveRequestForm({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="leave-start" className="mb-1.5 block text-sm text-zinc-400">
-              Desde
+              From
             </label>
             <input
               id="leave-start"
@@ -132,7 +132,7 @@ export function NewLeaveRequestForm({
           </div>
           <div>
             <label htmlFor="leave-end" className="mb-1.5 block text-sm text-zinc-400">
-              Hasta
+              To
             </label>
             <input
               id="leave-end"
@@ -150,7 +150,7 @@ export function NewLeaveRequestForm({
 
         <div>
           <label htmlFor="leave-justification" className="mb-1.5 block text-sm text-zinc-400">
-            Justificación
+            Justification
           </label>
           <textarea
             id="leave-justification"
@@ -161,7 +161,7 @@ export function NewLeaveRequestForm({
               setForm((prev) => ({ ...prev, justification: e.target.value }))
             }
             disabled={disabled || isSubmitting}
-            placeholder="Describa el motivo de su solicitud..."
+            placeholder="Describe the reason for your request..."
             className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 disabled:opacity-60"
           />
         </div>
@@ -183,7 +183,7 @@ export function NewLeaveRequestForm({
           disabled={disabled || isSubmitting}
           className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-bold tracking-wide text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isSubmitting ? 'Enviando...' : 'ENVIAR SOLICITUD'}
+          {isSubmitting ? 'Submitting...' : 'SUBMIT REQUEST'}
         </button>
       </form>
     </section>

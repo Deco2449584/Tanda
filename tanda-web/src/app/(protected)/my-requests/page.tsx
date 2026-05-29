@@ -64,7 +64,7 @@ export default function MyRequestsPage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Mis permisos
+        My leave
       </h1>
 
       {employeeError && !loading && (

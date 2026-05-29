@@ -16,7 +16,7 @@ const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
 };
 
 function deriveDisplayName(email: string | null | undefined): string {
-  if (!email) return 'Administrador';
+  if (!email) return 'Administrator';
   const local = email.split('@')[0] ?? '';
   return local
     .split(/[._-]/)
@@ -48,7 +48,7 @@ export default function SettingsPage() {
 
   function handleChangePassword() {
     showToast(
-      'Función de recuperación enviada al correo',
+      'Recovery link sent to your email',
       'info',
     );
   }
@@ -57,13 +57,13 @@ export default function SettingsPage() {
     setSaving(true);
     await new Promise((resolve) => window.setTimeout(resolve, 700));
     setSaving(false);
-    showToast('Cambios guardados correctamente.');
+    showToast('Changes saved successfully.');
   }
 
   return (
     <div className="relative min-h-full space-y-6 p-4 md:p-6">
       <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-        Configuración del sistema
+        System settings
       </h1>
 
       {authLoading ? (

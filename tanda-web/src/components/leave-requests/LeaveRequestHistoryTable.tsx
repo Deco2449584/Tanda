@@ -16,7 +16,7 @@ export function LeaveRequestHistoryTable({
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 py-16">
-        <p className="text-sm text-zinc-400">Cargando historial...</p>
+        <p className="text-sm text-zinc-400">Loading history...</p>
       </div>
     );
   }
@@ -24,24 +24,24 @@ export function LeaveRequestHistoryTable({
   return (
     <section className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
       <div className="border-b border-zinc-800 px-4 py-3">
-        <h2 className="text-sm font-semibold text-white">Historial de solicitudes</h2>
+        <h2 className="text-sm font-semibold text-white">Request history</h2>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-900/80">
-              <th className="px-4 py-3 font-semibold text-zinc-300">Tipo</th>
-              <th className="px-4 py-3 font-semibold text-zinc-300">Fechas</th>
-              <th className="px-4 py-3 font-semibold text-zinc-300">Justificación</th>
-              <th className="px-4 py-3 font-semibold text-zinc-300">Estado</th>
+              <th className="px-4 py-3 font-semibold text-zinc-300">Type</th>
+              <th className="px-4 py-3 font-semibold text-zinc-300">Dates</th>
+              <th className="px-4 py-3 font-semibold text-zinc-300">Justification</th>
+              <th className="px-4 py-3 font-semibold text-zinc-300">Status</th>
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-zinc-500">
-                  Aún no tiene solicitudes registradas.
+                  You have no requests on file yet.
                 </td>
               </tr>
             ) : (

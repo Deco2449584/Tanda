@@ -20,34 +20,34 @@ export function NextShiftCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Mi próximo turno
+            My next shift
           </p>
 
           {loading ? (
-            <p className="mt-3 text-sm text-zinc-500">Cargando...</p>
+            <p className="mt-3 text-sm text-zinc-500">Loading...</p>
           ) : nextShift ? (
             <div className="mt-3 space-y-1.5 text-sm">
               <p className="text-zinc-300">
-                <span className="text-zinc-500">Entrada:</span>{' '}
+                <span className="text-zinc-500">Clock-in:</span>{' '}
                 <span className="font-medium text-white">
                   {formatTimeLabel(nextShift.startTime)}
                 </span>
               </p>
               <p className="text-zinc-300">
-                <span className="text-zinc-500">Rol:</span>{' '}
+                <span className="text-zinc-500">Role:</span>{' '}
                 <span className="font-medium text-white">
                   {nextShift.department}
                 </span>
               </p>
               <p className="text-zinc-300">
-                <span className="text-zinc-500">Fecha:</span>{' '}
+                <span className="text-zinc-500">Date:</span>{' '}
                 <span className="font-medium text-white">
                   {formatShortDate(nextShift.date)}
                 </span>
               </p>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-zinc-400">Sin turnos próximos</p>
+            <p className="mt-3 text-sm text-zinc-400">No upcoming shifts</p>
           )}
         </div>
 

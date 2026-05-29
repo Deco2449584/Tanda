@@ -12,13 +12,13 @@ function getAuthErrorMessage(code: string): string {
     case 'auth/invalid-credential':
     case 'auth/wrong-password':
     case 'auth/user-not-found':
-      return 'Correo o contraseña incorrectos.';
+      return 'Incorrect email or password.';
     case 'auth/invalid-email':
-      return 'El correo electrónico no es válido.';
+      return 'The email address is not valid.';
     case 'auth/too-many-requests':
-      return 'Demasiados intentos. Intente más tarde.';
+      return 'Too many attempts. Please try again later.';
     default:
-      return 'Error al iniciar sesión. Intente nuevamente.';
+      return 'Sign-in failed. Please try again.';
   }
 }
 
@@ -81,10 +81,10 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-center text-lg font-bold tracking-wide text-gray-900">
-            INICIAR SESIÓN
+            SIGN IN
           </h1>
           <p className="mt-2 text-center text-sm text-gray-500">
-            Ingrese sus credenciales para acceder a la plataforma web
+            Enter your credentials to access the web platform
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function LoginPage() {
               htmlFor="email"
               className="mb-1.5 block text-sm font-medium text-gray-700"
             >
-              Correo electrónico
+              Email address
             </label>
             <div className="relative">
               <Mail
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ejemplo@continental.com"
+                placeholder="example@continental.com"
                 className="w-full rounded-md border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-[#1a4b8c] focus:ring-1 focus:ring-[#1a4b8c]"
               />
             </div>
@@ -119,7 +119,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="mb-1.5 block text-sm font-medium text-gray-700"
             >
-              Contraseña
+              Password
             </label>
             <div className="relative">
               <Lock
@@ -150,7 +150,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-emerald-600 py-3 text-sm font-bold tracking-wide text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? 'Ingresando...' : 'INGRESAR'}
+            {loading ? 'Signing in...' : 'SIGN IN'}
           </button>
         </form>
 
@@ -159,12 +159,12 @@ export default function LoginPage() {
             type="button"
             className="text-sm text-gray-500 underline-offset-2 hover:underline"
           >
-            Olvidé mi contraseña
+            Forgot my password
           </button>
         </p>
 
         <p className="mt-8 text-center text-[11px] leading-relaxed text-gray-400">
-          Plataforma gestionada por TimeTracker PRO — © 2024 Continental Cargo
+          Platform managed by TimeTracker PRO — © 2024 Continental Cargo
         </p>
       </div>
     </div>

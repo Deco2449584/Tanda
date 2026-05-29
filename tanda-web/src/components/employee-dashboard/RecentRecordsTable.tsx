@@ -19,7 +19,7 @@ function RecordPhoto({ photoUrl }: { photoUrl: string }) {
   return (
     <img
       src={photoUrl}
-      alt="Validación fotográfica"
+      alt="Photo verification"
       className="h-10 w-10 rounded-full object-cover ring-2 ring-zinc-700"
       referrerPolicy="no-referrer"
     />
@@ -35,7 +35,7 @@ export function RecentRecordsTable({
   return (
     <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
       <div className="flex flex-col gap-3 border-b border-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5 md:py-4">
-        <h2 className="text-sm font-semibold text-white">Mis últimos registros</h2>
+        <h2 className="text-sm font-semibold text-white">My recent records</h2>
 
         <div className="flex gap-2">
           <button
@@ -47,7 +47,7 @@ export function RecentRecordsTable({
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            Últimos 7 días
+            Last 7 days
           </button>
           <button
             type="button"
@@ -58,18 +58,18 @@ export function RecentRecordsTable({
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            Último mes
+            Last month
           </button>
         </div>
       </div>
 
       {loading ? (
         <div className="px-4 py-10 text-center text-sm text-zinc-500 md:px-5">
-          Cargando registros...
+          Loading records...
         </div>
       ) : records.length === 0 ? (
         <div className="px-4 py-10 text-center text-sm text-zinc-500 md:px-5">
-          No hay registros en el período seleccionado.
+          No records in the selected period.
         </div>
       ) : (
         <>
@@ -77,13 +77,13 @@ export function RecentRecordsTable({
             <table className="w-full min-w-[640px] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/40">
-                  <th className="px-5 py-3 font-semibold text-zinc-400">Fecha</th>
-                  <th className="px-5 py-3 font-semibold text-zinc-400">Tipo</th>
+                  <th className="px-5 py-3 font-semibold text-zinc-400">Date</th>
+                  <th className="px-5 py-3 font-semibold text-zinc-400">Type</th>
                   <th className="px-5 py-3 font-semibold text-zinc-400">
-                    Hora registrada
+                    Recorded time
                   </th>
                   <th className="px-5 py-3 font-semibold text-zinc-400">
-                    Validación fotográfica
+                    Photo verification
                   </th>
                 </tr>
               </thead>
@@ -121,7 +121,7 @@ export function RecentRecordsTable({
                   <div className="space-y-2 text-sm">
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                        Fecha
+                        Date
                       </p>
                       <p className="font-medium text-zinc-200">
                         {formatRecordDate(record.timestampServer)}
@@ -129,7 +129,7 @@ export function RecentRecordsTable({
                     </div>
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                        Hora
+                        Time
                       </p>
                       <p className="font-medium text-zinc-200">
                         {formatRecordTime(record.timestampServer)}
@@ -137,7 +137,7 @@ export function RecentRecordsTable({
                     </div>
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                        Tipo
+                        Type
                       </p>
                       <p className="font-medium text-emerald-400">
                         {formatAttendanceType(record.type)}
@@ -146,7 +146,7 @@ export function RecentRecordsTable({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      Foto
+                      Photo
                     </p>
                     <RecordPhoto photoUrl={record.photoUrl} />
                   </div>

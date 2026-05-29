@@ -1,11 +1,11 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type LeaveRequestStatus = 'Pendiente' | 'Aprobado' | 'Rechazado';
+export type LeaveRequestStatus = 'Pending' | 'Approved' | 'Rejected';
 
 export type LeaveRequestType =
-  | 'Vacaciones'
-  | 'Permiso Médico'
-  | 'Calamidad Doméstica'
+  | 'Vacation'
+  | 'Medical Leave'
+  | 'Family Emergency'
   | 'Personal';
 
 export interface LeaveRequestFirestore {

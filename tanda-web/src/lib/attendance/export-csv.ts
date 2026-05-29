@@ -1,8 +1,4 @@
-import {
-  formatAttendanceType,
-  formatRecordDate,
-  formatRecordTime,
-} from '@/lib/attendance/format';
+import { formatAttendanceType, formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
 export function exportAttendanceRecordsToCsv(
@@ -12,14 +8,14 @@ export function exportAttendanceRecordsToCsv(
   if (records.length === 0) return;
 
   const headers = [
-    'ID Empleado',
-    'Empleado',
-    'Fecha',
-    'Tipo Registro',
-    'Hora',
+    'Employee ID',
+    'Employee',
+    'Date',
+    'Record Type',
+    'Time',
   ];
 
-  const rows = records.map((record) => [
+  const csvRows = records.map((record) => [
     employeeCodes[record.employeeId] ?? record.employeeId,
     record.employeeNameSnapshot,
     formatRecordDate(record.timestampServer),
@@ -27,7 +23,7 @@ export function exportAttendanceRecordsToCsv(
     formatRecordTime(record.timestampServer),
   ]);
 
-  const csvContent = [headers, ...rows]
+  const csvContent = [headers, ...csvRows]
     .map((row) =>
       row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
     )
@@ -39,7 +35,7 @@ export function exportAttendanceRecordsToCsv(
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `reporte-asistencia-${Date.now()}.csv`;
+  link.download = `attendance-report-${Date.now()}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }

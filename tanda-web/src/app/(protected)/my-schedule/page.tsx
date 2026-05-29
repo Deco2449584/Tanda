@@ -23,7 +23,7 @@ export default function MySchedulePage() {
   return (
     <div className="min-h-full space-y-5 bg-[#121212] p-4 md:p-6">
       <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-        Mi horario
+        My schedule
       </h1>
 
       {employeeError && !employeeLoading && (
@@ -39,12 +39,12 @@ export default function MySchedulePage() {
       )}
 
       {loading && (
-        <p className="text-sm text-zinc-500">Cargando turnos...</p>
+        <p className="text-sm text-zinc-500">Loading shifts...</p>
       )}
 
       {!loading && employee && futureShifts.length === 0 && (
         <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-8 text-center text-sm text-zinc-400">
-          No tienes turnos próximos programados.
+          You have no upcoming shifts scheduled.
         </p>
       )}
 

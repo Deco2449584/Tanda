@@ -9,9 +9,9 @@ const statusStyles = {
 } as const;
 
 const statusLabels = {
-  scheduled: 'Programado',
-  completed: 'Finalizado',
-  absent: 'Ausente',
+  scheduled: 'Scheduled',
+  completed: 'Completed',
+  absent: 'Absent',
 } as const;
 
 interface ShiftListCardProps {

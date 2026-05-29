@@ -64,7 +64,7 @@ export default function EmployeeDashboardPage() {
   return (
     <div className="min-h-full space-y-5 bg-[#121212] p-4 md:space-y-6 md:p-6">
       <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-        Mi resumen general
+        My overview
       </h1>
 
       {employeeError && !employeeLoading && (

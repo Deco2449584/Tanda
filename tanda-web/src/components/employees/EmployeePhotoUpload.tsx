@@ -34,13 +34,13 @@ export function EmployeePhotoUpload({
 
   return (
     <div>
-      <label className="mb-1.5 block text-sm text-zinc-400">Foto de perfil</label>
+      <label className="mb-1.5 block text-sm text-zinc-400">Profile photo</label>
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-2 ring-zinc-700">
           {displayUrl ? (
             <img
               src={displayUrl}
-              alt="Vista previa"
+              alt="Preview"
               className="h-full w-full object-cover"
             />
           ) : (

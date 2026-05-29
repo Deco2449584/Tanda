@@ -6,14 +6,14 @@ export const COLLECTIONS = {
 } as const;
 
 export const LEAVE_REQUEST_TYPES = [
-  'Vacaciones',
-  'Permiso Médico',
-  'Calamidad Doméstica',
+  'Vacation',
+  'Medical Leave',
+  'Family Emergency',
   'Personal',
 ] as const;
 
 export const LEAVE_REQUEST_STATUSES = [
-  'Pendiente',
-  'Aprobado',
-  'Rechazado',
+  'Pending',
+  'Approved',
+  'Rejected',
 ] as const;

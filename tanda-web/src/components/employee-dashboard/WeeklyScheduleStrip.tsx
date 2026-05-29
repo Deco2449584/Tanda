@@ -19,11 +19,11 @@ export function WeeklyScheduleStrip({
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 backdrop-blur-sm md:p-5">
       <h2 className="text-sm font-semibold text-white">
-        Mi horario semanal actual
+        My current weekly schedule
       </h2>
 
       {loading ? (
-        <p className="mt-4 text-sm text-zinc-500">Cargando horario...</p>
+        <p className="mt-4 text-sm text-zinc-500">Loading schedule...</p>
       ) : (
         <div className="mt-4 flex flex-col gap-3">
           {weekDays.map((day) => {
@@ -43,7 +43,7 @@ export function WeeklyScheduleStrip({
                 >
                   <p className="text-sm font-semibold text-zinc-400">{day.label}</p>
                   <p className="text-xs font-medium uppercase tracking-wide text-zinc-600">
-                    Día libre
+                    Day off
                   </p>
                 </div>
               );

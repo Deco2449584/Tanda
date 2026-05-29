@@ -17,7 +17,7 @@ export function WeekRangePicker({ referenceDate, onChange }: WeekRangePickerProp
         type="button"
         onClick={() => onChange(shiftWeek(referenceDate, -1))}
         className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
-        aria-label="Semana anterior"
+        aria-label="Previous week"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -31,7 +31,7 @@ export function WeekRangePicker({ referenceDate, onChange }: WeekRangePickerProp
         type="button"
         onClick={() => onChange(shiftWeek(referenceDate, 1))}
         className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
-        aria-label="Semana siguiente"
+        aria-label="Next week"
       >
         <ChevronRight className="h-4 w-4" />
       </button>

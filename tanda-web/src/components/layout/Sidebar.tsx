@@ -23,17 +23,17 @@ interface NavItem {
 
 const adminNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Control de Tiempos', href: '/attendance', icon: Clock },
-  { label: 'Gestión de Personal', href: '/employees', icon: Users },
-  { label: 'Planificación', href: '/schedule', icon: CalendarDays },
-  { label: 'Permisos', href: '/leave-requests', icon: ShieldCheck },
-  { label: 'Configuración', href: '/settings', icon: Settings },
+  { label: 'Time & Attendance', href: '/attendance', icon: Clock },
+  { label: 'Staff Management', href: '/employees', icon: Users },
+  { label: 'Schedule', href: '/schedule', icon: CalendarDays },
+  { label: 'Leave Requests', href: '/leave-requests', icon: ShieldCheck },
+  { label: 'Settings', href: '/settings', icon: Settings },
 ];
 
 const employeeNavItems: NavItem[] = [
-  { label: 'Mi Resumen General', href: '/employee-dashboard', icon: LayoutDashboard },
-  { label: 'Mi Horario', href: '/my-schedule', icon: CalendarDays },
-  { label: 'Mis Permisos', href: '/my-requests', icon: ShieldCheck },
+  { label: 'My Dashboard', href: '/employee-dashboard', icon: LayoutDashboard },
+  { label: 'My Schedule', href: '/my-schedule', icon: CalendarDays },
+  { label: 'My Leave', href: '/my-requests', icon: ShieldCheck },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -55,7 +55,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       {mobileOpen ? (
         <button
           type="button"
-          aria-label="Cerrar menú"
+          aria-label="Close menu"
           className="fixed inset-0 z-40 bg-black/60 md:hidden"
           onClick={onClose}
         />
@@ -85,7 +85,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
             type="button"
             onClick={onClose}
             className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
-            aria-label="Cerrar menú lateral"
+            aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>

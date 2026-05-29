@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import {
   collection,
+  getDocs,
   limit,
-  onSnapshot,
   query,
   where,
 } from 'firebase/firestore';
@@ -19,49 +19,47 @@ export function useCurrentEmployee(userEmail: string | null | undefined) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!db) {
-      setLoading(false);
-      return;
-    }
-
     if (!userEmail) {
       setEmployee(null);
       setLoading(false);
-      setError('No hay sesión activa.');
+      setError('No active session.');
+      return;
+    }
+
+    if (!db) {
+      setLoading(false);
+      setError('Firebase is not available.');
       return;
     }
 
     setLoading(true);
-
-    const normalizedEmail = userEmail.trim().toLowerCase();
+    setError('');
 
     const employeesQuery = query(
       collection(db, COLLECTIONS.EMPLOYEES),
-      where('email', '==', normalizedEmail),
+      where('email', '==', userEmail.trim().toLowerCase()),
       limit(1),
     );
 
-    const unsubscribe = onSnapshot(
-      employeesQuery,
-      (snapshot) => {
+    getDocs(employeesQuery)
+      .then((snapshot) => {
         if (snapshot.empty) {
           setEmployee(null);
-          setError('No se encontró un perfil de empleado vinculado a este usuario.');
-        } else {
-          const document = snapshot.docs[0];
-          setEmployee(mapEmployeeDoc(document.id, document.data()));
-          setError('');
+          setError('No employee profile linked to this user was found.');
+          return;
         }
-        setLoading(false);
-      },
-      () => {
-        setEmployee(null);
-        setError('No se pudo cargar el perfil del empleado.');
-        setLoading(false);
-      },
-    );
 
-    return () => unsubscribe();
+        const document = snapshot.docs[0];
+        setEmployee(mapEmployeeDoc(document.id, document.data()));
+        setError('');
+      })
+      .catch(() => {
+        setEmployee(null);
+        setError('Could not load the employee profile.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [userEmail]);
 
   return { employee, loading, error };

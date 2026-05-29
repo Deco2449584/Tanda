@@ -10,7 +10,7 @@ export function mapEmployeeDoc(
     id,
     employeeId:
       typeof employee.employeeId === 'string' ? employee.employeeId.trim() : '',
-    name: employee.name ?? 'Sin nombre',
+    name: employee.name ?? 'No name',
     email:
       typeof employee.email === 'string'
         ? employee.email.trim().toLowerCase()

@@ -59,7 +59,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     if (!employee) return;
 
     if (!db) {
-      setError('Firebase no está disponible.');
+      setError('Firebase is not available.');
       return;
     }
 
@@ -69,12 +69,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       !form.email.trim() ||
       !form.department.trim()
     ) {
-      setError('Complete todos los campos obligatorios.');
+      setError('Complete all required fields.');
       return;
     }
 
     if (form.hourlyRate <= 0) {
-      setError('La tarifa por hora debe ser mayor a cero.');
+      setError('Hourly rate must be greater than zero.');
       return;
     }
 
@@ -108,8 +108,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     } catch {
       setError(
         isUploading
-          ? 'No se pudo subir la imagen. Intente nuevamente.'
-          : 'No se pudo actualizar el empleado. Intente nuevamente.',
+          ? 'Could not upload the image. Please try again.'
+          : 'Could not update the employee. Please try again.',
       );
     } finally {
       setIsUploading(false);
@@ -118,9 +118,9 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
   }
 
   function getSubmitLabel() {
-    if (isUploading) return 'Subiendo imagen...';
-    if (isSubmitting) return 'Guardando cambios...';
-    return 'Guardar cambios';
+    if (isUploading) return 'Uploading image...';
+    if (isSubmitting) return 'Saving changes...';
+    return 'Save changes';
   }
 
   return (
@@ -133,21 +133,21 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Cerrar modal"
+        aria-label="Close modal"
         onClick={handleClose}
       />
 
       <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
           <h2 id="edit-employee-title" className="text-lg font-semibold text-white">
-            Editar empleado
+            Edit employee
           </h2>
           <button
             type="button"
             onClick={handleClose}
             disabled={isBusy}
             className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
-            aria-label="Cerrar"
+            aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
@@ -163,7 +163,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
           <div>
             <label htmlFor="edit-emp-id" className="mb-1.5 block text-sm text-zinc-400">
-              ID de Empleado
+              Employee ID
             </label>
             <input
               id="edit-emp-id"
@@ -180,7 +180,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
           <div>
             <label htmlFor="edit-emp-name" className="mb-1.5 block text-sm text-zinc-400">
-              Nombre
+              Name
             </label>
             <input
               id="edit-emp-name"
@@ -195,7 +195,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
           <div>
             <label htmlFor="edit-emp-email" className="mb-1.5 block text-sm text-zinc-400">
-              Correo
+              Email
             </label>
             <input
               id="edit-emp-email"
@@ -210,7 +210,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
           <div>
             <label htmlFor="edit-emp-dept" className="mb-1.5 block text-sm text-zinc-400">
-              Departamento
+              Department
             </label>
             <input
               id="edit-emp-dept"
@@ -227,7 +227,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
           <div>
             <label htmlFor="edit-emp-rate" className="mb-1.5 block text-sm text-zinc-400">
-              Tarifa hora ($)
+              Hourly rate ($)
             </label>
             <input
               id="edit-emp-rate"
@@ -260,7 +260,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               disabled={isBusy}
               className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"

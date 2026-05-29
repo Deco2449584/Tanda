@@ -17,7 +17,7 @@ export function WeeklyHoursCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Horas totales semanales
+            Total weekly hours
           </p>
           <p className="mt-2 text-3xl font-bold text-white">
             {loading ? (
@@ -30,7 +30,7 @@ export function WeeklyHoursCard({
       </div>
 
       <p className="mt-4 text-xs text-zinc-500">
-        Meta de progreso {goal} hrs
+        Progress goal {goal} hrs
       </p>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800">
         <div
