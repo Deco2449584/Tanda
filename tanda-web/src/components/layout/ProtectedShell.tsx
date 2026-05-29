@@ -1,18 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
 
 interface ProtectedShellProps {
   children: React.ReactNode;
 }
 
-function LoadingScreen() {
+function LoadingScreen({ message }: { message: string }) {
   return (
     <div className="flex h-screen items-center justify-center bg-[#0a0a0a]">
-      <p className="text-sm text-zinc-400">Cargando sesión...</p>
+      <p className="text-sm text-zinc-400">{message}</p>
     </div>
   );
 }
@@ -21,12 +24,38 @@ export function ProtectedShell({ children }: ProtectedShellProps) {
   const { loading, role } = useAuthRole();
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingScreen message="Cargando sesión..." />;
   }
 
   return (
-    <ProtectedLayoutContent role={role}>{children}</ProtectedLayoutContent>
+    <RouteGuard role={role}>
+      <ProtectedLayoutContent role={role}>{children}</ProtectedLayoutContent>
+    </RouteGuard>
   );
+}
+
+function RouteGuard({
+  role,
+  children,
+}: {
+  role: UserRole;
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const redirectTo = getRedirectForRole(role, pathname);
+
+  useEffect(() => {
+    if (redirectTo) {
+      router.replace(redirectTo);
+    }
+  }, [redirectTo, router]);
+
+  if (redirectTo) {
+    return <LoadingScreen message="Redirigiendo..." />;
+  }
+
+  return <>{children}</>;
 }
 
 function ProtectedLayoutContent({
