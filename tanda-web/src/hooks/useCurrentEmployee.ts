@@ -33,9 +33,11 @@ export function useCurrentEmployee(userEmail: string | null | undefined) {
 
     setLoading(true);
 
+    const normalizedEmail = userEmail.trim().toLowerCase();
+
     const employeesQuery = query(
       collection(db, COLLECTIONS.EMPLOYEES),
-      where('email', '==', userEmail.trim().toLowerCase()),
+      where('email', '==', normalizedEmail),
       limit(1),
     );
 

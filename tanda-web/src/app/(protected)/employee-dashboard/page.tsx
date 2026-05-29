@@ -1,13 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
-} from 'firebase/firestore';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
@@ -15,157 +7,37 @@ import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard
 import { WeeklyScheduleStrip } from '@/components/employee-dashboard/WeeklyScheduleStrip';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
-import { COLLECTIONS } from '@/lib/constants';
-import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
-import { mapShiftDoc } from '@/lib/schedule/map-shift';
-import { buildWeekRange } from '@/lib/schedule/week';
-import { db } from '@/lib/firebase';
-import type { AttendanceRecord } from '@/lib/types/attendance';
-import type { Shift } from '@/lib/types/shift';
-
-function todayInputDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
+import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
 
 export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
 
-  const [recentRecords, setRecentRecords] = useState<AttendanceRecord[]>([]);
-  const [weekShifts, setWeekShifts] = useState<Shift[]>([]);
-  const [upcomingShifts, setUpcomingShifts] = useState<Shift[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
-
-  const week = useMemo(() => buildWeekRange(new Date()), []);
   const employeeCode = employee?.employeeId ?? '';
 
-  useEffect(() => {
-    if (!db || !employeeCode) {
-      setRecentRecords([]);
-      setWeekShifts([]);
-      setUpcomingShifts([]);
-      setDataLoading(false);
-      return;
-    }
+  const {
+    week,
+    shiftsByDate,
+    nextScheduledShift,
+    loading: shiftsLoading,
+    error: shiftsError,
+  } = useEmployeeShifts({ employeeCode });
 
-    setDataLoading(true);
+  const {
+    records: recentRecords,
+    loading: recordsLoading,
+    error: recordsError,
+  } = useEmployeeAttendance({ employeeCode, limit: 4 });
 
-    let recordsReady = false;
-    let weekShiftsReady = false;
-    let upcomingReady = false;
-
-    function checkReady() {
-      if (recordsReady && weekShiftsReady && upcomingReady) {
-        setDataLoading(false);
-      }
-    }
-
-    const recordsQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('employeeId', '==', employeeCode),
-      orderBy('timestampServer', 'desc'),
-    );
-
-    const unsubscribeRecords = onSnapshot(
-      recordsQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs
-          .map((document) => mapAttendanceDoc(document.id, document.data()))
-          .slice(0, 4);
-        setRecentRecords(mapped);
-        recordsReady = true;
-        checkReady();
-      },
-      () => {
-        recordsReady = true;
-        checkReady();
-      },
-    );
-
-    const weekShiftsQuery = query(
-      collection(db, COLLECTIONS.SHIFTS),
-      where('employeeId', '==', employeeCode),
-      where('date', '>=', week.start),
-      where('date', '<=', week.end),
-    );
-
-    const unsubscribeWeekShifts = onSnapshot(
-      weekShiftsQuery,
-      (snapshot) => {
-        setWeekShifts(
-          snapshot.docs.map((document) =>
-            mapShiftDoc(document.id, document.data()),
-          ),
-        );
-        weekShiftsReady = true;
-        checkReady();
-      },
-      () => {
-        weekShiftsReady = true;
-        checkReady();
-      },
-    );
-
-    const upcomingQuery = query(
-      collection(db, COLLECTIONS.SHIFTS),
-      where('employeeId', '==', employeeCode),
-      where('date', '>=', todayInputDate()),
-      orderBy('date', 'asc'),
-    );
-
-    const unsubscribeUpcoming = onSnapshot(
-      upcomingQuery,
-      (snapshot) => {
-        setUpcomingShifts(
-          snapshot.docs.map((document) =>
-            mapShiftDoc(document.id, document.data()),
-          ),
-        );
-        upcomingReady = true;
-        checkReady();
-      },
-      () => {
-        upcomingReady = true;
-        checkReady();
-      },
-    );
-
-    return () => {
-      unsubscribeRecords();
-      unsubscribeWeekShifts();
-      unsubscribeUpcoming();
-    };
-  }, [employeeCode, week.start, week.end]);
-
-  const nextShift = useMemo(() => {
-    return (
-      upcomingShifts
-        .filter((shift) => shift.status === 'scheduled')
-        .sort((a, b) => {
-          if (a.date !== b.date) return a.date.localeCompare(b.date);
-          return a.startTime.localeCompare(b.startTime);
-        })[0] ?? null
-    );
-  }, [upcomingShifts]);
-
-  const shiftsByDate = useMemo(() => {
-    const map: Record<string, Shift> = {};
-    weekShifts.forEach((shift) => {
-      map[shift.date] = shift;
-    });
-    return map;
-  }, [weekShifts]);
-
+  const dataLoading = shiftsLoading || recordsLoading;
   const loading = authLoading || employeeLoading || dataLoading;
+  const dataError = shiftsError || recordsError;
 
   return (
-    <div className="space-y-6 bg-[#121212] p-6 min-h-full">
-      <h1 className="text-base font-bold tracking-wide text-white uppercase">
+    <div className="min-h-full space-y-5 bg-[#121212] p-4 md:space-y-6 md:p-6">
+      <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
         Mi resumen general
       </h1>
 
@@ -175,15 +47,21 @@ export default function EmployeeDashboardPage() {
         </p>
       )}
 
+      {dataError && employee && !dataLoading && (
+        <p className="rounded-xl border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
+          {dataError}
+        </p>
+      )}
+
       {employee && (
         <>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
             <WeeklyHoursCard />
             <MonthlyHoursCard />
             <NextShiftCard
               employee={employee}
-              nextShift={nextShift}
-              loading={dataLoading}
+              nextShift={nextScheduledShift}
+              loading={shiftsLoading}
             />
           </div>
 
@@ -192,7 +70,7 @@ export default function EmployeeDashboardPage() {
           <WeeklyScheduleStrip
             weekDays={week.days}
             shiftsByDate={shiftsByDate}
-            loading={dataLoading}
+            loading={shiftsLoading}
           />
         </>
       )}

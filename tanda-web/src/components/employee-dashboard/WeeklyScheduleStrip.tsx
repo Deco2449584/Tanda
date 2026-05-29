@@ -1,4 +1,5 @@
 import { formatShiftBlockLabel } from '@/lib/employee-dashboard/format';
+import { normalizeInputDate } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
@@ -14,7 +15,7 @@ export function WeeklyScheduleStrip({
   loading,
 }: WeeklyScheduleStripProps) {
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
+    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 backdrop-blur-sm md:p-5">
       <h2 className="text-sm font-semibold text-white">
         Mi horario semanal actual
       </h2>
@@ -22,18 +23,18 @@ export function WeeklyScheduleStrip({
       {loading ? (
         <p className="mt-4 text-sm text-zinc-500">Cargando horario...</p>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
+        <div className="mt-4 flex flex-col gap-3">
           {weekDays.map((day) => {
-            const shift = shiftsByDate[day.date];
+            const shift = shiftsByDate[normalizeInputDate(day.date)];
 
             if (!shift) {
               return (
                 <div
                   key={day.date}
-                  className="flex min-h-[100px] flex-col rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 p-3"
+                  className="flex min-h-[72px] items-center justify-between rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-3"
                 >
-                  <p className="text-xs font-semibold text-zinc-500">{day.label}</p>
-                  <p className="mt-auto text-center text-[11px] font-medium uppercase tracking-wide text-zinc-600">
+                  <p className="text-sm font-semibold text-zinc-400">{day.label}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-600">
                     Día libre
                   </p>
                 </div>
@@ -46,7 +47,7 @@ export function WeeklyScheduleStrip({
             return (
               <div
                 key={day.date}
-                className={`flex min-h-[100px] flex-col rounded-xl border p-3 ${
+                className={`rounded-xl border px-4 py-3 ${
                   isCompleted
                     ? 'border-emerald-500/40 bg-emerald-600/25'
                     : isScheduled
@@ -54,8 +55,8 @@ export function WeeklyScheduleStrip({
                       : 'border-orange-500/40 bg-orange-600/20'
                 }`}
               >
-                <p className="text-xs font-semibold text-zinc-300">{day.label}</p>
-                <p className="mt-2 text-[11px] leading-relaxed text-zinc-100">
+                <p className="text-sm font-semibold text-zinc-200">{day.label}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-zinc-100">
                   {formatShiftBlockLabel(
                     shift.date,
                     shift.startTime,

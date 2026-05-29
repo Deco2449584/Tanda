@@ -8,9 +8,13 @@ export function mapEmployeeDoc(
 
   return {
     id,
-    employeeId: typeof employee.employeeId === 'string' ? employee.employeeId : '',
+    employeeId:
+      typeof employee.employeeId === 'string' ? employee.employeeId.trim() : '',
     name: employee.name ?? 'Sin nombre',
-    email: employee.email ?? '',
+    email:
+      typeof employee.email === 'string'
+        ? employee.email.trim().toLowerCase()
+        : '',
     department: employee.department ?? '',
     hourlyRate: typeof employee.hourlyRate === 'number' ? employee.hourlyRate : 0,
     active: employee.active ?? false,

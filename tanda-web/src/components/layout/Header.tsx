@@ -6,6 +6,7 @@ import {
   Bell,
   ChevronDown,
   LogOut,
+  Menu,
   MessageSquare,
   Search,
   UserCircle,
@@ -15,7 +16,11 @@ import { auth } from '@/lib/firebase';
 
 const DEFAULT_PROFILE_NAME = 'Admin Daniel G.';
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -51,25 +56,36 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-zinc-800/80 bg-[#0a0a0a]/80 px-6 backdrop-blur-sm">
-      <div className="relative w-full max-w-md">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-          aria-hidden
-        />
-        <input
-          type="search"
-          placeholder="Buscar"
-          readOnly
-          className="w-full cursor-default rounded-lg border border-zinc-800/60 bg-zinc-900/50 py-2 pl-10 pr-4 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none"
-          aria-label="Buscar"
-        />
-      </div>
-
-      <div className="flex shrink-0 items-center gap-4">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-800/80 bg-[#0a0a0a]/80 px-4 backdrop-blur-sm md:h-16 md:gap-4 md:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
-          className="relative rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100"
+          onClick={onMenuClick}
+          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        <div className="relative hidden w-full max-w-md md:block">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            aria-hidden
+          />
+          <input
+            type="search"
+            placeholder="Buscar"
+            readOnly
+            className="w-full cursor-default rounded-lg border border-zinc-800/60 bg-zinc-900/50 py-2 pl-10 pr-4 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none"
+            aria-label="Buscar"
+          />
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2 md:gap-4">
+        <button
+          type="button"
+          className="hidden rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 sm:inline-flex"
           aria-label="Mensajes"
         >
           <MessageSquare className="h-5 w-5" />
@@ -88,7 +104,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="flex items-center gap-2 rounded-lg py-1.5 pl-2 pr-1 text-zinc-100 transition-colors hover:bg-zinc-800/60"
+            className="flex items-center gap-2 rounded-lg py-1.5 pl-1 pr-1 text-zinc-100 transition-colors hover:bg-zinc-800/60 md:pl-2"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
           >
@@ -97,7 +113,7 @@ export function Header() {
               {profileName}
             </span>
             <ChevronDown
-              className={`h-4 w-4 text-zinc-500 transition-transform ${menuOpen ? 'rotate-180' : ''}`}
+              className={`hidden h-4 w-4 text-zinc-500 transition-transform sm:block ${menuOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
