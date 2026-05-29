@@ -1,0 +1,130 @@
+'use client';
+
+import { useMemo } from 'react';
+import { Plus } from 'lucide-react';
+import { ShiftCard } from '@/components/schedule/ShiftCard';
+import type { WeekDay } from '@/lib/schedule/week';
+import type { Employee } from '@/lib/types/employee';
+import type { Shift } from '@/lib/types/shift';
+
+interface ScheduleGridProps {
+  employees: Employee[];
+  shifts: Shift[];
+  weekDays: WeekDay[];
+  loading: boolean;
+  onCellClick: (employee: Employee, date: string) => void;
+}
+
+function shiftKey(employeeId: string, date: string) {
+  return `${employeeId}__${date}`;
+}
+
+export function ScheduleGrid({
+  employees,
+  shifts,
+  weekDays,
+  loading,
+  onCellClick,
+}: ScheduleGridProps) {
+  const shiftsByCell = useMemo(() => {
+    const map = new Map<string, Shift[]>();
+
+    shifts.forEach((shift) => {
+      const key = shiftKey(shift.employeeId, shift.date);
+      const existing = map.get(key) ?? [];
+      existing.push(shift);
+      map.set(key, existing);
+    });
+
+    return map;
+  }, [shifts]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60">
+        <p className="text-sm text-zinc-400">Cargando agenda...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
+      <div className="overflow-x-auto">
+        <div className="min-w-[900px]">
+          <div className="grid grid-cols-8 border-b border-zinc-800 bg-emerald-950/30">
+            <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-emerald-100/80">
+              Empleado
+            </div>
+            {weekDays.map((day) => (
+              <div
+                key={day.date}
+                className="border-l border-zinc-800/80 px-2 py-3 text-center"
+              >
+                <p className="text-xs font-semibold text-zinc-200">{day.label}</p>
+                <p className="text-[10px] text-zinc-500">{day.date.slice(5)}</p>
+              </div>
+            ))}
+          </div>
+
+          {employees.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm text-zinc-500">
+              No hay empleados para mostrar en esta semana.
+            </div>
+          ) : (
+            employees.map((employee) => (
+              <div
+                key={employee.id}
+                className="grid grid-cols-8 border-b border-zinc-800/60"
+              >
+                <div className="border-r border-zinc-800/60 bg-zinc-950/30 px-3 py-3">
+                  <p className="text-sm font-semibold text-white">{employee.name}</p>
+                  <p className="mt-0.5 text-[11px] text-zinc-500">
+                    ({employee.employeeId} {employee.department})
+                  </p>
+                </div>
+
+                {weekDays.map((day) => {
+                  const cellShifts =
+                    shiftsByCell.get(shiftKey(employee.employeeId, day.date)) ?? [];
+                  const hasShift = cellShifts.length > 0;
+
+                  return (
+                    <button
+                      key={`${employee.id}-${day.date}`}
+                      type="button"
+                      onClick={() => {
+                        if (!hasShift) onCellClick(employee, day.date);
+                      }}
+                      className={`min-h-[88px] border-l border-zinc-800/60 p-1.5 text-left transition-colors ${
+                        hasShift
+                          ? 'cursor-default bg-zinc-950/20'
+                          : 'cursor-pointer hover:bg-emerald-950/20'
+                      }`}
+                    >
+                      {hasShift ? (
+                        <div className="space-y-1">
+                          {cellShifts.map((shift) => (
+                            <ShiftCard
+                              key={shift.id}
+                              shift={shift}
+                              employeeName={employee.name}
+                              employeePhotoUrl={employee.photoUrl}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-zinc-800/80 text-zinc-600 hover:border-emerald-700/50 hover:text-emerald-500/70">
+                          <Plus className="h-4 w-4" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
