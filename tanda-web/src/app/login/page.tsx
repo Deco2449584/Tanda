@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ArrowRight, Globe, Lock, Mail } from 'lucide-react';
+import { getHomeRouteForRole, getRoleFromEmail } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 
 function getAuthErrorMessage(code: string): string {
@@ -34,8 +35,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      router.push('/dashboard');
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password,
+      );
+      const role = getRoleFromEmail(credential.user.email);
+      router.push(getHomeRouteForRole(role));
     } catch (err) {
       const code =
         err && typeof err === 'object' && 'code' in err
