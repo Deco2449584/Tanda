@@ -69,7 +69,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         <div className="flex items-center justify-between gap-2 border-b border-zinc-800/60 px-5 py-6">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <Image
-              src="/logo.png"
+              src="/logo.svg"
               alt="Continental Cargo"
               width={180}
               height={56}

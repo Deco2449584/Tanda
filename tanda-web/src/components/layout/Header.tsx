@@ -68,7 +68,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <Image
-          src="/logo.png"
+          src="/logo.svg"
           alt="Continental Cargo"
           width={180}
           height={56}
