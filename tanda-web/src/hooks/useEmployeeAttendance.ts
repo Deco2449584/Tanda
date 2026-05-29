@@ -10,12 +10,10 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 interface UseEmployeeAttendanceOptions {
   /** Código corto del empleado (ej. '0002'), NO el doc.id de Firestore. */
   employeeCode: string;
-  limit?: number;
 }
 
 export function useEmployeeAttendance({
   employeeCode,
-  limit = 4,
 }: UseEmployeeAttendanceOptions) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,8 +46,7 @@ export function useEmployeeAttendance({
             const aTime = a.timestampServer?.toMillis() ?? 0;
             const bTime = b.timestampServer?.toMillis() ?? 0;
             return bTime - aTime;
-          })
-          .slice(0, limit);
+          });
         setRecords(mapped);
         setLoading(false);
         setError('');
@@ -63,7 +60,7 @@ export function useEmployeeAttendance({
     );
 
     return () => unsubscribe();
-  }, [code, limit]);
+  }, [code]);
 
   return useMemo(
     () => ({ records, loading, error }),

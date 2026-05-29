@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
@@ -9,6 +10,10 @@ import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
+import {
+  calculateWorkedHoursInRange,
+  getMonthDateRange,
+} from '@/lib/attendance/work-sessions';
 
 export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
@@ -26,10 +31,30 @@ export default function EmployeeDashboardPage() {
   } = useEmployeeShifts({ employeeCode });
 
   const {
-    records: recentRecords,
+    records: attendanceRecords,
     loading: recordsLoading,
     error: recordsError,
-  } = useEmployeeAttendance({ employeeCode, limit: 4 });
+  } = useEmployeeAttendance({ employeeCode });
+
+  const recentRecords = useMemo(
+    () => attendanceRecords.slice(0, 4),
+    [attendanceRecords],
+  );
+
+  const weeklyHours = useMemo(
+    () =>
+      calculateWorkedHoursInRange(
+        attendanceRecords,
+        week.start,
+        week.end,
+      ),
+    [attendanceRecords, week.end, week.start],
+  );
+
+  const monthlyHours = useMemo(() => {
+    const { start, end } = getMonthDateRange();
+    return calculateWorkedHoursInRange(attendanceRecords, start, end);
+  }, [attendanceRecords]);
 
   const dataLoading = shiftsLoading || recordsLoading;
   const loading = authLoading || employeeLoading || dataLoading;
@@ -56,8 +81,14 @@ export default function EmployeeDashboardPage() {
       {employee && (
         <>
           <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
-            <WeeklyHoursCard />
-            <MonthlyHoursCard />
+            <WeeklyHoursCard
+              hours={weeklyHours}
+              loading={recordsLoading}
+            />
+            <MonthlyHoursCard
+              hours={monthlyHours}
+              loading={recordsLoading}
+            />
             <NextShiftCard
               employee={employee}
               nextShift={nextScheduledShift}

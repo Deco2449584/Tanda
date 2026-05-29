@@ -1,11 +1,20 @@
-const MONTHLY_HOURS = 165.2;
-const MONTHLY_GOAL = 200;
+interface MonthlyHoursCardProps {
+  hours: number;
+  goal?: number;
+  loading?: boolean;
+}
+
 const RADIUS = 42;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const PROGRESS = Math.min(MONTHLY_HOURS / MONTHLY_GOAL, 1);
 
-export function MonthlyHoursCard() {
-  const strokeDashoffset = CIRCUMFERENCE * (1 - PROGRESS);
+export function MonthlyHoursCard({
+  hours,
+  goal = 200,
+  loading = false,
+}: MonthlyHoursCardProps) {
+  const roundedHours = Math.round(hours * 10) / 10;
+  const progress = goal > 0 ? Math.min(roundedHours / goal, 1) : 0;
+  const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
   return (
     <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
@@ -15,8 +24,14 @@ export function MonthlyHoursCard() {
 
       <div className="mt-3 flex items-center justify-between gap-4">
         <div>
-          <p className="text-3xl font-bold text-white">{MONTHLY_HOURS} hrs</p>
-          <p className="mt-2 text-xs text-zinc-500">Progreso anual</p>
+          <p className="text-3xl font-bold text-white">
+            {loading ? (
+              <span className="inline-block animate-pulse text-zinc-500">...</span>
+            ) : (
+              `${roundedHours} hrs`
+            )}
+          </p>
+          <p className="mt-2 text-xs text-zinc-500">Mes en curso</p>
         </div>
 
         <div className="relative h-24 w-24 shrink-0">
@@ -38,11 +53,11 @@ export function MonthlyHoursCard() {
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={strokeDashoffset}
+              strokeDashoffset={loading ? CIRCUMFERENCE : strokeDashoffset}
             />
           </svg>
           <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-emerald-400">
-            {Math.round(PROGRESS * 100)}%
+            {loading ? '—' : `${Math.round(progress * 100)}%`}
           </span>
         </div>
       </div>

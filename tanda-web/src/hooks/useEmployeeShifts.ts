@@ -11,6 +11,7 @@ import {
   toInputDate,
 } from '@/lib/dates/input-date';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
+import { isShiftStrictlyUpcoming } from '@/lib/schedule/shift-future';
 import { buildWeekRange } from '@/lib/schedule/week';
 import { db } from '@/lib/firebase';
 import type { Shift } from '@/lib/types/shift';
@@ -106,12 +107,18 @@ export function useEmployeeShifts({
 
   const nextScheduledShift = useMemo(() => {
     return (
-      upcomingShifts.find((shift) => shift.status === 'scheduled') ?? null
+      upcomingShifts.find(
+        (shift) =>
+          shift.status === 'scheduled' && isShiftStrictlyUpcoming(shift),
+      ) ?? null
     );
   }, [upcomingShifts]);
 
   const futureShifts = useMemo(() => {
-    return upcomingShifts.filter((shift) => isOnOrAfterToday(shift.date));
+    return upcomingShifts.filter(
+      (shift) =>
+        shift.status === 'scheduled' && isShiftStrictlyUpcoming(shift),
+    );
   }, [upcomingShifts]);
 
   const shiftsByDate = useMemo(() => {

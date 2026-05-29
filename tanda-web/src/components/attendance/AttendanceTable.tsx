@@ -5,6 +5,8 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
+import { ForgottenCheckoutBadge } from '@/components/attendance/ForgottenCheckoutBadge';
+import { isForgottenCheckIn } from '@/lib/attendance/work-sessions';
 import {
   formatAttendanceType,
   formatRecordDate,
@@ -148,7 +150,11 @@ export function AttendanceTable({
                       <RecordTypeBadge type={record.type} />
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
-                      {formatRecordTime(record.timestampServer)}
+                      {isForgottenCheckIn(record, records) ? (
+                        <ForgottenCheckoutBadge />
+                      ) : (
+                        formatRecordTime(record.timestampServer)
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2">

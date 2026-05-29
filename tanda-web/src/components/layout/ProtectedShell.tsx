@@ -21,12 +21,33 @@ function LoadingScreen({ message }: { message: string }) {
 }
 
 export function ProtectedShell({ children }: ProtectedShellProps) {
-  const { loading, role } = useAuthRole();
+  const { user, role, loading } = useAuthRole();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
 
   if (loading) {
     return <LoadingScreen message="Cargando sesión..." />;
   }
 
+  if (!user || !role) {
+    return <LoadingScreen message="Cerrando sesión..." />;
+  }
+
+  return <AuthenticatedShell role={role}>{children}</AuthenticatedShell>;
+}
+
+function AuthenticatedShell({
+  children,
+  role,
+}: {
+  children: React.ReactNode;
+  role: UserRole;
+}) {
   return (
     <RouteGuard role={role}>
       <ProtectedLayoutContent role={role}>{children}</ProtectedLayoutContent>

@@ -1,4 +1,4 @@
-import { AlertCircle, Check, Clock } from 'lucide-react';
+import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
@@ -7,6 +7,7 @@ interface ShiftCardProps {
   shift: Shift;
   employeeName: string;
   employeePhotoUrl?: string;
+  onDelete?: (shift: Shift) => void;
 }
 
 const statusStyles = {
@@ -33,7 +34,12 @@ const statusStyles = {
   },
 } as const;
 
-export function ShiftCard({ shift, employeeName, employeePhotoUrl }: ShiftCardProps) {
+export function ShiftCard({
+  shift,
+  employeeName,
+  employeePhotoUrl,
+  onDelete,
+}: ShiftCardProps) {
   const styles = statusStyles[shift.status];
   const Icon = styles.icon;
   const timeRange = `${formatTimeLabel(shift.startTime)} - ${formatTimeLabel(shift.endTime)}`;
@@ -62,7 +68,23 @@ export function ShiftCard({ shift, employeeName, employeePhotoUrl }: ShiftCardPr
             </p>
           )}
         </div>
-        <Icon className={`h-3.5 w-3.5 shrink-0 ${styles.iconClass}`} />
+
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(shift);
+              }}
+              className="rounded p-1 text-zinc-400 transition-colors hover:bg-black/20 hover:text-red-400"
+              aria-label={`Eliminar turno de ${employeeName}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <Icon className={`h-3.5 w-3.5 ${styles.iconClass}`} />
+        </div>
       </div>
 
       {shift.status === 'completed' && (

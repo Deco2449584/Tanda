@@ -1,3 +1,4 @@
+import { AuthProvider } from '@/providers/AuthProvider';
 import { ProtectedShell } from '@/components/layout/ProtectedShell';
 
 export default function ProtectedLayout({
@@ -5,5 +6,9 @@ export default function ProtectedLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <ProtectedShell>{children}</ProtectedShell>;
+  return (
+    <AuthProvider>
+      <ProtectedShell>{children}</ProtectedShell>
+    </AuthProvider>
+  );
 }
