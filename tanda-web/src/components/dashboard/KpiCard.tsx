@@ -1,4 +1,4 @@
-import type { KpiMetric } from './mock-data';
+import type { KpiMetric } from '@/lib/dashboard/types';
 
 const accentStyles = {
   emerald: {

@@ -5,8 +5,9 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { ShiftLoadChart } from '@/components/dashboard/ShiftLoadChart';
 import { WeeklyHoursChart } from '@/components/dashboard/WeeklyHoursChart';
-import type { KpiMetric } from '@/components/dashboard/mock-data';
-import { kpiMetrics as staticKpiMetrics } from '@/components/dashboard/mock-data';
+import { baseKpiMetrics } from '@/lib/dashboard/kpi-definitions';
+import type { KpiMetric } from '@/lib/dashboard/types';
+import { useAdminDashboardData } from '@/hooks/useAdminDashboardData';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   computeActiveStaffKpi,
@@ -16,15 +17,21 @@ import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
 
-const FIRESTORE_KPI_IDS = ['active-staff', 'payroll-cost'] as const;
-
 export default function DashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [kpisLoading, setKpisLoading] = useState(true);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+
+  const {
+    pendingPermits,
+    lateAlerts,
+    shiftLoadData,
+    weeklyHoursData,
+    loading: dashboardLoading,
+  } = useAdminDashboardData();
 
   useEffect(() => {
     if (!db) {
-      setKpisLoading(false);
+      setEmployeesLoading(false);
       return;
     }
 
@@ -35,10 +42,10 @@ export default function DashboardPage() {
           mapEmployeeDoc(document.id, document.data()),
         );
         setEmployees(mapped);
-        setKpisLoading(false);
+        setEmployeesLoading(false);
       },
       () => {
-        setKpisLoading(false);
+        setEmployeesLoading(false);
       },
     );
 
@@ -49,7 +56,7 @@ export default function DashboardPage() {
     const activeStaff = computeActiveStaffKpi(employees);
     const payroll = computePayrollKpi(employees);
 
-    return staticKpiMetrics.map((metric) => {
+    return baseKpiMetrics.map((metric) => {
       if (metric.id === 'active-staff') {
         return {
           ...metric,
@@ -65,9 +72,39 @@ export default function DashboardPage() {
         };
       }
 
+      if (metric.id === 'late-alerts') {
+        return {
+          ...metric,
+          value: String(lateAlerts),
+        };
+      }
+
+      if (metric.id === 'pending-permits') {
+        return {
+          ...metric,
+          value: String(pendingPermits),
+        };
+      }
+
       return metric;
     });
-  }, [employees]);
+  }, [employees, lateAlerts, pendingPermits]);
+
+  const loadingIds = useMemo(() => {
+    const ids: string[] = [];
+    if (employeesLoading) {
+      ids.push('active-staff', 'payroll-cost');
+    }
+    if (dashboardLoading.leaveRequests) {
+      ids.push('pending-permits');
+    }
+    if (dashboardLoading.shifts || dashboardLoading.attendance) {
+      ids.push('late-alerts');
+    }
+    return ids;
+  }, [dashboardLoading, employeesLoading]);
+
+  const chartsLoading = dashboardLoading.shifts;
 
   return (
     <div className="space-y-6 p-6">
@@ -75,14 +112,11 @@ export default function DashboardPage() {
         Panel de control general
       </h1>
 
-      <KpiGrid
-        metrics={metrics}
-        loadingIds={kpisLoading ? [...FIRESTORE_KPI_IDS] : []}
-      />
+      <KpiGrid metrics={metrics} loadingIds={loadingIds} />
 
-      <WeeklyHoursChart />
+      <WeeklyHoursChart data={weeklyHoursData} loading={chartsLoading} />
 
-      <ShiftLoadChart />
+      <ShiftLoadChart data={shiftLoadData} loading={chartsLoading} />
     </div>
   );
 }

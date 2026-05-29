@@ -1,5 +1,5 @@
 import { KpiCard } from './KpiCard';
-import type { KpiMetric } from './mock-data';
+import type { KpiMetric } from '@/lib/dashboard/types';
 
 interface KpiGridProps {
   metrics: KpiMetric[];
