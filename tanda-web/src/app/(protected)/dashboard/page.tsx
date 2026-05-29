@@ -11,7 +11,7 @@ import { useAdminDashboardData } from '@/hooks/useAdminDashboardData';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   computeActiveStaffKpi,
-  computePayrollKpi,
+  computeScheduledPayrollKpi,
 } from '@/lib/employees/dashboard-kpis';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
@@ -26,6 +26,7 @@ export default function DashboardPage() {
     lateAlerts,
     shiftLoadData,
     weeklyHoursData,
+    todayShifts,
     loading: dashboardLoading,
   } = useAdminDashboardData();
 
@@ -54,7 +55,7 @@ export default function DashboardPage() {
 
   const metrics: KpiMetric[] = useMemo(() => {
     const activeStaff = computeActiveStaffKpi(employees);
-    const payroll = computePayrollKpi(employees);
+    const payroll = computeScheduledPayrollKpi(employees, todayShifts);
 
     return baseKpiMetrics.map((metric) => {
       if (metric.id === 'active-staff') {
@@ -88,11 +89,11 @@ export default function DashboardPage() {
 
       return metric;
     });
-  }, [employees, lateAlerts, pendingPermits]);
+  }, [employees, lateAlerts, pendingPermits, todayShifts]);
 
   const loadingIds = useMemo(() => {
     const ids: string[] = [];
-    if (employeesLoading) {
+    if (employeesLoading || dashboardLoading.shifts) {
       ids.push('active-staff', 'payroll-cost');
     }
     if (dashboardLoading.leaveRequests) {

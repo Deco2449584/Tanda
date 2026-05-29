@@ -10,12 +10,15 @@ import {
 } from 'firebase/firestore';
 import { AssignShiftModal } from '@/components/schedule/AssignShiftModal';
 import { AvailableEmployeesPanel } from '@/components/schedule/AvailableEmployeesPanel';
+import { MonthRangePicker } from '@/components/schedule/MonthRangePicker';
 import { ScheduleGrid } from '@/components/schedule/ScheduleGrid';
+import { ScheduleMonthCalendar } from '@/components/schedule/ScheduleMonthCalendar';
 import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
 import { COLLECTIONS } from '@/lib/constants';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
+import { buildMonthCalendar } from '@/lib/schedule/month';
 import { buildWeekRange } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
 import type { AssignShiftInput, Shift } from '@/lib/types/shift';
@@ -24,6 +27,7 @@ type ViewMode = 'weekly' | 'monthly';
 
 export default function SchedulePage() {
   const [weekReference, setWeekReference] = useState(() => new Date());
+  const [monthReference, setMonthReference] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -33,6 +37,10 @@ export default function SchedulePage() {
   const [assignData, setAssignData] = useState<AssignShiftInput | null>(null);
 
   const week = useMemo(() => buildWeekRange(weekReference), [weekReference]);
+  const month = useMemo(() => buildMonthCalendar(monthReference), [monthReference]);
+
+  const rangeStart = viewMode === 'weekly' ? week.start : month.start;
+  const rangeEnd = viewMode === 'weekly' ? week.end : month.end;
 
   useEffect(() => {
     if (!db) {
@@ -69,8 +77,8 @@ export default function SchedulePage() {
 
     const shiftsQuery = query(
       collection(db, COLLECTIONS.SHIFTS),
-      where('date', '>=', week.start),
-      where('date', '<=', week.end),
+      where('date', '>=', rangeStart),
+      where('date', '<=', rangeEnd),
       orderBy('date', 'asc'),
     );
 
@@ -94,7 +102,7 @@ export default function SchedulePage() {
       unsubscribeEmployees();
       unsubscribeShifts();
     };
-  }, [week.start, week.end]);
+  }, [rangeEnd, rangeStart]);
 
   const departments = useMemo(() => {
     const unique = new Set(
@@ -119,6 +127,16 @@ export default function SchedulePage() {
     return base;
   }, [activeEmployees, departmentFilter]);
 
+  const filteredShifts = useMemo(() => {
+    if (departmentFilter === 'all') return shifts;
+
+    const allowedIds = new Set(
+      filteredEmployees.map((employee) => employee.employeeId),
+    );
+
+    return shifts.filter((shift) => allowedIds.has(shift.employeeId));
+  }, [departmentFilter, filteredEmployees, shifts]);
+
   function handleCellClick(employee: Employee, date: string) {
     setAssignData({
       employeeId: employee.employeeId,
@@ -138,10 +156,18 @@ export default function SchedulePage() {
       </h1>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <WeekRangePicker
-          referenceDate={weekReference}
-          onChange={setWeekReference}
-        />
+        {viewMode === 'weekly' ? (
+          <WeekRangePicker
+            referenceDate={weekReference}
+            onChange={setWeekReference}
+          />
+        ) : (
+          <MonthRangePicker
+            referenceDate={monthReference}
+            label={month.label}
+            onChange={setMonthReference}
+          />
+        )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/60 p-1">
@@ -184,22 +210,31 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {viewMode === 'monthly' && (
-        <p className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-2 text-xs text-zinc-500">
-          Vista mensual en desarrollo. Mostrando agenda semanal por ahora.
-        </p>
-      )}
+      <div
+        className={`grid min-h-0 flex-1 grid-cols-1 gap-4 ${
+          viewMode === 'weekly' ? 'xl:grid-cols-[minmax(0,1fr)_240px]' : ''
+        }`}
+      >
+        {viewMode === 'weekly' ? (
+          <ScheduleGrid
+            employees={filteredEmployees}
+            shifts={filteredShifts}
+            weekDays={week.days}
+            loading={loading}
+            onCellClick={handleCellClick}
+          />
+        ) : (
+          <ScheduleMonthCalendar
+            days={month.days}
+            shifts={filteredShifts}
+            loading={loading}
+            monthLabel={month.label}
+          />
+        )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
-        <ScheduleGrid
-          employees={filteredEmployees}
-          shifts={shifts}
-          weekDays={week.days}
-          loading={loading}
-          onCellClick={handleCellClick}
-        />
-
-        <AvailableEmployeesPanel employees={activeEmployees} />
+        {viewMode === 'weekly' && (
+          <AvailableEmployeesPanel employees={activeEmployees} />
+        )}
       </div>
 
       <AssignShiftModal

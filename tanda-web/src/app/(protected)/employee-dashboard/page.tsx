@@ -1,14 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
 import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
 import { WeeklyScheduleStrip } from '@/components/employee-dashboard/WeeklyScheduleStrip';
+import {
+  useEmployeeAttendance,
+  type EmployeeRecordsRange,
+} from '@/hooks/useEmployeeAttendance';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
-import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
 import {
   calculateWorkedHoursInRange,
@@ -19,6 +22,8 @@ export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
+  const [recordsRange, setRecordsRange] =
+    useState<EmployeeRecordsRange>('7days');
 
   const employeeCode = employee?.employeeId ?? '';
 
@@ -31,15 +36,11 @@ export default function EmployeeDashboardPage() {
   } = useEmployeeShifts({ employeeCode });
 
   const {
-    records: attendanceRecords,
+    records: displayRecords,
+    allRecords: attendanceRecords,
     loading: recordsLoading,
     error: recordsError,
-  } = useEmployeeAttendance({ employeeCode });
-
-  const recentRecords = useMemo(
-    () => attendanceRecords.slice(0, 4),
-    [attendanceRecords],
-  );
+  } = useEmployeeAttendance({ employeeCode, displayRange: recordsRange });
 
   const weeklyHours = useMemo(
     () =>
@@ -81,14 +82,8 @@ export default function EmployeeDashboardPage() {
       {employee && (
         <>
           <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
-            <WeeklyHoursCard
-              hours={weeklyHours}
-              loading={recordsLoading}
-            />
-            <MonthlyHoursCard
-              hours={monthlyHours}
-              loading={recordsLoading}
-            />
+            <WeeklyHoursCard hours={weeklyHours} loading={recordsLoading} />
+            <MonthlyHoursCard hours={monthlyHours} loading={recordsLoading} />
             <NextShiftCard
               employee={employee}
               nextShift={nextScheduledShift}
@@ -96,7 +91,12 @@ export default function EmployeeDashboardPage() {
             />
           </div>
 
-          <RecentRecordsTable records={recentRecords} loading={loading} />
+          <RecentRecordsTable
+            records={displayRecords}
+            loading={recordsLoading}
+            range={recordsRange}
+            onRangeChange={setRecordsRange}
+          />
 
           <WeeklyScheduleStrip
             weekDays={week.days}

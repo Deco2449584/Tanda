@@ -1,21 +1,18 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import {
-  ArrowRight,
   CalendarDays,
   Clock,
-  Globe,
   LayoutDashboard,
-  LogOut,
   Settings,
   ShieldCheck,
   Users,
   X,
 } from 'lucide-react';
-import { useSignOut } from '@/hooks/useSignOut';
 import type { UserRole } from '@/lib/auth/roles';
 
 interface NavItem {
@@ -52,7 +49,6 @@ interface SidebarProps {
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const navItems = role === 'admin' ? adminNavItems : employeeNavItems;
-  const { signOutUser, signingOut } = useSignOut();
 
   return (
     <>
@@ -71,15 +67,16 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         }`}
       >
         <div className="flex items-center justify-between gap-2 border-b border-zinc-800/60 px-5 py-6">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-9 w-9 items-center justify-center">
-              <Globe className="h-8 w-8 text-emerald-500" strokeWidth={1.5} />
-              <ArrowRight
-                className="absolute -right-0.5 bottom-0 h-3.5 w-3.5 text-emerald-500"
-                strokeWidth={2.5}
-              />
-            </div>
-            <span className="text-base font-bold tracking-tight text-white">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Image
+              src="/logo.png"
+              alt="Continental Cargo"
+              width={120}
+              height={32}
+              className="h-8 w-auto shrink-0"
+              priority
+            />
+            <span className="hidden text-base font-bold tracking-tight text-white sm:inline">
               Continental Cargo
             </span>
           </div>
@@ -118,18 +115,6 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
             );
           })}
         </nav>
-
-        <div className="border-t border-zinc-800/80 p-3">
-          <button
-            type="button"
-            onClick={signOutUser}
-            disabled={signingOut}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-            {signingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
-          </button>
-        </div>
       </aside>
     </>
   );

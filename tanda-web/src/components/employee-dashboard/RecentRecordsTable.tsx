@@ -1,11 +1,14 @@
 'use client';
 
 import { formatAttendanceType, formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
+import type { EmployeeRecordsRange } from '@/hooks/useEmployeeAttendance';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
 interface RecentRecordsTableProps {
   records: AttendanceRecord[];
   loading: boolean;
+  range: EmployeeRecordsRange;
+  onRangeChange: (range: EmployeeRecordsRange) => void;
 }
 
 function RecordPhoto({ photoUrl }: { photoUrl: string }) {
@@ -23,11 +26,41 @@ function RecordPhoto({ photoUrl }: { photoUrl: string }) {
   );
 }
 
-export function RecentRecordsTable({ records, loading }: RecentRecordsTableProps) {
+export function RecentRecordsTable({
+  records,
+  loading,
+  range,
+  onRangeChange,
+}: RecentRecordsTableProps) {
   return (
     <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
-      <div className="border-b border-zinc-800 px-4 py-3 md:px-5 md:py-4">
+      <div className="flex flex-col gap-3 border-b border-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5 md:py-4">
         <h2 className="text-sm font-semibold text-white">Mis últimos registros</h2>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onRangeChange('7days')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              range === '7days'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Últimos 7 días
+          </button>
+          <button
+            type="button"
+            onClick={() => onRangeChange('month')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              range === 'month'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Último mes
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -36,7 +69,7 @@ export function RecentRecordsTable({ records, loading }: RecentRecordsTableProps
         </div>
       ) : records.length === 0 ? (
         <div className="px-4 py-10 text-center text-sm text-zinc-500 md:px-5">
-          No hay registros recientes.
+          No hay registros en el período seleccionado.
         </div>
       ) : (
         <>

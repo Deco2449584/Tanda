@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
@@ -8,7 +9,6 @@ import {
   LogOut,
   Menu,
   MessageSquare,
-  Search,
   UserCircle,
 } from 'lucide-react';
 import { useSignOut } from '@/hooks/useSignOut';
@@ -67,19 +67,14 @@ export function Header({ onMenuClick }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="relative hidden w-full max-w-md md:block">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-            aria-hidden
-          />
-          <input
-            type="search"
-            placeholder="Buscar"
-            readOnly
-            className="w-full cursor-default rounded-lg border border-zinc-800/60 bg-zinc-900/50 py-2 pl-10 pr-4 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none"
-            aria-label="Buscar"
-          />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Continental Cargo"
+          width={120}
+          height={32}
+          className="h-8 w-auto md:hidden"
+          priority
+        />
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-4">

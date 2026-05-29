@@ -1,19 +1,44 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import {
+  Timestamp,
+  collection,
+  onSnapshot,
+  query,
+  where,
+} from 'firebase/firestore';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
+import { formatRecordDate } from '@/lib/attendance/format';
 import { COLLECTIONS } from '@/lib/constants';
+import { compareInputDates, toInputDate } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
+
+export type EmployeeRecordsRange = '7days' | 'month';
 
 interface UseEmployeeAttendanceOptions {
   /** Código corto del empleado (ej. '0002'), NO el doc.id de Firestore. */
   employeeCode: string;
+  displayRange?: EmployeeRecordsRange;
+}
+
+function getMonthStartTimestamp(): Timestamp {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  start.setHours(0, 0, 0, 0);
+  return Timestamp.fromDate(start);
+}
+
+function getSevenDaysStartDate(): string {
+  const start = new Date();
+  start.setDate(start.getDate() - 6);
+  return toInputDate(start);
 }
 
 export function useEmployeeAttendance({
   employeeCode,
+  displayRange = '7days',
 }: UseEmployeeAttendanceOptions) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +60,7 @@ export function useEmployeeAttendance({
     const recordsQuery = query(
       collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
       where('employeeId', '==', code),
+      where('timestampServer', '>=', getMonthStartTimestamp()),
     );
 
     const unsubscribe = onSnapshot(
@@ -62,8 +88,20 @@ export function useEmployeeAttendance({
     return () => unsubscribe();
   }, [code]);
 
+  const displayRecords = useMemo(() => {
+    if (displayRange === 'month') {
+      return records;
+    }
+
+    const sevenDaysStart = getSevenDaysStartDate();
+    return records.filter((record) => {
+      const recordDate = formatRecordDate(record.timestampServer);
+      return compareInputDates(recordDate, sevenDaysStart) >= 0;
+    });
+  }, [displayRange, records]);
+
   return useMemo(
-    () => ({ records, loading, error }),
-    [records, loading, error],
+    () => ({ records: displayRecords, allRecords: records, loading, error }),
+    [displayRecords, records, loading, error],
   );
 }

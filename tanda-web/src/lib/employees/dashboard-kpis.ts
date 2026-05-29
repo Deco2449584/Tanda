@@ -1,4 +1,6 @@
+import { shiftDurationHours } from '@/lib/dashboard/compute-metrics';
 import type { Employee } from '@/lib/types/employee';
+import type { Shift } from '@/lib/types/shift';
 
 export interface ActiveStaffKpi {
   checkedIn: number;
@@ -24,15 +26,22 @@ export function computeActiveStaffKpi(employees: Employee[]): ActiveStaffKpi {
   };
 }
 
-export function computePayrollKpi(employees: Employee[]): PayrollKpi {
-  const checkedIn = employees.filter(
-    (employee) => employee.lastAction === 'check_in',
+/** Costo estimado: turnos de hoy × tarifa × horas programadas del turno. */
+export function computeScheduledPayrollKpi(
+  employees: Employee[],
+  todayShifts: Shift[],
+): PayrollKpi {
+  const employeesByCode = new Map(
+    employees.map((employee) => [employee.employeeId, employee]),
   );
 
-  const total = checkedIn.reduce(
-    (sum, employee) => sum + employee.hourlyRate,
-    0,
-  ) * 8;
+  const total = todayShifts.reduce((sum, shift) => {
+    const employee = employeesByCode.get(shift.employeeId);
+    if (!employee) return sum;
+
+    const hours = shiftDurationHours(shift.startTime, shift.endTime);
+    return sum + employee.hourlyRate * hours;
+  }, 0);
 
   const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Plus } from 'lucide-react';
 import { ShiftCard } from '@/components/schedule/ShiftCard';
@@ -123,17 +123,27 @@ export function ScheduleGrid({
                       [];
                     const hasShift = cellShifts.length > 0;
 
+                    function handleCellKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+                      if (hasShift) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onCellClick(employee, day.date);
+                      }
+                    }
+
                     return (
-                      <button
+                      <div
                         key={`${employee.id}-${day.date}`}
-                        type="button"
+                        role={hasShift ? undefined : 'button'}
+                        tabIndex={hasShift ? undefined : 0}
                         onClick={() => {
                           if (!hasShift) onCellClick(employee, day.date);
                         }}
+                        onKeyDown={handleCellKeyDown}
                         className={`min-h-[88px] border-l border-zinc-800/60 p-1.5 text-left transition-colors ${
                           hasShift
                             ? 'cursor-default bg-zinc-950/20'
-                            : 'cursor-pointer hover:bg-emerald-950/20'
+                            : 'cursor-pointer hover:bg-emerald-950/20 focus:outline-none focus:ring-1 focus:ring-emerald-500/40'
                         }`}
                       >
                         {hasShift ? (
@@ -160,7 +170,7 @@ export function ScheduleGrid({
                             <Plus className="h-4 w-4" />
                           </div>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

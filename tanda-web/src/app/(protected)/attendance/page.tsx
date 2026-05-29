@@ -14,6 +14,7 @@ import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/atten
 import { DateRangePicker } from '@/components/attendance/DateRangePicker';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
+import { exportPayrollReportToCsv } from '@/lib/attendance/export-payroll-csv';
 import {
   getDefaultDateRange,
   toFirestoreRangeBounds,
@@ -153,6 +154,18 @@ export default function AttendancePage() {
           >
             <Download className="h-4 w-4" />
             EXPORTAR REPORTE (CSV)
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              exportPayrollReportToCsv(records, employees, dateRange)
+            }
+            disabled={loading || records.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/50 bg-emerald-950/40 px-4 py-2.5 text-sm font-semibold tracking-wide text-emerald-300 transition-colors hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            REPORTE NÓMINA (CSV)
           </button>
         </div>
       </div>
