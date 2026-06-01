@@ -2,89 +2,111 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function attendanceRecordKeys() {
-      return [
-        'employeeId',
-        'employeeNameSnapshot',
-        'employeeEmailSnapshot',
-        'type',
-        'timestampServer',
-        'source',
-        'photoCaptured',
-        'photoPath',
-        'photoUrl',
-      ];
-    }
 
-    function isValidAttendanceCreate() {
-      let data = request.resource.data;
-      return data.keys().hasOnly(attendanceRecordKeys()) &&
-        data.employeeId is string &&
-        data.employeeNameSnapshot is string &&
-        data.employeeEmailSnapshot is string &&
-        data.type in ['check_in', 'check_out'] &&
-        data.photoCaptured is bool &&
-        data.photoPath is string &&
-        data.photoUrl is string &&
-        (
-          (data.source == 'expo-app') ||
-          (data.source == 'web-admin-manual-checkout' && data.photoCaptured == false)
-        );
-    }
-
-    match /employees/{employeeId} {
+    // 1. Colección de Empleados (Web y Tablet)
+    match /employees/{docId} {
       allow read: if true;
 
       allow create: if
-        request.resource.data.keys().hasAll(['name', 'email', 'active']) &&
-        request.resource.data.name is string &&
-        request.resource.data.email is string &&
-        request.resource.data.active is bool;
-
-      allow update: if
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        request.resource.data.keys().hasOnly([
+          'name',
+          'email',
+          'active',
           'lastAction',
           'lastTimestampServer',
+          'department',
+          'hourlyRate',
+          'employeeId',
+          'photoUrl',
         ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.email is string &&
+        request.resource.data.employeeId is string &&
+        request.resource.data.active is bool &&
         (
           !('lastAction' in request.resource.data) ||
           request.resource.data.lastAction in ['check_in', 'check_out', 'none']
-        ) ||
-        (
-          request.resource.data.keys().hasAll([
-            'employeeId',
-            'name',
-            'email',
-            'department',
-            'hourlyRate',
-          ]) &&
-          request.resource.data.name is string &&
-          request.resource.data.email is string
         );
 
-      allow delete: if false;
+      // Tablet / web manual check-out: solo lastAction + lastTimestampServer
+      allow update: if
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['lastAction', 'lastTimestampServer']) &&
+        request.resource.data.lastAction in ['check_in', 'check_out', 'none'];
+
+      // Web admin: edición completa del empleado (puede omitir photoUrl)
+      allow update: if
+        request.resource.data.keys().hasAll([
+          'name',
+          'email',
+          'employeeId',
+          'department',
+          'hourlyRate',
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.email is string &&
+        request.resource.data.employeeId is string &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'employeeId',
+          'name',
+          'email',
+          'department',
+          'hourlyRate',
+          'photoUrl',
+        ]);
+
+      allow delete: if request.auth != null;
     }
 
+    // 2. Colección de Registros de Asistencia (Tablet y Web Admin)
     match /attendance_records/{recordId} {
       allow read: if true;
-      allow create: if isValidAttendanceCreate();
-      allow update: if
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'employeeId',
+          'employeeNameSnapshot',
+          'employeeEmailSnapshot',
           'type',
           'timestampServer',
+          'source',
+          'photoCaptured',
+          'photoPath',
+          'photoUrl',
         ]) &&
-        request.resource.data.type in ['check_in', 'check_out'];
-      allow delete: if true;
+        request.resource.data.employeeId is string &&
+        request.resource.data.employeeNameSnapshot is string &&
+        request.resource.data.employeeEmailSnapshot is string &&
+        request.resource.data.type in ['check_in', 'check_out'] &&
+        request.resource.data.source in ['expo-app', 'web-admin-manual-checkout'] &&
+        request.resource.data.photoCaptured is bool &&
+        request.resource.data.photoPath is string &&
+        request.resource.data.photoUrl is string;
+
+      allow update, delete: if request.auth != null;
     }
 
+    // 3. Colección de Turnos (Agenda)
     match /shifts/{shiftId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
+    // 4. Solicitudes de Permisos y Vacaciones
     match /leave_requests/{requestId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
+    // 5. Continental Inspect — inspecciones de carga (AKE/PMC)
+    match /cargo_inspections/{inspectionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;
     }
