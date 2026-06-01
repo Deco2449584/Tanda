@@ -12,6 +12,7 @@ import {
 import { Download, Search } from 'lucide-react';
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
 import { DateRangePicker } from '@/components/attendance/DateRangePicker';
+import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import { exportPayrollReportToCsv } from '@/lib/attendance/export-payroll-csv';
@@ -36,6 +37,8 @@ export default function AttendancePage() {
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
     null,
   );
+  const [manualCheckoutRecord, setManualCheckoutRecord] =
+    useState<AttendanceRecord | null>(null);
 
   useEffect(() => {
     if (!db) {
@@ -120,6 +123,20 @@ export default function AttendancePage() {
     [records, searchQuery],
   );
 
+  const employeesByCode = useMemo(() => {
+    const map: Record<string, Employee> = {};
+    employees.forEach((employee) => {
+      if (employee.employeeId) {
+        map[employee.employeeId] = employee;
+      }
+    });
+    return map;
+  }, [employees]);
+
+  const manualCheckoutEmployee = manualCheckoutRecord
+    ? employeesByCode[manualCheckoutRecord.employeeId] ?? null
+    : null;
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
@@ -176,11 +193,19 @@ export default function AttendancePage() {
         loading={loading}
         searchQuery={searchQuery}
         onEdit={setEditingRecord}
+        onAddManualCheckout={setManualCheckoutRecord}
       />
 
       <EditAttendanceModal
         record={editingRecord}
         onClose={() => setEditingRecord(null)}
+      />
+
+      <AddManualCheckoutModal
+        checkInRecord={manualCheckoutRecord}
+        employee={manualCheckoutEmployee}
+        allRecords={records}
+        onClose={() => setManualCheckoutRecord(null)}
       />
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
-import { Pencil, Trash2 } from 'lucide-react';
+import { LogOut, Pencil, Trash2 } from 'lucide-react';
 import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
@@ -19,6 +19,7 @@ interface AttendanceTableProps {
   loading: boolean;
   searchQuery: string;
   onEdit: (record: AttendanceRecord) => void;
+  onAddManualCheckout: (record: AttendanceRecord) => void;
 }
 
 export function AttendanceTable({
@@ -27,6 +28,7 @@ export function AttendanceTable({
   loading,
   searchQuery,
   onEdit,
+  onAddManualCheckout,
 }: AttendanceTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AttendanceRecord | null>(null);
@@ -134,7 +136,17 @@ export function AttendanceTable({
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
                       {isForgottenCheckIn(record, records) ? (
-                        <ForgottenCheckoutBadge />
+                        <div className="flex flex-col items-start gap-2">
+                          <ForgottenCheckoutBadge />
+                          <button
+                            type="button"
+                            onClick={() => onAddManualCheckout(record)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600/40 bg-blue-950/50 px-2.5 py-1.5 text-xs font-semibold text-blue-300 transition-colors hover:bg-blue-900/50"
+                          >
+                            <LogOut className="h-3.5 w-3.5" />
+                            Add check-out
+                          </button>
+                        </div>
                       ) : (
                         formatRecordTime(record.timestampServer)
                       )}
@@ -217,6 +229,17 @@ export function AttendanceTable({
                       <dd className="text-zinc-300">{timeOrStatus}</dd>
                     </div>
                   </dl>
+
+                  {forgotten ? (
+                    <button
+                      type="button"
+                      onClick={() => onAddManualCheckout(record)}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-blue-600/40 bg-blue-950/50 py-2.5 text-sm font-semibold text-blue-300 transition-colors hover:bg-blue-900/50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Add manual check-out
+                    </button>
+                  ) : null}
 
                   <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
                     <button
