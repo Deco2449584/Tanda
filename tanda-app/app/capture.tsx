@@ -5,6 +5,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
+import { BrandColors } from '@/constants/brand';
 import { db, storage } from '@/src/services/firebase';
 import { setLatestCapturedPhotoUri, setLatestUploadData } from '@/src/state/capturePhoto';
 
@@ -51,7 +52,7 @@ export default function CaptureScreen() {
   });
   const ringColor = timerAnimation.interpolate({
     inputRange: [0, 0.5, 1],
-    outputRange: ['#ef4444', '#f59e0b', '#22c55e'],
+    outputRange: ['#ef4444', '#f59e0b', BrandColors.blue600],
   });
 
   const uriToBlob = useCallback((uri: string): Promise<Blob> => {
@@ -198,7 +199,7 @@ export default function CaptureScreen() {
   if (!permission) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22c87a" />
+        <ActivityIndicator color={BrandColors.blue500} />
         <Text style={styles.permissionText}>Loading camera...</Text>
       </View>
     );
@@ -263,7 +264,7 @@ export default function CaptureScreen() {
       {isSaving ? (
         <View style={styles.uploadOverlay}>
           <View style={styles.uploadCard}>
-            <ActivityIndicator size="large" color="#22c55e" />
+            <ActivityIndicator size="large" color={BrandColors.blue500} />
             <Text style={styles.uploadTitle}>Uploading photo...</Text>
             <Text style={styles.uploadSubtitle}>Do not close the app during this process.</Text>
           </View>
@@ -276,7 +277,7 @@ export default function CaptureScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#051812',
+    backgroundColor: BrandColors.screenBg,
     alignItems: 'center',
     paddingTop: 28,
     paddingHorizontal: 20,
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: 'rgba(31, 199, 125, 0.15)',
+    backgroundColor: BrandColors.blueGlow,
   },
   glowBottom: {
     position: 'absolute',
@@ -297,11 +298,11 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: 'rgba(18, 161, 95, 0.16)',
+    backgroundColor: BrandColors.blueGlowSoft,
   },
   centered: {
     flex: 1,
-    backgroundColor: '#08221c',
+    backgroundColor: BrandColors.screenBgAlt,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(190,255,223,0.16)',
+    borderColor: BrandColors.blueBorder,
     overflow: 'visible',
     paddingTop: 14,
   },
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   primaryButton: {
-    backgroundColor: '#14a460',
+    backgroundColor: BrandColors.blue600,
     borderRadius: 999,
     marginTop: 8,
     justifyContent: 'center',
@@ -409,9 +410,9 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 18,
     borderRadius: 16,
-    backgroundColor: 'rgba(11, 34, 28, 0.95)',
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
     borderWidth: 1,
-    borderColor: 'rgba(143, 255, 201, 0.28)',
+    borderColor: BrandColors.blueBorder,
     alignItems: 'center',
     gap: 8,
   },

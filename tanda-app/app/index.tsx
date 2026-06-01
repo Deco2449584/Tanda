@@ -1,9 +1,21 @@
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
+import { BrandColors } from '@/constants/brand';
 import { db } from '@/src/services/firebase';
+
+const logoSource = require('@/assets/images/logo.svg');
 
 export default function TandaScreen() {
   const [employeeId, setEmployeeId] = useState('');
@@ -109,6 +121,8 @@ export default function TandaScreen() {
       <View style={styles.glowTop} />
       <View style={styles.glowBottom} />
 
+      <Image source={logoSource} style={styles.logo} accessibilityLabel="Continental Cargo" />
+
       <Text style={styles.brand}>TIMETRACKER PRO</Text>
 
       <View style={[styles.panel, { width: isTablet ? 640 : 350 }]}>
@@ -147,7 +161,11 @@ export default function TandaScreen() {
             isLoading && styles.submitButtonDisabled,
           ]}
           onPress={() => void handleSubmit()}>
-          {isLoading ? <ActivityIndicator color="#e7fff2" /> : <Text style={styles.submitText}>CONTINUE</Text>}
+          {isLoading ? (
+            <ActivityIndicator color={BrandColors.white} />
+          ) : (
+            <Text style={styles.submitText}>CONTINUE</Text>
+          )}
         </Pressable>
       </View>
 
@@ -172,7 +190,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#051812',
+    backgroundColor: BrandColors.pinScreenBg,
   },
   glowTop: {
     position: 'absolute',
@@ -181,7 +199,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(31, 199, 125, 0.16)',
+    backgroundColor: BrandColors.blueGlow,
   },
   glowBottom: {
     position: 'absolute',
@@ -190,13 +208,20 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: 'rgba(18, 161, 95, 0.18)',
+    backgroundColor: BrandColors.blueGlowSoft,
+  },
+  logo: {
+    width: 280,
+    height: 100,
+    resizeMode: 'contain',
+    tintColor: BrandColors.white,
+    marginBottom: 40,
   },
   panel: {
-    marginTop: 10,
+    marginTop: 4,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(153, 230, 196, 0.18)',
+    borderColor: BrandColors.blueBorder,
     backgroundColor: 'rgba(255,255,255,0.05)',
     paddingHorizontal: 18,
     paddingTop: 20,
@@ -204,11 +229,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brand: {
-    color: '#9de7c7',
+    color: BrandColors.blue400,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 20,
     letterSpacing: 1.8,
     fontSize: 13,
+    fontWeight: '600',
   },
   title: {
     color: '#f3fff8',
@@ -216,7 +242,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
-    color: '#c5dfd4',
+    color: BrandColors.textSoft,
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 16,
@@ -238,7 +264,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pinLabel: {
-    color: '#9ac4b3',
+    color: BrandColors.textMuted,
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 16,
@@ -268,9 +294,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 18,
     borderRadius: 26,
-    backgroundColor: '#15a963',
+    backgroundColor: BrandColors.blue600,
     borderWidth: 1,
-    borderColor: 'rgba(191, 255, 223, 0.34)',
+    borderColor: BrandColors.blueBorderSoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -296,8 +322,8 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(177, 255, 216, 0.22)',
-    backgroundColor: '#0c2a20',
+    borderColor: BrandColors.blueBorder,
+    backgroundColor: '#0f172a',
     paddingHorizontal: 18,
     paddingVertical: 18,
   },
@@ -308,14 +334,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalMessage: {
-    color: '#c8e7d9',
+    color: BrandColors.textSoft,
     fontSize: 15,
     lineHeight: 22,
   },
   modalButton: {
     marginTop: 16,
     alignSelf: 'flex-end',
-    backgroundColor: '#16a05f',
+    backgroundColor: BrandColors.blue600,
     borderRadius: 999,
     paddingHorizontal: 18,
     paddingVertical: 10,

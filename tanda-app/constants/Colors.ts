@@ -1,5 +1,7 @@
-const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
+import { BrandColors } from './brand';
+
+const tintColorLight = BrandColors.blue600;
+const tintColorDark = BrandColors.white;
 
 export default {
   light: {
@@ -11,9 +13,9 @@ export default {
   },
   dark: {
     text: '#fff',
-    background: '#000',
+    background: BrandColors.screenBg,
     tint: tintColorDark,
     tabIconDefault: '#ccc',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: BrandColors.blue500,
   },
 };

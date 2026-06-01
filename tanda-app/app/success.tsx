@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
+import { BrandColors } from '@/constants/brand';
 import { getLatestCapturedPhotoUri, getLatestUploadData } from '@/src/state/capturePhoto';
 
 export default function SuccessScreen() {
@@ -95,7 +96,7 @@ export default function SuccessScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#051812',
+    backgroundColor: BrandColors.screenBg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderRadius: 125,
-    backgroundColor: 'rgba(31, 199, 125, 0.15)',
+    backgroundColor: BrandColors.blueGlow,
   },
   glowBottom: {
     position: 'absolute',
@@ -116,10 +117,10 @@ const styles = StyleSheet.create({
     width: 290,
     height: 290,
     borderRadius: 145,
-    backgroundColor: 'rgba(18, 161, 95, 0.18)',
+    backgroundColor: BrandColors.blueGlowSoft,
   },
   brand: {
-    color: '#9de7c7',
+    color: BrandColors.blue400,
     marginBottom: 10,
     letterSpacing: 1.8,
     fontSize: 13,
@@ -128,22 +129,22 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: 'rgba(30, 207, 121, 0.25)',
+    backgroundColor: 'rgba(37, 99, 235, 0.25)',
     borderWidth: 3,
-    borderColor: '#21cf79',
+    borderColor: BrandColors.blue500,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   checkIcon: {
-    color: '#47ed9c',
+    color: BrandColors.blue400,
     fontSize: 44,
     fontWeight: '700',
   },
   mainCard: {
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(170, 246, 207, 0.2)',
+    borderColor: BrandColors.blueBorder,
     backgroundColor: 'rgba(255,255,255,0.05)',
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(184, 249, 213, 0.14)',
+    borderColor: BrandColors.blueBorder,
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -187,18 +188,18 @@ const styles = StyleSheet.create({
   },
   photoThumb: {
     borderWidth: 2,
-    borderColor: '#2ce28c',
-    backgroundColor: '#0b2a1f',
+    borderColor: BrandColors.blue500,
+    backgroundColor: '#0f172a',
   },
   photoThumbFallback: {
     borderWidth: 2,
-    borderColor: '#2ce28c',
-    backgroundColor: 'rgba(44, 226, 140, 0.15)',
+    borderColor: BrandColors.blue500,
+    backgroundColor: 'rgba(37, 99, 235, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   photoFallbackText: {
-    color: '#5bf1ae',
+    color: BrandColors.blue400,
     fontSize: 30,
     fontWeight: '700',
   },
@@ -213,14 +214,14 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 4.5,
-    backgroundColor: 'rgba(198, 234, 218, 0.35)',
+    backgroundColor: 'rgba(148, 163, 184, 0.35)',
   },
   progressDotActive: {
-    backgroundColor: '#2ce28c',
+    backgroundColor: BrandColors.blue500,
   },
   autoBackText: {
     marginTop: 8,
-    color: '#b6d8c9',
+    color: BrandColors.textMuted,
     fontSize: 14,
     fontWeight: '600',
   },
