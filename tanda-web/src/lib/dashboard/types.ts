@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type KpiAccent = 'blue' | 'orange' | 'yellow';
+export type KpiAccent = 'blue' | 'emerald' | 'orange' | 'yellow';
 
 export interface KpiMetric {
   id: string;

@@ -5,13 +5,10 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
+import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
 import { ForgottenCheckoutBadge } from '@/components/attendance/ForgottenCheckoutBadge';
 import { isForgottenCheckIn } from '@/lib/attendance/work-sessions';
-import {
-  formatAttendanceType,
-  formatRecordDate,
-  formatRecordTime,
-} from '@/lib/attendance/format';
+import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -22,22 +19,6 @@ interface AttendanceTableProps {
   loading: boolean;
   searchQuery: string;
   onEdit: (record: AttendanceRecord) => void;
-}
-
-function RecordTypeBadge({ type }: { type: AttendanceRecord['type'] }) {
-  const isCheckIn = type === 'check_in';
-
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-        isCheckIn
-          ? 'bg-blue-500/10 text-blue-400'
-          : 'bg-blue-500/10 text-blue-400'
-      }`}
-    >
-      {formatAttendanceType(type)}
-    </span>
-  );
 }
 
 export function AttendanceTable({
@@ -149,7 +130,7 @@ export function AttendanceTable({
                       {formatRecordDate(record.timestampServer)}
                     </td>
                     <td className="px-4 py-3.5">
-                      <RecordTypeBadge type={record.type} />
+                      <AttendanceTypeBadge type={record.type} />
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
                       {isForgottenCheckIn(record, records) ? (
@@ -228,7 +209,7 @@ export function AttendanceTable({
                     <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
                       <dt className="text-zinc-500">Type</dt>
                       <dd>
-                        <RecordTypeBadge type={record.type} />
+                        <AttendanceTypeBadge type={record.type} />
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-3">

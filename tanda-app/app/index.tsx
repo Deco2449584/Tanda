@@ -1,4 +1,4 @@
-import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { collection, getDocs, limit, query, where, type Timestamp } from 'firebase/firestore';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { BrandColors } from '@/constants/brand';
+import { resolveKioskAction } from '@/src/lib/resolve-kiosk-action';
 import { db } from '@/src/services/firebase';
 
 const logoSource = require('@/assets/images/logo.svg');
@@ -81,7 +82,8 @@ export default function TandaScreen() {
         name?: string;
         email?: string;
         active?: boolean;
-        lastAction?: 'check_in' | 'check_out';
+        lastAction?: string;
+        lastTimestampServer?: Timestamp;
       };
       if (employeeData.active === false) {
         setErrorModal({
@@ -92,7 +94,10 @@ export default function TandaScreen() {
         return;
       }
 
-      const actionType = employeeData.lastAction === 'check_in' ? 'check_out' : 'check_in';
+      const actionType = resolveKioskAction(
+        employeeData.lastAction,
+        employeeData.lastTimestampServer,
+      );
 
       router.push({
         pathname: '/capture' as never,

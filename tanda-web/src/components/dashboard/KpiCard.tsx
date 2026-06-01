@@ -8,6 +8,13 @@ const accentStyles = {
     value: 'text-blue-400',
     sparkline: 'bg-blue-600',
   },
+  emerald: {
+    bar: 'bg-emerald-600',
+    iconBg: 'bg-emerald-500/15',
+    icon: 'text-emerald-500',
+    value: 'text-emerald-400',
+    sparkline: 'bg-emerald-500',
+  },
   orange: {
     bar: 'bg-orange-500',
     iconBg: 'bg-orange-500/15',

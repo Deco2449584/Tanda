@@ -1,6 +1,7 @@
 'use client';
 
-import { formatAttendanceType, formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
+import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
+import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import type { EmployeeRecordsRange } from '@/hooks/useEmployeeAttendance';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
@@ -96,8 +97,8 @@ export function RecentRecordsTable({
                     <td className="px-5 py-3.5 text-zinc-300">
                       {formatRecordDate(record.timestampServer)}
                     </td>
-                    <td className="px-5 py-3.5 text-zinc-200">
-                      {formatAttendanceType(record.type)}
+                    <td className="px-5 py-3.5">
+                      <AttendanceTypeBadge type={record.type} />
                     </td>
                     <td className="px-5 py-3.5 text-zinc-300">
                       {formatRecordTime(record.timestampServer)}
@@ -139,9 +140,7 @@ export function RecentRecordsTable({
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                         Type
                       </p>
-                      <p className="font-medium text-blue-400">
-                        {formatAttendanceType(record.type)}
-                      </p>
+                      <AttendanceTypeBadge type={record.type} />
                     </div>
                   </div>
                   <div className="shrink-0 text-right">

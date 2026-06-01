@@ -32,7 +32,7 @@ export const baseKpiMetrics: KpiMetric[] = [
     value: '$0.00',
     valueLabel: 'Actual',
     description: 'Projected: $0.00',
-    accent: 'blue',
+    accent: 'emerald',
     icon: DollarSign,
   },
 ];
