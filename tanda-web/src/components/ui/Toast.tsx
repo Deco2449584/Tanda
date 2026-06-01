@@ -16,7 +16,7 @@ interface ToastProps {
 }
 
 const variantStyles: Record<NonNullable<ToastMessage['variant']>, string> = {
-  success: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-100',
+  success: 'border-blue-500/40 bg-blue-950/80 text-blue-100',
   error: 'border-red-500/40 bg-red-950/80 text-red-100',
   info: 'border-blue-500/40 bg-blue-950/80 text-blue-100',
 };

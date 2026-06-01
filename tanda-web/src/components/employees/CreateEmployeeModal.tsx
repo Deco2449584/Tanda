@@ -170,7 +170,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 setForm((prev) => ({ ...prev, employeeId: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
               placeholder="0045"
             />
           </div>
@@ -186,7 +186,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
               placeholder="Full name"
             />
           </div>
@@ -202,7 +202,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
               placeholder="email@company.com"
             />
           </div>
@@ -220,7 +220,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
               placeholder="Logistics, Operations..."
             />
           </div>
@@ -243,7 +243,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
               placeholder="18.50"
             />
           </div>
@@ -266,7 +266,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
             <button
               type="submit"
               disabled={isBusy}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {getSubmitLabel()}
             </button>

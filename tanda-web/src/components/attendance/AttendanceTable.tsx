@@ -31,7 +31,7 @@ function RecordTypeBadge({ type }: { type: AttendanceRecord['type'] }) {
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
         isCheckIn
-          ? 'bg-emerald-500/10 text-emerald-400'
+          ? 'bg-blue-500/10 text-blue-400'
           : 'bg-blue-500/10 text-blue-400'
       }`}
     >
@@ -94,26 +94,26 @@ export function AttendanceTable({
         <div className="hidden md:block">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-emerald-900/50 bg-emerald-950/40">
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+              <tr className="border-b border-blue-900/50 bg-blue-950/40">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Employee ID
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Photo
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Employee
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Date
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Record Type
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Timestamp (Server)
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
+                <th className="px-4 py-3.5 font-semibold text-blue-100/90">
                   Actions
                 </th>
               </tr>
@@ -163,7 +163,7 @@ export function AttendanceTable({
                         <button
                           type="button"
                           onClick={() => onEdit(record)}
-                          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+                          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400"
                           aria-label={`Edit record for ${record.employeeNameSnapshot}`}
                         >
                           <Pencil className="h-4 w-4" />
@@ -241,7 +241,7 @@ export function AttendanceTable({
                     <button
                       type="button"
                       onClick={() => onEdit(record)}
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400"
                       aria-label={`Edit record for ${record.employeeNameSnapshot}`}
                     >
                       <Pencil className="h-4 w-4" />

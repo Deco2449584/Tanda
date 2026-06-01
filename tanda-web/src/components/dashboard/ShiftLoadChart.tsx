@@ -101,7 +101,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
                 contentStyle={CHART_TOOLTIP_STYLE}
                 labelStyle={{ color: '#fafafa' }}
                 itemStyle={{ color: '#e4e4e7' }}
-                cursor={{ fill: 'rgba(16, 185, 129, 0.08)' }}
+                cursor={{ fill: 'rgba(37, 99, 235, 0.08)' }}
               />
               <Bar
                 dataKey="turnos"

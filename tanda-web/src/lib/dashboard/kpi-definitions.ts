@@ -7,7 +7,7 @@ export const baseKpiMetrics: KpiMetric[] = [
     title: 'Active Staff Today',
     value: '0/0',
     description: 'Employees on Shift',
-    accent: 'emerald',
+    accent: 'blue',
     icon: Users,
   },
   {
@@ -32,7 +32,7 @@ export const baseKpiMetrics: KpiMetric[] = [
     value: '$0.00',
     valueLabel: 'Actual',
     description: 'Projected: $0.00',
-    accent: 'emerald',
+    accent: 'blue',
     icon: DollarSign,
   },
 ];

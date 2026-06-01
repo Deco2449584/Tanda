@@ -56,12 +56,12 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-50 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-800/80 bg-[#0a0a0a]/80 px-4 backdrop-blur-sm md:h-16 md:gap-4 md:px-6">
+    <header className="relative z-50 flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 md:bg-[#0a0a0a]/80 md:backdrop-blur-sm">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
           onClick={onMenuClick}
-          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
+          className="shrink-0 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
@@ -70,9 +70,9 @@ export function Header({ onMenuClick }: HeaderProps) {
         <Image
           src="/logo.svg"
           alt="Continental Cargo"
-          width={180}
-          height={56}
-          className="h-12 w-auto object-contain md:hidden"
+          width={200}
+          height={64}
+          className="h-12 w-auto max-w-[140px] shrink-0 object-contain brightness-0 invert drop-shadow-sm md:hidden"
           priority
         />
       </div>
@@ -92,7 +92,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0a0a0a]" />
+          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-zinc-950 md:ring-[#0a0a0a]" />
         </button>
 
         <div className="relative z-[100]" ref={menuRef}>

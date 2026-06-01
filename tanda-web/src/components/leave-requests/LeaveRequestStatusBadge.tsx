@@ -9,7 +9,7 @@ const statusStyles: Record<
     label: 'Pending',
   },
   Approved: {
-    className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+    className: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
     label: 'Approved',
   },
   Rejected: {

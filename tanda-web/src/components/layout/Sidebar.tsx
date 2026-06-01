@@ -66,25 +66,20 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-zinc-800/60 px-5 py-6">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <Image
-              src="/logo.svg"
-              alt="Continental Cargo"
-              width={180}
-              height={56}
-              className="h-12 w-auto shrink-0 object-contain md:h-14"
-              priority
-            />
-            <span className="hidden text-base font-bold tracking-tight text-white sm:inline">
-              Continental Cargo
-            </span>
-          </div>
+        <div className="relative mb-4 flex w-full items-center justify-center border-b border-zinc-800 px-3 py-10">
+          <Image
+            src="/logo.svg"
+            alt="Continental Cargo"
+            width={360}
+            height={120}
+            className="h-28 w-full max-w-[220px] object-contain brightness-0 invert drop-shadow-md md:h-32 md:max-w-[240px]"
+            priority
+          />
 
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100 md:hidden"
+            className="absolute right-3 top-6 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-white md:hidden"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
@@ -102,12 +97,12 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-emerald-600/20 text-emerald-400 backdrop-blur-sm'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
+                    ? 'bg-blue-900/30 text-blue-400'
+                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
                 }`}
               >
                 <Icon
-                  className={`h-5 w-5 shrink-0 ${active ? 'text-emerald-500' : ''}`}
+                  className={`h-5 w-5 shrink-0 ${active ? 'text-blue-400' : ''}`}
                   strokeWidth={1.75}
                 />
                 {label}

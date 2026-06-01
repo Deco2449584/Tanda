@@ -4,7 +4,7 @@ import type { Shift } from '@/lib/types/shift';
 
 const statusStyles = {
   scheduled: 'border-l-4 border-blue-500 bg-blue-950/30',
-  completed: 'border-l-4 border-emerald-500 bg-emerald-950/30',
+  completed: 'border-l-4 border-blue-500 bg-blue-950/30',
   absent: 'border-l-4 border-orange-500 bg-orange-950/30',
 } as const;
 

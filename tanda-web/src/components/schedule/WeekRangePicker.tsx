@@ -23,7 +23,7 @@ export function WeekRangePicker({ referenceDate, onChange }: WeekRangePickerProp
       </button>
 
       <div className="flex items-center gap-2 px-2 text-sm text-zinc-200">
-        <CalendarRange className="h-4 w-4 text-emerald-500" />
+        <CalendarRange className="h-4 w-4 text-blue-500" />
         {formatWeekRangeLabel(week)}
       </div>
 

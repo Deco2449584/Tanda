@@ -176,7 +176,7 @@ export default function SchedulePage() {
               onClick={() => setViewMode('weekly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'weekly'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -187,7 +187,7 @@ export default function SchedulePage() {
               onClick={() => setViewMode('monthly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'monthly'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -198,7 +198,7 @@ export default function SchedulePage() {
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-sm text-zinc-200 outline-none focus:border-emerald-600/50"
+            className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-sm text-zinc-200 outline-none focus:border-blue-600/50"
             aria-label="Filter by department"
           >
             {departments.map((department) => (

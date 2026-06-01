@@ -19,11 +19,11 @@ const statusStyles = {
     iconClass: 'text-blue-400',
   },
   completed: {
-    container: 'border-l-4 border-emerald-500 bg-emerald-600/20',
-    text: 'text-emerald-100',
-    subtext: 'text-emerald-200/80',
+    container: 'border-l-4 border-blue-500 bg-blue-600/20',
+    text: 'text-blue-100',
+    subtext: 'text-blue-200/80',
     icon: Check,
-    iconClass: 'text-emerald-400',
+    iconClass: 'text-blue-400',
   },
   absent: {
     container: 'border-l-4 border-orange-500 bg-red-600/20',

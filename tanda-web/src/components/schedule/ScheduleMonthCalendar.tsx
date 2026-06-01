@@ -8,7 +8,7 @@ import type { Shift } from '@/lib/types/shift';
 
 const STATUS_BAR_CLASS: Record<Shift['status'], string> = {
   scheduled: 'bg-blue-500',
-  completed: 'bg-emerald-500',
+  completed: 'bg-blue-500',
   absent: 'bg-orange-500',
 };
 
@@ -50,8 +50,8 @@ export function ScheduleMonthCalendar({
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
-      <div className="border-b border-zinc-800 bg-emerald-950/30 px-4 py-3">
-        <h2 className="text-sm font-semibold capitalize text-emerald-100">
+      <div className="border-b border-zinc-800 bg-blue-950/30 px-4 py-3">
+        <h2 className="text-sm font-semibold capitalize text-blue-100">
           {monthLabel}
         </h2>
       </div>
@@ -84,7 +84,7 @@ export function ScheduleMonthCalendar({
               <p
                 className={`mb-1 text-right text-xs font-medium ${
                   today
-                    ? 'inline-flex ml-auto rounded-full bg-emerald-600 px-1.5 text-white'
+                    ? 'inline-flex ml-auto rounded-full bg-blue-600 px-1.5 text-white'
                     : day.isCurrentMonth
                       ? 'text-zinc-300'
                       : 'text-zinc-600'
@@ -116,7 +116,7 @@ export function ScheduleMonthCalendar({
           Scheduled
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-6 rounded-full bg-emerald-500" />
+          <span className="h-1.5 w-6 rounded-full bg-blue-500" />
           Completed
         </span>
         <span className="flex items-center gap-1.5">

@@ -43,7 +43,7 @@ export function RecentRecordsTable({
             onClick={() => onRangeChange('7days')}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               range === '7days'
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -54,7 +54,7 @@ export function RecentRecordsTable({
             onClick={() => onRangeChange('month')}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               range === 'month'
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -139,7 +139,7 @@ export function RecentRecordsTable({
                       <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
                         Type
                       </p>
-                      <p className="font-medium text-emerald-400">
+                      <p className="font-medium text-blue-400">
                         {formatAttendanceType(record.type)}
                       </p>
                     </div>

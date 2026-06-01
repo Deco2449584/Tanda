@@ -59,7 +59,7 @@ export function WeeklyScheduleStrip({
                   isPastDay
                     ? 'border-zinc-700 bg-zinc-800 opacity-40'
                     : isCompleted
-                      ? 'border-emerald-500/40 bg-emerald-600/25'
+                      ? 'border-blue-500/40 bg-blue-600/25'
                       : isScheduled
                         ? 'border-blue-500/40 bg-blue-600/25'
                         : 'border-orange-500/40 bg-orange-600/20'
