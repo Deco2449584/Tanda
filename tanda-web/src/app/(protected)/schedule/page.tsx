@@ -150,7 +150,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 p-6">
+    <div className="flex h-full flex-col gap-6 p-4 md:p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
         Scheduling and rosters (Agenda)
       </h1>

@@ -82,8 +82,8 @@ export function ScheduleGrid({
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
-        <div className="overflow-x-auto">
+      <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
+        <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="min-w-[900px]">
             <div className="grid grid-cols-8 border-b border-zinc-800 bg-emerald-950/30">
               <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-emerald-100/80">

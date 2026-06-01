@@ -49,13 +49,15 @@ export function ScheduleMonthCalendar({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
       <div className="border-b border-zinc-800 bg-emerald-950/30 px-4 py-3">
         <h2 className="text-sm font-semibold capitalize text-emerald-100">
           {monthLabel}
         </h2>
       </div>
 
+      <div className="w-full overflow-x-auto scrollbar-hide">
+        <div className="min-w-[640px]">
       <div className="grid grid-cols-7 border-b border-zinc-800 bg-zinc-950/50">
         {WEEKDAY_HEADERS.map((label) => (
           <div
@@ -121,6 +123,8 @@ export function ScheduleMonthCalendar({
           <span className="h-1.5 w-6 rounded-full bg-orange-500" />
           Absent
         </span>
+      </div>
+        </div>
       </div>
     </div>
   );

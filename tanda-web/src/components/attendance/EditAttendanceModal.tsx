@@ -102,7 +102,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
         onClick={handleClose}
       />
 
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+      <div className="relative z-10 w-[95%] rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Edit record</h2>
           <button
@@ -180,14 +180,14 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
               type="button"
               onClick={handleClose}
               disabled={saving}
-              className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-70"
             >
               {saving ? 'Saving...' : 'Save changes'}
             </button>

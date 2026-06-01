@@ -72,10 +72,12 @@ export function LeaveRequestsAdminTable({
     );
   }
 
+  const emptyMessage = 'No requests match the current filters.';
+
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+      <div className="hidden md:block">
+        <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-emerald-900/50 bg-emerald-950/30">
               <th className="px-4 py-3.5 font-semibold text-emerald-100/90">Photo</th>
@@ -103,7 +105,7 @@ export function LeaveRequestsAdminTable({
             {filteredRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-zinc-500">
-                  No requests match the current filters.
+                  {emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -191,6 +193,99 @@ export function LeaveRequestsAdminTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-col gap-4 p-4 md:hidden">
+        {filteredRequests.length === 0 ? (
+          <p className="py-8 text-center text-sm text-zinc-500">{emptyMessage}</p>
+        ) : (
+          filteredRequests.map((request) => {
+            const employee = employeesByCode[request.employeeId];
+            const isPending = request.status === 'Pending';
+            const isUpdating = updatingId === request.id;
+
+            return (
+              <article
+                key={request.id}
+                className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <EmployeeAvatar
+                    name={employee?.name ?? request.employeeId}
+                    photoUrl={employee?.photoUrl}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-semibold text-white">
+                      {employee?.name ?? request.employeeId}
+                    </p>
+                    <p className="font-mono text-xs text-zinc-500">{request.employeeId}</p>
+                  </div>
+                  <LeaveRequestStatusBadge status={request.status} />
+                </div>
+
+                <dl className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
+                    <dt className="text-zinc-500">Leave type</dt>
+                    <dd className="text-right text-zinc-200">{request.type}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
+                    <dt className="text-zinc-500">Date range</dt>
+                    <dd className="text-right text-zinc-300">
+                      {formatLeaveDateRange(request.startDate, request.endDate)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-zinc-500">Justification</dt>
+                    <dd className="mt-1 text-zinc-400">
+                      {truncateText(request.justification, 120)}
+                    </dd>
+                  </div>
+                </dl>
+
+                {isPending ? (
+                  <div className="mt-4 flex gap-2 border-t border-zinc-800/60 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => updateStatus(request.id, 'Approved')}
+                      disabled={isUpdating}
+                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-xs font-bold text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      APPROVE
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateStatus(request.id, 'Rejected')}
+                      disabled={isUpdating}
+                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      REJECT
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
+                    <button
+                      type="button"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-emerald-500/80 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+                      aria-label="Edit request"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-emerald-500/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
+                      aria-label="Delete request"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          })
+        )}
       </div>
     </div>
   );

@@ -137,7 +137,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
           <h2 id="edit-employee-title" className="text-lg font-semibold text-white">
             Edit employee
@@ -258,14 +258,14 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isBusy}
-              className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {getSubmitLabel()}
             </button>

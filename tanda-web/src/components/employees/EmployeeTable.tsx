@@ -85,10 +85,14 @@ export function EmployeeTable({
     );
   }
 
+  const emptyMessage = searchQuery
+    ? 'No employees match that search.'
+    : 'No employees registered. Create the first one.';
+
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] border-collapse text-left text-sm">
+      <div className="hidden md:block">
+        <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-900/80">
               <th className="px-4 py-3.5 font-semibold text-zinc-300">Photo</th>
@@ -106,13 +110,8 @@ export function EmployeeTable({
           <tbody>
             {filteredEmployees.length === 0 ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className="px-4 py-12 text-center text-zinc-500"
-                >
-                  {searchQuery
-                    ? 'No employees match that search.'
-                    : 'No employees registered. Create the first one.'}
+                <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
+                  {emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -169,6 +168,76 @@ export function EmployeeTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-col gap-4 p-4 md:hidden">
+        {filteredEmployees.length === 0 ? (
+          <p className="py-8 text-center text-sm text-zinc-500">{emptyMessage}</p>
+        ) : (
+          filteredEmployees.map((employee) => (
+            <article
+              key={employee.id}
+              className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <EmployeeAvatar
+                    name={employee.name}
+                    photoUrl={employee.photoUrl}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold text-white">
+                      {employee.name}
+                    </p>
+                    <p className="font-mono text-xs text-zinc-500">
+                      {employee.employeeId || '—'}
+                    </p>
+                  </div>
+                </div>
+                <StatusBadge active={employee.active} />
+              </div>
+
+              <dl className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
+                  <dt className="text-zinc-500">Email</dt>
+                  <dd className="truncate text-right text-zinc-300">{employee.email}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
+                  <dt className="text-zinc-500">Hourly rate</dt>
+                  <dd className="font-semibold text-white">
+                    {formatHourlyRate(employee.hourlyRate ?? 0)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-zinc-500">Department</dt>
+                  <dd className="text-right text-zinc-300">
+                    {employee.department || '—'}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
+                <button
+                  type="button"
+                  onClick={() => onEdit(employee)}
+                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+                  aria-label={`Edit ${employee.name}`}
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(employee)}
+                  disabled={deletingId === employee.id}
+                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label={`Delete ${employee.name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </article>
+          ))
+        )}
       </div>
     </div>
   );

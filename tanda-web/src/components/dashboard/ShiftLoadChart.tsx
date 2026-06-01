@@ -53,7 +53,8 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
         <p className="text-xs text-zinc-500">Shifts assigned by department</p>
       </div>
 
-      <div className="relative mt-4 h-[220px] w-full min-w-0">
+      <div className="mt-4 w-full overflow-x-auto scrollbar-hide">
+        <div className="relative h-[220px] w-full min-w-[320px]">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/40">
             <span className="text-xs text-zinc-500">Loading data...</span>
@@ -118,6 +119,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
         ) : (
           <div className="h-full w-full animate-pulse rounded-lg bg-zinc-800/30" />
         )}
+        </div>
       </div>
     </section>
   );

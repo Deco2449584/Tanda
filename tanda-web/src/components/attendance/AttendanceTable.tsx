@@ -84,11 +84,15 @@ export function AttendanceTable({
     );
   }
 
+  const emptyMessage = searchQuery
+    ? 'No records found with that name.'
+    : 'No records in the selected range.';
+
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
+        <div className="hidden md:block">
+          <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-emerald-900/50 bg-emerald-950/40">
                 <th className="px-4 py-3.5 font-semibold text-emerald-100/90">
@@ -118,9 +122,7 @@ export function AttendanceTable({
               {filteredRecords.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-zinc-500">
-                    {searchQuery
-                      ? 'No records found with that name.'
-                      : 'No records in the selected range.'}
+                    {emptyMessage}
                   </td>
                 </tr>
               ) : (
@@ -182,6 +184,82 @@ export function AttendanceTable({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4 md:hidden">
+          {filteredRecords.length === 0 ? (
+            <p className="py-8 text-center text-sm text-zinc-500">{emptyMessage}</p>
+          ) : (
+            filteredRecords.map((record) => {
+              const forgotten = isForgottenCheckIn(record, records);
+              const timeOrStatus = forgotten ? (
+                <ForgottenCheckoutBadge />
+              ) : (
+                formatRecordTime(record.timestampServer)
+              );
+
+              return (
+                <article
+                  key={record.id}
+                  className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-lg font-semibold text-white">
+                        {record.employeeNameSnapshot}
+                      </p>
+                      <p className="mt-0.5 font-mono text-xs text-zinc-500">
+                        {employeeCodes[record.employeeId] ?? record.employeeId ?? '—'}
+                      </p>
+                    </div>
+                    <AttendancePhoto
+                      photoUrl={record.photoUrl}
+                      name={record.employeeNameSnapshot}
+                    />
+                  </div>
+
+                  <dl className="mt-4 space-y-2 text-sm">
+                    <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
+                      <dt className="text-zinc-500">Date</dt>
+                      <dd className="text-zinc-300">
+                        {formatRecordDate(record.timestampServer)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
+                      <dt className="text-zinc-500">Type</dt>
+                      <dd>
+                        <RecordTypeBadge type={record.type} />
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-zinc-500">{forgotten ? 'Status' : 'Time'}</dt>
+                      <dd className="text-zinc-300">{timeOrStatus}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(record)}
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-emerald-400"
+                      aria-label={`Edit record for ${record.employeeNameSnapshot}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(record)}
+                      disabled={deletingId === record.id}
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={`Delete record for ${record.employeeNameSnapshot}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
 
         <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3 text-xs text-zinc-500">
