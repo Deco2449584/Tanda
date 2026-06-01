@@ -56,7 +56,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-800/80 bg-[#0a0a0a]/80 px-4 backdrop-blur-sm md:h-16 md:gap-4 md:px-6">
+    <header className="relative z-50 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-800/80 bg-[#0a0a0a]/80 px-4 backdrop-blur-sm md:h-16 md:gap-4 md:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
@@ -95,7 +95,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0a0a0a]" />
         </button>
 
-        <div className="relative" ref={menuRef}>
+        <div className="relative z-[100]" ref={menuRef}>
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
@@ -115,7 +115,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           {menuOpen && (
             <div
               role="menu"
-              className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl"
+              className="absolute right-0 top-full z-[100] mt-2 w-52 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl"
             >
               <p className="truncate px-3 py-2 text-xs text-zinc-500">{profileName}</p>
               <div className="my-1 border-t border-zinc-800" />
