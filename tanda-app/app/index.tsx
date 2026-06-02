@@ -128,8 +128,6 @@ export default function TandaScreen() {
 
       <Image source={logoSource} style={styles.logo} accessibilityLabel="Continental Cargo" />
 
-      <Text style={styles.brand}>TIMETRACKER PRO</Text>
-
       <View style={[styles.panel, { width: isTablet ? 640 : 350 }]}>
         <Text style={[styles.title, { fontSize: titleSize }]}>WELCOME</Text>
         <Text style={styles.subtitle}>Enter your ID to record attendance</Text>
@@ -220,7 +218,7 @@ const styles = StyleSheet.create({
     height: 100,
     resizeMode: 'contain',
     tintColor: BrandColors.white,
-    marginBottom: 40,
+    marginBottom: 20,
   },
   panel: {
     marginTop: 4,
@@ -232,14 +230,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
     alignItems: 'center',
-  },
-  brand: {
-    color: BrandColors.blue400,
-    textAlign: 'center',
-    marginBottom: 20,
-    letterSpacing: 1.8,
-    fontSize: 13,
-    fontWeight: '600',
   },
   title: {
     color: '#f3fff8',
