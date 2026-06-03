@@ -26,3 +26,16 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes kiosk-finalize-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.kiosk-finalize-bar {
+  animation: kiosk-finalize-progress 4s linear forwards;
+}

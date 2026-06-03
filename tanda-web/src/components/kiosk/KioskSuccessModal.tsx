@@ -28,60 +28,65 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
     ? 'SUCCESSFUL CLOCK OUT'
     : 'SUCCESSFUL CLOCK IN';
 
+  const iconGlow = isClockOut
+    ? 'shadow-[0_0_24px_rgba(37,99,235,0.55)] bg-blue-600/25 text-blue-400'
+    : 'shadow-[0_0_24px_rgba(16,185,129,0.45)] bg-emerald-500/25 text-emerald-400';
+
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/90 px-4 backdrop-blur-md"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/85 px-4 backdrop-blur-md select-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby="kiosk-success-title"
+      onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="w-full max-w-md rounded-2xl border border-blue-300/25 bg-zinc-900/95 p-5 shadow-2xl md:rounded-3xl md:p-8">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/90 p-8 shadow-2xl backdrop-blur-md md:p-10">
         <div className="flex flex-col items-center text-center">
           <div
-            className={`mb-3 flex h-14 w-14 items-center justify-center rounded-full md:mb-5 md:h-20 md:w-20 ${
-              isClockOut
-                ? 'bg-blue-600/20 text-blue-400'
-                : 'bg-emerald-500/20 text-emerald-400'
-            }`}
+            className={`mb-6 flex h-20 w-20 items-center justify-center rounded-full md:h-24 md:w-24 ${iconGlow}`}
           >
-            <CheckCircle2 className="h-9 w-9 md:h-12 md:w-12" strokeWidth={2} />
+            <CheckCircle2 className="h-11 w-11 md:h-14 md:w-14" strokeWidth={2.25} />
           </div>
 
-          <h2
-            id="kiosk-success-title"
-            className="text-xl font-bold tracking-tight text-white md:text-2xl"
-          >
-            {data.employeeName || 'Employee'}
-          </h2>
-
           <p
-            className={`mt-2 text-xs font-bold tracking-[0.15em] md:mt-3 md:text-sm md:tracking-[0.2em] ${
+            className={`text-xs font-bold tracking-[0.22em] md:text-sm ${
               isClockOut ? 'text-blue-400' : 'text-emerald-400'
             }`}
           >
             {actionHeadline}
           </p>
 
-          <p className="mt-2 text-3xl font-bold tabular-nums text-white md:mt-4 md:text-4xl">
-            {formatRecordedTime(data.recordedAt)}
-          </p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-widest text-zinc-500 md:mt-1 md:text-xs">
+          <h2
+            id="kiosk-success-title"
+            className="mt-3 max-w-full text-3xl font-extrabold capitalize tracking-tight text-white"
+          >
+            {data.employeeName || 'Employee'}
+          </h2>
+
+          <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
             Recorded at
           </p>
 
-          <div className="relative mt-4 h-20 w-20 overflow-hidden rounded-full border-4 border-blue-500/40 shadow-lg ring-2 ring-blue-400/20 md:mt-6 md:h-28 md:w-28">
+          <p className="my-2 text-5xl font-black tabular-nums text-white">
+            {formatRecordedTime(data.recordedAt)}
+          </p>
+
+          <div className="relative mt-5 h-24 w-24 overflow-hidden rounded-full ring-4 ring-zinc-800 md:mt-6">
             <Image
               src={data.photoPreviewUrl}
               alt="Captured attendance photo"
               fill
               unoptimized
-              className="object-cover"
+              draggable={false}
+              className="rounded-full object-cover"
             />
           </div>
 
-          <p className="mt-3 text-xs text-zinc-400 md:mt-6 md:text-sm">
-            Returning to PIN entry…
-          </p>
+          <p className="mt-6 text-sm text-zinc-500 animate-pulse">Finalizing…</p>
+
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div className="kiosk-finalize-bar h-full origin-left rounded-full bg-blue-600" />
+          </div>
         </div>
       </div>
     </div>
