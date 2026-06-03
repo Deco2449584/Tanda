@@ -82,6 +82,11 @@ export function AddManualCheckoutModal({
       return;
     }
 
+    if (!checkInRecord) {
+      setError('No check-in record selected.');
+      return;
+    }
+
     setSaving(true);
 
     try {
