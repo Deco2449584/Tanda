@@ -16,6 +16,7 @@ import {
   type Timestamp,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskMasterPinModal } from '@/components/kiosk/KioskMasterPinModal';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
@@ -228,9 +229,11 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
           width={280}
           height={100}
           priority
-          className="mb-2 h-10 w-auto shrink-0 brightness-0 invert drop-shadow-md md:mb-6 md:h-16"
+          className="mb-2 h-10 w-auto shrink-0 brightness-0 invert drop-shadow-md md:mb-4 md:h-16"
         />
       )}
+
+      {step === 'pin' && <KioskClock />}
 
       <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
       {step === 'pin' && (
