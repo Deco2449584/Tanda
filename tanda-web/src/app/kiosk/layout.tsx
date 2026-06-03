@@ -26,7 +26,7 @@ export default function KioskLayout({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 h-dvh w-dvw overflow-hidden bg-zinc-950">
+    <div className="fixed inset-0 z-50 min-h-[100dvh] h-[100dvh] w-dvw overflow-hidden bg-zinc-950">
       {children}
     </div>
   );

@@ -32,16 +32,14 @@ function dataUrlToBlob(dataUrl: string): Blob {
 function FaceGuideOverlay() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div className="relative h-[72%] w-[58%] max-w-sm">
-        <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-lg border-l-[3px] border-t-[3px] border-blue-400/90" />
-        <span className="absolute right-0 top-0 h-10 w-10 rounded-tr-lg border-r-[3px] border-t-[3px] border-blue-400/90" />
-        <span className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-lg border-b-[3px] border-l-[3px] border-blue-400/90" />
-        <span className="absolute bottom-0 right-0 h-10 w-10 rounded-br-lg border-b-[3px] border-r-[3px] border-blue-400/90" />
-        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-blue-400/20" />
-        <div className="absolute left-1/2 inset-y-0 w-px -translate-x-1/2 bg-blue-400/20" />
+      <div className="relative h-[72%] w-[58%] max-w-[220px] md:max-w-sm">
+        <span className="absolute left-0 top-0 h-6 w-6 rounded-tl-lg border-l-[3px] border-t-[3px] border-blue-400/90 md:h-10 md:w-10" />
+        <span className="absolute right-0 top-0 h-6 w-6 rounded-tr-lg border-r-[3px] border-t-[3px] border-blue-400/90 md:h-10 md:w-10" />
+        <span className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-[3px] border-l-[3px] border-blue-400/90 md:h-10 md:w-10" />
+        <span className="absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-[3px] border-r-[3px] border-blue-400/90 md:h-10 md:w-10" />
       </div>
-      <p className="absolute bottom-6 left-0 right-0 text-center text-xs font-medium uppercase tracking-widest text-white/70">
-        Align your face within the frame
+      <p className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-medium uppercase tracking-widest text-white/70 md:bottom-4 md:text-xs">
+        Align your face
       </p>
     </div>
   );
@@ -75,24 +73,24 @@ export function KioskCamera({
   }, [onCapture, processing]);
 
   return (
-    <div className="flex w-full max-w-2xl flex-col items-center gap-6 px-4">
-      <div className="text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-400">
+    <div className="flex w-full max-w-2xl shrink-0 flex-col items-center gap-2 px-2 md:gap-4 md:px-4">
+      <div className="shrink-0 text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-400 md:text-xs md:tracking-[0.25em]">
           Photo verification
         </p>
-        <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">
+        <h2 className="mt-0.5 text-lg font-bold text-white md:mt-2 md:text-3xl">
           {employeeName || 'Employee'}
         </h2>
-        <p className="mt-1 text-sm text-zinc-400">
-          {actionLabel} · Center your face and capture
+        <p className="text-xs text-zinc-400 md:text-sm">
+          {actionLabel}
         </p>
       </div>
 
-      <div className="relative w-full">
-        <div className="overflow-hidden rounded-2xl border border-zinc-700/80 bg-black shadow-2xl ring-1 ring-blue-500/10">
-          <div className="relative aspect-[4/3] w-full">
+      <div className="flex w-full min-h-0 flex-1 flex-col items-center">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-700/80 bg-black shadow-2xl ring-1 ring-blue-500/10">
+          <div className="relative mx-auto aspect-square max-h-[36vh] w-full md:max-h-[50vh]">
             {cameraError ? (
-              <div className="flex h-full items-center justify-center p-8 text-center text-sm text-red-200">
+              <div className="flex h-full items-center justify-center p-4 text-center text-xs text-red-200 md:p-8 md:text-sm">
                 {cameraError}
               </div>
             ) : (
@@ -116,30 +114,27 @@ export function KioskCamera({
             )}
 
             {processing && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-zinc-950/75 backdrop-blur-sm">
-                <span className="h-12 w-12 animate-spin rounded-full border-[3px] border-blue-500/30 border-t-blue-500" />
-                <p className="text-lg font-semibold tracking-wide text-white">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-zinc-950/75 backdrop-blur-sm md:gap-4">
+                <span className="h-10 w-10 animate-spin rounded-full border-[3px] border-blue-500/30 border-t-blue-500 md:h-12 md:w-12" />
+                <p className="text-base font-semibold tracking-wide text-white md:text-lg">
                   Processing…
-                </p>
-                <p className="text-sm text-zinc-400">
-                  Uploading photo and saving record
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center gap-4">
+        <div className="mt-3 flex shrink-0 flex-col items-center gap-1 md:mt-5 md:gap-2">
           <button
             type="button"
             disabled={processing || !!cameraError}
             onClick={handleCapture}
             aria-label={`Capture photo for ${actionLabel}`}
-            className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-blue-400/50 bg-blue-600 text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 md:h-24 md:w-24"
+            className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-blue-400/50 bg-blue-600 text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 md:h-24 md:w-24"
           >
-            <Camera className="h-9 w-9 md:h-10 md:w-10" strokeWidth={2} />
+            <Camera className="h-7 w-7 md:h-10 md:w-10" strokeWidth={2} />
           </button>
-          <p className="text-sm font-medium text-zinc-400">
+          <p className="text-xs font-medium text-zinc-400 md:text-sm">
             Tap to capture
           </p>
         </div>
@@ -149,7 +144,7 @@ export function KioskCamera({
         type="button"
         disabled={processing}
         onClick={onCancel}
-        className="min-h-12 rounded-full border border-zinc-600 bg-zinc-800/80 px-8 text-base font-semibold text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-50"
+        className="shrink-0 rounded-full border border-zinc-600 bg-zinc-800/80 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-50 md:min-h-12 md:px-8 md:text-base"
       >
         Cancel
       </button>

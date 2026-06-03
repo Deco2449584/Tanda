@@ -211,7 +211,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const showLogo = step !== 'success';
 
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-y-auto px-4 py-8">
+    <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-3 py-2 md:px-4 md:py-6">
       <div
         className="pointer-events-none absolute -left-10 -top-20 h-56 w-56 rounded-full bg-blue-600/20 blur-3xl"
         aria-hidden
@@ -228,10 +228,11 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
           width={280}
           height={100}
           priority
-          className="mb-6 h-auto w-[min(280px,80vw)] brightness-0 invert drop-shadow-md"
+          className="mb-2 h-10 w-auto shrink-0 brightness-0 invert drop-shadow-md md:mb-6 md:h-16"
         />
       )}
 
+      <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
       {step === 'pin' && (
         <KioskPinPad
           pin={pin}
@@ -256,6 +257,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
       {step === 'success' && successData && (
         <KioskSuccessModal data={successData} />
       )}
+      </div>
 
       {step === 'pin' && onLockDevice && (
         <button
