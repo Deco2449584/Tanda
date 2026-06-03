@@ -1,4 +1,4 @@
-import { KioskScreen } from '@/components/kiosk/KioskScreen';
+import { KioskAuthGuard } from '@/components/kiosk/KioskAuthGuard';
 
 export const metadata = {
   title: 'TimeTracker Kiosk | Continental Cargo',
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function KioskPage() {
-  return <KioskScreen />;
+  return <KioskAuthGuard />;
 }

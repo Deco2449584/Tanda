@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
+import { Lock } from 'lucide-react';
 import {
   addDoc,
   collection,
@@ -16,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
+import { KioskMasterPinModal } from '@/components/kiosk/KioskMasterPinModal';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
 import {
   KioskSuccessModal,
@@ -45,7 +47,11 @@ function createToast(
   return { id: crypto.randomUUID(), text, variant };
 }
 
-export function KioskScreen() {
+interface KioskScreenProps {
+  onLockDevice?: () => void;
+}
+
+export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,6 +59,7 @@ export function KioskScreen() {
   const [session, setSession] = useState<KioskSession | null>(null);
   const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [lockModalOpen, setLockModalOpen] = useState(false);
 
   const resetToPin = useCallback(() => {
     setStep('pin');
@@ -249,6 +256,30 @@ export function KioskScreen() {
       {step === 'success' && successData && (
         <KioskSuccessModal data={successData} />
       )}
+
+      {step === 'pin' && onLockDevice && (
+        <button
+          type="button"
+          onClick={() => setLockModalOpen(true)}
+          className="fixed bottom-4 left-4 z-40 rounded-full p-2 text-zinc-400 opacity-20 transition hover:bg-zinc-800/50 hover:text-blue-400 hover:opacity-100"
+          aria-label="Lock kiosk terminal"
+        >
+          <Lock className="h-5 w-5" />
+        </button>
+      )}
+
+      <KioskMasterPinModal
+        open={lockModalOpen}
+        title="Lock terminal"
+        description="Enter master admin PIN to de-authorize this device."
+        submitLabel="Lock device"
+        onClose={() => setLockModalOpen(false)}
+        onSuccess={() => {
+          setLockModalOpen(false);
+          onLockDevice?.();
+        }}
+        onError={(message) => setToast(createToast(message, 'error'))}
+      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
