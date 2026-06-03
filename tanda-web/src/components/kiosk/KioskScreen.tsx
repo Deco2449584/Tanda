@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
 import {
@@ -24,7 +23,9 @@ import {
   KioskSuccessModal,
   type KioskSuccessData,
 } from '@/components/kiosk/KioskSuccessModal';
+import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { COLLECTIONS } from '@/lib/constants';
 import { db, storage } from '@/lib/firebase';
 import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
@@ -53,6 +54,7 @@ interface KioskScreenProps {
 }
 
 export function KioskScreen({ onLockDevice }: KioskScreenProps) {
+  const { settings } = useCompanySettings();
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -214,11 +216,11 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   return (
     <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden bg-zinc-950 px-4 py-10">
       <div
-        className="pointer-events-none absolute -left-10 -top-20 h-56 w-56 rounded-full bg-blue-600/20 blur-3xl"
+        className="pointer-events-none absolute -left-10 -top-20 h-56 w-56 rounded-full bg-primary/20 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-24 -right-12 h-64 w-64 rounded-full bg-blue-500/15 blur-3xl"
+        className="pointer-events-none absolute -bottom-24 -right-12 h-64 w-64 rounded-full bg-secondary/15 blur-3xl"
         aria-hidden
       />
 
@@ -226,12 +228,10 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
         <>
           <div className="flex shrink-0 flex-col items-center gap-6">
             {showLogo && (
-              <Image
-                src="/logo.svg"
-                alt="Continental Cargo"
-                width={280}
-                height={100}
+              <CompanyLogo
+                alt={settings.companyName}
                 priority
+                invert
                 className="h-16 w-auto shrink-0 brightness-0 invert drop-shadow-md"
               />
             )}
@@ -252,12 +252,10 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
       ) : (
         <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
           {showLogo && (
-            <Image
-              src="/logo.svg"
-              alt="Continental Cargo"
-              width={280}
-              height={100}
+            <CompanyLogo
+              alt={settings.companyName}
               priority
+              invert
               className="mb-6 h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"
             />
           )}

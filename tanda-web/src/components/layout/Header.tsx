@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
@@ -13,6 +12,8 @@ import {
 } from 'lucide-react';
 import { useSignOut } from '@/hooks/useSignOut';
 import { auth } from '@/lib/firebase';
+import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 const DEFAULT_PROFILE_NAME = 'Admin Daniel G.';
 
@@ -21,6 +22,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { settings } = useCompanySettings();
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -67,13 +69,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        <Image
-          src="/logo.svg"
-          alt="Continental Cargo"
-          width={200}
-          height={64}
+        <CompanyLogo
+          alt={settings.companyName}
           className="h-12 w-auto max-w-[140px] shrink-0 object-contain brightness-0 invert drop-shadow-sm md:hidden"
           priority
+          invert
         />
       </div>
 

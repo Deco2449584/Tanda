@@ -53,7 +53,7 @@ export function EmployeePhotoUpload({
           accept="image/*"
           disabled={disabled}
           onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+          className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
         />
       </div>
     </div>

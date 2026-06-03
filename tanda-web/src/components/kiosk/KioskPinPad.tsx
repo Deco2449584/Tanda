@@ -83,7 +83,7 @@ export function KioskPinPad({
         type="button"
         disabled={loading || !pin}
         onClick={onSubmit}
-        className="mx-auto mt-3 flex h-11 w-full max-w-[470px] items-center justify-center rounded-full border border-blue-300/35 bg-blue-600 text-base font-bold tracking-wide text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-[74px] md:text-xl"
+        className="mx-auto mt-3 flex h-11 w-full max-w-[470px] items-center justify-center rounded-full bg-primary text-base font-bold tracking-wide text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-[74px] md:text-xl"
       >
         {loading ? (
           <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white md:h-6 md:w-6" />

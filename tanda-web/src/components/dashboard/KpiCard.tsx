@@ -2,11 +2,11 @@ import type { KpiMetric } from '@/lib/dashboard/types';
 
 const accentStyles = {
   blue: {
-    bar: 'bg-blue-600',
-    iconBg: 'bg-blue-600/15',
+    bar: 'bg-primary',
+    iconBg: 'bg-primary/15',
     icon: 'text-blue-500',
-    value: 'text-blue-400',
-    sparkline: 'bg-blue-600',
+    value: 'text-primary',
+    sparkline: 'bg-primary',
   },
   emerald: {
     bar: 'bg-emerald-600',

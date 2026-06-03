@@ -44,7 +44,7 @@ export function RecentRecordsTable({
             onClick={() => onRangeChange('7days')}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               range === '7days'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary text-white'
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -55,7 +55,7 @@ export function RecentRecordsTable({
             onClick={() => onRangeChange('month')}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               range === 'month'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary text-white'
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
             }`}
           >

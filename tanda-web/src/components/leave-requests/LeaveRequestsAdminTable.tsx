@@ -153,7 +153,7 @@ export function LeaveRequestsAdminTable({
                             type="button"
                             onClick={() => updateStatus(request.id, 'Approved')}
                             disabled={isUpdating}
-                            className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
                           >
                             <Check className="h-3.5 w-3.5" />
                             APPROVE
@@ -249,7 +249,7 @@ export function LeaveRequestsAdminTable({
                       type="button"
                       onClick={() => updateStatus(request.id, 'Approved')}
                       disabled={isUpdating}
-                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-blue-600 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
                     >
                       <Check className="h-3.5 w-3.5" />
                       APPROVE

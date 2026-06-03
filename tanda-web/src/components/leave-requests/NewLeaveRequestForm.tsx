@@ -181,7 +181,7 @@ export function NewLeaveRequestForm({
         <button
           type="submit"
           disabled={disabled || isSubmitting}
-          className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold tracking-wide text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-lg bg-primary py-3 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? 'Submitting...' : 'SUBMIT REQUEST'}
         </button>

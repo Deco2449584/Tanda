@@ -266,7 +266,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
             <button
               type="submit"
               disabled={isBusy}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {getSubmitLabel()}
             </button>

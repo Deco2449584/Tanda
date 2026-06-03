@@ -53,7 +53,7 @@ export default function EmployeesPage() {
         <button
           type="button"
           onClick={() => setCreateModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:bg-blue-700"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           CREATE NEW EMPLOYEE

@@ -176,7 +176,7 @@ export default function SchedulePage() {
               onClick={() => setViewMode('weekly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'weekly'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -187,7 +187,7 @@ export default function SchedulePage() {
               onClick={() => setViewMode('monthly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'monthly'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >

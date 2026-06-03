@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
-function formatClockTime(date: Date): string {
+function formatClockTime(date: Date, timeZone: string): string {
   return date.toLocaleTimeString('en-AU', {
+    timeZone,
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   });
 }
 
-function formatClockDate(date: Date): string {
+function formatClockDate(date: Date, timeZone: string): string {
   return date.toLocaleDateString('en-AU', {
+    timeZone,
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -20,6 +23,7 @@ function formatClockDate(date: Date): string {
 }
 
 export function KioskClock() {
+  const { settings } = useCompanySettings();
   const [isMounted, setIsMounted] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
 
@@ -53,10 +57,10 @@ export function KioskClock() {
         aria-live="polite"
         aria-atomic="true"
       >
-        {formatClockTime(now)}
+        {formatClockTime(now, settings.timeZone)}
       </p>
       <p className="mt-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 md:text-sm">
-        {formatClockDate(now)}
+        {formatClockDate(now, settings.timeZone)}
       </p>
     </div>
   );

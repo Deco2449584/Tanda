@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
@@ -14,6 +13,8 @@ import {
   X,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
+import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 interface NavItem {
   label: string;
@@ -48,6 +49,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
+  const { settings } = useCompanySettings();
   const navItems = role === 'admin' ? adminNavItems : employeeNavItems;
 
   return (
@@ -67,13 +69,11 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         }`}
       >
         <div className="relative mb-4 flex w-full items-center justify-center border-b border-zinc-800 px-3 py-10">
-          <Image
-            src="/logo.svg"
-            alt="Continental Cargo"
-            width={360}
-            height={120}
+          <CompanyLogo
+            alt={settings.companyName}
             className="h-28 w-full max-w-[220px] object-contain brightness-0 invert drop-shadow-md md:h-32 md:max-w-[240px]"
             priority
+            invert
           />
 
           <button
@@ -97,12 +97,12 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-blue-900/30 text-blue-400'
+                    ? 'bg-primary/15 text-primary'
                     : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
                 }`}
               >
                 <Icon
-                  className={`h-5 w-5 shrink-0 ${active ? 'text-blue-400' : ''}`}
+                  className={`h-5 w-5 shrink-0 ${active ? 'text-primary' : ''}`}
                   strokeWidth={1.75}
                 />
                 {label}

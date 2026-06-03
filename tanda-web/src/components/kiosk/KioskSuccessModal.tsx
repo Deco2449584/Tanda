@@ -85,7 +85,7 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
           <p className="mt-6 text-sm text-zinc-500 animate-pulse">Finalizing…</p>
 
           <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-            <div className="kiosk-finalize-bar h-full origin-left rounded-full bg-blue-600" />
+            <div className="kiosk-finalize-bar h-full origin-left rounded-full bg-primary" />
           </div>
         </div>
       </div>

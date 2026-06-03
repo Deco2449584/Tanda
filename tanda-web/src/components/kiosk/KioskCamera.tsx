@@ -130,7 +130,7 @@ export function KioskCamera({
             disabled={processing || !!cameraError}
             onClick={handleCapture}
             aria-label={`Capture photo for ${actionLabel}`}
-            className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-blue-400/50 bg-blue-600 text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 md:h-24 md:w-24"
+            className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary/50 bg-primary text-white shadow-lg shadow-black/40 transition hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 md:h-24 md:w-24"
           >
             <Camera className="h-7 w-7 md:h-10 md:w-10" strokeWidth={2} />
           </button>

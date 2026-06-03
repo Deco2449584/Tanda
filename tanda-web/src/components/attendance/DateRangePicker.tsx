@@ -113,7 +113,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
             <button
               type="button"
               onClick={handleApply}
-              className="flex-1 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white hover:bg-blue-700"
+              className="flex-1 rounded-lg bg-primary py-2 text-xs font-bold text-white hover:opacity-90"
             >
               Apply
             </button>
