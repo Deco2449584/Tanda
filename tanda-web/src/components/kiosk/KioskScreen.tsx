@@ -212,7 +212,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const showLogo = step !== 'success';
 
   return (
-    <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden px-4 py-12">
+    <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden bg-zinc-950 px-4 py-10">
       <div
         className="pointer-events-none absolute -left-10 -top-20 h-56 w-56 rounded-full bg-blue-600/20 blur-3xl"
         aria-hidden
@@ -232,7 +232,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
                 width={280}
                 height={100}
                 priority
-                className="h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"
+                className="h-16 w-auto shrink-0 brightness-0 invert drop-shadow-md"
               />
             )}
             <KioskClock />

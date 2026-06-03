@@ -23,9 +23,7 @@ export function KioskPinPad({
 
   return (
     <div className="w-full max-w-[640px] shrink-0 rounded-2xl border border-blue-300/25 bg-white/5 px-3 py-3 shadow-xl backdrop-blur-sm md:rounded-3xl md:px-8 md:py-8">
-      <h1 className="text-center text-xl font-bold tracking-tight text-white md:text-5xl">
-        WELCOME
-      </h1>
+     
       <p className="mt-1 text-center text-xs text-zinc-300 md:mt-2 md:text-base">
         Enter your PIN
       </p>
