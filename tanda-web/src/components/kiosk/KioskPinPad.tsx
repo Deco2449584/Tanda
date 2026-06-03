@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 interface KioskPinPadProps {
   pin: string;
@@ -22,7 +22,7 @@ export function KioskPinPad({
   const display = pin.padEnd(8, '•').slice(0, 8);
 
   return (
-    <div className="w-full max-w-[640px] shrink-0 rounded-2xl border border-blue-300/25 bg-white/5 px-3 py-3 shadow-xl backdrop-blur-sm md:rounded-3xl md:px-8 md:py-8">
+    <div className="w-full max-w-[640px] shrink-0 rounded-2xl border border-primary/25 bg-white/5 px-3 py-3 shadow-xl backdrop-blur-sm md:rounded-3xl md:px-8 md:py-8">
      
       <p className="mt-1 text-center text-xs text-zinc-300 md:mt-2 md:text-base">
         Enter your PIN

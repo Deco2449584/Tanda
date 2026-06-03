@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -174,7 +174,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 setForm((prev) => ({ ...prev, employeeId: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -189,7 +189,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -204,7 +204,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -221,7 +221,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -243,7 +243,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 

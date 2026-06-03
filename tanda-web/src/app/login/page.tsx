@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -88,17 +88,17 @@ export default function LoginPage() {
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl"
+        className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-blue-600/10 blur-3xl"
+        className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
         aria-hidden
       />
 
       <section className="relative hidden h-full min-h-0 flex-1 flex-col justify-between overflow-y-auto border-r border-zinc-800/80 bg-[#0a0a0a] p-10 lg:flex xl:p-14">
         <div>
-          <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
+          <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
             TimeTracker PRO
           </div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
               key={title}
               className="flex gap-4 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 backdrop-blur-sm"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
                 <Icon className="h-5 w-5" strokeWidth={1.75} />
               </div>
               <div>
@@ -149,7 +149,7 @@ export default function LoginPage() {
               className="h-24 w-full max-w-[320px] object-contain sm:h-28"
               priority
             />
-            <p className="mt-3 text-center text-xs font-medium uppercase tracking-widest text-blue-500/90">
+            <p className="mt-3 text-center text-xs font-medium uppercase tracking-widest text-primary/90">
               TimeTracker PRO
             </p>
           </div>
@@ -192,7 +192,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@continental.com"
-                    className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950/80 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950/80 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
@@ -217,7 +217,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950/80 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950/80 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>

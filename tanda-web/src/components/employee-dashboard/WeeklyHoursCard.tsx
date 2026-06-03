@@ -1,4 +1,4 @@
-interface WeeklyHoursCardProps {
+﻿interface WeeklyHoursCardProps {
   hours: number;
   goal?: number;
   loading?: boolean;
@@ -34,7 +34,7 @@ export function WeeklyHoursCard({
       </p>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800">
         <div
-          className="h-full rounded-full bg-blue-500 transition-all"
+          className="h-full rounded-full bg-primary transition-all"
           style={{ width: loading ? '0%' : `${progress}%` }}
         />
       </div>

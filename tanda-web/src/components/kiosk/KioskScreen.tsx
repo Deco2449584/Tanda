@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
@@ -280,7 +280,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
         <button
           type="button"
           onClick={() => setLockModalOpen(true)}
-          className="fixed bottom-4 left-4 z-40 rounded-full p-2 text-zinc-400 opacity-20 transition hover:bg-zinc-800/50 hover:text-blue-400 hover:opacity-100"
+          className="fixed bottom-4 left-4 z-40 rounded-full p-2 text-zinc-400 opacity-20 transition hover:bg-zinc-800/50 hover:text-primary hover:opacity-100"
           aria-label="Lock kiosk terminal"
         >
           <Lock className="h-5 w-5" />

@@ -14,9 +14,10 @@ import {
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
-  COLOR_HORAS_NORMAL,
+  COLOR_HORAS_NORMAL_FALLBACK,
 } from './chart-theme';
 import type { WeeklyHoursDatum } from '@/lib/dashboard/types';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 interface WeeklyHoursChartProps {
   data: WeeklyHoursDatum[];
@@ -24,6 +25,8 @@ interface WeeklyHoursChartProps {
 }
 
 export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProps) {
+  const { settings } = useCompanySettings();
+  const chartColor = settings.primaryColor || COLOR_HORAS_NORMAL_FALLBACK;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
         <span className="flex items-center gap-1.5 text-xs text-zinc-400">
           <span
             className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: COLOR_HORAS_NORMAL }}
+            style={{ backgroundColor: chartColor }}
           />
           Scheduled hours
         </span>
@@ -75,8 +78,8 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
             >
               <defs>
                 <linearGradient id="fillHorasProgramadas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLOR_HORAS_NORMAL} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={COLOR_HORAS_NORMAL} stopOpacity={0} />
+                  <stop offset="0%" stopColor={chartColor} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
 
@@ -109,13 +112,13 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
                 type="monotone"
                 dataKey="horas"
                 name="Scheduled hours"
-                stroke={COLOR_HORAS_NORMAL}
+                stroke={chartColor}
                 strokeWidth={2}
                 fill="url(#fillHorasProgramadas)"
-                dot={{ r: 3, fill: COLOR_HORAS_NORMAL }}
+                dot={{ r: 3, fill: chartColor }}
                 activeDot={{
                   r: 5,
-                  fill: COLOR_HORAS_NORMAL,
+                  fill: chartColor,
                   stroke: '#fff',
                   strokeWidth: 2,
                 }}

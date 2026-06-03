@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { KioskDeviceUnauthorized } from '@/components/kiosk/KioskDeviceUnauthorized';
@@ -23,7 +23,7 @@ export function KioskAuthGuard() {
   if (status === 'checking') {
     return (
       <div className="flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden bg-zinc-950">
-        <span className="mb-4 inline-block h-10 w-10 animate-spin rounded-full border-[3px] border-blue-500/30 border-t-blue-500" />
+        <span className="mb-4 inline-block h-10 w-10 animate-spin rounded-full border-[3px] border-primary/30 border-t-primary" />
         <p className="text-sm font-medium tracking-wide text-zinc-400">
           Verifying device…
         </p>

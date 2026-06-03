@@ -3,15 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --color-primary: #2563eb;
-  --color-secondary: #3b82f6;
+  /* Full colors — overridden at runtime from Settings (hex). */
+  --brand-primary: #2563eb;
+  --brand-secondary: #3b82f6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: var(--color-primary);
-  --color-secondary: var(--color-secondary);
+  --color-primary: var(--brand-primary);
+  --color-secondary: var(--brand-secondary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

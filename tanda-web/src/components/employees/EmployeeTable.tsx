@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
@@ -22,7 +22,7 @@ interface EmployeeTableProps {
 function StatusBadge({ active }: { active: boolean }) {
   if (active) {
     return (
-      <span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">
+      <span className="inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
         Active
       </span>
     );
@@ -147,7 +147,7 @@ export function EmployeeTable({
                       <button
                         type="button"
                         onClick={() => onEdit(employee)}
-                        className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400"
+                        className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-primary"
                         aria-label={`Edit ${employee.name}`}
                       >
                         <Pencil className="h-4 w-4" />
@@ -220,7 +220,7 @@ export function EmployeeTable({
                 <button
                   type="button"
                   onClick={() => onEdit(employee)}
-                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400"
+                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-primary"
                   aria-label={`Edit ${employee.name}`}
                 >
                   <Pencil className="h-4 w-4" />

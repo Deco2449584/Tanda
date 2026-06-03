@@ -85,15 +85,3 @@ export async function uploadCompanyLogo(file: File): Promise<string> {
   return getDownloadURL(storageRef);
 }
 
-export function applyThemeToDocument(settings: CompanySettings): void {
-  if (typeof document === 'undefined') return;
-
-  document.documentElement.style.setProperty(
-    '--color-primary',
-    settings.primaryColor,
-  );
-  document.documentElement.style.setProperty(
-    '--color-secondary',
-    settings.secondaryColor,
-  );
-}

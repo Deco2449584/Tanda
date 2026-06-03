@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -170,7 +170,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 setForm((prev) => ({ ...prev, employeeId: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="0045"
             />
           </div>
@@ -186,7 +186,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="Full name"
             />
           </div>
@@ -202,7 +202,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="email@company.com"
             />
           </div>
@@ -220,7 +220,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="Logistics, Operations..."
             />
           </div>
@@ -243,7 +243,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="18.50"
             />
           </div>

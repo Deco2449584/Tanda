@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { isToday, parseISO } from 'date-fns';
@@ -7,8 +7,8 @@ import type { CalendarDayCell } from '@/lib/schedule/month';
 import type { Shift } from '@/lib/types/shift';
 
 const STATUS_BAR_CLASS: Record<Shift['status'], string> = {
-  scheduled: 'bg-blue-500',
-  completed: 'bg-blue-500',
+  scheduled: 'bg-primary',
+  completed: 'bg-primary',
   absent: 'bg-orange-500',
 };
 
@@ -50,8 +50,8 @@ export function ScheduleMonthCalendar({
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
-      <div className="border-b border-zinc-800 bg-blue-950/30 px-4 py-3">
-        <h2 className="text-sm font-semibold capitalize text-blue-100">
+      <div className="border-b border-zinc-800 bg-primary/10 px-4 py-3">
+        <h2 className="text-sm font-semibold capitalize text-primary">
           {monthLabel}
         </h2>
       </div>
@@ -84,7 +84,7 @@ export function ScheduleMonthCalendar({
               <p
                 className={`mb-1 text-right text-xs font-medium ${
                   today
-                    ? 'inline-flex ml-auto rounded-full bg-blue-600 px-1.5 text-white'
+                    ? 'inline-flex ml-auto rounded-full bg-primary px-1.5 text-white'
                     : day.isCurrentMonth
                       ? 'text-zinc-300'
                       : 'text-zinc-600'
@@ -112,11 +112,11 @@ export function ScheduleMonthCalendar({
 
       <div className="flex flex-wrap gap-4 border-t border-zinc-800 px-4 py-3 text-[11px] text-zinc-500">
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-6 rounded-full bg-blue-500" />
+          <span className="h-1.5 w-6 rounded-full bg-primary" />
           Scheduled
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-6 rounded-full bg-blue-500" />
+          <span className="h-1.5 w-6 rounded-full bg-primary" />
           Completed
         </span>
         <span className="flex items-center gap-1.5">

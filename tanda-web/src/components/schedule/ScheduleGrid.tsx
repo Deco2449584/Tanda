@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
@@ -85,8 +85,8 @@ export function ScheduleGrid({
       <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
         <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="min-w-[900px]">
-            <div className="grid grid-cols-8 border-b border-zinc-800 bg-blue-950/30">
-              <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-blue-100/80">
+            <div className="grid grid-cols-8 border-b border-zinc-800 bg-primary/10">
+              <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-primary/80">
                 Employee
               </div>
               {weekDays.map((day) => (
@@ -143,7 +143,7 @@ export function ScheduleGrid({
                         className={`min-h-[88px] border-l border-zinc-800/60 p-1.5 text-left transition-colors ${
                           hasShift
                             ? 'cursor-default bg-zinc-950/20'
-                            : 'cursor-pointer hover:bg-blue-950/20 focus:outline-none focus:ring-1 focus:ring-blue-500/40'
+                            : 'cursor-pointer hover:bg-primary/10 focus:outline-none focus:ring-1 focus:ring-primary/40'
                         }`}
                       >
                         {hasShift ? (
@@ -166,7 +166,7 @@ export function ScheduleGrid({
                             ))}
                           </div>
                         ) : (
-                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-zinc-800/80 text-zinc-600 hover:border-blue-700/50 hover:text-blue-500/70">
+                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-zinc-800/80 text-zinc-600 hover:border-primary/50 hover:text-primary/70">
                             <Plus className="h-4 w-4" />
                           </div>
                         )}

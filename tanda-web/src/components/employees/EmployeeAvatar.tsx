@@ -1,4 +1,4 @@
-interface EmployeeAvatarProps {
+﻿interface EmployeeAvatarProps {
   name: string;
   photoUrl?: string;
   size?: 'sm' | 'md';
@@ -33,7 +33,7 @@ export function EmployeeAvatar({
 
   return (
     <div
-      className={`flex ${sizeClass} items-center justify-center rounded-full bg-zinc-800 font-bold text-blue-400 ring-2 ring-zinc-700`}
+      className={`flex ${sizeClass} items-center justify-center rounded-full bg-zinc-800 font-bold text-primary ring-2 ring-zinc-700`}
     >
       {getInitials(name) || '?'}
     </div>

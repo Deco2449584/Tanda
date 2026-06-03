@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -79,24 +79,24 @@ export function LeaveRequestsAdminTable({
       <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-blue-900/50 bg-blue-950/30">
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">Photo</th>
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">
+            <tr className="border-b border-primary/20 bg-primary/10">
+              <th className="px-4 py-3.5 font-semibold text-primary/90">Photo</th>
+              <th className="px-4 py-3.5 font-semibold text-primary/90">
                 Employee ID
               </th>
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">
+              <th className="px-4 py-3.5 font-semibold text-primary/90">
                 Leave type
               </th>
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">
+              <th className="px-4 py-3.5 font-semibold text-primary/90">
                 Date range
               </th>
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">
+              <th className="px-4 py-3.5 font-semibold text-primary/90">
                 Justification (summary)
               </th>
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">
+              <th className="px-4 py-3.5 font-semibold text-primary/90">
                 Status
               </th>
-              <th className="px-4 py-3.5 font-semibold text-blue-100/90">
+              <th className="px-4 py-3.5 font-semibold text-primary/90">
                 Actions
               </th>
             </tr>
@@ -172,14 +172,14 @@ export function LeaveRequestsAdminTable({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="rounded-lg p-2 text-blue-500/80 transition-colors hover:bg-zinc-800 hover:text-blue-400"
+                            className="rounded-lg p-2 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-primary"
                             aria-label="Edit request"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
-                            className="rounded-lg p-2 text-blue-500/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
+                            className="rounded-lg p-2 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
                             aria-label="Delete request"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -268,14 +268,14 @@ export function LeaveRequestsAdminTable({
                   <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
                     <button
                       type="button"
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-blue-500/80 transition-colors hover:bg-zinc-800 hover:text-blue-400"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-primary"
                       aria-label="Edit request"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-blue-500/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
                       aria-label="Delete request"
                     >
                       <Trash2 className="h-4 w-4" />

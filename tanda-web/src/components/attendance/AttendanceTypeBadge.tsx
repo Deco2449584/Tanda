@@ -1,4 +1,4 @@
-import { formatAttendanceType } from '@/lib/attendance/format';
+﻿import { formatAttendanceType } from '@/lib/attendance/format';
 import type { AttendanceType } from '@/lib/types/attendance';
 
 interface AttendanceTypeBadgeProps {
@@ -13,7 +13,7 @@ export function AttendanceTypeBadge({ type }: AttendanceTypeBadgeProps) {
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
         isCheckIn
           ? 'bg-emerald-500/10 text-emerald-400'
-          : 'bg-blue-500/10 text-blue-400'
+          : 'bg-primary/10 text-primary'
       }`}
     >
       {formatAttendanceType(type)}

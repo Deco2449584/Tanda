@@ -1,4 +1,4 @@
-import { formatShiftBlockLabel } from '@/lib/employee-dashboard/format';
+﻿import { formatShiftBlockLabel } from '@/lib/employee-dashboard/format';
 import { compareInputDates, normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
@@ -59,9 +59,9 @@ export function WeeklyScheduleStrip({
                   isPastDay
                     ? 'border-zinc-700 bg-zinc-800 opacity-40'
                     : isCompleted
-                      ? 'border-blue-500/40 bg-blue-600/25'
+                      ? 'border-primary/40 bg-primary/25'
                       : isScheduled
-                        ? 'border-blue-500/40 bg-blue-600/25'
+                        ? 'border-primary/40 bg-primary/25'
                         : 'border-orange-500/40 bg-orange-600/20'
                 }`}
               >

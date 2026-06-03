@@ -10,5 +10,6 @@ export const CHART_AXIS_TICK = { fill: '#a1a1aa', fontSize: 11 } as const;
 
 export const CHART_GRID_STROKE = '#27272a';
 
-export const COLOR_HORAS_NORMAL = '#2563eb';
-export const COLOR_HORAS_EXTRA = '#60a5fa';
+/** Fallbacks when company settings are not yet loaded */
+export const COLOR_HORAS_NORMAL_FALLBACK = '#2563eb';
+export const COLOR_HORAS_EXTRA_FALLBACK = '#3b82f6';

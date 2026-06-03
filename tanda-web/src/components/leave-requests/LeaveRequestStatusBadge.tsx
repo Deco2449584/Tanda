@@ -1,4 +1,4 @@
-import type { LeaveRequestStatus } from '@/lib/types/leave-request';
+﻿import type { LeaveRequestStatus } from '@/lib/types/leave-request';
 
 const statusStyles: Record<
   LeaveRequestStatus,
@@ -9,7 +9,7 @@ const statusStyles: Record<
     label: 'Pending',
   },
   Approved: {
-    className: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+    className: 'border-primary/30 bg-primary/10 text-primary',
     label: 'Approved',
   },
   Rejected: {

@@ -11,7 +11,6 @@ import {
 } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import {
-  applyThemeToDocument,
   fetchCompanySettings,
   saveCompanySettings as persistCompanySettings,
   uploadCompanyLogo,
@@ -37,6 +36,40 @@ const CompanySettingsContext = createContext<CompanySettingsContextValue | null>
 );
 
 const SETTINGS_DOC_ID = 'general';
+
+function normalizeHexColor(hex: string, fallback: string): string {
+  const trimmed = hex.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
+  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
+    const h = trimmed.slice(1);
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed}`;
+  return fallback;
+}
+
+function applyThemeToDocument(settings: CompanySettings): void {
+  if (typeof document === 'undefined') return;
+
+  const brandPrimary = normalizeHexColor(
+    settings.primaryColor,
+    DEFAULT_COMPANY_SETTINGS.primaryColor,
+  );
+  const brandSecondary = normalizeHexColor(
+    settings.secondaryColor,
+    DEFAULT_COMPANY_SETTINGS.secondaryColor,
+  );
+
+  document.documentElement.style.setProperty('--brand-primary', brandPrimary);
+  document.documentElement.style.setProperty('--brand-secondary', brandSecondary);
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[CompanySettings] theme colors injected:', {
+      '--brand-primary': brandPrimary,
+      '--brand-secondary': brandSecondary,
+    });
+  }
+}
 
 function mapSnapshotData(data: Record<string, unknown>): CompanySettings {
   return {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
@@ -33,10 +33,10 @@ function FaceGuideOverlay() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
       <div className="relative h-[72%] w-[58%] max-w-[220px] md:max-w-sm">
-        <span className="absolute left-0 top-0 h-6 w-6 rounded-tl-lg border-l-[3px] border-t-[3px] border-blue-400/90 md:h-10 md:w-10" />
-        <span className="absolute right-0 top-0 h-6 w-6 rounded-tr-lg border-r-[3px] border-t-[3px] border-blue-400/90 md:h-10 md:w-10" />
-        <span className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-[3px] border-l-[3px] border-blue-400/90 md:h-10 md:w-10" />
-        <span className="absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-[3px] border-r-[3px] border-blue-400/90 md:h-10 md:w-10" />
+        <span className="absolute left-0 top-0 h-6 w-6 rounded-tl-lg border-l-[3px] border-t-[3px] border-primary/90 md:h-10 md:w-10" />
+        <span className="absolute right-0 top-0 h-6 w-6 rounded-tr-lg border-r-[3px] border-t-[3px] border-primary/90 md:h-10 md:w-10" />
+        <span className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-[3px] border-l-[3px] border-primary/90 md:h-10 md:w-10" />
+        <span className="absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-[3px] border-r-[3px] border-primary/90 md:h-10 md:w-10" />
       </div>
       <p className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-medium uppercase tracking-widest text-white/70 md:bottom-4 md:text-xs">
         Align your face
@@ -75,7 +75,7 @@ export function KioskCamera({
   return (
     <div className="flex w-full max-w-2xl shrink-0 flex-col items-center gap-2 px-2 md:gap-4 md:px-4">
       <div className="shrink-0 text-center">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-400 md:text-xs md:tracking-[0.25em]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary md:text-xs md:tracking-[0.25em]">
           Photo verification
         </p>
         <h2 className="mt-0.5 text-lg font-bold text-white md:mt-2 md:text-3xl">
@@ -87,7 +87,7 @@ export function KioskCamera({
       </div>
 
       <div className="flex w-full min-h-0 flex-1 flex-col items-center">
-        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-700/80 bg-black shadow-2xl ring-1 ring-blue-500/10">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-700/80 bg-black shadow-2xl ring-1 ring-primary/10">
           <div className="relative mx-auto aspect-square max-h-[36vh] w-full md:max-h-[50vh]">
             {cameraError ? (
               <div className="flex h-full items-center justify-center p-4 text-center text-xs text-red-200 md:p-8 md:text-sm">
@@ -115,7 +115,7 @@ export function KioskCamera({
 
             {processing && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-zinc-950/75 backdrop-blur-sm md:gap-4">
-                <span className="h-10 w-10 animate-spin rounded-full border-[3px] border-blue-500/30 border-t-blue-500 md:h-12 md:w-12" />
+                <span className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary/30 border-t-primary md:h-12 md:w-12" />
                 <p className="text-base font-semibold tracking-wide text-white md:text-lg">
                   Processing…
                 </p>
