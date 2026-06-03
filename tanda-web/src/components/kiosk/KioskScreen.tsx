@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   addDoc,
   collection,
@@ -17,12 +17,18 @@ import {
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
+import {
+  KioskSuccessModal,
+  type KioskSuccessData,
+} from '@/components/kiosk/KioskSuccessModal';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { COLLECTIONS } from '@/lib/constants';
 import { db, storage } from '@/lib/firebase';
 import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
 
-type KioskStep = 'pin' | 'camera';
+type KioskStep = 'pin' | 'camera' | 'success';
+
+const SUCCESS_AUTO_RESET_MS = 4000;
 
 interface KioskSession {
   employeeDocId: string;
@@ -43,17 +49,29 @@ export function KioskScreen() {
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [session, setSession] = useState<KioskSession | null>(null);
+  const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const resetToPin = useCallback(() => {
     setStep('pin');
     setPin('');
     setSession(null);
-    setSaving(false);
+    setSuccessData(null);
+    setProcessing(false);
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (step !== 'success' || !successData) return;
+
+    const timer = window.setTimeout(() => {
+      resetToPin();
+    }, SUCCESS_AUTO_RESET_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [step, successData, resetToPin]);
 
   const handleDigit = (digit: string) => {
     if (pin.length >= 8) return;
@@ -128,18 +146,18 @@ export function KioskScreen() {
     }
   };
 
-  const handleCapture = async (imageBlob: Blob) => {
+  const handleCapture = async (imageBlob: Blob, previewDataUrl: string) => {
     if (!db || !storage || !session) {
       setToast(createToast('Firebase is not available.', 'error'));
       return;
     }
 
-    setSaving(true);
+    setProcessing(true);
+    const recordedAt = new Date();
 
     try {
-      const now = new Date();
-      const year = String(now.getFullYear());
-      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = String(recordedAt.getFullYear());
+      const month = String(recordedAt.getMonth() + 1).padStart(2, '0');
       const fileName = `${Date.now()}-${session.actionType}.jpg`;
       const photoPath = `attendance/${session.employeeId}/${year}/${month}/${fileName}`;
 
@@ -164,15 +182,13 @@ export function KioskScreen() {
         lastTimestampServer: serverTimestamp(),
       });
 
-      const successLabel =
-        session.actionType === 'check_out' ? 'Clock Out' : 'Clock In';
-      setToast(
-        createToast(
-          `${successLabel} recorded successfully for ${session.employeeName || session.employeeId}.`,
-          'success',
-        ),
-      );
-      resetToPin();
+      setSuccessData({
+        employeeName: session.employeeName,
+        actionType: session.actionType,
+        recordedAt,
+        photoPreviewUrl: previewDataUrl,
+      });
+      setStep('success');
     } catch (error) {
       console.error('Kiosk capture save failed:', error);
       const message =
@@ -181,9 +197,11 @@ export function KioskScreen() {
           : 'Could not save attendance. Please try again.';
       setToast(createToast(message, 'error'));
     } finally {
-      setSaving(false);
+      setProcessing(false);
     }
   };
+
+  const showLogo = step !== 'success';
 
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-y-auto px-4 py-8">
@@ -196,16 +214,18 @@ export function KioskScreen() {
         aria-hidden
       />
 
-      <Image
-        src="/logo.svg"
-        alt="Continental Cargo"
-        width={280}
-        height={100}
-        priority
-        className="mb-6 h-auto w-[min(280px,80vw)] brightness-0 invert drop-shadow-md"
-      />
+      {showLogo && (
+        <Image
+          src="/logo.svg"
+          alt="Continental Cargo"
+          width={280}
+          height={100}
+          priority
+          className="mb-6 h-auto w-[min(280px,80vw)] brightness-0 invert drop-shadow-md"
+        />
+      )}
 
-      {step === 'pin' ? (
+      {step === 'pin' && (
         <KioskPinPad
           pin={pin}
           loading={loading}
@@ -214,15 +234,21 @@ export function KioskScreen() {
           onClear={() => setPin('')}
           onSubmit={() => void handleValidatePin()}
         />
-      ) : session ? (
+      )}
+
+      {step === 'camera' && session && (
         <KioskCamera
           actionType={session.actionType}
           employeeName={session.employeeName}
-          saving={saving}
-          onCapture={(blob) => void handleCapture(blob)}
+          processing={processing}
+          onCapture={(blob, previewUrl) => void handleCapture(blob, previewUrl)}
           onCancel={resetToPin}
         />
-      ) : null}
+      )}
+
+      {step === 'success' && successData && (
+        <KioskSuccessModal data={successData} />
+      )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
