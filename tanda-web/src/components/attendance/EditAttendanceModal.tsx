@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -132,7 +132,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
               id="record-type"
               value={type}
               onChange={(e) => setType(e.target.value as AttendanceType)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="check_in">Check-in</option>
               <option value="check_out">Check-out</option>
@@ -150,7 +150,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -164,7 +164,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
                 required
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
             <button
               type="submit"
               disabled={saving}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white hover:opacity-90 disabled:opacity-70"
             >
               {saving ? 'Saving...' : 'Save changes'}
             </button>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
@@ -29,7 +29,7 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
     : 'SUCCESSFUL CLOCK IN';
 
   const iconGlow = isClockOut
-    ? 'shadow-[0_0_24px_rgba(37,99,235,0.55)] bg-blue-600/25 text-blue-400'
+    ? 'shadow-[0_0_24px_color-mix(in_srgb,var(--brand-primary)_55%,transparent)] bg-primary/25 text-primary'
     : 'shadow-[0_0_24px_rgba(16,185,129,0.45)] bg-emerald-500/25 text-emerald-400';
 
   return (
@@ -50,7 +50,7 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
 
           <p
             className={`text-xs font-bold tracking-[0.22em] md:text-sm ${
-              isClockOut ? 'text-blue-400' : 'text-emerald-400'
+              isClockOut ? 'text-primary' : 'text-emerald-400'
             }`}
           >
             {actionHeadline}
@@ -85,7 +85,7 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
           <p className="mt-6 text-sm text-zinc-500 animate-pulse">Finalizing…</p>
 
           <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-            <div className="kiosk-finalize-bar h-full origin-left rounded-full bg-blue-600" />
+            <div className="kiosk-finalize-bar h-full origin-left rounded-full bg-primary" />
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
+import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 
 export async function uploadEmployeeAvatar(
   employeeCode: string,
@@ -9,13 +10,13 @@ export async function uploadEmployeeAvatar(
     throw new Error('Firebase Storage is not available.');
   }
 
+  const optimized = await optimizeImageForUpload(file);
   const safeCode = employeeCode.trim().replace(/[^\w-]/g, '_');
-  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const path = `avatars/${safeCode}.${extension}`;
+  const path = `avatars/${safeCode}.webp`;
   const storageRef = ref(storage, path);
 
-  await uploadBytes(storageRef, file, {
-    contentType: file.type || 'image/jpeg',
+  await uploadBytes(storageRef, optimized, {
+    contentType: 'image/webp',
   });
 
   return getDownloadURL(storageRef);

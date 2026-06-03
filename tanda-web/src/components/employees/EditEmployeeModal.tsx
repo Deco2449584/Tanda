@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -22,6 +22,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     department: '',
     hourlyRate: 0,
   });
+  const [active, setActive] = useState(true);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       department: employee.department,
       hourlyRate: employee.hourlyRate,
     });
+    setActive(employee.active);
     setPhotoFile(null);
     setError('');
   }, [employee]);
@@ -95,6 +97,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         email: form.email.trim().toLowerCase(),
         department: form.department.trim(),
         hourlyRate: form.hourlyRate,
+        active,
       };
 
       if (photoUrl) {
@@ -174,7 +177,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 setForm((prev) => ({ ...prev, employeeId: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -189,7 +192,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -204,7 +207,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -221,8 +224,34 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-3">
+            <div>
+              <p className="text-sm font-medium text-zinc-200">Active employee</p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Inactive employees are hidden from scheduling and kiosk PIN lookup.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={active}
+              aria-label={active ? 'Employee is active' : 'Employee is inactive'}
+              disabled={isBusy}
+              onClick={() => setActive((prev) => !prev)}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                active ? 'bg-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  active ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
 
           <div>
@@ -243,7 +272,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -265,7 +294,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
             <button
               type="submit"
               disabled={isBusy}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {getSubmitLabel()}
             </button>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -16,9 +16,9 @@ interface ToastProps {
 }
 
 const variantStyles: Record<NonNullable<ToastMessage['variant']>, string> = {
-  success: 'border-blue-500/40 bg-blue-950/80 text-blue-100',
+  success: 'border-primary/40 bg-primary/20 text-primary',
   error: 'border-red-500/40 bg-red-950/80 text-red-100',
-  info: 'border-blue-500/40 bg-blue-950/80 text-blue-100',
+  info: 'border-primary/40 bg-primary/20 text-primary',
 };
 
 export function Toast({ toast, onDismiss, durationMs = 4000 }: ToastProps) {

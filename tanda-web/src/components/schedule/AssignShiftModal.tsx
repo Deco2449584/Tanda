@@ -1,15 +1,17 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import type { Employee } from '@/lib/types/employee';
 import type { AssignShiftInput } from '@/lib/types/shift';
 
 interface AssignShiftModalProps {
   open: boolean;
   initialData: AssignShiftInput | null;
+  employees: Employee[];
   onClose: () => void;
 }
 
@@ -22,8 +24,10 @@ const emptyForm: Omit<AssignShiftInput, 'employeeId' | 'employeeName' | 'date'> 
 export function AssignShiftModal({
   open,
   initialData,
+  employees,
   onClose,
 }: AssignShiftModalProps) {
+  const [employeeId, setEmployeeId] = useState('');
   const [startTime, setStartTime] = useState(emptyForm.startTime);
   const [endTime, setEndTime] = useState(emptyForm.endTime);
   const [department, setDepartment] = useState(emptyForm.department);
@@ -31,28 +35,47 @@ export function AssignShiftModal({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!initialData) return;
-    setStartTime(emptyForm.startTime);
-    setEndTime(emptyForm.endTime);
-    setDepartment(initialData.department);
+    if (!open || !initialData) return;
+
+    setEmployeeId(initialData.employeeId);
+    setStartTime(initialData.startTime || emptyForm.startTime);
+    setEndTime(initialData.endTime || emptyForm.endTime);
+    setDepartment(initialData.department || emptyForm.department);
     setError('');
-  }, [initialData]);
+  }, [open, initialData]);
 
   if (!open || !initialData) return null;
+
+  const selectedEmployee = employees.find((e) => e.employeeId === employeeId);
+  const employeeName = selectedEmployee?.name ?? initialData.employeeName;
 
   function handleClose() {
     if (isSubmitting) return;
     onClose();
   }
 
+  function handleEmployeeChange(nextId: string) {
+    setEmployeeId(nextId);
+    const employee = employees.find((e) => e.employeeId === nextId);
+    if (employee?.department) {
+      setDepartment(employee.department);
+    }
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
 
-    if (!initialData) return;
+    const shiftDate = initialData?.date;
+    if (!shiftDate) return;
 
     if (!db) {
       setError('Firebase is not available.');
+      return;
+    }
+
+    if (!employeeId.trim()) {
+      setError('Select an employee.');
       return;
     }
 
@@ -70,8 +93,8 @@ export function AssignShiftModal({
 
     try {
       await addDoc(collection(db, COLLECTIONS.SHIFTS), {
-        employeeId: initialData.employeeId,
-        date: initialData.date,
+        employeeId: employeeId.trim(),
+        date: shiftDate,
         startTime,
         endTime,
         department: department.trim(),
@@ -114,18 +137,35 @@ export function AssignShiftModal({
 
         <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-sm">
           <p className="text-zinc-300">
-            <span className="text-zinc-500">Employee:</span>{' '}
-            {initialData.employeeName}
-          </p>
-          <p className="mt-1 text-zinc-300">
-            <span className="text-zinc-500">ID:</span> {initialData.employeeId}
-          </p>
-          <p className="mt-1 text-zinc-300">
             <span className="text-zinc-500">Date:</span> {initialData.date}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="shift-employee" className="mb-1.5 block text-sm text-zinc-400">
+              Employee
+            </label>
+            <select
+              id="shift-employee"
+              required
+              value={employeeId}
+              onChange={(e) => handleEmployeeChange(e.target.value)}
+              disabled={isSubmitting || employees.length === 0}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+            >
+              <option value="">Select employee…</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.employeeId}>
+                  {employee.name} ({employee.employeeId})
+                </option>
+              ))}
+            </select>
+            {employeeName && employeeId ? (
+              <p className="mt-1 text-xs text-zinc-500">Assigning to {employeeName}</p>
+            ) : null}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="shift-start" className="mb-1.5 block text-sm text-zinc-400">
@@ -138,7 +178,7 @@ export function AssignShiftModal({
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
             </div>
             <div>
@@ -152,7 +192,7 @@ export function AssignShiftModal({
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
             </div>
           </div>
@@ -168,7 +208,7 @@ export function AssignShiftModal({
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
               disabled={isSubmitting}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               placeholder="Logistics"
             />
           </div>
@@ -191,7 +231,7 @@ export function AssignShiftModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-70"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white hover:opacity-90 disabled:opacity-70"
             >
               {isSubmitting ? 'Saving...' : 'Assign shift'}
             </button>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
+import { isFirebaseStorageUrl } from '@/utils/imageOptimizer';
 
 interface EmployeePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -38,11 +40,23 @@ export function EmployeePhotoUpload({
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-2 ring-zinc-700">
           {displayUrl ? (
-            <img
-              src={displayUrl}
-              alt="Preview"
-              className="h-full w-full object-cover"
-            />
+            isFirebaseStorageUrl(displayUrl) ? (
+              <FirebaseImage
+                src={displayUrl}
+                alt="Preview"
+                width={64}
+                height={64}
+                className="h-full w-full object-cover"
+                sizes="64px"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={displayUrl}
+                alt="Preview"
+                className="h-full w-full object-cover"
+              />
+            )
           ) : (
             <User className="h-7 w-7 text-zinc-500" aria-hidden />
           )}
@@ -53,7 +67,7 @@ export function EmployeePhotoUpload({
           accept="image/*"
           disabled={disabled}
           onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+          className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
         />
       </div>
     </div>

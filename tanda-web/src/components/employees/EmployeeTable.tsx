@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
@@ -22,7 +22,7 @@ interface EmployeeTableProps {
 function StatusBadge({ active }: { active: boolean }) {
   if (active) {
     return (
-      <span className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">
+      <span className="inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
         Active
       </span>
     );
@@ -94,17 +94,17 @@ export function EmployeeTable({
       <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/80">
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Photo</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Employee ID</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Full Name</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Email</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">
+            <tr className="border-b border-primary/25 bg-primary/10">
+              <th className="px-4 py-3.5 font-semibold text-white">Photo</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Employee ID</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Full Name</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Email</th>
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Hourly Rate (Pay)
               </th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Area/Dept</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Status</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Actions</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Area/Dept</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Status</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -147,7 +147,7 @@ export function EmployeeTable({
                       <button
                         type="button"
                         onClick={() => onEdit(employee)}
-                        className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400"
+                        className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-primary"
                         aria-label={`Edit ${employee.name}`}
                       >
                         <Pencil className="h-4 w-4" />
@@ -220,7 +220,7 @@ export function EmployeeTable({
                 <button
                   type="button"
                   onClick={() => onEdit(employee)}
-                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400"
+                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-primary"
                   aria-label={`Edit ${employee.name}`}
                 >
                   <Pencil className="h-4 w-4" />

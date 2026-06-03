@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -103,7 +103,7 @@ export function NewLeaveRequestForm({
               }))
             }
             disabled={disabled || isSubmitting}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
           >
             {LEAVE_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -127,7 +127,7 @@ export function NewLeaveRequestForm({
                 setForm((prev) => ({ ...prev, startDate: e.target.value }))
               }
               disabled={disabled || isSubmitting}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
             />
           </div>
           <div>
@@ -143,7 +143,7 @@ export function NewLeaveRequestForm({
                 setForm((prev) => ({ ...prev, endDate: e.target.value }))
               }
               disabled={disabled || isSubmitting}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
             />
           </div>
         </div>
@@ -162,7 +162,7 @@ export function NewLeaveRequestForm({
             }
             disabled={disabled || isSubmitting}
             placeholder="Describe the reason for your request..."
-            className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-600 disabled:opacity-60"
+            className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
           />
         </div>
 
@@ -173,7 +173,7 @@ export function NewLeaveRequestForm({
         )}
 
         {success && (
-          <p className="text-center text-xs text-blue-400" role="status">
+          <p className="text-center text-xs text-primary" role="status">
             {success}
           </p>
         )}
@@ -181,7 +181,7 @@ export function NewLeaveRequestForm({
         <button
           type="submit"
           disabled={disabled || isSubmitting}
-          className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold tracking-wide text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-lg bg-primary py-3 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? 'Submitting...' : 'SUBMIT REQUEST'}
         </button>

@@ -1,3 +1,7 @@
+﻿'use client';
+
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+
 interface MonthlyHoursCardProps {
   hours: number;
   goal?: number;
@@ -12,6 +16,7 @@ export function MonthlyHoursCard({
   goal = 200,
   loading = false,
 }: MonthlyHoursCardProps) {
+  const { settings } = useCompanySettings();
   const roundedHours = Math.round(hours * 10) / 10;
   const progress = goal > 0 ? Math.min(roundedHours / goal, 1) : 0;
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
@@ -49,14 +54,14 @@ export function MonthlyHoursCard({
               cy="50"
               r={RADIUS}
               fill="none"
-              stroke="#2563eb"
+              stroke={settings.primaryColor}
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={loading ? CIRCUMFERENCE : strokeDashoffset}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-blue-400">
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary">
             {loading ? '—' : `${Math.round(progress * 100)}%`}
           </span>
         </div>

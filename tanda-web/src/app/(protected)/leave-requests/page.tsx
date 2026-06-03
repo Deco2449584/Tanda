@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -7,7 +7,7 @@ import {
   orderBy,
   query,
 } from 'firebase/firestore';
-import { Search } from 'lucide-react';
+import { ChevronDown, Filter, Search } from 'lucide-react';
 import { LeaveRequestsAdminTable } from '@/components/leave-requests/LeaveRequestsAdminTable';
 import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
 import { COLLECTIONS, LEAVE_REQUEST_STATUSES } from '@/lib/constants';
@@ -132,21 +132,33 @@ export default function LeaveRequestsPage() {
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as LeaveRequestStatus | 'all')
-            }
-            className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-sm text-zinc-200 outline-none focus:border-blue-600/50"
-            aria-label="Filter by status"
-          >
-            <option value="all">Status: All</option>
-            {LEAVE_REQUEST_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
+          <div className="relative min-w-[180px]">
+            <Filter
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+              aria-hidden
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as LeaveRequestStatus | 'all')
+              }
+              className="w-full appearance-none rounded-lg border border-primary/30 bg-zinc-900 py-2.5 pl-10 pr-9 text-sm font-medium text-white shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+              aria-label="Filter by status"
+            >
+              <option value="all" className="bg-zinc-900">
+                All statuses
               </option>
-            ))}
-          </select>
+              {LEAVE_REQUEST_STATUSES.map((status) => (
+                <option key={status} value={status} className="bg-zinc-900">
+                  {status}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden
+            />
+          </div>
 
           <div className="relative w-full sm:min-w-[280px]">
             <Search
@@ -158,7 +170,7 @@ export default function LeaveRequestsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search employee..."
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-blue-600/50 focus:ring-1 focus:ring-blue-600/30"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
             />
           </div>
         </div>

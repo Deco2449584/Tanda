@@ -1,4 +1,4 @@
-import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
+﻿import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
@@ -12,18 +12,18 @@ interface ShiftCardProps {
 
 const statusStyles = {
   scheduled: {
-    container: 'border-l-4 border-blue-500 bg-blue-600/20',
-    text: 'text-blue-100',
-    subtext: 'text-blue-200/80',
+    container: 'border-l-4 border-primary bg-zinc-800/90',
+    text: 'text-zinc-100',
+    subtext: 'text-zinc-400',
     icon: Clock,
-    iconClass: 'text-blue-400',
+    iconClass: 'text-primary',
   },
   completed: {
-    container: 'border-l-4 border-blue-500 bg-blue-600/20',
-    text: 'text-blue-100',
-    subtext: 'text-blue-200/80',
+    container: 'border-l-4 border-emerald-500 bg-zinc-800/90',
+    text: 'text-zinc-100',
+    subtext: 'text-zinc-400',
     icon: Check,
-    iconClass: 'text-blue-400',
+    iconClass: 'text-emerald-400',
   },
   absent: {
     container: 'border-l-4 border-orange-500 bg-red-600/20',

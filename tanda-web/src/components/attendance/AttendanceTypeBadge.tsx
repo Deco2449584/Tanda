@@ -1,4 +1,4 @@
-import { formatAttendanceType } from '@/lib/attendance/format';
+﻿import { formatAttendanceType } from '@/lib/attendance/format';
 import type { AttendanceType } from '@/lib/types/attendance';
 
 interface AttendanceTypeBadgeProps {

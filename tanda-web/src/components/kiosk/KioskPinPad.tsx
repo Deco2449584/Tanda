@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 interface KioskPinPadProps {
   pin: string;
@@ -22,7 +22,7 @@ export function KioskPinPad({
   const display = pin.padEnd(8, '•').slice(0, 8);
 
   return (
-    <div className="w-full max-w-[640px] shrink-0 rounded-2xl border border-blue-300/25 bg-white/5 px-3 py-3 shadow-xl backdrop-blur-sm md:rounded-3xl md:px-8 md:py-8">
+    <div className="w-full max-w-[640px] shrink-0 rounded-2xl border border-primary/25 bg-white/5 px-3 py-3 shadow-xl backdrop-blur-sm md:rounded-3xl md:px-8 md:py-8">
      
       <p className="mt-1 text-center text-xs text-zinc-300 md:mt-2 md:text-base">
         Enter your PIN
@@ -83,7 +83,7 @@ export function KioskPinPad({
         type="button"
         disabled={loading || !pin}
         onClick={onSubmit}
-        className="mx-auto mt-3 flex h-11 w-full max-w-[470px] items-center justify-center rounded-full border border-blue-300/35 bg-blue-600 text-base font-bold tracking-wide text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-[74px] md:text-xl"
+        className="mx-auto mt-3 flex h-11 w-full max-w-[470px] items-center justify-center rounded-full bg-primary text-base font-bold tracking-wide text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-[74px] md:text-xl"
       >
         {loading ? (
           <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white md:h-6 md:w-6" />

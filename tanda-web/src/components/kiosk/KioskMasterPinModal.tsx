@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Lock, X } from 'lucide-react';
@@ -68,7 +68,7 @@ export function KioskMasterPinModal({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-blue-300/25 bg-zinc-900 p-6 shadow-2xl">
+      <div className="relative w-full max-w-sm rounded-2xl border border-primary/25 bg-zinc-900 p-6 shadow-2xl">
         <button
           type="button"
           onClick={onClose}
@@ -79,7 +79,7 @@ export function KioskMasterPinModal({
         </button>
 
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary">
             <Lock className="h-5 w-5" />
           </div>
           <div className="text-left">

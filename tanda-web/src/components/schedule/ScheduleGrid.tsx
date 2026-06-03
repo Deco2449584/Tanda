@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
@@ -7,6 +7,7 @@ import { ShiftCard } from '@/components/schedule/ShiftCard';
 import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfirmModal';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import { normalizeInputDate } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
@@ -40,7 +41,10 @@ export function ScheduleGrid({
     const map = new Map<string, Shift[]>();
 
     shifts.forEach((shift) => {
-      const key = shiftKey(shift.employeeId, shift.date);
+      const key = shiftKey(
+        shift.employeeId,
+        normalizeInputDate(shift.date),
+      );
       const existing = map.get(key) ?? [];
       existing.push(shift);
       map.set(key, existing);
@@ -85,8 +89,8 @@ export function ScheduleGrid({
       <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
         <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="min-w-[900px]">
-            <div className="grid grid-cols-8 border-b border-zinc-800 bg-blue-950/30">
-              <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-blue-100/80">
+            <div className="sticky top-0 z-10 grid grid-cols-8 border-b border-zinc-800 bg-zinc-950">
+              <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-400">
                 Employee
               </div>
               {weekDays.map((day) => (
@@ -124,7 +128,6 @@ export function ScheduleGrid({
                     const hasShift = cellShifts.length > 0;
 
                     function handleCellKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-                      if (hasShift) return;
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         onCellClick(employee, day.date);
@@ -134,20 +137,17 @@ export function ScheduleGrid({
                     return (
                       <div
                         key={`${employee.id}-${day.date}`}
-                        role={hasShift ? undefined : 'button'}
-                        tabIndex={hasShift ? undefined : 0}
-                        onClick={() => {
-                          if (!hasShift) onCellClick(employee, day.date);
-                        }}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onCellClick(employee, day.date)}
                         onKeyDown={handleCellKeyDown}
-                        className={`min-h-[88px] border-l border-zinc-800/60 p-1.5 text-left transition-colors ${
-                          hasShift
-                            ? 'cursor-default bg-zinc-950/20'
-                            : 'cursor-pointer hover:bg-blue-950/20 focus:outline-none focus:ring-1 focus:ring-blue-500/40'
-                        }`}
+                        className="group min-h-[88px] cursor-pointer border-l border-zinc-800/60 bg-zinc-950/20 p-1.5 text-left transition-colors hover:bg-zinc-800/40 focus:outline-none focus:ring-1 focus:ring-primary/50"
                       >
                         {hasShift ? (
-                          <div className="space-y-1">
+                          <div
+                            className="space-y-1"
+                            onClick={(event) => event.stopPropagation()}
+                          >
                             {cellShifts.map((shift) => (
                               <ShiftCard
                                 key={shift.id}
@@ -166,10 +166,15 @@ export function ScheduleGrid({
                             ))}
                           </div>
                         ) : (
-                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-zinc-800/80 text-zinc-600 hover:border-blue-700/50 hover:text-blue-500/70">
+                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-zinc-700/80 text-zinc-500 group-hover:border-zinc-500 group-hover:text-zinc-300">
                             <Plus className="h-4 w-4" />
                           </div>
                         )}
+                        {hasShift ? (
+                          <p className="pointer-events-none mt-1 text-center text-[9px] font-medium uppercase tracking-wide text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100">
+                            + Add shift
+                          </p>
+                        ) : null}
                       </div>
                     );
                   })}

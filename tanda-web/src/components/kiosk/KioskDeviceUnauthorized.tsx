@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
@@ -61,12 +61,12 @@ export function KioskDeviceUnauthorized({
   return (
     <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-3 py-4 md:px-4 md:py-6">
       <div
-        className="pointer-events-none absolute -left-10 -top-20 h-40 w-40 rounded-full bg-blue-600/15 blur-3xl md:h-56 md:w-56"
+        className="pointer-events-none absolute -left-10 -top-20 h-40 w-40 rounded-full bg-primary/15 blur-3xl md:h-56 md:w-56"
         aria-hidden
       />
 
       <div className="flex w-full max-w-md shrink-0 flex-col items-center text-center">
-        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-blue-500/30 bg-blue-950/50 text-blue-400 md:mb-6 md:h-24 md:w-24">
+        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-primary md:mb-6 md:h-24 md:w-24">
           <Lock className="h-8 w-8 md:h-12 md:w-12" strokeWidth={1.75} />
         </div>
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { CalendarRange } from 'lucide-react';
@@ -66,7 +66,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
         className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-600"
         aria-expanded={open}
       >
-        <CalendarRange className="h-4 w-4 text-blue-500" />
+        <CalendarRange className="h-4 w-4 text-primary" />
         {formatDateRangeLabel(value)}
       </button>
 
@@ -85,7 +85,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, start: e.target.value }))
                 }
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-600"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary"
               />
             </label>
 
@@ -97,7 +97,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, end: e.target.value }))
                 }
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-600"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary"
               />
             </label>
           </div>
@@ -113,7 +113,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
             <button
               type="button"
               onClick={handleApply}
-              className="flex-1 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white hover:bg-blue-700"
+              className="flex-1 rounded-lg bg-primary py-2 text-xs font-bold text-white hover:opacity-90"
             >
               Apply
             </button>

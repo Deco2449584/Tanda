@@ -14,9 +14,10 @@ import {
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
-  COLOR_HORAS_NORMAL,
+  COLOR_HORAS_NORMAL_FALLBACK,
 } from './chart-theme';
 import type { ShiftLoadDatum } from '@/lib/dashboard/types';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 interface ShiftLoadChartProps {
   data: ShiftLoadDatum[];
@@ -24,6 +25,8 @@ interface ShiftLoadChartProps {
 }
 
 export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
+  const { settings } = useCompanySettings();
+  const chartColor = settings.primaryColor || COLOR_HORAS_NORMAL_FALLBACK;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -101,12 +104,12 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
                 contentStyle={CHART_TOOLTIP_STYLE}
                 labelStyle={{ color: '#fafafa' }}
                 itemStyle={{ color: '#e4e4e7' }}
-                cursor={{ fill: 'rgba(37, 99, 235, 0.08)' }}
+                cursor={{ fill: 'color-mix(in srgb, var(--brand-primary) 8%, transparent)' }}
               />
               <Bar
                 dataKey="turnos"
                 name="Shifts"
-                fill={COLOR_HORAS_NORMAL}
+                fill={chartColor}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}
               />
