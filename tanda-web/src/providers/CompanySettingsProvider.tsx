@@ -55,18 +55,11 @@ function applyThemeToDocument(settings: CompanySettings): void {
     settings.primaryColor,
     DEFAULT_COMPANY_SETTINGS.primaryColor,
   );
-  const brandSecondary = normalizeHexColor(
-    settings.secondaryColor,
-    DEFAULT_COMPANY_SETTINGS.secondaryColor,
-  );
-
   document.documentElement.style.setProperty('--brand-primary', brandPrimary);
-  document.documentElement.style.setProperty('--brand-secondary', brandSecondary);
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CompanySettings] theme colors injected:', {
+    console.log('[CompanySettings] theme color injected:', {
       '--brand-primary': brandPrimary,
-      '--brand-secondary': brandSecondary,
     });
   }
 }
@@ -83,10 +76,6 @@ function mapSnapshotData(data: Record<string, unknown>): CompanySettings {
       typeof data.primaryColor === 'string'
         ? data.primaryColor
         : DEFAULT_COMPANY_SETTINGS.primaryColor,
-    secondaryColor:
-      typeof data.secondaryColor === 'string'
-        ? data.secondaryColor
-        : DEFAULT_COMPANY_SETTINGS.secondaryColor,
     timeZone:
       typeof data.timeZone === 'string'
         ? data.timeZone

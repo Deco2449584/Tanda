@@ -22,10 +22,6 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
       typeof data.primaryColor === 'string'
         ? data.primaryColor
         : DEFAULT_COMPANY_SETTINGS.primaryColor,
-    secondaryColor:
-      typeof data.secondaryColor === 'string'
-        ? data.secondaryColor
-        : DEFAULT_COMPANY_SETTINGS.secondaryColor,
     timeZone:
       typeof data.timeZone === 'string'
         ? data.timeZone
@@ -64,7 +60,6 @@ export async function saveCompanySettings(
       companyName: settings.companyName.trim(),
       logoUrl: settings.logoUrl,
       primaryColor: settings.primaryColor,
-      secondaryColor: settings.secondaryColor,
       timeZone: settings.timeZone,
       currency: settings.currency,
     },

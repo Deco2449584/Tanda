@@ -48,7 +48,7 @@ export function IdentityBrandingTab({
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
       <h2 className="text-sm font-semibold text-white">Identity & branding</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Company name, logo, and brand colors applied across the app and kiosk.
+        Company name, logo, and brand color applied across the app and kiosk.
       </p>
 
       <div className="mt-6 space-y-5">
@@ -103,54 +103,28 @@ export function IdentityBrandingTab({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="primary-color" className="mb-1.5 block text-sm text-zinc-400">
-              Primary color
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="primary-color"
-                type="color"
-                value={draft.primaryColor}
-                onChange={(e) =>
-                  onChange({ ...draft, primaryColor: e.target.value })
-                }
-                className="h-10 w-14 cursor-pointer rounded border border-zinc-700 bg-transparent"
-              />
-              <input
-                type="text"
-                value={draft.primaryColor}
-                onChange={(e) =>
-                  onChange({ ...draft, primaryColor: e.target.value })
-                }
-                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2 text-sm font-mono text-zinc-100"
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="secondary-color" className="mb-1.5 block text-sm text-zinc-400">
-              Secondary color
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="secondary-color"
-                type="color"
-                value={draft.secondaryColor}
-                onChange={(e) =>
-                  onChange({ ...draft, secondaryColor: e.target.value })
-                }
-                className="h-10 w-14 cursor-pointer rounded border border-zinc-700 bg-transparent"
-              />
-              <input
-                type="text"
-                value={draft.secondaryColor}
-                onChange={(e) =>
-                  onChange({ ...draft, secondaryColor: e.target.value })
-                }
-                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2 text-sm font-mono text-zinc-100"
-              />
-            </div>
+        <div>
+          <label htmlFor="primary-color" className="mb-1.5 block text-sm text-zinc-400">
+            Brand color
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              id="primary-color"
+              type="color"
+              value={draft.primaryColor}
+              onChange={(e) =>
+                onChange({ ...draft, primaryColor: e.target.value })
+              }
+              className="h-10 w-14 cursor-pointer rounded border border-zinc-700 bg-transparent"
+            />
+            <input
+              type="text"
+              value={draft.primaryColor}
+              onChange={(e) =>
+                onChange({ ...draft, primaryColor: e.target.value })
+              }
+              className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2 text-sm font-mono text-zinc-100"
+            />
           </div>
         </div>
 

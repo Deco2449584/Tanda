@@ -220,7 +220,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-24 -right-12 h-64 w-64 rounded-full bg-secondary/15 blur-3xl"
+        className="pointer-events-none absolute -bottom-24 -right-12 h-64 w-64 rounded-full bg-primary/15 blur-3xl"
         aria-hidden
       />
 
