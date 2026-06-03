@@ -22,6 +22,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     department: '',
     hourlyRate: 0,
   });
+  const [active, setActive] = useState(true);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       department: employee.department,
       hourlyRate: employee.hourlyRate,
     });
+    setActive(employee.active);
     setPhotoFile(null);
     setError('');
   }, [employee]);
@@ -95,6 +97,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         email: form.email.trim().toLowerCase(),
         department: form.department.trim(),
         hourlyRate: form.hourlyRate,
+        active,
       };
 
       if (photoUrl) {
@@ -223,6 +226,32 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               disabled={isBusy}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-3">
+            <div>
+              <p className="text-sm font-medium text-zinc-200">Active employee</p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Inactive employees are hidden from scheduling and kiosk PIN lookup.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={active}
+              aria-label={active ? 'Employee is active' : 'Employee is inactive'}
+              disabled={isBusy}
+              onClick={() => setActive((prev) => !prev)}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                active ? 'bg-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  active ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
 
           <div>

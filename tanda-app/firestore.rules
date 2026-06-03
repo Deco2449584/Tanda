@@ -42,10 +42,12 @@ service cloud.firestore {
           'employeeId',
           'department',
           'hourlyRate',
+          'active',
         ]) &&
         request.resource.data.name is string &&
         request.resource.data.email is string &&
         request.resource.data.employeeId is string &&
+        request.resource.data.active is bool &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'employeeId',
           'name',
@@ -53,6 +55,7 @@ service cloud.firestore {
           'department',
           'hourlyRate',
           'photoUrl',
+          'active',
         ]);
 
       allow delete: if request.auth != null;
