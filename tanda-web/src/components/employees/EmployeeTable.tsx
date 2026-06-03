@@ -94,17 +94,17 @@ export function EmployeeTable({
       <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/80">
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Photo</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Employee ID</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Full Name</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Email</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">
+            <tr className="border-b border-primary/25 bg-primary/10">
+              <th className="px-4 py-3.5 font-semibold text-white">Photo</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Employee ID</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Full Name</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Email</th>
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Hourly Rate (Pay)
               </th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Area/Dept</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Status</th>
-              <th className="px-4 py-3.5 font-semibold text-zinc-300">Actions</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Area/Dept</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Status</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Actions</th>
             </tr>
           </thead>
           <tbody>

@@ -9,7 +9,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { Download, Search } from 'lucide-react';
+import { Download, FileSpreadsheet, Search } from 'lucide-react';
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
 import { DateRangePicker } from '@/components/attendance/DateRangePicker';
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
@@ -167,10 +167,11 @@ export default function AttendancePage() {
               exportAttendanceRecordsToCsv(filteredForExport, employeeCodes)
             }
             disabled={loading || filteredForExport.length === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Export attendance report (CSV)"
+            aria-label="Export attendance report (CSV)"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Download className="h-4 w-4" />
-            EXPORT REPORT (CSV)
+            <Download className="h-4 w-4" strokeWidth={2} />
           </button>
 
           <button
@@ -179,10 +180,11 @@ export default function AttendancePage() {
               exportPayrollReportToCsv(records, employees, dateRange)
             }
             disabled={loading || records.length === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-4 py-2.5 text-sm font-semibold tracking-wide text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Export payroll report (CSV)"
+            aria-label="Export payroll report (CSV)"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Download className="h-4 w-4" />
-            PAYROLL REPORT (CSV)
+            <FileSpreadsheet className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
+import { Building2, ChevronDown } from 'lucide-react';
 import { AssignShiftModal } from '@/components/schedule/AssignShiftModal';
 import { AvailableEmployeesPanel } from '@/components/schedule/AvailableEmployeesPanel';
 import { MonthRangePicker } from '@/components/schedule/MonthRangePicker';
@@ -149,6 +150,19 @@ export default function SchedulePage() {
     setAssignModalOpen(true);
   }
 
+  function handleMonthDayClick(date: string) {
+    const first = filteredEmployees[0];
+    setAssignData({
+      employeeId: first?.employeeId ?? '',
+      employeeName: first?.name ?? '',
+      date,
+      startTime: '09:00',
+      endTime: '17:00',
+      department: first?.department ?? '',
+    });
+    setAssignModalOpen(true);
+  }
+
   return (
     <div className="flex h-full flex-col gap-6 p-4 md:p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
@@ -176,8 +190,8 @@ export default function SchedulePage() {
               onClick={() => setViewMode('weekly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'weekly'
-                  ? 'bg-primary text-white'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               }`}
             >
               Weekly
@@ -187,26 +201,36 @@ export default function SchedulePage() {
               onClick={() => setViewMode('monthly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'monthly'
-                  ? 'bg-primary text-white'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
               }`}
             >
               Monthly
             </button>
           </div>
 
-          <select
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-sm text-zinc-200 outline-none focus:border-primary/50"
-            aria-label="Filter by department"
-          >
-            {departments.map((department) => (
-              <option key={department} value={department}>
-                {department === 'all' ? 'All departments' : department}
-              </option>
-            ))}
-          </select>
+          <div className="relative min-w-[220px]">
+            <Building2
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+              aria-hidden
+            />
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="w-full appearance-none rounded-lg border border-primary/30 bg-zinc-900 py-2.5 pl-10 pr-9 text-sm font-medium text-white shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+              aria-label="Filter by department"
+            >
+              {departments.map((department) => (
+                <option key={department} value={department} className="bg-zinc-900">
+                  {department === 'all' ? 'All departments' : department}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden
+            />
+          </div>
         </div>
       </div>
 
@@ -229,6 +253,7 @@ export default function SchedulePage() {
             shifts={filteredShifts}
             loading={loading}
             monthLabel={month.label}
+            onDayClick={handleMonthDayClick}
           />
         )}
 
@@ -240,6 +265,7 @@ export default function SchedulePage() {
       <AssignShiftModal
         open={assignModalOpen}
         initialData={assignData}
+        employees={filteredEmployees}
         onClose={() => {
           setAssignModalOpen(false);
           setAssignData(null);

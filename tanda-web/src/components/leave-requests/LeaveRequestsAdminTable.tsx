@@ -79,24 +79,24 @@ export function LeaveRequestsAdminTable({
       <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-primary/20 bg-primary/10">
-              <th className="px-4 py-3.5 font-semibold text-primary/90">Photo</th>
-              <th className="px-4 py-3.5 font-semibold text-primary/90">
+            <tr className="border-b border-primary/25 bg-primary/10">
+              <th className="px-4 py-3.5 font-semibold text-white">Photo</th>
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Employee ID
               </th>
-              <th className="px-4 py-3.5 font-semibold text-primary/90">
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Leave type
               </th>
-              <th className="px-4 py-3.5 font-semibold text-primary/90">
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Date range
               </th>
-              <th className="px-4 py-3.5 font-semibold text-primary/90">
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Justification (summary)
               </th>
-              <th className="px-4 py-3.5 font-semibold text-primary/90">
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Status
               </th>
-              <th className="px-4 py-3.5 font-semibold text-primary/90">
+              <th className="px-4 py-3.5 font-semibold text-white">
                 Actions
               </th>
             </tr>

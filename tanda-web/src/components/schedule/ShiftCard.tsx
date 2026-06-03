@@ -12,18 +12,18 @@ interface ShiftCardProps {
 
 const statusStyles = {
   scheduled: {
-    container: 'border-l-4 border-primary bg-primary/20',
-    text: 'text-primary',
-    subtext: 'text-primary/80',
+    container: 'border-l-4 border-primary bg-zinc-800/90',
+    text: 'text-zinc-100',
+    subtext: 'text-zinc-400',
     icon: Clock,
     iconClass: 'text-primary',
   },
   completed: {
-    container: 'border-l-4 border-primary bg-primary/20',
-    text: 'text-primary',
-    subtext: 'text-primary/80',
+    container: 'border-l-4 border-emerald-500 bg-zinc-800/90',
+    text: 'text-zinc-100',
+    subtext: 'text-zinc-400',
     icon: Check,
-    iconClass: 'text-primary',
+    iconClass: 'text-emerald-400',
   },
   absent: {
     container: 'border-l-4 border-orange-500 bg-red-600/20',

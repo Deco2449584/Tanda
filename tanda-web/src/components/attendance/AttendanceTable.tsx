@@ -77,26 +77,26 @@ export function AttendanceTable({
         <div className="hidden md:block">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-primary/20 bg-primary/10">
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+              <tr className="border-b border-primary/25 bg-primary/10">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Employee ID
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Photo
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Employee
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Date
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Record Type
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Timestamp (Server)
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-primary/90">
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Actions
                 </th>
               </tr>
