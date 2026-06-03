@@ -1,4 +1,5 @@
 import { User } from 'lucide-react';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 
 interface AttendancePhotoProps {
   photoUrl: string;
@@ -16,11 +17,13 @@ export function AttendancePhoto({ photoUrl, name }: AttendancePhotoProps) {
   }
 
   return (
-    <img
+    <FirebaseImage
       src={photoUrl}
       alt={`Audit photo of ${name}`}
+      width={32}
+      height={32}
       className="h-8 w-8 rounded-full object-cover ring-2 ring-zinc-700"
-      referrerPolicy="no-referrer"
+      sizes="32px"
     />
   );
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
+import { isFirebaseStorageUrl } from '@/utils/imageOptimizer';
 
 interface EmployeePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -38,11 +40,23 @@ export function EmployeePhotoUpload({
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-2 ring-zinc-700">
           {displayUrl ? (
-            <img
-              src={displayUrl}
-              alt="Preview"
-              className="h-full w-full object-cover"
-            />
+            isFirebaseStorageUrl(displayUrl) ? (
+              <FirebaseImage
+                src={displayUrl}
+                alt="Preview"
+                width={64}
+                height={64}
+                className="h-full w-full object-cover"
+                sizes="64px"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={displayUrl}
+                alt="Preview"
+                className="h-full w-full object-cover"
+              />
+            )
           ) : (
             <User className="h-7 w-7 text-zinc-500" aria-hidden />
           )}

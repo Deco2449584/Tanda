@@ -6,9 +6,10 @@ import {
   type CompanySettings,
 } from '@/lib/types/company-settings';
 import { db, storage } from '@/lib/firebase';
+import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 
 const SETTINGS_DOC_ID = 'general';
-const LOGO_STORAGE_PATH = 'settings/logo.png';
+const LOGO_STORAGE_PATH = 'settings/logo.webp';
 
 function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
   return {
@@ -72,9 +73,10 @@ export async function uploadCompanyLogo(file: File): Promise<string> {
     throw new Error('Firebase Storage is not available.');
   }
 
+  const optimized = await optimizeImageForUpload(file);
   const storageRef = ref(storage, LOGO_STORAGE_PATH);
-  await uploadBytes(storageRef, file, {
-    contentType: file.type || 'image/png',
+  await uploadBytes(storageRef, optimized, {
+    contentType: 'image/webp',
   });
 
   return getDownloadURL(storageRef);

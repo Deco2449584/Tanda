@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
 import Webcam from 'react-webcam';
+import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 
 interface KioskCameraProps {
   actionType: 'check_in' | 'check_out';
@@ -17,17 +18,6 @@ const videoConstraints: MediaTrackConstraints = {
   width: { ideal: 1280 },
   height: { ideal: 720 },
 };
-
-function dataUrlToBlob(dataUrl: string): Blob {
-  const [header, data] = dataUrl.split(',');
-  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
-  const binary = atob(data);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return new Blob([bytes], { type: mime });
-}
 
 function FaceGuideOverlay() {
   return (
@@ -57,7 +47,7 @@ export function KioskCamera({
 
   const actionLabel = actionType === 'check_out' ? 'Clock Out' : 'Clock In';
 
-  const handleCapture = useCallback(() => {
+  const handleCapture = useCallback(async () => {
     if (processing) return;
 
     const screenshot = webcamRef.current?.getScreenshot({
@@ -68,8 +58,15 @@ export function KioskCamera({
       setCameraError('Could not capture photo. Please try again.');
       return;
     }
+
     setCameraError(null);
-    onCapture(dataUrlToBlob(screenshot), screenshot);
+    try {
+      const optimized = await optimizeImageForUpload(screenshot);
+      const previewUrl = URL.createObjectURL(optimized);
+      onCapture(optimized, previewUrl);
+    } catch {
+      setCameraError('Could not process photo. Please try again.');
+    }
   }, [onCapture, processing]);
 
   return (

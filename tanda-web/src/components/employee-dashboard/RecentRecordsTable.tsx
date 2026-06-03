@@ -1,6 +1,7 @@
 'use client';
 
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import type { EmployeeRecordsRange } from '@/hooks/useEmployeeAttendance';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -18,11 +19,13 @@ function RecordPhoto({ photoUrl }: { photoUrl: string }) {
   }
 
   return (
-    <img
+    <FirebaseImage
       src={photoUrl}
       alt="Photo verification"
+      width={40}
+      height={40}
       className="h-10 w-10 rounded-full object-cover ring-2 ring-zinc-700"
-      referrerPolicy="no-referrer"
+      sizes="40px"
     />
   );
 }

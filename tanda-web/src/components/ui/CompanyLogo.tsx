@@ -22,11 +22,14 @@ export function CompanyLogo({
 
   if (settings.logoUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={settings.logoUrl}
         alt={label}
+        width={280}
+        height={100}
+        priority={priority}
         className={`${className}${invert ? ' brightness-0 invert' : ''}`}
+        sizes="(max-width: 768px) 160px, 280px"
       />
     );
   }

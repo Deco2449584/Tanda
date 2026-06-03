@@ -168,11 +168,11 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
     try {
       const year = String(recordedAt.getFullYear());
       const month = String(recordedAt.getMonth() + 1).padStart(2, '0');
-      const fileName = `${Date.now()}-${session.actionType}.jpg`;
+      const fileName = `${Date.now()}-${session.actionType}.webp`;
       const photoPath = `attendance/${session.employeeId}/${year}/${month}/${fileName}`;
 
       const storageRef = ref(storage, photoPath);
-      await uploadBytes(storageRef, imageBlob, { contentType: 'image/jpeg' });
+      await uploadBytes(storageRef, imageBlob, { contentType: 'image/webp' });
       const photoUrl = await getDownloadURL(storageRef);
 
       await addDoc(collection(db, COLLECTIONS.ATTENDANCE_RECORDS), {
