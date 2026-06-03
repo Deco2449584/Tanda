@@ -212,7 +212,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const showLogo = step !== 'success';
 
   return (
-    <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-3 py-2 md:px-4 md:py-6">
+    <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden px-4 py-12">
       <div
         className="pointer-events-none absolute -left-10 -top-20 h-56 w-56 rounded-full bg-blue-600/20 blur-3xl"
         aria-hidden
@@ -222,45 +222,61 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
         aria-hidden
       />
 
-      {showLogo && (
-        <Image
-          src="/logo.svg"
-          alt="Continental Cargo"
-          width={280}
-          height={100}
-          priority
-          className="mb-2 h-10 w-auto shrink-0 brightness-0 invert drop-shadow-md md:mb-4 md:h-16"
-        />
-      )}
+      {step === 'pin' ? (
+        <>
+          <div className="flex shrink-0 flex-col items-center gap-6">
+            {showLogo && (
+              <Image
+                src="/logo.svg"
+                alt="Continental Cargo"
+                width={280}
+                height={100}
+                priority
+                className="h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"
+              />
+            )}
+            <KioskClock />
+          </div>
 
-      {step === 'pin' && <KioskClock />}
+          <div className="flex w-full max-w-[640px] shrink-0 flex-col items-center gap-4">
+            <KioskPinPad
+              pin={pin}
+              loading={loading}
+              onDigit={handleDigit}
+              onBackspace={() => setPin((prev) => prev.slice(0, -1))}
+              onClear={() => setPin('')}
+              onSubmit={() => void handleValidatePin()}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
+          {showLogo && (
+            <Image
+              src="/logo.svg"
+              alt="Continental Cargo"
+              width={280}
+              height={100}
+              priority
+              className="mb-6 h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"
+            />
+          )}
 
-      <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
-      {step === 'pin' && (
-        <KioskPinPad
-          pin={pin}
-          loading={loading}
-          onDigit={handleDigit}
-          onBackspace={() => setPin((prev) => prev.slice(0, -1))}
-          onClear={() => setPin('')}
-          onSubmit={() => void handleValidatePin()}
-        />
-      )}
+          {step === 'camera' && session && (
+            <KioskCamera
+              actionType={session.actionType}
+              employeeName={session.employeeName}
+              processing={processing}
+              onCapture={(blob, previewUrl) => void handleCapture(blob, previewUrl)}
+              onCancel={resetToPin}
+            />
+          )}
 
-      {step === 'camera' && session && (
-        <KioskCamera
-          actionType={session.actionType}
-          employeeName={session.employeeName}
-          processing={processing}
-          onCapture={(blob, previewUrl) => void handleCapture(blob, previewUrl)}
-          onCancel={resetToPin}
-        />
+          {step === 'success' && successData && (
+            <KioskSuccessModal data={successData} />
+          )}
+        </div>
       )}
-
-      {step === 'success' && successData && (
-        <KioskSuccessModal data={successData} />
-      )}
-      </div>
 
       {step === 'pin' && onLockDevice && (
         <button

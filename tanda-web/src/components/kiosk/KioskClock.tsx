@@ -37,25 +37,25 @@ export function KioskClock() {
   if (!isMounted || !now) {
     return (
       <div
-        className="mb-3 flex min-h-[4.5rem] flex-col items-center justify-center md:mb-5 md:min-h-[5.5rem]"
+        className="flex min-h-[5.5rem] flex-col items-center justify-center md:min-h-[6.5rem]"
         aria-hidden
       >
-        <div className="h-9 w-40 animate-pulse rounded-lg bg-zinc-800/80 md:h-11 md:w-48" />
-        <div className="mt-2 h-3 w-56 animate-pulse rounded bg-zinc-800/60 md:h-3.5 md:w-64" />
+        <div className="h-12 w-48 animate-pulse rounded-lg bg-zinc-800/80 md:h-14 md:w-56" />
+        <div className="mt-2 h-3 w-52 animate-pulse rounded bg-zinc-800/60 md:w-60" />
       </div>
     );
   }
 
   return (
-    <div className="mb-3 flex flex-col items-center text-center md:mb-5">
+    <div className="flex flex-col items-center text-center">
       <p
-        className="text-5xl font-black tabular-nums tracking-tight text-white drop-shadow-[0_0_15px_rgba(37,99,235,0.3)] md:text-6xl"
+        className="text-6xl font-bold tabular-nums tracking-tight text-white md:text-7xl"
         aria-live="polite"
         aria-atomic="true"
       >
         {formatClockTime(now)}
       </p>
-      <p className="mt-1 max-w-[min(100%,20rem)] text-xs font-semibold uppercase tracking-widest text-zinc-400 md:mt-1.5 md:max-w-none md:text-base">
+      <p className="mt-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 md:text-sm">
         {formatClockDate(now)}
       </p>
     </div>
