@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import {
   CalendarDays,
+  ClipboardList,
   Clock,
   LayoutDashboard,
   Settings,
@@ -32,6 +33,7 @@ const adminNavItems: NavItem[] = [
 
 const employeeNavItems: NavItem[] = [
   { label: 'My Dashboard', href: '/employee-dashboard', icon: LayoutDashboard },
+  { label: 'My Records', href: '/my-records', icon: ClipboardList },
   { label: 'My Schedule', href: '/my-schedule', icon: CalendarDays },
   { label: 'My Leave', href: '/my-requests', icon: ShieldCheck },
 ];

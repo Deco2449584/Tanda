@@ -1,15 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
-import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
 import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
-import { WeeklyScheduleStrip } from '@/components/employee-dashboard/WeeklyScheduleStrip';
-import {
-  useEmployeeAttendance,
-  type EmployeeRecordsRange,
-} from '@/hooks/useEmployeeAttendance';
+import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
@@ -22,8 +18,6 @@ export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
-  const [recordsRange, setRecordsRange] =
-    useState<EmployeeRecordsRange>('7days');
 
   const employeeCode = employee?.employeeId ?? '';
 
@@ -36,11 +30,10 @@ export default function EmployeeDashboardPage() {
   } = useEmployeeShifts({ employeeCode });
 
   const {
-    records: displayRecords,
     allRecords: attendanceRecords,
     loading: recordsLoading,
     error: recordsError,
-  } = useEmployeeAttendance({ employeeCode, displayRange: recordsRange });
+  } = useEmployeeAttendance({ employeeCode, displayRange: 'month' });
 
   const weeklyHours = useMemo(
     () =>
@@ -91,15 +84,10 @@ export default function EmployeeDashboardPage() {
             />
           </div>
 
-          <RecentRecordsTable
-            records={displayRecords}
-            loading={recordsLoading}
-            range={recordsRange}
-            onRangeChange={setRecordsRange}
-          />
-
-          <WeeklyScheduleStrip
+          <EmployeeWeeklySchedule
             weekDays={week.days}
+            weekStart={week.start}
+            weekEnd={week.end}
             shiftsByDate={shiftsByDate}
             loading={shiftsLoading}
           />
