@@ -2,25 +2,21 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import {
-  Bell,
-  ChevronDown,
-  LogOut,
-  Menu,
-  MessageSquare,
-  UserCircle,
-} from 'lucide-react';
+import { ChevronDown, LogOut, Menu, UserCircle } from 'lucide-react';
+import { AdminNotificationsMenu } from '@/components/layout/AdminNotificationsMenu';
 import { useSignOut } from '@/hooks/useSignOut';
 import { auth } from '@/lib/firebase';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import type { UserRole } from '@/lib/auth/roles';
 
 const DEFAULT_PROFILE_NAME = 'Admin Daniel G.';
 
 interface HeaderProps {
   onMenuClick?: () => void;
+  role?: UserRole;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, role }: HeaderProps) {
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -75,22 +71,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-4">
-        <button
-          type="button"
-          className="hidden rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100 sm:inline-flex"
-          aria-label="Messages"
-        >
-          <MessageSquare className="h-5 w-5" />
-        </button>
-
-        <button
-          type="button"
-          className="relative rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-zinc-950 md:ring-[#0a0a0a]" />
-        </button>
+        <AdminNotificationsMenu enabled={role === 'admin'} />
 
         <div className="relative z-[100]" ref={menuRef}>
           <button

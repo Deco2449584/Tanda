@@ -97,6 +97,14 @@ export function isForgottenCheckIn(
   );
 }
 
+export function countForgottenCheckIns(records: AttendanceRecord[]): number {
+  const checkIns = records.filter((record) => record.type === 'check_in');
+
+  return checkIns.filter((checkIn) =>
+    isForgottenCheckIn(checkIn, records),
+  ).length;
+}
+
 export function calculateWorkedHoursInRange(
   records: AttendanceRecord[],
   rangeStart: string,

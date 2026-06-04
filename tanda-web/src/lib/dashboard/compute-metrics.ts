@@ -90,6 +90,25 @@ export function computeLateAlerts(
   return lateCount;
 }
 
+export function computeMissingCheckInsToday(
+  todayShifts: Shift[],
+  todayRecords: AttendanceRecord[],
+): number {
+  const nowMinutes =
+    new Date().getHours() * 60 + new Date().getMinutes();
+
+  const checkedInToday = new Set(
+    todayRecords
+      .filter((record) => record.type === 'check_in')
+      .map((record) => record.employeeId),
+  );
+
+  return todayShifts.filter((shift) => {
+    if (checkedInToday.has(shift.employeeId)) return false;
+    return timeToMinutes(shift.startTime) < nowMinutes;
+  }).length;
+}
+
 export function buildShiftLoadByDepartment(todayShifts: Shift[]): ShiftLoadDatum[] {
   const counts = new Map<string, number>();
 
