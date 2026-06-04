@@ -4,6 +4,7 @@ import { useMemo, useState, type KeyboardEvent } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Plus } from 'lucide-react';
 import { ScheduleMobileWeek } from '@/components/schedule/ScheduleMobileWeek';
+import { ScheduleStatusLegend } from '@/components/schedule/ScheduleStatusLegend';
 import { ShiftCard } from '@/components/schedule/ShiftCard';
 import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfirmModal';
 import { COLLECTIONS } from '@/lib/constants';
@@ -90,7 +91,9 @@ export function ScheduleGrid({
   }
 
   return (
-    <>
+    <div className="flex min-w-0 w-full flex-col">
+      <ScheduleStatusLegend className="mb-3 shrink-0" />
+
       <div className="w-full md:hidden">
         <ScheduleMobileWeek
           employees={employees}
@@ -103,7 +106,7 @@ export function ScheduleGrid({
         />
       </div>
 
-      <div className="hidden w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm md:block">
+      <div className="hidden min-w-0 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm md:block">
         <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="min-w-[900px]">
             <div className="sticky top-0 z-10 grid grid-cols-8 border-b border-zinc-800 bg-zinc-950">
@@ -208,6 +211,6 @@ export function ScheduleGrid({
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
-    </>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import { buildWeekRange } from '@/lib/schedule/week';
 
 export interface DateRange {
   start: string;
@@ -16,6 +17,30 @@ export function getDefaultDateRange(): DateRange {
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - 6);
+
+  return {
+    start: toInputDate(start),
+    end: toInputDate(end),
+  };
+}
+
+export function getTodayRange(reference: Date = new Date()): DateRange {
+  const day = toInputDate(reference);
+  return { start: day, end: day };
+}
+
+export function getLastWeekRange(reference: Date = new Date()): DateRange {
+  const previous = new Date(reference);
+  previous.setDate(previous.getDate() - 7);
+  const week = buildWeekRange(previous);
+  return { start: week.start, end: week.end };
+}
+
+export function getCurrentMonthRange(reference: Date = new Date()): DateRange {
+  const year = reference.getFullYear();
+  const month = reference.getMonth();
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0);
 
   return {
     start: toInputDate(start),

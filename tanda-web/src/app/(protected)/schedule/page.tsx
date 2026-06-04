@@ -15,12 +15,16 @@ import { MonthRangePicker } from '@/components/schedule/MonthRangePicker';
 import { ScheduleGrid } from '@/components/schedule/ScheduleGrid';
 import { ScheduleMonthCalendar } from '@/components/schedule/ScheduleMonthCalendar';
 import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
+import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
+import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
+import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
 import { buildWeekRange } from '@/lib/schedule/week';
+import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 import type { AssignShiftInput, Shift } from '@/lib/types/shift';
 
@@ -33,6 +37,9 @@ export default function SchedulePage() {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignData, setAssignData] = useState<AssignShiftInput | null>(null);
@@ -62,12 +69,18 @@ export default function SchedulePage() {
 
     let employeesReady = false;
     let shiftsReady = false;
+    let attendanceReady = false;
 
     function checkReady() {
-      if (employeesReady && shiftsReady) {
+      if (employeesReady && shiftsReady && attendanceReady) {
         setLoading(false);
       }
     }
+
+    const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds({
+      start: rangeStart,
+      end: rangeEnd,
+    });
 
     const unsubscribeEmployees = onSnapshot(
       collection(db, COLLECTIONS.EMPLOYEES),
@@ -108,9 +121,34 @@ export default function SchedulePage() {
       },
     );
 
+    const attendanceQuery = query(
+      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+      where('timestampServer', '>=', attendanceStart),
+      where('timestampServer', '<=', attendanceEnd),
+      orderBy('timestampServer', 'asc'),
+    );
+
+    const unsubscribeAttendance = onSnapshot(
+      attendanceQuery,
+      (snapshot) => {
+        setAttendanceRecords(
+          snapshot.docs.map((document) =>
+            mapAttendanceDoc(document.id, document.data()),
+          ),
+        );
+        attendanceReady = true;
+        checkReady();
+      },
+      () => {
+        attendanceReady = true;
+        checkReady();
+      },
+    );
+
     return () => {
       unsubscribeEmployees();
       unsubscribeShifts();
+      unsubscribeAttendance();
     };
   }, [rangeEnd, rangeStart]);
 
@@ -138,14 +176,26 @@ export default function SchedulePage() {
   }, [activeEmployees, departmentFilter]);
 
   const filteredShifts = useMemo(() => {
-    if (departmentFilter === 'all') return shifts;
+    const base =
+      departmentFilter === 'all'
+        ? shifts
+        : shifts.filter((shift) => {
+            const allowedIds = new Set(
+              filteredEmployees.map((employee) => employee.employeeId),
+            );
+            return allowedIds.has(shift.employeeId);
+          });
 
-    const allowedIds = new Set(
-      filteredEmployees.map((employee) => employee.employeeId),
-    );
+    return applyResolvedShiftStatuses(base, attendanceRecords);
+  }, [attendanceRecords, departmentFilter, filteredEmployees, shifts]);
 
-    return shifts.filter((shift) => allowedIds.has(shift.employeeId));
-  }, [departmentFilter, filteredEmployees, shifts]);
+  const employeeNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    employees.forEach((employee) => {
+      map[employee.employeeId] = employee.name;
+    });
+    return map;
+  }, [employees]);
 
   function handleCellClick(employee: Employee, date: string) {
     setAssignData({
@@ -291,10 +341,11 @@ export default function SchedulePage() {
       <div className="min-h-0 flex-1 md:hidden">{scheduleGrid}</div>
 
       <div
-        className={`hidden min-h-0 flex-1 md:grid md:grid-cols-1 md:gap-4 ${
+        className={`hidden min-h-0 min-w-0 flex-1 md:grid md:grid-cols-1 md:gap-4 ${
           viewMode === 'weekly' ? 'xl:grid-cols-[minmax(0,1fr)_240px]' : ''
         }`}
       >
+        <div className="min-w-0">
         {viewMode === 'weekly' ? (
           scheduleGrid
         ) : (
@@ -303,9 +354,11 @@ export default function SchedulePage() {
             shifts={filteredShifts}
             loading={loading}
             monthLabel={month.label}
+            employeeNames={employeeNames}
             onDayClick={handleMonthDayClick}
           />
         )}
+        </div>
 
         {viewMode === 'weekly' && (
           <div className="hidden min-h-0 xl:block">
