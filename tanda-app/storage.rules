@@ -2,23 +2,48 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Fotos de asistencia (kiosk / tablet / web)
     match /attendance/{employeeId}/{year}/{month}/{fileName} {
       allow read: if true;
-      allow write: if
+      allow create: if
         employeeId is string &&
         employeeId.size() > 0 &&
-        request.resource.size < 8 * 1024 * 1024 &&
+        request.resource.size < 512 * 1024 &&
         request.resource.contentType.matches('image/.*');
     }
 
-    match /settings/{fileName} {
-      allow read: if true;
+    // Admin cleanup: listar y borrar fotos de asistencia (Settings → Data cleanup)
+    match /attendance/{allPaths=**} {
+      allow list, delete: if request.auth != null;
+    }
+
+    // NUEVAS REGLAS: Fotos de perfil (Avatares) desde la Web
+    match /avatars/{fileName} {
+      allow read: if true; // Permite que cualquier usuario vea las fotos en las tablas
+      allow write: if
+        request.auth != null && // SOLO el administrador logueado en la web puede subirlas/editarlas
+        request.resource.size < 512 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+
+    // Continental Inspect — evidencias logísticas (fotos y videos)
+    // Ruta en app: cargo_inspections/{userId}/{inspectionId}/photos|videos/{fileName}
+    match /cargo_inspections/{userId}/{inspectionId}/{folder}/{fileName} {
+      allow read: if request.auth != null;
       allow write: if
         request.auth != null &&
-        request.resource.size < 5 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*');
+        request.auth.uid == userId &&
+        folder in ['photos', 'videos'] &&
+        request.resource.size < 50 * 1024 * 1024 &&
+        (
+          request.resource.contentType.matches('image/.*') ||
+          request.resource.contentType.matches('video/.*')
+        );
     }
 
+    // Bloquea todo lo demás por defecto
     match /{allPaths=**} {
       allow read, write: if false;
     }

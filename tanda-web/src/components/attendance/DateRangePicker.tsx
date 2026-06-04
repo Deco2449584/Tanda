@@ -108,7 +108,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
               onClick={handleReset}
               className="flex-1 rounded-lg border border-zinc-700 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
             >
-              Last 7 days
+              This week
             </button>
             <button
               type="button"

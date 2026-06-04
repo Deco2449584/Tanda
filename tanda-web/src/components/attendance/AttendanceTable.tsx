@@ -8,7 +8,11 @@ import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
 import { ForgottenCheckoutBadge } from '@/components/attendance/ForgottenCheckoutBadge';
 import { isForgottenCheckIn } from '@/lib/attendance/work-sessions';
-import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
+import {
+  formatRecordDate,
+  formatRecordDateShort,
+  formatRecordTime,
+} from '@/lib/attendance/format';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -179,92 +183,89 @@ export function AttendanceTable({
           </table>
         </div>
 
-        <div className="flex flex-col gap-4 p-4 md:hidden">
+        <ul className="divide-y divide-zinc-800/80 md:hidden">
           {filteredRecords.length === 0 ? (
-            <p className="py-8 text-center text-sm text-zinc-500">{emptyMessage}</p>
+            <li className="px-3 py-8 text-center text-sm text-zinc-500">{emptyMessage}</li>
           ) : (
             filteredRecords.map((record) => {
               const forgotten = isForgottenCheckIn(record, records);
-              const timeOrStatus = forgotten ? (
-                <ForgottenCheckoutBadge />
-              ) : (
-                formatRecordTime(record.timestampServer)
-              );
+              const employeeCode =
+                employeeCodes[record.employeeId] ?? record.employeeId ?? '—';
 
               return (
-                <article
-                  key={record.id}
-                  className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-lg font-semibold text-white">
-                        {record.employeeNameSnapshot}
-                      </p>
-                      <p className="mt-0.5 font-mono text-xs text-zinc-500">
-                        {employeeCodes[record.employeeId] ?? record.employeeId ?? '—'}
-                      </p>
-                    </div>
+                <li key={record.id}>
+                  <article className="flex items-start gap-2.5 px-3 py-2.5">
                     <AttendancePhoto
                       photoUrl={record.photoUrl}
                       name={record.employeeNameSnapshot}
                     />
-                  </div>
 
-                  <dl className="mt-4 space-y-2 text-sm">
-                    <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
-                      <dt className="text-zinc-500">Date</dt>
-                      <dd className="text-zinc-300">
-                        {formatRecordDate(record.timestampServer)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
-                      <dt className="text-zinc-500">Type</dt>
-                      <dd>
-                        <AttendanceTypeBadge type={record.type} />
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt className="text-zinc-500">{forgotten ? 'Status' : 'Time'}</dt>
-                      <dd className="text-zinc-300">{timeOrStatus}</dd>
-                    </div>
-                  </dl>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium leading-tight text-white">
+                            {record.employeeNameSnapshot}
+                          </p>
+                          <p className="font-mono text-[10px] leading-tight text-zinc-500">
+                            {employeeCode}
+                          </p>
+                        </div>
 
-                  {forgotten ? (
-                    <button
-                      type="button"
-                      onClick={() => onAddManualCheckout(record)}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/15 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Add manual check-out
-                    </button>
-                  ) : null}
+                        <div className="flex shrink-0 items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => onEdit(record)}
+                            className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-primary"
+                            aria-label={`Edit record for ${record.employeeNameSnapshot}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPendingDelete(record)}
+                            disabled={deletingId === record.id}
+                            className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Delete record for ${record.employeeNameSnapshot}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
 
-                  <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(record)}
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-primary"
-                      aria-label={`Edit record for ${record.employeeNameSnapshot}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPendingDelete(record)}
-                      disabled={deletingId === record.id}
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label={`Delete record for ${record.employeeNameSnapshot}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </article>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-zinc-400">
+                        <span className="tabular-nums">
+                          {formatRecordDateShort(record.timestampServer)}
+                        </span>
+                        <span className="text-zinc-600" aria-hidden>
+                          ·
+                        </span>
+                        {forgotten ? (
+                          <ForgottenCheckoutBadge compact />
+                        ) : (
+                          <span className="tabular-nums text-zinc-300">
+                            {formatRecordTime(record.timestampServer)}
+                          </span>
+                        )}
+                        <AttendanceTypeBadge type={record.type} compact />
+                      </div>
+
+                      {forgotten ? (
+                        <button
+                          type="button"
+                          onClick={() => onAddManualCheckout(record)}
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary transition-colors hover:text-primary/80"
+                        >
+                          <LogOut className="h-3 w-3" />
+                          Add check-out
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                </li>
               );
             })
           )}
-        </div>
+        </ul>
 
         <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3 text-xs text-zinc-500">
           <span>

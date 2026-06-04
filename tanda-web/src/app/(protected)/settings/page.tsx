@@ -2,22 +2,23 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
-import { IdentityBrandingTab } from '@/components/settings/IdentityBrandingTab';
+import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import {
+  COMPANY_NAME,
   DEFAULT_COMPANY_SETTINGS,
   type CompanySettings,
 } from '@/lib/types/company-settings';
 
-type SettingsTab = 'branding' | 'localization' | 'profile';
+type SettingsTab = 'localization' | 'profile' | 'data';
 
-const TABS: { id: SettingsTab; label: string }[] = [
-  { id: 'branding', label: 'Identity & Branding' },
+const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
   { id: 'profile', label: 'Administrator' },
+  { id: 'data', label: 'Data cleanup' },
 ];
 
 function deriveDisplayName(
@@ -35,11 +36,15 @@ function deriveDisplayName(
 }
 
 export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuthRole();
-  const { settings, loading: settingsLoading, saving, saveSettings, uploadLogo } =
+  const { user, loading: authLoading, role } = useAuthRole();
+  const tabs =
+    role === 'admin'
+      ? ADMIN_TABS
+      : ADMIN_TABS.filter((tab) => tab.id !== 'data');
+  const { settings, loading: settingsLoading, saving, saveSettings } =
     useCompanySettings();
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>('branding');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('localization');
   const [draft, setDraft] = useState<CompanySettings>(DEFAULT_COMPANY_SETTINGS);
   const [adminName, setAdminName] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -59,19 +64,6 @@ export default function SettingsPage() {
     },
     [],
   );
-
-  async function handleUploadLogo(file: File) {
-    showToast('Uploading logo…', 'info');
-    try {
-      const logoUrl = await uploadLogo(file);
-      const next = { ...draft, logoUrl };
-      setDraft(next);
-      await saveSettings(next);
-      showToast('Logo uploaded and saved.');
-    } catch {
-      showToast('Could not upload logo.', 'error');
-    }
-  }
 
   async function handleSaveSettings(next: CompanySettings) {
     showToast('Saving settings…', 'info');
@@ -93,12 +85,12 @@ export default function SettingsPage() {
           System settings
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          White-label configuration for {settings.companyName}
+          Regional configuration for {COMPANY_NAME}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-1">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -118,15 +110,6 @@ export default function SettingsPage() {
         <div className="h-96 animate-pulse rounded-2xl bg-zinc-900/60" />
       ) : (
         <div className="max-w-2xl">
-          {activeTab === 'branding' && (
-            <IdentityBrandingTab
-              draft={draft}
-              saving={saving}
-              onChange={setDraft}
-              onUploadLogo={handleUploadLogo}
-              onSave={() => void handleSaveSettings(draft)}
-            />
-          )}
           {activeTab === 'localization' && (
             <LocalizationTab
               draft={draft}
@@ -142,6 +125,9 @@ export default function SettingsPage() {
               loading={authLoading}
               onNameChange={setAdminName}
             />
+          )}
+          {activeTab === 'data' && role === 'admin' && (
+            <DataPurgeTab adminEmail={user?.email ?? ''} />
           )}
         </div>
       )}

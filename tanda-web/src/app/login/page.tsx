@@ -14,7 +14,7 @@ import {
 import { getHomeRouteForRole, getRoleFromEmail } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 function getAuthErrorMessage(code: string): string {
   switch (code) {
@@ -50,7 +50,6 @@ const highlights = [
 ];
 
 export default function LoginPage() {
-  const { settings } = useCompanySettings();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,9 +103,9 @@ export default function LoginPage() {
           </div>
 
           <CompanyLogo
-            alt={settings.companyName}
-            className="h-28 w-auto max-w-full object-contain xl:h-36"
+            invert
             priority
+            className="h-28 w-auto max-w-full object-contain drop-shadow-md xl:h-36"
           />
 
           <h1 className="mt-8 max-w-md text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
@@ -114,7 +113,7 @@ export default function LoginPage() {
             <span className="text-primary">under control.</span>
           </h1>
           <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-400">
-            The {settings.companyName} portal for admins and staff — attendance,
+            The {COMPANY_NAME} portal for admins and staff — attendance,
             schedules, leave, and payroll insights in a single secure workspace.
           </p>
         </div>
@@ -137,7 +136,7 @@ export default function LoginPage() {
         </ul>
 
         <p className="mt-10 text-xs text-zinc-600">
-          © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
+          © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
         </p>
       </section>
 
@@ -145,9 +144,9 @@ export default function LoginPage() {
         <div className="mx-auto my-auto w-full max-w-md lg:my-0">
           <div className="mb-8 flex flex-col items-center lg:hidden">
             <CompanyLogo
-              alt={settings.companyName}
-              className="h-24 w-full max-w-[320px] object-contain sm:h-28"
+              invert
               priority
+              className="h-24 w-full max-w-[320px] object-contain drop-shadow-md sm:h-28"
             />
             <p className="mt-3 text-center text-xs font-medium uppercase tracking-widest text-primary/90">
               TimeTracker PRO
@@ -248,7 +247,7 @@ export default function LoginPage() {
             </form>
 
             <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-600 lg:hidden">
-              Secure access for {settings.companyName} employees and administrators.
+              Secure access for {COMPANY_NAME} employees and administrators.
             </p>
           </div>
 

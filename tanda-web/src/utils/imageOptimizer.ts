@@ -1,10 +1,21 @@
 import imageCompression from 'browser-image-compression';
+import { MAX_SOURCE_IMAGE_BYTES } from '@/lib/images/constants';
 
-const COMPRESSION_OPTIONS = {
-  maxSizeMB: 0.1,
-  maxWidthOrHeight: 800,
-  useWebWorker: true,
-  fileType: 'image/webp',
+export type ImageUploadProfile = 'avatar' | 'attendance';
+
+const PROFILE_OPTIONS = {
+  avatar: {
+    maxSizeMB: 0.08,
+    maxWidthOrHeight: 400,
+    useWebWorker: true,
+    fileType: 'image/webp',
+  },
+  attendance: {
+    maxSizeMB: 0.12,
+    maxWidthOrHeight: 720,
+    useWebWorker: true,
+    fileType: 'image/webp',
+  },
 } as const;
 
 async function dataUrlToFile(dataUrl: string): Promise<File> {
@@ -20,16 +31,37 @@ function toWebpFileName(name: string): string {
   return `${base}.webp`;
 }
 
-/** Aggressive client-side compression before Firebase Storage upload. */
+export function validateImageFile(file: File): string | null {
+  if (!file.type.startsWith('image/')) {
+    return 'Please choose a JPEG, PNG, or WebP image.';
+  }
+
+  if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+    return 'Image is too large. Choose a file under 15 MB.';
+  }
+
+  return null;
+}
+
+/** Client-side WebP compression before Firebase Storage upload. */
 export async function optimizeImageForUpload(
   fileOrDataUrl: File | string,
+  profile: ImageUploadProfile = 'attendance',
 ): Promise<File> {
   const source =
     typeof fileOrDataUrl === 'string'
       ? await dataUrlToFile(fileOrDataUrl)
       : fileOrDataUrl;
 
-  const compressed = await imageCompression(source, COMPRESSION_OPTIONS);
+  const validationError = validateImageFile(source);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const compressed = await imageCompression(
+    source,
+    PROFILE_OPTIONS[profile],
+  );
 
   return new File([compressed], toWebpFileName(source.name), {
     type: 'image/webp',
@@ -47,4 +79,8 @@ export function isFirebaseStorageUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+export function isBlobOrDataUrl(url: string): boolean {
+  return url.startsWith('blob:') || url.startsWith('data:');
 }

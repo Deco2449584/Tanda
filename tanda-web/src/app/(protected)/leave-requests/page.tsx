@@ -8,19 +8,28 @@ import {
   query,
 } from 'firebase/firestore';
 import { ChevronDown, Filter, Search } from 'lucide-react';
+import {
+  LeaveDateFilterBar,
+  type LeaveDatePreset,
+} from '@/components/leave-requests/LeaveDateFilterBar';
 import { LeaveRequestsAdminTable } from '@/components/leave-requests/LeaveRequestsAdminTable';
-import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
 import { COLLECTIONS, LEAVE_REQUEST_STATUSES } from '@/lib/constants';
+import {
+  getCurrentMonthRange,
+  getLastWeekRange,
+  getTodayRange,
+  type DateRange,
+} from '@/lib/attendance/date-range';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
 import { requestOverlapsRange } from '@/lib/leave-requests/format';
 import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
-import { buildWeekRange } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
 import type { LeaveRequest, LeaveRequestStatus } from '@/lib/types/leave-request';
 
 export default function LeaveRequestsPage() {
-  const [weekReference, setWeekReference] = useState(() => new Date());
+  const [dateRange, setDateRange] = useState<DateRange>(() => getCurrentMonthRange());
+  const [datePreset, setDatePreset] = useState<LeaveDatePreset>('month');
   const [statusFilter, setStatusFilter] = useState<LeaveRequestStatus | 'all'>(
     'all',
   );
@@ -28,8 +37,6 @@ export default function LeaveRequestsPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const week = useMemo(() => buildWeekRange(weekReference), [weekReference]);
 
   useEffect(() => {
     if (!db) {
@@ -111,13 +118,30 @@ export default function LeaveRequestsPage() {
       const matchesDate = requestOverlapsRange(
         request.startDate,
         request.endDate,
-        week.start,
-        week.end,
+        dateRange.start,
+        dateRange.end,
       );
 
       return matchesStatus && matchesDate;
     });
-  }, [requests, statusFilter, week.start, week.end]);
+  }, [dateRange.end, dateRange.start, requests, statusFilter]);
+
+  function handlePresetChange(preset: LeaveDatePreset) {
+    setDatePreset(preset);
+
+    if (preset === 'today') {
+      setDateRange(getTodayRange());
+    } else if (preset === 'lastWeek') {
+      setDateRange(getLastWeekRange());
+    } else if (preset === 'month') {
+      setDateRange(getCurrentMonthRange());
+    }
+  }
+
+  function handleRangeChange(range: DateRange) {
+    setDateRange(range);
+    setDatePreset('custom');
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -125,10 +149,12 @@ export default function LeaveRequestsPage() {
         Leave requests center
       </h1>
 
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <WeekRangePicker
-          referenceDate={weekReference}
-          onChange={setWeekReference}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <LeaveDateFilterBar
+          dateRange={dateRange}
+          activePreset={datePreset}
+          onPresetChange={handlePresetChange}
+          onRangeChange={handleRangeChange}
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

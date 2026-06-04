@@ -10,17 +10,27 @@ import {
   where,
 } from 'firebase/firestore';
 import { Download, FileSpreadsheet, Search } from 'lucide-react';
+import {
+  AttendanceDateFilterBar,
+  type AttendanceDatePreset,
+} from '@/components/attendance/AttendanceDateFilterBar';
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
-import { DateRangePicker } from '@/components/attendance/DateRangePicker';
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
-import { exportPayrollReportToCsv } from '@/lib/attendance/export-payroll-csv';
 import {
+  buildPayrollReport,
+  exportPayrollReportToCsv,
+  formatPayrollSummaryText,
+} from '@/lib/attendance/export-payroll-csv';
+import {
+  getCurrentWeekDateRange,
   getDefaultDateRange,
+  getLastWeekRange,
   toFirestoreRangeBounds,
   type DateRange,
 } from '@/lib/attendance/date-range';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { COLLECTIONS } from '@/lib/constants';
@@ -28,12 +38,28 @@ import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
+function resolveAttendancePreset(range: DateRange): AttendanceDatePreset {
+  const thisWeek = getCurrentWeekDateRange();
+  if (range.start === thisWeek.start && range.end === thisWeek.end) {
+    return 'thisWeek';
+  }
+
+  const lastWeek = getLastWeekRange();
+  if (range.start === lastWeek.start && range.end === lastWeek.end) {
+    return 'lastWeek';
+  }
+
+  return 'custom';
+}
+
 export default function AttendancePage() {
+  const { settings } = useCompanySettings();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
+  const [datePreset, setDatePreset] = useState<AttendanceDatePreset>('thisWeek');
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
     null,
   );
@@ -64,7 +90,7 @@ export default function AttendancePage() {
       where('timestampServer', '>=', start),
       where('timestampServer', '<=', end),
       orderBy('timestampServer', 'desc'),
-      limit(200),
+      limit(5000),
     );
 
     const unsubscribeRecords = onSnapshot(
@@ -137,6 +163,29 @@ export default function AttendancePage() {
     ? employeesByCode[manualCheckoutRecord.employeeId] ?? null
     : null;
 
+  const activeEmployeeCount = useMemo(
+    () => employees.filter((employee) => employee.active).length,
+    [employees],
+  );
+
+  function handlePayrollExport() {
+    const exported = exportPayrollReportToCsv(records, employees, dateRange, {
+      currency: settings.currency,
+    });
+
+    if (!exported) {
+      window.alert('No active employees to include in the payroll report.');
+      return;
+    }
+
+    const summary = formatPayrollSummaryText(
+      buildPayrollReport(records, employees, dateRange, {
+        currency: settings.currency,
+      }),
+    );
+    window.alert(`Payroll CSV downloaded.\n\n${summary}`);
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
@@ -144,7 +193,15 @@ export default function AttendancePage() {
       </h1>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        <AttendanceDateFilterBar
+          dateRange={dateRange}
+          activePreset={datePreset}
+          onPresetChange={setDatePreset}
+          onRangeChange={(range) => {
+            setDateRange(range);
+            setDatePreset(resolveAttendancePreset(range));
+          }}
+        />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:min-w-[280px]">
@@ -176,12 +233,10 @@ export default function AttendancePage() {
 
           <button
             type="button"
-            onClick={() =>
-              exportPayrollReportToCsv(records, employees, dateRange)
-            }
-            disabled={loading || records.length === 0}
-            title="Export payroll report (CSV)"
-            aria-label="Export payroll report (CSV)"
+            onClick={handlePayrollExport}
+            disabled={loading || activeEmployeeCount === 0}
+            title="Weekly payroll CSV for accounting (period, hours, days, rate, gross pay)"
+            aria-label="Export weekly payroll CSV for accounting"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FileSpreadsheet className="h-4 w-4" strokeWidth={2} />

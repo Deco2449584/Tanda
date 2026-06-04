@@ -3,6 +3,8 @@
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Plus } from 'lucide-react';
+import { ScheduleMobileWeek } from '@/components/schedule/ScheduleMobileWeek';
+import { ScheduleStatusLegend } from '@/components/schedule/ScheduleStatusLegend';
 import { ShiftCard } from '@/components/schedule/ShiftCard';
 import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfirmModal';
 import { COLLECTIONS } from '@/lib/constants';
@@ -76,17 +78,35 @@ export function ScheduleGrid({
     }
   }
 
+  function requestDelete(shift: Shift, employeeName: string) {
+    setPendingDelete({ shift, employeeName });
+  }
+
   if (loading) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60">
+      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 md:min-h-[420px]">
         <p className="text-sm text-zinc-400">Loading schedule...</p>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
+    <div className="flex min-w-0 w-full flex-col">
+      <ScheduleStatusLegend className="mb-3 shrink-0" />
+
+      <div className="w-full md:hidden">
+        <ScheduleMobileWeek
+          employees={employees}
+          shifts={shifts}
+          weekDays={weekDays}
+          shiftsByCell={shiftsByCell}
+          employeesByCode={employeesByCode}
+          onCellClick={onCellClick}
+          onDeleteShift={requestDelete}
+        />
+      </div>
+
+      <div className="hidden min-w-0 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm md:block">
         <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="min-w-[900px]">
             <div className="sticky top-0 z-10 grid grid-cols-8 border-b border-zinc-800 bg-zinc-950">
@@ -155,12 +175,11 @@ export function ScheduleGrid({
                                 employeeName={employee.name}
                                 employeePhotoUrl={employee.photoUrl}
                                 onDelete={(shiftToDelete) =>
-                                  setPendingDelete({
-                                    shift: shiftToDelete,
-                                    employeeName:
-                                      employeesByCode.get(shiftToDelete.employeeId)
-                                        ?.name ?? employee.name,
-                                  })
+                                  requestDelete(
+                                    shiftToDelete,
+                                    employeesByCode.get(shiftToDelete.employeeId)
+                                      ?.name ?? employee.name,
+                                  )
                                 }
                               />
                             ))}
@@ -192,6 +211,6 @@ export function ScheduleGrid({
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
-    </>
+    </div>
   );
 }

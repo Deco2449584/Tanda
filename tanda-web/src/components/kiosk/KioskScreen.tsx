@@ -14,7 +14,7 @@ import {
   where,
   type Timestamp,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { uploadImageToStorage } from '@/lib/images/storage-upload';
 import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskMasterPinModal } from '@/components/kiosk/KioskMasterPinModal';
@@ -25,7 +25,6 @@ import {
 } from '@/components/kiosk/KioskSuccessModal';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { COLLECTIONS } from '@/lib/constants';
 import { db, storage } from '@/lib/firebase';
 import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
@@ -54,7 +53,6 @@ interface KioskScreenProps {
 }
 
 export function KioskScreen({ onLockDevice }: KioskScreenProps) {
-  const { settings } = useCompanySettings();
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -65,10 +63,15 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const [lockModalOpen, setLockModalOpen] = useState(false);
 
   const resetToPin = useCallback(() => {
+    setSuccessData((current) => {
+      if (current?.photoPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(current.photoPreviewUrl);
+      }
+      return null;
+    });
     setStep('pin');
     setPin('');
     setSession(null);
-    setSuccessData(null);
     setProcessing(false);
     setLoading(false);
   }, []);
@@ -171,9 +174,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
       const fileName = `${Date.now()}-${session.actionType}.webp`;
       const photoPath = `attendance/${session.employeeId}/${year}/${month}/${fileName}`;
 
-      const storageRef = ref(storage, photoPath);
-      await uploadBytes(storageRef, imageBlob, { contentType: 'image/webp' });
-      const photoUrl = await getDownloadURL(storageRef);
+      const photoUrl = await uploadImageToStorage(photoPath, imageBlob);
 
       await addDoc(collection(db, COLLECTIONS.ATTENDANCE_RECORDS), {
         employeeId: session.employeeId,
@@ -229,7 +230,6 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
           <div className="flex shrink-0 flex-col items-center gap-6">
             {showLogo && (
               <CompanyLogo
-                alt={settings.companyName}
                 priority
                 invert
                 className="h-16 w-auto shrink-0 brightness-0 invert drop-shadow-md"
@@ -253,7 +253,6 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
         <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
           {showLogo && (
             <CompanyLogo
-              alt={settings.companyName}
               priority
               invert
               className="mb-6 h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"

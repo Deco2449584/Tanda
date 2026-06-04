@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import { buildWeekRange, formatWeekRangeLabel } from '@/lib/schedule/week';
 
 export interface DateRange {
   start: string;
@@ -13,9 +14,40 @@ function toInputDate(date: Date): string {
 }
 
 export function getDefaultDateRange(): DateRange {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - 6);
+  return getCurrentWeekDateRange();
+}
+
+export function getCurrentWeekDateRange(reference: Date = new Date()): DateRange {
+  const week = buildWeekRange(reference);
+  return { start: week.start, end: week.end };
+}
+
+export function formatPayPeriodLabel(range: DateRange): string {
+  const week = buildWeekRange(new Date(`${range.start}T12:00:00`));
+  if (week.start === range.start && week.end === range.end) {
+    return `Week ${formatWeekRangeLabel(week)}`;
+  }
+
+  return formatDateRangeLabel(range);
+}
+
+export function getTodayRange(reference: Date = new Date()): DateRange {
+  const day = toInputDate(reference);
+  return { start: day, end: day };
+}
+
+export function getLastWeekRange(reference: Date = new Date()): DateRange {
+  const previous = new Date(reference);
+  previous.setDate(previous.getDate() - 7);
+  const week = buildWeekRange(previous);
+  return { start: week.start, end: week.end };
+}
+
+export function getCurrentMonthRange(reference: Date = new Date()): DateRange {
+  const year = reference.getFullYear();
+  const month = reference.getMonth();
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0);
 
   return {
     start: toInputDate(start),

@@ -17,7 +17,6 @@ import {
   COLOR_HORAS_NORMAL_FALLBACK,
 } from './chart-theme';
 import type { WeeklyHoursDatum } from '@/lib/dashboard/types';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 interface WeeklyHoursChartProps {
   data: WeeklyHoursDatum[];
@@ -25,8 +24,7 @@ interface WeeklyHoursChartProps {
 }
 
 export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProps) {
-  const { settings } = useCompanySettings();
-  const chartColor = settings.primaryColor || COLOR_HORAS_NORMAL_FALLBACK;
+  const chartColor = COLOR_HORAS_NORMAL_FALLBACK;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

@@ -17,7 +17,6 @@ import {
   COLOR_HORAS_NORMAL_FALLBACK,
 } from './chart-theme';
 import type { ShiftLoadDatum } from '@/lib/dashboard/types';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 interface ShiftLoadChartProps {
   data: ShiftLoadDatum[];
@@ -25,8 +24,7 @@ interface ShiftLoadChartProps {
 }
 
 export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
-  const { settings } = useCompanySettings();
-  const chartColor = settings.primaryColor || COLOR_HORAS_NORMAL_FALLBACK;
+  const chartColor = COLOR_HORAS_NORMAL_FALLBACK;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

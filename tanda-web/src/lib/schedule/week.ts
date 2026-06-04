@@ -82,3 +82,22 @@ export function formatTimeLabel(time: string): string {
     hour12: true,
   });
 }
+
+function formatTimeCompact(time: string): string {
+  const [hoursRaw, minutesRaw] = time.split(':');
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return time;
+
+  const period = hours >= 12 ? 'p' : 'a';
+  const h12 = hours % 12 || 12;
+
+  if (minutes === 0) return `${h12}${period}`;
+
+  return `${h12}:${String(minutes).padStart(2, '0')}${period}`;
+}
+
+export function formatShiftTimeRangeShort(startTime: string, endTime: string): string {
+  return `${formatTimeCompact(startTime)}–${formatTimeCompact(endTime)}`;
+}

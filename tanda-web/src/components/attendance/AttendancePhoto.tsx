@@ -24,6 +24,7 @@ export function AttendancePhoto({ photoUrl, name }: AttendancePhotoProps) {
       height={32}
       className="h-8 w-8 rounded-full object-cover ring-2 ring-zinc-700"
       sizes="32px"
+      quality={70}
     />
   );
 }

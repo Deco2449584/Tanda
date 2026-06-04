@@ -18,6 +18,15 @@ export function formatRecordDate(timestamp: Timestamp | null): string {
   return `${year}-${month}-${day}`;
 }
 
+export function formatRecordDateShort(timestamp: Timestamp | null): string {
+  if (!timestamp) return '—';
+
+  return timestamp.toDate().toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export function formatRecordTime(timestamp: Timestamp | null): string {
   if (!timestamp) return '—';
 

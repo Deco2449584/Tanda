@@ -97,28 +97,55 @@ export function isForgottenCheckIn(
   );
 }
 
+export function countForgottenCheckIns(records: AttendanceRecord[]): number {
+  const checkIns = records.filter((record) => record.type === 'check_in');
+
+  return checkIns.filter((checkIn) =>
+    isForgottenCheckIn(checkIn, records),
+  ).length;
+}
+
+function completeSessionsInRange(
+  records: AttendanceRecord[],
+  rangeStart: string,
+  rangeEnd: string,
+) {
+  return buildWorkSessions(records).filter((session) => {
+    if (session.status !== 'complete' || session.hours === null) {
+      return false;
+    }
+
+    const sessionDate = formatRecordDate(session.checkIn.timestampServer);
+    return (
+      compareInputDates(sessionDate, rangeStart) >= 0 &&
+      compareInputDates(sessionDate, rangeEnd) <= 0
+    );
+  });
+}
+
 export function calculateWorkedHoursInRange(
   records: AttendanceRecord[],
   rangeStart: string,
   rangeEnd: string,
 ): number {
-  const sessions = buildWorkSessions(records);
+  return completeSessionsInRange(records, rangeStart, rangeEnd).reduce(
+    (total, session) => total + (session.hours ?? 0),
+    0,
+  );
+}
 
-  return sessions.reduce((total, session) => {
-    if (session.status !== 'complete' || session.hours === null) {
-      return total;
-    }
+export function calculateWorkedDaysInRange(
+  records: AttendanceRecord[],
+  rangeStart: string,
+  rangeEnd: string,
+): number {
+  const dates = new Set<string>();
 
-    const sessionDate = formatRecordDate(session.checkIn.timestampServer);
-    if (
-      compareInputDates(sessionDate, rangeStart) < 0 ||
-      compareInputDates(sessionDate, rangeEnd) > 0
-    ) {
-      return total;
-    }
+  completeSessionsInRange(records, rangeStart, rangeEnd).forEach((session) => {
+    dates.add(formatRecordDate(session.checkIn.timestampServer));
+  });
 
-    return total + session.hours;
-  }, 0);
+  return dates.size;
 }
 
 export function getMonthDateRange(reference: Date = new Date()): {

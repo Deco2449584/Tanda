@@ -101,7 +101,7 @@ function ProtectedLayoutContent({
         onClose={() => setSidebarOpen(false)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header role={role} onMenuClick={() => setSidebarOpen(true)} />
         <main className="relative z-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>

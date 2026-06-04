@@ -1,5 +1,6 @@
 'use client';
 
+import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { ShiftListCard } from '@/components/my-schedule/ShiftListCard';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -13,6 +14,8 @@ export default function MySchedulePage() {
   const employeeCode = employee?.employeeId ?? '';
 
   const {
+    week,
+    shiftsByDate,
     futureShifts,
     loading: shiftsLoading,
     error: shiftsError,
@@ -38,22 +41,39 @@ export default function MySchedulePage() {
         </p>
       )}
 
-      {loading && (
-        <p className="text-sm text-zinc-500">Loading shifts...</p>
-      )}
+      {employee && (
+        <>
+          <EmployeeWeeklySchedule
+            weekDays={week.days}
+            weekStart={week.start}
+            weekEnd={week.end}
+            shiftsByDate={shiftsByDate}
+            loading={shiftsLoading}
+            showViewAllLink={false}
+          />
 
-      {!loading && employee && futureShifts.length === 0 && (
-        <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-8 text-center text-sm text-zinc-400">
-          You have no upcoming shifts scheduled.
-        </p>
-      )}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-white">Upcoming shifts</h2>
 
-      {employee && !loading && futureShifts.length > 0 && (
-        <div className="flex flex-col gap-4">
-          {futureShifts.map((shift) => (
-            <ShiftListCard key={shift.id} shift={shift} />
-          ))}
-        </div>
+            {loading && (
+              <p className="text-sm text-zinc-500">Loading shifts...</p>
+            )}
+
+            {!loading && futureShifts.length === 0 && (
+              <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-8 text-center text-sm text-zinc-400">
+                You have no upcoming shifts scheduled.
+              </p>
+            )}
+
+            {!loading && futureShifts.length > 0 && (
+              <div className="flex flex-col gap-4">
+                {futureShifts.map((shift) => (
+                  <ShiftListCard key={shift.id} shift={shift} />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
       )}
     </div>
   );
