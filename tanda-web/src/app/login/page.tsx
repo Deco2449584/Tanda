@@ -103,8 +103,9 @@ export default function LoginPage() {
           </div>
 
           <CompanyLogo
-            className="h-28 w-auto max-w-full object-contain xl:h-36"
+            invert
             priority
+            className="h-28 w-auto max-w-full object-contain drop-shadow-md xl:h-36"
           />
 
           <h1 className="mt-8 max-w-md text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
@@ -143,8 +144,9 @@ export default function LoginPage() {
         <div className="mx-auto my-auto w-full max-w-md lg:my-0">
           <div className="mb-8 flex flex-col items-center lg:hidden">
             <CompanyLogo
-              className="h-24 w-full max-w-[320px] object-contain sm:h-28"
+              invert
               priority
+              className="h-24 w-full max-w-[320px] object-contain drop-shadow-md sm:h-28"
             />
             <p className="mt-3 text-center text-xs font-medium uppercase tracking-widest text-primary/90">
               TimeTracker PRO
