@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
+import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAuthRole } from '@/hooks/useAuthRole';
@@ -12,11 +13,12 @@ import {
   type CompanySettings,
 } from '@/lib/types/company-settings';
 
-type SettingsTab = 'localization' | 'profile';
+type SettingsTab = 'localization' | 'profile' | 'data';
 
-const TABS: { id: SettingsTab; label: string }[] = [
+const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
   { id: 'profile', label: 'Administrator' },
+  { id: 'data', label: 'Data cleanup' },
 ];
 
 function deriveDisplayName(
@@ -34,7 +36,11 @@ function deriveDisplayName(
 }
 
 export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuthRole();
+  const { user, loading: authLoading, role } = useAuthRole();
+  const tabs =
+    role === 'admin'
+      ? ADMIN_TABS
+      : ADMIN_TABS.filter((tab) => tab.id !== 'data');
   const { settings, loading: settingsLoading, saving, saveSettings } =
     useCompanySettings();
 
@@ -84,7 +90,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-1">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -119,6 +125,9 @@ export default function SettingsPage() {
               loading={authLoading}
               onNameChange={setAdminName}
             />
+          )}
+          {activeTab === 'data' && role === 'admin' && (
+            <DataPurgeTab adminEmail={user?.email ?? ''} />
           )}
         </div>
       )}

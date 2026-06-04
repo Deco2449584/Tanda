@@ -3,14 +3,19 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Reglas originales: Fotos de asistencia desde la Tablet (Expo)
+    // Fotos de asistencia (kiosk / tablet / web)
     match /attendance/{employeeId}/{year}/{month}/{fileName} {
       allow read: if true;
-      allow write: if
+      allow create: if
         employeeId is string &&
         employeeId.size() > 0 &&
         request.resource.size < 8 * 1024 * 1024 &&
         request.resource.contentType.matches('image/.*');
+    }
+
+    // Admin cleanup: listar y borrar fotos de asistencia (Settings → Data cleanup)
+    match /attendance/{allPaths=**} {
+      allow list, delete: if request.auth != null;
     }
 
     // NUEVAS REGLAS: Fotos de perfil (Avatares) desde la Web
