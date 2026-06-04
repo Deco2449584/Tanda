@@ -32,6 +32,7 @@ export function EmployeeAvatar({
         height={px}
         className={`${sizeClass} rounded-full object-cover ring-2 ring-zinc-700`}
         sizes={`${px}px`}
+        quality={75}
       />
     );
   }

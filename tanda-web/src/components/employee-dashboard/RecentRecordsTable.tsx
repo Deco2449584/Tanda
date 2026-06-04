@@ -26,6 +26,7 @@ function RecordPhoto({ photoUrl }: { photoUrl: string }) {
       height={40}
       className="h-10 w-10 rounded-full object-cover ring-2 ring-zinc-700"
       sizes="40px"
+      quality={70}
     />
   );
 }

@@ -14,7 +14,7 @@ import {
   where,
   type Timestamp,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { uploadImageToStorage } from '@/lib/images/storage-upload';
 import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskMasterPinModal } from '@/components/kiosk/KioskMasterPinModal';
@@ -63,10 +63,15 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const [lockModalOpen, setLockModalOpen] = useState(false);
 
   const resetToPin = useCallback(() => {
+    setSuccessData((current) => {
+      if (current?.photoPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(current.photoPreviewUrl);
+      }
+      return null;
+    });
     setStep('pin');
     setPin('');
     setSession(null);
-    setSuccessData(null);
     setProcessing(false);
     setLoading(false);
   }, []);
@@ -169,9 +174,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
       const fileName = `${Date.now()}-${session.actionType}.webp`;
       const photoPath = `attendance/${session.employeeId}/${year}/${month}/${fileName}`;
 
-      const storageRef = ref(storage, photoPath);
-      await uploadBytes(storageRef, imageBlob, { contentType: 'image/webp' });
-      const photoUrl = await getDownloadURL(storageRef);
+      const photoUrl = await uploadImageToStorage(photoPath, imageBlob);
 
       await addDoc(collection(db, COLLECTIONS.ATTENDANCE_RECORDS), {
         employeeId: session.employeeId,

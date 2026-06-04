@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
-import { isFirebaseStorageUrl } from '@/utils/imageOptimizer';
+import { isFirebaseStorageUrl, validateImageFile } from '@/utils/imageOptimizer';
 
 interface EmployeePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -55,6 +55,8 @@ export function EmployeePhotoUpload({
                 src={displayUrl}
                 alt="Preview"
                 className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             )
           ) : (
@@ -64,9 +66,20 @@ export function EmployeePhotoUpload({
 
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           disabled={disabled}
-          onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            const file = e.target.files?.[0] ?? null;
+            if (file) {
+              const error = validateImageFile(file);
+              if (error) {
+                window.alert(error);
+                e.target.value = '';
+                return;
+              }
+            }
+            onFileChange(file);
+          }}
           className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
         />
       </div>

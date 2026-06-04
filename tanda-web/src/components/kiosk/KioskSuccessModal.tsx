@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { CheckCircle2 } from 'lucide-react';
-import Image from 'next/image';
 
 export interface KioskSuccessData {
   employeeName: string;
@@ -72,13 +71,17 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
           </p>
 
           <div className="relative mt-5 h-24 w-24 overflow-hidden rounded-full ring-4 ring-zinc-800 md:mt-6">
-            <Image
+            {/* Local blob preview — no Firebase fetch */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={data.photoPreviewUrl}
               alt="Captured attendance photo"
-              fill
-              unoptimized
+              width={96}
+              height={96}
+              loading="eager"
+              decoding="async"
               draggable={false}
-              className="rounded-full object-cover"
+              className="h-full w-full rounded-full object-cover"
             />
           </div>
 

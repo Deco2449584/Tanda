@@ -9,7 +9,7 @@ interface KioskCameraProps {
   actionType: 'check_in' | 'check_out';
   employeeName: string;
   processing: boolean;
-  onCapture: (imageBlob: Blob, previewUrl: string) => void;
+  onCapture: (imageFile: File, previewUrl: string) => void;
   onCancel: () => void;
 }
 
@@ -51,8 +51,8 @@ export function KioskCamera({
     if (processing) return;
 
     const screenshot = webcamRef.current?.getScreenshot({
-      width: 1280,
-      height: 720,
+      width: 960,
+      height: 540,
     });
     if (!screenshot) {
       setCameraError('Could not capture photo. Please try again.');
@@ -61,7 +61,7 @@ export function KioskCamera({
 
     setCameraError(null);
     try {
-      const optimized = await optimizeImageForUpload(screenshot);
+      const optimized = await optimizeImageForUpload(screenshot, 'attendance');
       const previewUrl = URL.createObjectURL(optimized);
       onCapture(optimized, previewUrl);
     } catch {
