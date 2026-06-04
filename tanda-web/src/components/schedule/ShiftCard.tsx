@@ -1,6 +1,6 @@
 ﻿import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
-import { formatTimeLabel } from '@/lib/schedule/week';
+import { formatShiftTimeRangeShort, formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
 interface ShiftCardProps {
@@ -8,11 +8,13 @@ interface ShiftCardProps {
   employeeName: string;
   employeePhotoUrl?: string;
   onDelete?: (shift: Shift) => void;
+  compact?: boolean;
 }
 
 const statusStyles = {
   scheduled: {
     container: 'border-l-4 border-primary bg-zinc-800/90',
+    compactContainer: 'border-l-2 border-primary bg-zinc-800/90',
     text: 'text-zinc-100',
     subtext: 'text-zinc-400',
     icon: Clock,
@@ -20,6 +22,7 @@ const statusStyles = {
   },
   completed: {
     container: 'border-l-4 border-emerald-500 bg-zinc-800/90',
+    compactContainer: 'border-l-2 border-emerald-500 bg-zinc-800/90',
     text: 'text-zinc-100',
     subtext: 'text-zinc-400',
     icon: Check,
@@ -27,6 +30,7 @@ const statusStyles = {
   },
   absent: {
     container: 'border-l-4 border-orange-500 bg-red-600/20',
+    compactContainer: 'border-l-2 border-orange-500 bg-red-600/20',
     text: 'text-orange-100',
     subtext: 'text-orange-200/80',
     icon: AlertCircle,
@@ -39,10 +43,41 @@ export function ShiftCard({
   employeeName,
   employeePhotoUrl,
   onDelete,
+  compact = false,
 }: ShiftCardProps) {
   const styles = statusStyles[shift.status];
   const Icon = styles.icon;
   const timeRange = `${formatTimeLabel(shift.startTime)} - ${formatTimeLabel(shift.endTime)}`;
+
+  if (compact) {
+    return (
+      <div
+        className={`rounded px-1 py-0.5 ${styles.compactContainer}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-0.5">
+          <p className={`truncate text-[9px] font-semibold leading-tight ${styles.text}`}>
+            {formatShiftTimeRangeShort(shift.startTime, shift.endTime)}
+          </p>
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(shift);
+              }}
+              className="shrink-0 rounded p-0.5 text-zinc-500 hover:text-red-400"
+              aria-label={`Delete shift for ${employeeName}`}
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+            </button>
+          ) : (
+            <Icon className={`h-2.5 w-2.5 shrink-0 ${styles.iconClass}`} />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

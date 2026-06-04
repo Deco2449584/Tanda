@@ -164,12 +164,12 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4 md:p-6">
-      <h1 className="text-base font-bold tracking-wide text-white uppercase">
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:gap-6 md:p-6">
+      <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
         Scheduling and rosters (Agenda)
       </h1>
 
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         {viewMode === 'weekly' ? (
           <WeekRangePicker
             referenceDate={weekReference}
@@ -235,7 +235,7 @@ export default function SchedulePage() {
       </div>
 
       <div
-        className={`grid min-h-0 flex-1 grid-cols-1 gap-4 ${
+        className={`grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 ${
           viewMode === 'weekly' ? 'xl:grid-cols-[minmax(0,1fr)_240px]' : ''
         }`}
       >
@@ -258,7 +258,9 @@ export default function SchedulePage() {
         )}
 
         {viewMode === 'weekly' && (
-          <AvailableEmployeesPanel employees={activeEmployees} />
+          <div className="hidden min-h-0 xl:block">
+            <AvailableEmployeesPanel employees={activeEmployees} />
+          </div>
         )}
       </div>
 
