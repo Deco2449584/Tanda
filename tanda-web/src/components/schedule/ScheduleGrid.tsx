@@ -91,9 +91,10 @@ export function ScheduleGrid({
 
   return (
     <>
-      <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm md:hidden">
+      <div className="w-full md:hidden">
         <ScheduleMobileWeek
           employees={employees}
+          shifts={shifts}
           weekDays={weekDays}
           shiftsByCell={shiftsByCell}
           employeesByCode={employeesByCode}

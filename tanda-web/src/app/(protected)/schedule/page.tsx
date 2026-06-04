@@ -36,12 +36,21 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignData, setAssignData] = useState<AssignShiftInput | null>(null);
+  const [useWeekRange, setUseWeekRange] = useState(true);
 
   const week = useMemo(() => buildWeekRange(weekReference), [weekReference]);
   const month = useMemo(() => buildMonthCalendar(monthReference), [monthReference]);
 
-  const rangeStart = viewMode === 'weekly' ? week.start : month.start;
-  const rangeEnd = viewMode === 'weekly' ? week.end : month.end;
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setUseWeekRange(media.matches || viewMode === 'weekly');
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [viewMode]);
+
+  const rangeStart = useWeekRange ? week.start : month.start;
+  const rangeEnd = useWeekRange ? week.end : month.end;
 
   useEffect(() => {
     if (!db) {
@@ -163,13 +172,58 @@ export default function SchedulePage() {
     setAssignModalOpen(true);
   }
 
+  const scheduleGrid = (
+    <ScheduleGrid
+      employees={filteredEmployees}
+      shifts={filteredShifts}
+      weekDays={week.days}
+      loading={loading}
+      onCellClick={handleCellClick}
+    />
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:gap-6 md:p-6">
-      <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
+      <div className="md:hidden">
+        <h1 className="text-base font-bold tracking-tight text-white">Roster</h1>
+        <p className="mt-0.5 text-xs text-zinc-500">Weekly schedule</p>
+      </div>
+
+      <h1 className="hidden text-base font-bold tracking-wide text-white uppercase md:block">
         Scheduling and rosters (Agenda)
       </h1>
 
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-2.5 md:hidden">
+        <WeekRangePicker
+          referenceDate={weekReference}
+          onChange={setWeekReference}
+          fullWidth
+        />
+        <div className="relative">
+          <Building2
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+            aria-hidden
+          />
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/70 py-2.5 pl-10 pr-9 text-sm font-medium text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            aria-label="Filter by department"
+          >
+            {departments.map((department) => (
+              <option key={department} value={department} className="bg-zinc-900">
+                {department === 'all' ? 'All departments' : department}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            aria-hidden
+          />
+        </div>
+      </div>
+
+      <div className="hidden flex-col gap-3 md:flex xl:flex-row xl:items-center xl:justify-between">
         {viewMode === 'weekly' ? (
           <WeekRangePicker
             referenceDate={weekReference}
@@ -234,19 +288,15 @@ export default function SchedulePage() {
         </div>
       </div>
 
+      <div className="min-h-0 flex-1 md:hidden">{scheduleGrid}</div>
+
       <div
-        className={`grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 ${
+        className={`hidden min-h-0 flex-1 md:grid md:grid-cols-1 md:gap-4 ${
           viewMode === 'weekly' ? 'xl:grid-cols-[minmax(0,1fr)_240px]' : ''
         }`}
       >
         {viewMode === 'weekly' ? (
-          <ScheduleGrid
-            employees={filteredEmployees}
-            shifts={filteredShifts}
-            weekDays={week.days}
-            loading={loading}
-            onCellClick={handleCellClick}
-          />
+          scheduleGrid
         ) : (
           <ScheduleMonthCalendar
             days={month.days}
