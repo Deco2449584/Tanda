@@ -1,7 +1,5 @@
 ﻿'use client';
 
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
-
 interface MonthlyHoursCardProps {
   hours: number;
   goal?: number;
@@ -16,7 +14,6 @@ export function MonthlyHoursCard({
   goal = 200,
   loading = false,
 }: MonthlyHoursCardProps) {
-  const { settings } = useCompanySettings();
   const roundedHours = Math.round(hours * 10) / 10;
   const progress = goal > 0 ? Math.min(roundedHours / goal, 1) : 0;
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
@@ -54,7 +51,7 @@ export function MonthlyHoursCard({
               cy="50"
               r={RADIUS}
               fill="none"
-              stroke={settings.primaryColor}
+              stroke="var(--brand-primary)"
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}

@@ -13,7 +13,6 @@ import {
 import { useSignOut } from '@/hooks/useSignOut';
 import { auth } from '@/lib/firebase';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 const DEFAULT_PROFILE_NAME = 'Admin Daniel G.';
 
@@ -22,7 +21,6 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { settings } = useCompanySettings();
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -70,7 +68,6 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <CompanyLogo
-          alt={settings.companyName}
           className="h-12 w-auto max-w-[140px] shrink-0 object-contain brightness-0 invert drop-shadow-sm md:hidden"
           priority
           invert

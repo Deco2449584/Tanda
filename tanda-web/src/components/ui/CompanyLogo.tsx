@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { Building2 } from 'lucide-react';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 interface CompanyLogoProps {
   alt?: string;
@@ -17,22 +17,7 @@ export function CompanyLogo({
   priority = false,
   invert = false,
 }: CompanyLogoProps) {
-  const { settings } = useCompanySettings();
-  const label = alt ?? settings.companyName;
-
-  if (settings.logoUrl) {
-    return (
-      <Image
-        src={settings.logoUrl}
-        alt={label}
-        width={280}
-        height={100}
-        priority={priority}
-        className={`${className}${invert ? ' brightness-0 invert' : ''}`}
-        sizes="(max-width: 768px) 160px, 280px"
-      />
-    );
-  }
+  const label = alt ?? COMPANY_NAME;
 
   return (
     <Image

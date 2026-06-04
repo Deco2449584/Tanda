@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 interface NavItem {
   label: string;
@@ -49,7 +48,6 @@ interface SidebarProps {
 
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
-  const { settings } = useCompanySettings();
   const navItems = role === 'admin' ? adminNavItems : employeeNavItems;
 
   return (
@@ -70,7 +68,6 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       >
         <div className="relative mb-4 flex w-full items-center justify-center border-b border-zinc-800 px-3 py-10">
           <CompanyLogo
-            alt={settings.companyName}
             className="h-28 w-full max-w-[220px] object-contain brightness-0 invert drop-shadow-md md:h-32 md:max-w-[240px]"
             priority
             invert

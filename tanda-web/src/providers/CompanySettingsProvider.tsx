@@ -13,7 +13,6 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import {
   fetchCompanySettings,
   saveCompanySettings as persistCompanySettings,
-  uploadCompanyLogo,
 } from '@/lib/settings/company-settings-service';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
@@ -28,7 +27,6 @@ interface CompanySettingsContextValue {
   saving: boolean;
   refresh: () => Promise<void>;
   saveSettings: (next: CompanySettings) => Promise<void>;
-  uploadLogo: (file: File) => Promise<string>;
 }
 
 const CompanySettingsContext = createContext<CompanySettingsContextValue | null>(
@@ -37,45 +35,8 @@ const CompanySettingsContext = createContext<CompanySettingsContextValue | null>
 
 const SETTINGS_DOC_ID = 'general';
 
-function normalizeHexColor(hex: string, fallback: string): string {
-  const trimmed = hex.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
-  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
-    const h = trimmed.slice(1);
-    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
-  }
-  if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed}`;
-  return fallback;
-}
-
-function applyThemeToDocument(settings: CompanySettings): void {
-  if (typeof document === 'undefined') return;
-
-  const brandPrimary = normalizeHexColor(
-    settings.primaryColor,
-    DEFAULT_COMPANY_SETTINGS.primaryColor,
-  );
-  document.documentElement.style.setProperty('--brand-primary', brandPrimary);
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[CompanySettings] theme color injected:', {
-      '--brand-primary': brandPrimary,
-    });
-  }
-}
-
 function mapSnapshotData(data: Record<string, unknown>): CompanySettings {
   return {
-    companyName:
-      typeof data.companyName === 'string'
-        ? data.companyName
-        : DEFAULT_COMPANY_SETTINGS.companyName,
-    logoUrl:
-      typeof data.logoUrl === 'string' ? data.logoUrl : DEFAULT_COMPANY_SETTINGS.logoUrl,
-    primaryColor:
-      typeof data.primaryColor === 'string'
-        ? data.primaryColor
-        : DEFAULT_COMPANY_SETTINGS.primaryColor,
     timeZone:
       typeof data.timeZone === 'string'
         ? data.timeZone
@@ -94,7 +55,6 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
 
   const applySettings = useCallback((next: CompanySettings) => {
     setSettings(next);
-    applyThemeToDocument(next);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -103,8 +63,6 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
   }, [applySettings]);
 
   useEffect(() => {
-    applyThemeToDocument(DEFAULT_COMPANY_SETTINGS);
-
     if (!db) {
       setLoading(false);
       return;
@@ -144,11 +102,6 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
     [applySettings],
   );
 
-  const uploadLogo = useCallback(async (file: File) => {
-    const url = await uploadCompanyLogo(file);
-    return url;
-  }, []);
-
   const value = useMemo(
     () => ({
       settings,
@@ -156,9 +109,8 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
       saving,
       refresh,
       saveSettings,
-      uploadLogo,
     }),
-    [settings, loading, saving, refresh, saveSettings, uploadLogo],
+    [settings, loading, saving, refresh, saveSettings],
   );
 
   return (

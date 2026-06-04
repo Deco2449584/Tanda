@@ -25,7 +25,6 @@ import {
 } from '@/components/kiosk/KioskSuccessModal';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
-import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { COLLECTIONS } from '@/lib/constants';
 import { db, storage } from '@/lib/firebase';
 import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
@@ -54,7 +53,6 @@ interface KioskScreenProps {
 }
 
 export function KioskScreen({ onLockDevice }: KioskScreenProps) {
-  const { settings } = useCompanySettings();
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -229,7 +227,6 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
           <div className="flex shrink-0 flex-col items-center gap-6">
             {showLogo && (
               <CompanyLogo
-                alt={settings.companyName}
                 priority
                 invert
                 className="h-16 w-auto shrink-0 brightness-0 invert drop-shadow-md"
@@ -253,7 +250,6 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
         <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
           {showLogo && (
             <CompanyLogo
-              alt={settings.companyName}
               priority
               invert
               className="mb-6 h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"
