@@ -18,8 +18,8 @@ import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
 import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
-import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { db } from '@/lib/firebase';
+import { useEmployees } from '@/providers/EmployeesProvider';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
 import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
@@ -31,11 +31,11 @@ import type { AssignShiftInput, Shift } from '@/lib/types/shift';
 type ViewMode = 'weekly' | 'monthly';
 
 export default function SchedulePage() {
+  const { employees, loading: employeesLoading } = useEmployees();
   const [weekReference, setWeekReference] = useState(() => new Date());
   const [monthReference, setMonthReference] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
   const [departmentFilter, setDepartmentFilter] = useState('all');
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
     [],
@@ -67,12 +67,11 @@ export default function SchedulePage() {
 
     setLoading(true);
 
-    let employeesReady = false;
     let shiftsReady = false;
     let attendanceReady = false;
 
     function checkReady() {
-      if (employeesReady && shiftsReady && attendanceReady) {
+      if (shiftsReady && attendanceReady) {
         setLoading(false);
       }
     }
@@ -81,22 +80,6 @@ export default function SchedulePage() {
       start: rangeStart,
       end: rangeEnd,
     });
-
-    const unsubscribeEmployees = onSnapshot(
-      collection(db, COLLECTIONS.EMPLOYEES),
-      (snapshot) => {
-        const mapped = snapshot.docs
-          .map((document) => mapEmployeeDoc(document.id, document.data()))
-          .sort((a, b) => a.name.localeCompare(b.name, 'en'));
-        setEmployees(mapped);
-        employeesReady = true;
-        checkReady();
-      },
-      () => {
-        employeesReady = true;
-        checkReady();
-      },
-    );
 
     const shiftsQuery = query(
       collection(db, COLLECTIONS.SHIFTS),
@@ -146,11 +129,12 @@ export default function SchedulePage() {
     );
 
     return () => {
-      unsubscribeEmployees();
       unsubscribeShifts();
       unsubscribeAttendance();
     };
   }, [rangeEnd, rangeStart]);
+
+  const pageLoading = loading || employeesLoading;
 
   const departments = useMemo(() => {
     const unique = new Set(
@@ -227,7 +211,7 @@ export default function SchedulePage() {
       employees={filteredEmployees}
       shifts={filteredShifts}
       weekDays={week.days}
-      loading={loading}
+      loading={pageLoading}
       onCellClick={handleCellClick}
     />
   );
@@ -352,7 +336,7 @@ export default function SchedulePage() {
           <ScheduleMonthCalendar
             days={month.days}
             shifts={filteredShifts}
-            loading={loading}
+            loading={pageLoading}
             monthLabel={month.label}
             employeeNames={employeeNames}
             onDayClick={handleMonthDayClick}

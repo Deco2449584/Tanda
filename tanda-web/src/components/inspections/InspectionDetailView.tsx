@@ -26,6 +26,7 @@ interface InspectionDetailViewProps {
   backHref?: string;
   canEdit?: boolean;
   editorEmail?: string;
+  onUpdated?: () => void;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -45,6 +46,7 @@ export function InspectionDetailView({
   backHref = '/inspections',
   canEdit = false,
   editorEmail = '',
+  onUpdated,
 }: InspectionDetailViewProps) {
   const [markingLoaded, setMarkingLoaded] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -70,6 +72,7 @@ export function InspectionDetailView({
       const updatedAtIso = await markCargoInspectionAsLoaded(inspection.id);
       setLocalStatus('loaded');
       setLocalUpdatedAt(updatedAtIso);
+      onUpdated?.();
     } catch {
       setMarkError('Could not mark this container as loaded. Please try again.');
     } finally {
@@ -240,6 +243,7 @@ export function InspectionDetailView({
           inspection={inspection}
           editorEmail={editorEmail}
           onClose={() => setEditOpen(false)}
+          onSaved={() => onUpdated?.()}
         />
       )}
     </>

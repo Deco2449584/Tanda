@@ -31,8 +31,8 @@ import {
   type DateRange,
 } from '@/lib/attendance/date-range';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { useEmployees } from '@/providers/EmployeesProvider';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
-import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -54,8 +54,8 @@ function resolveAttendancePreset(range: DateRange): AttendanceDatePreset {
 
 export default function AttendancePage() {
   const { settings } = useCompanySettings();
+  const { employees, loading: employeesLoading } = useEmployees();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
@@ -74,15 +74,6 @@ export default function AttendancePage() {
 
     setLoading(true);
 
-    let recordsReady = false;
-    let employeesReady = false;
-
-    function checkReady() {
-      if (recordsReady && employeesReady) {
-        setLoading(false);
-      }
-    }
-
     const { start, end } = toFirestoreRangeBounds(dateRange);
 
     const attendanceQuery = query(
@@ -100,37 +91,20 @@ export default function AttendancePage() {
           mapAttendanceDoc(document.id, document.data()),
         );
         setRecords(mapped);
-        recordsReady = true;
-        checkReady();
+        setLoading(false);
       },
       (error) => {
         console.error('Error loading attendance records:', error);
-        recordsReady = true;
-        checkReady();
-      },
-    );
-
-    const unsubscribeEmployees = onSnapshot(
-      collection(db, COLLECTIONS.EMPLOYEES),
-      (snapshot) => {
-        const mapped = snapshot.docs.map((document) =>
-          mapEmployeeDoc(document.id, document.data()),
-        );
-        setEmployees(mapped);
-        employeesReady = true;
-        checkReady();
-      },
-      () => {
-        employeesReady = true;
-        checkReady();
+        setLoading(false);
       },
     );
 
     return () => {
       unsubscribeRecords();
-      unsubscribeEmployees();
     };
   }, [dateRange]);
+
+  const pageLoading = loading || employeesLoading;
 
   const employeeCodes = useMemo(() => {
     const map: Record<string, string> = {};
@@ -223,7 +197,7 @@ export default function AttendancePage() {
             onClick={() =>
               exportAttendanceRecordsToCsv(filteredForExport, employeeCodes)
             }
-            disabled={loading || filteredForExport.length === 0}
+            disabled={pageLoading || filteredForExport.length === 0}
             title="Export attendance report (CSV)"
             aria-label="Export attendance report (CSV)"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
@@ -234,7 +208,7 @@ export default function AttendancePage() {
           <button
             type="button"
             onClick={handlePayrollExport}
-            disabled={loading || activeEmployeeCount === 0}
+            disabled={pageLoading || activeEmployeeCount === 0}
             title="Weekly payroll CSV for accounting (period, hours, days, rate, gross pay)"
             aria-label="Export weekly payroll CSV for accounting"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
@@ -247,7 +221,7 @@ export default function AttendancePage() {
       <AttendanceTable
         records={records}
         employeeCodes={employeeCodes}
-        loading={loading}
+        loading={pageLoading}
         searchQuery={searchQuery}
         onEdit={setEditingRecord}
         onAddManualCheckout={setManualCheckoutRecord}

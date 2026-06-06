@@ -1,25 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { useMemo } from 'react';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { ShiftLoadChart } from '@/components/dashboard/ShiftLoadChart';
 import { WeeklyHoursChart } from '@/components/dashboard/WeeklyHoursChart';
 import { baseKpiMetrics } from '@/lib/dashboard/kpi-definitions';
 import type { KpiMetric } from '@/lib/dashboard/types';
 import { useAdminDashboardData } from '@/hooks/useAdminDashboardData';
-import { COLLECTIONS } from '@/lib/constants';
 import {
   computeActiveStaffKpi,
   computeDualPayrollKpi,
 } from '@/lib/employees/dashboard-kpis';
-import { mapEmployeeDoc } from '@/lib/employees/map-employee';
-import { db } from '@/lib/firebase';
-import type { Employee } from '@/lib/types/employee';
+import { useEmployees } from '@/providers/EmployeesProvider';
 
 export default function DashboardPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [employeesLoading, setEmployeesLoading] = useState(true);
+  const { employees, loading: employeesLoading } = useEmployees();
 
   const {
     pendingPermits,
@@ -30,29 +25,6 @@ export default function DashboardPage() {
     todayAttendance,
     loading: dashboardLoading,
   } = useAdminDashboardData();
-
-  useEffect(() => {
-    if (!db) {
-      setEmployeesLoading(false);
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      collection(db, COLLECTIONS.EMPLOYEES),
-      (snapshot) => {
-        const mapped = snapshot.docs.map((document) =>
-          mapEmployeeDoc(document.id, document.data()),
-        );
-        setEmployees(mapped);
-        setEmployeesLoading(false);
-      },
-      () => {
-        setEmployeesLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
 
   const metrics: KpiMetric[] = useMemo(() => {
     const activeStaff = computeActiveStaffKpi(employees);

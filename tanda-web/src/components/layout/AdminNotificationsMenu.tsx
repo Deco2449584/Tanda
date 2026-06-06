@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CalendarClock, Clock, LogOut, Palmtree } from 'lucide-react';
 import {
+  useAdminNotificationBadge,
   useAdminNotifications,
   type AdminNotificationItem,
 } from '@/hooks/useAdminNotifications';
@@ -22,7 +23,9 @@ interface AdminNotificationsMenuProps {
 export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, loading } = useAdminNotifications(enabled);
+  const { items, totalCount, loading } = useAdminNotifications(enabled && open);
+  const badgeCount = useAdminNotificationBadge(enabled && !open);
+  const displayCount = open ? totalCount : badgeCount;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -54,9 +57,9 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
         aria-haspopup="menu"
       >
         <Bell className="h-5 w-5" />
-        {totalCount > 0 ? (
+        {displayCount > 0 ? (
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-zinc-950 md:ring-[#0a0a0a]">
-            {totalCount > 9 ? '9+' : totalCount}
+            {displayCount > 9 ? '9+' : displayCount}
           </span>
         ) : null}
       </button>
@@ -71,9 +74,9 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
             <p className="mt-0.5 text-xs text-zinc-500">
               {loading
                 ? 'Updating…'
-                : totalCount === 0
+                : displayCount === 0
                   ? 'No alerts right now'
-                  : `${totalCount} alert${totalCount === 1 ? '' : 's'}`}
+                  : `${displayCount} alert${displayCount === 1 ? '' : 's'}`}
             </p>
           </div>
 

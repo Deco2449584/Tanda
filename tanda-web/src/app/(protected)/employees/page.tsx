@@ -1,47 +1,18 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { CreateEmployeeModal } from '@/components/employees/CreateEmployeeModal';
 import { EditEmployeeModal } from '@/components/employees/EditEmployeeModal';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
-import { mapEmployeeDoc } from '@/lib/employees/map-employee';
+import { useEmployees } from '@/providers/EmployeesProvider';
 import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { employees, loading } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-
-  useEffect(() => {
-    if (!db) {
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      collection(db, COLLECTIONS.EMPLOYEES),
-      (snapshot) => {
-        const mapped: Employee[] = snapshot.docs.map((document) =>
-          mapEmployeeDoc(document.id, document.data()),
-        );
-        setEmployees(
-          mapped.sort((a, b) => a.name.localeCompare(b.name, 'en')),
-        );
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
 
   return (
     <div className="space-y-6 p-4 md:p-6">

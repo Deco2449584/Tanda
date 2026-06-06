@@ -13,7 +13,7 @@ import {
   type InspectionDatePreset,
 } from '@/lib/inspections/filters';
 import { resolveInspectionStatus } from '@/lib/inspections/status';
-import { useCargoInspections } from '@/hooks/useCargoInspections';
+import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
 function StatCard({
   label,

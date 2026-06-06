@@ -34,3 +34,15 @@ export function isDateInRange(
     compareInputDates(normalized, end) <= 0
   );
 }
+
+export function offsetInputDate(
+  reference: string | Date = new Date(),
+  dayOffset = 0,
+): string {
+  const base =
+    typeof reference === 'string'
+      ? new Date(`${normalizeInputDate(reference)}T12:00:00`)
+      : new Date(reference);
+  base.setDate(base.getDate() + dayOffset);
+  return toInputDate(base);
+}

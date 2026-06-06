@@ -6,8 +6,8 @@ import { COLLECTIONS } from '@/lib/constants';
 import {
   compareInputDates,
   isDateInRange,
-  isOnOrAfterToday,
   normalizeInputDate,
+  offsetInputDate,
   toInputDate,
 } from '@/lib/dates/input-date';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
@@ -15,6 +15,9 @@ import { isShiftStrictlyUpcoming } from '@/lib/schedule/shift-future';
 import { buildWeekRange } from '@/lib/schedule/week';
 import { db } from '@/lib/firebase';
 import type { Shift } from '@/lib/types/shift';
+
+const SHIFT_LOOKBACK_DAYS = 28;
+const SHIFT_LOOKAHEAD_DAYS = 90;
 
 interface UseEmployeeShiftsOptions {
   /** Código corto del empleado (ej. '0002'), NO el doc.id de Firestore. */
@@ -39,6 +42,8 @@ export function useEmployeeShifts({
   );
 
   const code = employeeCode.trim();
+  const minDate = offsetInputDate(todayKey, -SHIFT_LOOKBACK_DAYS);
+  const maxDate = offsetInputDate(todayKey, SHIFT_LOOKAHEAD_DAYS);
 
   useEffect(() => {
     if (!db || !code) {
@@ -54,6 +59,8 @@ export function useEmployeeShifts({
     const shiftsQuery = query(
       collection(db, COLLECTIONS.SHIFTS),
       where('employeeId', '==', code),
+      where('date', '>=', minDate),
+      where('date', '<=', maxDate),
     );
 
     const unsubscribe = onSnapshot(
@@ -75,7 +82,7 @@ export function useEmployeeShifts({
     );
 
     return () => unsubscribe();
-  }, [code]);
+  }, [code, maxDate, minDate]);
 
   const weekShifts = useMemo(() => {
     return allShifts

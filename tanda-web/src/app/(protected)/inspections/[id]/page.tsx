@@ -5,14 +5,14 @@ import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
 import { getRoleFromEmail } from '@/lib/auth/roles';
 import { useAuthRole } from '@/hooks/useAuthRole';
-import { useCargoInspections } from '@/hooks/useCargoInspections';
+import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
 export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
   const { user } = useAuthRole();
   const isAdmin = getRoleFromEmail(user?.email) === 'admin';
-  const { inspectionsById, loading, error } = useCargoInspections();
+  const { inspectionsById, loading, error, refresh } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);
 
@@ -57,6 +57,7 @@ export default function InspectionDetailPage() {
         inspection={inspection}
         canEdit={isAdmin}
         editorEmail={user?.email ?? ''}
+        onUpdated={() => void refresh()}
       />
     </div>
   );

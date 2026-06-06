@@ -5,6 +5,7 @@ import {
   Timestamp,
   collection,
   onSnapshot,
+  orderBy,
   query,
   where,
 } from 'firebase/firestore';
@@ -14,7 +15,6 @@ import {
   computeLateAlerts,
   countPendingLeaveRequests,
   filterTodayShifts,
-  filterWeekShifts,
 } from '@/lib/dashboard/compute-metrics';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
@@ -67,8 +67,15 @@ export function useAdminDashboardData() {
       }
     }
 
-    const unsubscribeShifts = onSnapshot(
+    const shiftsQuery = query(
       collection(db, COLLECTIONS.SHIFTS),
+      where('date', '>=', week.start),
+      where('date', '<=', week.end),
+      orderBy('date', 'asc'),
+    );
+
+    const unsubscribeShifts = onSnapshot(
+      shiftsQuery,
       (snapshot) => {
         setShifts(
           snapshot.docs.map((document) =>
@@ -85,8 +92,13 @@ export function useAdminDashboardData() {
       },
     );
 
-    const unsubscribeLeave = onSnapshot(
+    const leaveQuery = query(
       collection(db, COLLECTIONS.LEAVE_REQUESTS),
+      where('status', '==', 'Pending'),
+    );
+
+    const unsubscribeLeave = onSnapshot(
+      leaveQuery,
       (snapshot) => {
         setLeaveRequests(
           snapshot.docs.map((document) =>
@@ -133,13 +145,9 @@ export function useAdminDashboardData() {
       unsubscribeLeave();
       unsubscribeAttendance();
     };
-  }, []);
+  }, [week.end, week.start]);
 
   const todayShifts = useMemo(() => filterTodayShifts(shifts), [shifts]);
-  const weekShifts = useMemo(
-    () => filterWeekShifts(shifts, week.start, week.end),
-    [shifts, week.end, week.start],
-  );
 
   const pendingPermits = useMemo(
     () => countPendingLeaveRequests(leaveRequests),
@@ -157,8 +165,8 @@ export function useAdminDashboardData() {
   );
 
   const weeklyHoursData = useMemo<WeeklyHoursDatum[]>(
-    () => buildWeeklyHoursData(weekShifts, week.days),
-    [week.days, weekShifts],
+    () => buildWeeklyHoursData(shifts, week.days),
+    [shifts, week.days],
   );
 
   return {

@@ -20,21 +20,21 @@ import {
   getTodayRange,
   type DateRange,
 } from '@/lib/attendance/date-range';
-import { mapEmployeeDoc } from '@/lib/employees/map-employee';
-import { db } from '@/lib/firebase';
-import { requestOverlapsRange } from '@/lib/leave-requests/format';
 import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
+import { requestOverlapsRange } from '@/lib/leave-requests/format';
+import { db } from '@/lib/firebase';
+import { useEmployees } from '@/providers/EmployeesProvider';
 import type { Employee } from '@/lib/types/employee';
 import type { LeaveRequest, LeaveRequestStatus } from '@/lib/types/leave-request';
 
 export default function LeaveRequestsPage() {
+  const { employees, loading: employeesLoading } = useEmployees();
   const [dateRange, setDateRange] = useState<DateRange>(() => getCurrentMonthRange());
   const [datePreset, setDatePreset] = useState<LeaveDatePreset>('month');
   const [statusFilter, setStatusFilter] = useState<LeaveRequestStatus | 'all'>(
     'all',
   );
   const [searchQuery, setSearchQuery] = useState('');
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,32 +45,6 @@ export default function LeaveRequestsPage() {
     }
 
     setLoading(true);
-
-    let employeesReady = false;
-    let requestsReady = false;
-
-    function checkReady() {
-      if (employeesReady && requestsReady) {
-        setLoading(false);
-      }
-    }
-
-    const unsubscribeEmployees = onSnapshot(
-      collection(db, COLLECTIONS.EMPLOYEES),
-      (snapshot) => {
-        setEmployees(
-          snapshot.docs.map((document) =>
-            mapEmployeeDoc(document.id, document.data()),
-          ),
-        );
-        employeesReady = true;
-        checkReady();
-      },
-      () => {
-        employeesReady = true;
-        checkReady();
-      },
-    );
 
     const requestsQuery = query(
       collection(db, COLLECTIONS.LEAVE_REQUESTS),
@@ -85,20 +59,19 @@ export default function LeaveRequestsPage() {
             mapLeaveRequestDoc(document.id, document.data()),
           ),
         );
-        requestsReady = true;
-        checkReady();
+        setLoading(false);
       },
       () => {
-        requestsReady = true;
-        checkReady();
+        setLoading(false);
       },
     );
 
     return () => {
-      unsubscribeEmployees();
       unsubscribeRequests();
     };
   }, []);
+
+  const pageLoading = loading || employeesLoading;
 
   const employeesByCode = useMemo(() => {
     const map: Record<string, Employee> = {};
@@ -205,7 +178,7 @@ export default function LeaveRequestsPage() {
       <LeaveRequestsAdminTable
         requests={filteredRequests}
         employeesByCode={employeesByCode}
-        loading={loading}
+        loading={pageLoading}
         searchQuery={searchQuery}
       />
     </div>

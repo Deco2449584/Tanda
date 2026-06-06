@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
+import { EmployeesProvider } from '@/providers/EmployeesProvider';
 
 interface ProtectedShellProps {
   children: React.ReactNode;
@@ -93,6 +94,13 @@ function ProtectedLayoutContent({
     setSidebarOpen(false);
   }, [pathname]);
 
+  const mainContent =
+    role === 'admin' ? (
+      <EmployeesProvider>{children}</EmployeesProvider>
+    ) : (
+      children
+    );
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0a]">
       <Sidebar
@@ -102,7 +110,7 @@ function ProtectedLayoutContent({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header role={role} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="relative z-0 flex-1 overflow-y-auto">{children}</main>
+        <main className="relative z-0 flex-1 overflow-y-auto">{mainContent}</main>
       </div>
     </div>
   );

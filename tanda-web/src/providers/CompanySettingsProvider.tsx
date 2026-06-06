@@ -9,13 +9,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
 import {
   fetchCompanySettings,
   saveCompanySettings as persistCompanySettings,
 } from '@/lib/settings/company-settings-service';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
 import {
   DEFAULT_COMPANY_SETTINGS,
   type CompanySettings,
@@ -33,21 +30,6 @@ const CompanySettingsContext = createContext<CompanySettingsContextValue | null>
   null,
 );
 
-const SETTINGS_DOC_ID = 'general';
-
-function mapSnapshotData(data: Record<string, unknown>): CompanySettings {
-  return {
-    timeZone:
-      typeof data.timeZone === 'string'
-        ? data.timeZone
-        : DEFAULT_COMPANY_SETTINGS.timeZone,
-    currency:
-      typeof data.currency === 'string'
-        ? data.currency
-        : DEFAULT_COMPANY_SETTINGS.currency,
-  };
-}
-
 export function CompanySettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<CompanySettings>(DEFAULT_COMPANY_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -63,31 +45,26 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
   }, [applySettings]);
 
   useEffect(() => {
-    if (!db) {
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    const unsubscribe = onSnapshot(
-      doc(db, COLLECTIONS.SETTINGS, SETTINGS_DOC_ID),
-      (snapshot) => {
-        if (!snapshot.exists()) {
+    setLoading(true);
+    void refresh()
+      .catch((error) => {
+        console.error('CompanySettingsProvider', error);
+        if (!cancelled) {
           applySettings(DEFAULT_COMPANY_SETTINGS);
-        } else {
-          applySettings(
-            mapSnapshotData(snapshot.data() as Record<string, unknown>),
-          );
         }
-        setLoading(false);
-      },
-      () => {
-        applySettings(DEFAULT_COMPANY_SETTINGS);
-        setLoading(false);
-      },
-    );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
 
-    return () => unsubscribe();
-  }, [applySettings]);
+    return () => {
+      cancelled = true;
+    };
+  }, [applySettings, refresh]);
 
   const saveSettings = useCallback(
     async (next: CompanySettings) => {
