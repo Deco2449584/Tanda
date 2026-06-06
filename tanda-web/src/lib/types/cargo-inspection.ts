@@ -1,5 +1,11 @@
 export type ConservationType = 'Frozen' | 'Refrigerated' | 'Ambient';
 
+export const CONSERVATION_TYPES: readonly ConservationType[] = [
+  'Frozen',
+  'Refrigerated',
+  'Ambient',
+] as const;
+
 export type CargoInspectionStatus = 'new' | 'loaded';
 
 export interface CargoInspectionFirestore {
@@ -24,6 +30,7 @@ export interface CargoInspectionFirestore {
 
 export interface CargoInspection {
   id: string;
+  userId: string;
   uldId: string;
   awbNumber: string;
   conservationType: ConservationType;
@@ -39,3 +46,16 @@ export interface CargoInspection {
   updatedAt?: string;
   createdBy: string;
 }
+
+export type CargoInspectionFormInput = {
+  uldId: string;
+  awbNumber: string;
+  conservationType: ConservationType;
+  foodType: string;
+  weightKg: number;
+  boxCount: number;
+  hasIssues: boolean;
+  issueDescription: string;
+  photoEvidence: string[];
+  videoEvidence: string[];
+};

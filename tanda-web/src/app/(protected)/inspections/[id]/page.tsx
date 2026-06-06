@@ -3,11 +3,15 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
+import { getRoleFromEmail } from '@/lib/auth/roles';
+import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCargoInspections } from '@/hooks/useCargoInspections';
 
 export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
+  const { user } = useAuthRole();
+  const isAdmin = getRoleFromEmail(user?.email) === 'admin';
   const { inspectionsById, loading, error } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);
@@ -49,7 +53,11 @@ export default function InspectionDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-6">
-      <InspectionDetailView inspection={inspection} />
+      <InspectionDetailView
+        inspection={inspection}
+        canEdit={isAdmin}
+        editorEmail={user?.email ?? ''}
+      />
     </div>
   );
 }

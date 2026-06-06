@@ -32,6 +32,7 @@ export function mapInspectionDoc(
 
   return {
     id,
+    userId: record.userId ?? '',
     uldId: record.uldId ?? '',
     awbNumber: record.awbNumber ?? '',
     conservationType: normalizeConservationType(
