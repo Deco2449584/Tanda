@@ -19,6 +19,8 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
   attendanceStorage: true,
   shifts: false,
   leaveRequests: false,
+  cargoInspections: false,
+  cargoInspectionsStorage: false,
   resetEmployeePresence: true,
 };
 
@@ -36,6 +38,12 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
       const next = { ...prev, [key]: !prev[key] };
       if (key === 'attendanceRecords' && next.attendanceRecords) {
         next.resetEmployeePresence = true;
+      }
+      if (key === 'cargoInspections' && next.cargoInspections) {
+        next.cargoInspectionsStorage = true;
+      }
+      if (key === 'cargoInspectionsStorage' && !next.cargoInspectionsStorage) {
+        next.cargoInspections = false;
       }
       return next;
     });
@@ -60,6 +68,8 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         storageFilesDeleted: 0,
         shiftsDeleted: 0,
         leaveRequestsDeleted: 0,
+        cargoInspectionsDeleted: 0,
+        cargoInspectionsStorageDeleted: 0,
         employeesReset: 0,
         errors: [
           error instanceof Error ? error.message : 'Cleanup failed.',
@@ -117,6 +127,18 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           label="Leave requests"
           hint="All pending, approved, and rejected requests"
         />
+        <OptionRow
+          checked={options.cargoInspectionsStorage}
+          onChange={() => toggleOption('cargoInspectionsStorage')}
+          label="Cargo inspection media (Storage)"
+          hint="Photos and videos under cargo_inspections/"
+        />
+        <OptionRow
+          checked={options.cargoInspections}
+          onChange={() => toggleOption('cargoInspections')}
+          label="Cargo inspections (Firestore)"
+          hint="All ULD / AWB records from Continental Inspect"
+        />
       </div>
 
       <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
@@ -155,6 +177,14 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
               ) : null}
               {result.leaveRequestsDeleted > 0 ? (
                 <p>Leave requests removed: {result.leaveRequestsDeleted}</p>
+              ) : null}
+              {result.cargoInspectionsStorageDeleted > 0 ? (
+                <p>
+                  Inspection media removed: {result.cargoInspectionsStorageDeleted}
+                </p>
+              ) : null}
+              {result.cargoInspectionsDeleted > 0 ? (
+                <p>Cargo inspections removed: {result.cargoInspectionsDeleted}</p>
               ) : null}
               {result.employeesReset > 0 ? (
                 <p>Employees reset: {result.employeesReset}</p>

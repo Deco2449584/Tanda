@@ -22,6 +22,8 @@ export interface DataPurgeOptions {
   attendanceStorage: boolean;
   shifts: boolean;
   leaveRequests: boolean;
+  cargoInspections: boolean;
+  cargoInspectionsStorage: boolean;
   resetEmployeePresence: boolean;
 }
 
@@ -30,6 +32,8 @@ export interface DataPurgeResult {
   storageFilesDeleted: number;
   shiftsDeleted: number;
   leaveRequestsDeleted: number;
+  cargoInspectionsDeleted: number;
+  cargoInspectionsStorageDeleted: number;
   employeesReset: number;
   errors: string[];
 }
@@ -148,6 +152,8 @@ export async function purgeOperationalData(
     storageFilesDeleted: 0,
     shiftsDeleted: 0,
     leaveRequestsDeleted: 0,
+    cargoInspectionsDeleted: 0,
+    cargoInspectionsStorageDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -157,6 +163,8 @@ export async function purgeOperationalData(
     options.attendanceStorage ||
     options.shifts ||
     options.leaveRequests ||
+    options.cargoInspections ||
+    options.cargoInspectionsStorage ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -216,6 +224,36 @@ export async function purgeOperationalData(
     }
   }
 
+  if (options.cargoInspectionsStorage) {
+    try {
+      result.cargoInspectionsStorageDeleted = await deleteStorageTree(
+        'cargo_inspections',
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete cargo inspection media.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.cargoInspections) {
+    try {
+      result.cargoInspectionsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.CARGO_INSPECTIONS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete cargo inspections.';
+      result.errors.push(message);
+    }
+  }
+
   if (options.resetEmployeePresence) {
     try {
       result.employeesReset = await resetAllEmployeePresence(onProgress);
@@ -234,6 +272,8 @@ export async function purgeOperationalData(
     result.storageFilesDeleted === 0 &&
     result.shiftsDeleted === 0 &&
     result.leaveRequestsDeleted === 0 &&
+    result.cargoInspectionsDeleted === 0 &&
+    result.cargoInspectionsStorageDeleted === 0 &&
     result.employeesReset === 0
   ) {
     throw new Error(result.errors.join(' '));

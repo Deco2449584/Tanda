@@ -43,6 +43,11 @@ service firebase.storage {
         );
     }
 
+    // Admin cleanup: listar y borrar evidencias de inspección (Settings → Data cleanup)
+    match /cargo_inspections/{allPaths=**} {
+      allow list, delete: if request.auth != null;
+    }
+
     // Bloquea todo lo demás por defecto
     match /{allPaths=**} {
       allow read, write: if false;
