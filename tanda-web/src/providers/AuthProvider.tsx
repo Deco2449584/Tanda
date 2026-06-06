@@ -11,7 +11,8 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
-import { getRoleFromEmail, type UserRole } from '@/lib/auth/roles';
+import { fetchUserRoleForEmail } from '@/lib/auth/resolve-role';
+import type { UserRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 
 interface AuthContextValue {
@@ -37,10 +38,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let roleRequestId = 0;
+
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
-      setRole(firebaseUser ? getRoleFromEmail(firebaseUser.email) : null);
-      setLoading(false);
+
+      if (!firebaseUser?.email) {
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      const requestId = ++roleRequestId;
+      setLoading(true);
+
+      void fetchUserRoleForEmail(firebaseUser.email)
+        .then((resolved) => {
+          if (requestId !== roleRequestId) return;
+          setRole(resolved);
+        })
+        .catch((error) => {
+          console.error('AuthProvider role resolution', error);
+          if (requestId !== roleRequestId) return;
+          setRole('empleado');
+        })
+        .finally(() => {
+          if (requestId !== roleRequestId) return;
+          setLoading(false);
+        });
     });
 
     return () => unsubscribe();

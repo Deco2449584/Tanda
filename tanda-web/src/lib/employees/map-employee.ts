@@ -15,6 +15,7 @@ export function mapEmployeeDoc(
       typeof employee.email === 'string'
         ? employee.email.trim().toLowerCase()
         : '',
+    role: typeof employee.role === 'string' ? employee.role.trim() : undefined,
     department: employee.department ?? '',
     hourlyRate: typeof employee.hourlyRate === 'number' ? employee.hourlyRate : 0,
     active: employee.active ?? false,

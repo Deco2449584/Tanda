@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import { getHomeRouteForRole, getRoleFromEmail } from '@/lib/auth/roles';
+import { fetchUserRoleForEmail } from '@/lib/auth/resolve-role';
+import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
@@ -67,7 +68,7 @@ export default function LoginPage() {
         email.trim(),
         password,
       );
-      const role = getRoleFromEmail(credential.user.email);
+      const role = await fetchUserRoleForEmail(credential.user.email);
       router.push(getHomeRouteForRole(role));
     } catch (err) {
       const code =

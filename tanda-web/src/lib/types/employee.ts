@@ -4,6 +4,8 @@ export interface EmployeeFirestore {
   employeeId: string;
   name: string;
   email: string;
+  /** Optional access role, e.g. "Admin". */
+  role?: string;
   department: string;
   hourlyRate: number;
   active: boolean;

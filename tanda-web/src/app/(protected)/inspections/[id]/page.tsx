@@ -3,15 +3,14 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
-import { getRoleFromEmail } from '@/lib/auth/roles';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
 export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
-  const { user } = useAuthRole();
-  const isAdmin = getRoleFromEmail(user?.email) === 'admin';
+  const { user, role } = useAuthRole();
+  const isAdmin = role === 'admin';
   const { inspectionsById, loading, error, refresh } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);
