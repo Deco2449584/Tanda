@@ -3,6 +3,7 @@ export const COLLECTIONS = {
   ATTENDANCE_RECORDS: 'attendance_records',
   SHIFTS: 'shifts',
   LEAVE_REQUESTS: 'leave_requests',
+  CARGO_INSPECTIONS: 'cargo_inspections',
   SETTINGS: 'settings',
 } as const;
 

@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Clock,
   LayoutDashboard,
+  PackageSearch,
   Settings,
   ShieldCheck,
   Users,
@@ -28,6 +29,7 @@ const adminNavItems: NavItem[] = [
   { label: 'Staff Management', href: '/employees', icon: Users },
   { label: 'Schedule', href: '/schedule', icon: CalendarDays },
   { label: 'Leave Requests', href: '/leave-requests', icon: ShieldCheck },
+  { label: 'Inspections', href: '/inspections', icon: PackageSearch },
   { label: 'Settings', href: '/settings', icon: Settings },
 ];
 
