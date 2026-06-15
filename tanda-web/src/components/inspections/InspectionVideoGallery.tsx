@@ -3,8 +3,17 @@
 import { useState } from 'react';
 import { Download, Film, Loader2 } from 'lucide-react';
 
+export interface VideoDownloadRequest {
+  url: string;
+  headers?: HeadersInit;
+}
+
 interface InspectionVideoGalleryProps {
   videos: string[];
+  resolveDownloadRequest?: (
+    index: number,
+    url: string,
+  ) => VideoDownloadRequest;
 }
 
 function videoFileName(url: string, index: number): string {
@@ -46,8 +55,12 @@ function VideoThumbnail({
   );
 }
 
-async function downloadVideo(url: string, fileName: string): Promise<void> {
-  const response = await fetch(url);
+async function downloadVideo(
+  url: string,
+  fileName: string,
+  headers?: HeadersInit,
+): Promise<void> {
+  const response = await fetch(url, { headers });
   if (!response.ok) {
     throw new Error('Download failed.');
   }
@@ -64,7 +77,10 @@ async function downloadVideo(url: string, fileName: string): Promise<void> {
   URL.revokeObjectURL(objectUrl);
 }
 
-export function InspectionVideoGallery({ videos }: InspectionVideoGalleryProps) {
+export function InspectionVideoGallery({
+  videos,
+  resolveDownloadRequest,
+}: InspectionVideoGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
   const [downloadError, setDownloadError] = useState('');
@@ -87,7 +103,12 @@ export function InspectionVideoGallery({ videos }: InspectionVideoGalleryProps) 
     setDownloadingIndex(index);
 
     try {
-      await downloadVideo(url, videoFileName(url, index));
+      const request = resolveDownloadRequest?.(index, url) ?? { url };
+      await downloadVideo(
+        request.url,
+        videoFileName(url, index),
+        request.headers,
+      );
     } catch {
       setDownloadError('Could not download this video. Please try again.');
     } finally {

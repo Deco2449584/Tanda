@@ -37,8 +37,12 @@ function PortalTrackDetailContent() {
       const message =
         loadError instanceof Error
           ? loadError.message
-          : 'No se pudo cargar la inspección.';
-      if (message.includes('Sesión') || message.includes('autorizado')) {
+          : 'Could not load inspection.';
+      if (
+        message.includes('Session') ||
+        message.includes('Unauthorized') ||
+        message.includes('expired')
+      ) {
         clearPortalSession();
         router.replace('/portal');
         return;
@@ -61,13 +65,13 @@ function PortalTrackDetailContent() {
   }, [load]);
 
   if (loading) {
-    return <p className="text-sm text-zinc-500">Cargando inspección…</p>;
+    return <p className="text-sm text-zinc-500">Loading inspection…</p>;
   }
 
   if (error || !inspection) {
     return (
       <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        {error || 'Inspección no encontrada.'}
+        {error || 'Inspection not found.'}
       </p>
     );
   }

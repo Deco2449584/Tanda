@@ -2,17 +2,32 @@ import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
+function parseServiceAccountJson(raw: string): {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+} {
+  let value = raw.trim();
+  if (
+    (value.startsWith("'") && value.endsWith("'")) ||
+    (value.startsWith('"') && value.endsWith('"'))
+  ) {
+    value = value.slice(1, -1);
+  }
+  return JSON.parse(value) as {
+    project_id: string;
+    client_email: string;
+    private_key: string;
+  };
+}
+
 function initAdminApp(): App {
   const existing = getApps()[0];
   if (existing) return existing;
 
   const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (json) {
-    const serviceAccount = JSON.parse(json) as {
-      project_id: string;
-      client_email: string;
-      private_key: string;
-    };
+    const serviceAccount = parseServiceAccountJson(json);
 
     return initializeApp({
       credential: cert({

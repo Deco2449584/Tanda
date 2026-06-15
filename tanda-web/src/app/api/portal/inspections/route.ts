@@ -9,12 +9,12 @@ export async function GET(request: Request) {
   try {
     const token = getBearerToken(request.headers.get('authorization'));
     if (!token) {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
     const session = await verifyPortalSessionToken(token);
     if (!session) {
-      return NextResponse.json({ error: 'Sesión expirada.' }, { status: 401 });
+      return NextResponse.json({ error: 'Session expired.' }, { status: 401 });
     }
 
     const inspections = await fetchPortalInspections(session);
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('GET /api/portal/inspections', error);
     return NextResponse.json(
-      { error: 'No se pudieron cargar las inspecciones.' },
+      { error: 'Could not load inspections.' },
       { status: 500 },
     );
   }

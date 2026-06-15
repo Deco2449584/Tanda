@@ -12,15 +12,17 @@ interface PortalInspectionCardProps {
 }
 
 const PORTAL_STATUS_CLASSES: Record<string, string> = {
-  'REQUIRES ATTENTION': 'bg-amber-100 text-amber-800 ring-amber-200',
-  NEW: 'bg-sky-100 text-sky-800 ring-sky-200',
-  LOADED: 'bg-emerald-100 text-emerald-800 ring-emerald-200',
+  'REQUIRES ATTENTION': 'bg-amber-100 text-amber-900 ring-amber-200',
+  NEW: 'bg-sky-100 text-sky-900 ring-sky-200',
+  LOADED: 'bg-emerald-100 text-emerald-900 ring-emerald-200',
 };
 
 export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) {
-  const status = getInspectionListStatus(inspection as Parameters<typeof getInspectionListStatus>[0]);
+  const status = getInspectionListStatus(
+    inspection as Parameters<typeof getInspectionListStatus>[0],
+  );
   const statusClass =
-    PORTAL_STATUS_CLASSES[status.label] ?? 'bg-zinc-100 text-zinc-700 ring-zinc-200';
+    PORTAL_STATUS_CLASSES[status.label] ?? 'bg-slate-100 text-slate-700 ring-slate-200';
 
   const dateLabel = inspection.updatedAt
     ? formatInspectionDate(inspection.updatedAt)
@@ -29,48 +31,44 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
   return (
     <Link
       href={`/portal/track/${inspection.id}`}
-      className="group flex overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+      className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-[#001A3F]/25 hover:shadow-md"
     >
-      <div className="w-1 shrink-0 bg-emerald-600" aria-hidden />
+      <div className="w-1.5 shrink-0 bg-[#001A3F]" aria-hidden />
 
-      <div className="flex min-w-0 flex-1 gap-3 p-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-50">
-          <Package className="h-5 w-5 text-emerald-700" aria-hidden />
+      <div className="flex min-w-0 flex-1 gap-4 p-5">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#001A3F]/5">
+          <Package className="h-5 w-5 text-[#001A3F]" aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-zinc-900">
+              <p className="truncate text-base font-bold text-slate-900">
                 {inspection.uldId}
               </p>
-              <p className="truncate text-xs text-zinc-500">
+              <p className="truncate text-xs text-slate-500">
                 AWB {inspection.awbNumber}
               </p>
             </div>
             <ChevronRight
-              className="h-4 w-4 shrink-0 text-zinc-400 transition group-hover:text-emerald-600"
+              className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-[#001A3F]"
               aria-hidden
             />
           </div>
 
-          <p className="mt-1 truncate text-sm text-zinc-700">{inspection.foodType}</p>
-          <p className="mt-0.5 truncate text-xs text-zinc-500">
+          <p className="mt-1.5 truncate text-sm text-slate-700">{inspection.foodType}</p>
+          <p className="mt-0.5 truncate text-xs text-slate-500">
             {getConservationLabel(inspection.conservationType)} · {inspection.weightKg}{' '}
-            kg · {inspection.boxCount} cajas
+            kg · {inspection.boxCount} boxes
           </p>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <span
               className={`inline-flex rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${statusClass}`}
             >
-              {status.label === 'NEW'
-                ? 'EN BODEGA'
-                : status.label === 'LOADED'
-                  ? 'CARGADO'
-                  : 'REQUIERE ATENCIÓN'}
+              {status.label}
             </span>
-            <span className="text-[10px] text-zinc-500">{dateLabel}</span>
+            <span className="text-[10px] text-slate-500">{dateLabel}</span>
           </div>
         </div>
       </div>

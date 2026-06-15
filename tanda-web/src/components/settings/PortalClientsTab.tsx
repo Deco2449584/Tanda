@@ -132,6 +132,10 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
           <p className="mt-2 text-xs text-amber-200/80">
             This PIN is shown only once. Store it securely before closing.
           </p>
+          <p className="mt-2 text-xs text-zinc-400">
+            Then open an inspection, enable portal access, and assign this client
+            before testing at /portal.
+          </p>
         </div>
       ) : null}
 

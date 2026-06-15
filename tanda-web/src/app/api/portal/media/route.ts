@@ -9,12 +9,12 @@ export async function POST(request: Request) {
   try {
     const token = getBearerToken(request.headers.get('authorization'));
     if (!token) {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
     const session = await verifyPortalSessionToken(token);
     if (!session) {
-      return NextResponse.json({ error: 'Sesión expirada.' }, { status: 401 });
+      return NextResponse.json({ error: 'Session expired.' }, { status: 401 });
     }
 
     const body = (await request.json()) as { urls?: string[] };
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('POST /api/portal/media', error);
     return NextResponse.json(
-      { error: 'No se pudieron firmar los archivos.' },
+      { error: 'Could not sign media files.' },
       { status: 500 },
     );
   }

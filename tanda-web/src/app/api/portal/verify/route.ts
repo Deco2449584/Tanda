@@ -8,7 +8,7 @@ import {
 import { createPortalSessionToken } from '@/lib/portal/session';
 import { verifyPortalCredentials } from '@/lib/portal/server-inspections';
 
-const INVALID_MESSAGE = 'AWB o PIN incorrectos.';
+const INVALID_MESSAGE = 'Incorrect AWB or PIN.';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     if (isRateLimited(rateKey)) {
       return NextResponse.json(
-        { error: 'Demasiados intentos. Intente de nuevo en 15 minutos.' },
+        { error: 'Too many attempts. Try again in 15 minutes.' },
         { status: 429 },
       );
     }
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('POST /api/portal/verify', error);
     return NextResponse.json(
-      { error: 'No se pudo validar el acceso.' },
+      { error: 'Could not verify access.' },
       { status: 500 },
     );
   }

@@ -129,6 +129,16 @@ export function InspectionPortalAccess({
           </div>
         ) : null}
 
+        {portalEnabled && portalClientId ? (
+          <p className="text-xs text-zinc-500">
+            AWB for portal lookup:{' '}
+            <span className="font-mono text-zinc-300">
+              {inspection.awbNumber.trim()}
+            </span>
+            {' '}(with or without dashes when logging in)
+          </p>
+        ) : null}
+
         <button
           type="button"
           onClick={() => void handleSave()}

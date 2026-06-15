@@ -16,7 +16,7 @@ export function PortalAuthGuard({ children }: { children: React.ReactNode }) {
   if (!getPortalToken()) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="text-sm text-zinc-500">Verificando acceso…</p>
+        <p className="text-sm text-zinc-500">Verifying access…</p>
       </div>
     );
   }

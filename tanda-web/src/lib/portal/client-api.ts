@@ -32,11 +32,11 @@ export async function verifyPortalAccess(
   };
 
   if (!response.ok) {
-    throw new Error(data.error ?? 'No se pudo validar el acceso.');
+    throw new Error(data.error ?? 'Could not verify access.');
   }
 
   if (!data.token || !data.awbNumber) {
-    throw new Error('Respuesta inválida del servidor.');
+    throw new Error('Invalid server response.');
   }
 
   return { token: data.token, awbNumber: data.awbNumber };
@@ -58,7 +58,7 @@ export async function fetchPortalInspectionsList(): Promise<{
   };
 
   if (!response.ok) {
-    throw new Error(data.error ?? 'No se pudieron cargar las inspecciones.');
+    throw new Error(data.error ?? 'Could not load inspections.');
   }
 
   return {
@@ -81,11 +81,11 @@ export async function fetchPortalInspectionDetail(
   };
 
   if (!response.ok) {
-    throw new Error(data.error ?? 'No se pudo cargar la inspección.');
+    throw new Error(data.error ?? 'Could not load inspection.');
   }
 
   if (!data.inspection) {
-    throw new Error('Inspección no encontrada.');
+    throw new Error('Inspection not found.');
   }
 
   return data.inspection;

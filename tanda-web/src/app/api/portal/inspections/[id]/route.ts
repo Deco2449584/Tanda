@@ -16,19 +16,19 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     const token = getBearerToken(request.headers.get('authorization'));
     if (!token) {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
     const session = await verifyPortalSessionToken(token);
     if (!session) {
-      return NextResponse.json({ error: 'Sesión expirada.' }, { status: 401 });
+      return NextResponse.json({ error: 'Session expired.' }, { status: 401 });
     }
 
     const { id } = await context.params;
     const inspection = await fetchPortalInspectionById(session, id);
     if (!inspection) {
       return NextResponse.json(
-        { error: 'Inspección no encontrada.' },
+        { error: 'Inspection not found.' },
         { status: 404 },
       );
     }
@@ -39,7 +39,7 @@ export async function GET(request: Request, context: RouteContext) {
   } catch (error) {
     console.error('GET /api/portal/inspections/[id]', error);
     return NextResponse.json(
-      { error: 'No se pudo cargar la inspección.' },
+      { error: 'Could not load inspection.' },
       { status: 500 },
     );
   }

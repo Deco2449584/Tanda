@@ -40,6 +40,15 @@ body {
   }
 }
 
-.kiosk-finalize-bar {
-  animation: kiosk-finalize-progress 4s linear forwards;
+.portal-gallery .overflow-hidden.rounded-xl {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.portal-gallery .border-zinc-800 {
+  border-color: #e2e8f0;
+}
+
+.portal-gallery .bg-zinc-950 {
+  background-color: #f1f5f9;
 }

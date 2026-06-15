@@ -6,28 +6,7 @@ import { normalizeAwbNumber } from '@/lib/portal/normalize-awb';
 import { verifyPortalPin } from '@/lib/portal/pin';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 import type { PortalSessionPayload } from '@/lib/portal/session';
-
-function extractStoragePathFromUrl(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes('firebasestorage.googleapis.com')) {
-      const match = parsed.pathname.match(/\/o\/(.+)$/);
-      if (match?.[1]) {
-        return decodeURIComponent(match[1]);
-      }
-    }
-    if (parsed.hostname.endsWith('.firebasestorage.app')) {
-      const parts = parsed.pathname.split('/').filter(Boolean);
-      const objectIndex = parts.indexOf('o');
-      if (objectIndex >= 0 && parts[objectIndex + 1]) {
-        return decodeURIComponent(parts[objectIndex + 1]);
-      }
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
+import { extractStoragePathFromUrl } from '@/lib/portal/storage-path';
 
 export async function verifyPortalCredentials(
   awbNumber: string,
@@ -39,15 +18,22 @@ export async function verifyPortalCredentials(
   const db = getAdminFirestore();
   const snapshot = await db
     .collection(COLLECTIONS.CARGO_INSPECTIONS)
-    .where('awbNumber', '==', normalizedAwb)
     .where('portalEnabled', '==', true)
     .get();
 
-  if (snapshot.empty) return null;
+  const matchingDocs = snapshot.docs.filter((document) => {
+    const storedAwb = document.data().awbNumber;
+    return (
+      typeof storedAwb === 'string' &&
+      normalizeAwbNumber(storedAwb) === normalizedAwb
+    );
+  });
+
+  if (matchingDocs.length === 0) return null;
 
   const clientIds = new Set<string>();
-  snapshot.docs.forEach((doc) => {
-    const clientId = doc.data().portalClientId;
+  matchingDocs.forEach((document) => {
+    const clientId = document.data().portalClientId;
     if (typeof clientId === 'string' && clientId.trim()) {
       clientIds.add(clientId.trim());
     }
@@ -83,13 +69,16 @@ export async function fetchPortalInspections(
   const db = getAdminFirestore();
   const snapshot = await db
     .collection(COLLECTIONS.CARGO_INSPECTIONS)
-    .where('awbNumber', '==', session.awbNumber)
     .where('portalEnabled', '==', true)
     .where('portalClientId', '==', session.portalClientId)
     .get();
 
   return snapshot.docs
-    .map((doc) => mapInspectionDoc(doc.id, doc.data()))
+    .map((document) => mapInspectionDoc(document.id, document.data()))
+    .filter(
+      (inspection) =>
+        normalizeAwbNumber(inspection.awbNumber) === session.awbNumber,
+    )
     .sort(
       (a, b) =>
         new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime(),
