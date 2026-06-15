@@ -6,7 +6,6 @@ import { ArrowLeft, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
 import { exportCargoInspectionPdf } from '@/lib/inspections/export-pdf';
-import { portalAuthHeaders } from '@/lib/portal/client-session';
 import { formatInspectionDate } from '@/lib/inspections/format';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
 import { getInspectionDetailStatus } from '@/lib/inspections/status';
@@ -148,10 +147,7 @@ export function PortalInspectionDetailView({
         <div className="mt-4">
           <InspectionVideoGallery
             videos={inspection.videoEvidence}
-            resolveDownloadRequest={(index) => ({
-              url: `/api/portal/inspections/${inspection.id}/videos/${index}/download`,
-              headers: portalAuthHeaders(),
-            })}
+            accessMode="link"
           />
         </div>
       </section>
