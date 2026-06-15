@@ -4,6 +4,7 @@ export const COLLECTIONS = {
   SHIFTS: 'shifts',
   LEAVE_REQUESTS: 'leave_requests',
   CARGO_INSPECTIONS: 'cargo_inspections',
+  PORTAL_CLIENTS: 'portal_clients',
   SETTINGS: 'settings',
 } as const;
 

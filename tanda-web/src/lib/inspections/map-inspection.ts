@@ -49,5 +49,10 @@ export function mapInspectionDoc(
     registeredAt: toDisplayIso(record.registeredAt, record.registeredAtIso),
     updatedAt: timestampToIso(record.updatedAt) ?? record.updatedAtIso,
     createdBy: record.createdBy ?? '',
+    portalEnabled: Boolean(record.portalEnabled),
+    portalClientId:
+      typeof record.portalClientId === 'string' && record.portalClientId.trim()
+        ? record.portalClientId.trim()
+        : undefined,
   };
 }

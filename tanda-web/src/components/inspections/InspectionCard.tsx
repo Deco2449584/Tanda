@@ -68,11 +68,18 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
           </p>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <span
-              className={`inline-flex rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${status.className}`}
-            >
-              {status.label}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${status.className}`}
+              >
+                {status.label}
+              </span>
+              {inspection.portalEnabled ? (
+                <span className="inline-flex rounded-md bg-violet-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-300 ring-1 ring-violet-500/30">
+                  Portal
+                </span>
+              ) : null}
+            </div>
 
             <div className="flex items-center gap-2 text-[10px] text-zinc-500">
               {mediaCount > 0 && (

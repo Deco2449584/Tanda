@@ -11,6 +11,7 @@ import {
   Plane,
 } from 'lucide-react';
 import { EditInspectionModal } from '@/components/inspections/EditInspectionModal';
+import { InspectionPortalAccess } from '@/components/inspections/InspectionPortalAccess';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
 import { exportCargoInspectionPdf } from '@/lib/inspections/export-pdf';
@@ -236,6 +237,10 @@ export function InspectionDetailView({
             <InspectionVideoGallery videos={inspection.videoEvidence} />
           </div>
         </section>
+
+        {canEdit ? (
+          <InspectionPortalAccess inspection={inspection} onUpdated={onUpdated} />
+        ) : null}
       </div>
 
       {canEdit && editOpen && (

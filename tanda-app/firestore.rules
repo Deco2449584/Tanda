@@ -115,6 +115,11 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
 
+    // 7. Portal clientes B2B (forwarders / aduanas) — solo admin autenticado
+    match /portal_clients/{clientId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;

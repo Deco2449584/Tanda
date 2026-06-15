@@ -26,6 +26,8 @@ export interface CargoInspectionFirestore {
   registeredAtIso?: string;
   updatedAt?: unknown;
   updatedAtIso?: string;
+  portalEnabled?: boolean;
+  portalClientId?: string;
 }
 
 export interface CargoInspection {
@@ -45,6 +47,8 @@ export interface CargoInspection {
   registeredAt: string;
   updatedAt?: string;
   createdBy: string;
+  portalEnabled: boolean;
+  portalClientId?: string;
 }
 
 export type CargoInspectionFormInput = {

@@ -13,6 +13,24 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "cargo_inspections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "awbNumber",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "portalEnabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "portalClientId",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
