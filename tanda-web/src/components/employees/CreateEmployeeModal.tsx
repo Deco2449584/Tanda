@@ -3,10 +3,12 @@
 import { FormEvent, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { X } from 'lucide-react';
+import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
+import { useLocations } from '@/providers/LocationsProvider';
 import type { CreateEmployeeInput } from '@/lib/types/employee';
 
 interface CreateEmployeeModalProps {
@@ -19,10 +21,12 @@ const initialForm: CreateEmployeeInput = {
   name: '',
   email: '',
   department: '',
+  locationId: '',
   hourlyRate: 0,
 };
 
 export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps) {
+  const { activeLocations } = useLocations();
   const [form, setForm] = useState<CreateEmployeeInput>(initialForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -69,6 +73,11 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
       return;
     }
 
+    if (activeLocations.length > 0 && !form.locationId?.trim()) {
+      setError('Select a location for this employee.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -93,6 +102,10 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
 
       if (photoUrl) {
         payload.photoUrl = photoUrl;
+      }
+
+      if (form.locationId?.trim()) {
+        payload.locationId = form.locationId.trim();
       }
 
       await addDoc(collection(db, COLLECTIONS.EMPLOYEES), payload);
@@ -224,6 +237,16 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               placeholder="Logistics, Operations..."
             />
           </div>
+
+          <EmployeeLocationSelect
+            id="emp-location"
+            value={form.locationId ?? ''}
+            onChange={(locationId) =>
+              setForm((prev) => ({ ...prev, locationId }))
+            }
+            disabled={isBusy}
+            required={activeLocations.length > 0}
+          />
 
           <div>
             <label htmlFor="emp-rate" className="mb-1.5 block text-sm text-zinc-400">

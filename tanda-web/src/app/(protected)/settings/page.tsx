@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
+import { LocationsTab } from '@/components/settings/LocationsTab';
 import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAuthRole } from '@/hooks/useAuthRole';
@@ -14,11 +15,12 @@ import {
   type CompanySettings,
 } from '@/lib/types/company-settings';
 
-type SettingsTab = 'localization' | 'profile' | 'data' | 'portal';
+type SettingsTab = 'localization' | 'profile' | 'data' | 'portal' | 'locations';
 
 const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
   { id: 'profile', label: 'Administrator' },
+  { id: 'locations', label: 'Locations' },
   { id: 'portal', label: 'Portal clients' },
   { id: 'data', label: 'Data cleanup' },
 ];
@@ -42,7 +44,9 @@ export default function SettingsPage() {
   const tabs =
     role === 'admin'
       ? ADMIN_TABS
-      : ADMIN_TABS.filter((tab) => tab.id !== 'data' && tab.id !== 'portal');
+      : ADMIN_TABS.filter(
+          (tab) => tab.id !== 'data' && tab.id !== 'portal' && tab.id !== 'locations',
+        );
   const { settings, loading: settingsLoading, saving, saveSettings } =
     useCompanySettings();
 
@@ -130,6 +134,9 @@ export default function SettingsPage() {
           )}
           {activeTab === 'data' && role === 'admin' && (
             <DataPurgeTab adminEmail={user?.email ?? ''} />
+          )}
+          {activeTab === 'locations' && role === 'admin' && (
+            <LocationsTab onToast={showToast} />
           )}
           {activeTab === 'portal' && role === 'admin' && (
             <PortalClientsTab onToast={showToast} />

@@ -8,6 +8,7 @@ import { useAuthRole } from '@/hooks/useAuthRole';
 import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
+import { LocationsProvider } from '@/providers/LocationsProvider';
 
 interface ProtectedShellProps {
   children: React.ReactNode;
@@ -96,7 +97,9 @@ function ProtectedLayoutContent({
 
   const mainContent =
     role === 'admin' ? (
-      <EmployeesProvider>{children}</EmployeesProvider>
+      <EmployeesProvider>
+        <LocationsProvider>{children}</LocationsProvider>
+      </EmployeesProvider>
     ) : (
       children
     );

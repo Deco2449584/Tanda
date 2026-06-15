@@ -8,7 +8,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { Building2, ChevronDown } from 'lucide-react';
+import { Building2, ChevronDown, MapPin } from 'lucide-react';
 import { AssignShiftModal } from '@/components/schedule/AssignShiftModal';
 import { AvailableEmployeesPanel } from '@/components/schedule/AvailableEmployeesPanel';
 import { MonthRangePicker } from '@/components/schedule/MonthRangePicker';
@@ -20,6 +20,7 @@ import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { useEmployees } from '@/providers/EmployeesProvider';
+import { useLocations } from '@/providers/LocationsProvider';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
 import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
@@ -32,10 +33,12 @@ type ViewMode = 'weekly' | 'monthly';
 
 export default function SchedulePage() {
   const { employees, loading: employeesLoading } = useEmployees();
+  const { locations } = useLocations();
   const [weekReference, setWeekReference] = useState(() => new Date());
   const [monthReference, setMonthReference] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
     [],
@@ -143,35 +146,46 @@ export default function SchedulePage() {
     return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b, 'en'))];
   }, [employees]);
 
+  const locationOptions = useMemo(
+    () => [
+      { id: 'all', label: 'All locations' },
+      ...locations.map((location) => ({
+        id: location.id,
+        label: location.city
+          ? `${location.name} (${location.city})`
+          : location.name,
+      })),
+    ],
+    [locations],
+  );
+
   const activeEmployees = useMemo(
     () => employees.filter((employee) => employee.active),
     [employees],
   );
 
   const filteredEmployees = useMemo(() => {
-    const base =
-      departmentFilter === 'all'
-        ? activeEmployees
-        : activeEmployees.filter(
-            (employee) => employee.department === departmentFilter,
-          );
+    let base = activeEmployees;
+
+    if (departmentFilter !== 'all') {
+      base = base.filter((employee) => employee.department === departmentFilter);
+    }
+
+    if (locationFilter !== 'all') {
+      base = base.filter((employee) => employee.locationId === locationFilter);
+    }
 
     return base;
-  }, [activeEmployees, departmentFilter]);
+  }, [activeEmployees, departmentFilter, locationFilter]);
 
   const filteredShifts = useMemo(() => {
-    const base =
-      departmentFilter === 'all'
-        ? shifts
-        : shifts.filter((shift) => {
-            const allowedIds = new Set(
-              filteredEmployees.map((employee) => employee.employeeId),
-            );
-            return allowedIds.has(shift.employeeId);
-          });
+    const allowedIds = new Set(
+      filteredEmployees.map((employee) => employee.employeeId),
+    );
+    const base = shifts.filter((shift) => allowedIds.has(shift.employeeId));
 
     return applyResolvedShiftStatuses(base, attendanceRecords);
-  }, [attendanceRecords, departmentFilter, filteredEmployees, shifts]);
+  }, [attendanceRecords, filteredEmployees, shifts]);
 
   const employeeNames = useMemo(() => {
     const map: Record<string, string> = {};
@@ -255,6 +269,28 @@ export default function SchedulePage() {
             aria-hidden
           />
         </div>
+        <div className="relative">
+          <MapPin
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+            aria-hidden
+          />
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/70 py-2.5 pl-10 pr-9 text-sm font-medium text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            aria-label="Filter by location"
+          >
+            {locationOptions.map((location) => (
+              <option key={location.id} value={location.id} className="bg-zinc-900">
+                {location.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            aria-hidden
+          />
+        </div>
       </div>
 
       <div className="hidden flex-col gap-3 md:flex xl:flex-row xl:items-center xl:justify-between">
@@ -311,6 +347,29 @@ export default function SchedulePage() {
               {departments.map((department) => (
                 <option key={department} value={department} className="bg-zinc-900">
                   {department === 'all' ? 'All departments' : department}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden
+            />
+          </div>
+
+          <div className="relative min-w-[220px]">
+            <MapPin
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+              aria-hidden
+            />
+            <select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="w-full appearance-none rounded-lg border border-primary/30 bg-zinc-900 py-2.5 pl-10 pr-9 text-sm font-medium text-white shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+              aria-label="Filter by location"
+            >
+              {locationOptions.map((location) => (
+                <option key={location.id} value={location.id} className="bg-zinc-900">
+                  {location.label}
                 </option>
               ))}
             </select>

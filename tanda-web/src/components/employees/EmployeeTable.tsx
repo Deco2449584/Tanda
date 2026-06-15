@@ -5,7 +5,9 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { COLLECTIONS } from '@/lib/constants';
+import { getLocationLabel } from '@/lib/locations/format-location';
 import { db } from '@/lib/firebase';
+import { useLocations } from '@/providers/LocationsProvider';
 import type { Employee } from '@/lib/types/employee';
 
 function formatHourlyRate(rate: number): string {
@@ -41,6 +43,7 @@ export function EmployeeTable({
   searchQuery,
   onEdit,
 }: EmployeeTableProps) {
+  const { locations } = useLocations();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredEmployees = useMemo(() => {
@@ -49,14 +52,16 @@ export function EmployeeTable({
 
     return employees.filter((employee) => {
       const employeeCode = employee.employeeId.toLowerCase();
+      const locationLabel = getLocationLabel(employee.locationId, locations).toLowerCase();
       return (
         employee.name.toLowerCase().includes(query) ||
         employee.email.toLowerCase().includes(query) ||
         employee.department.toLowerCase().includes(query) ||
+        locationLabel.includes(query) ||
         employeeCode.includes(query)
       );
     });
-  }, [employees, searchQuery]);
+  }, [employees, locations, searchQuery]);
 
   async function handleDelete(employee: Employee) {
     if (!db) return;
@@ -103,6 +108,7 @@ export function EmployeeTable({
                 Hourly Rate (Pay)
               </th>
               <th className="px-4 py-3.5 font-semibold text-white">Area/Dept</th>
+              <th className="px-4 py-3.5 font-semibold text-white">Location</th>
               <th className="px-4 py-3.5 font-semibold text-white">Status</th>
               <th className="px-4 py-3.5 font-semibold text-white">Actions</th>
             </tr>
@@ -110,7 +116,7 @@ export function EmployeeTable({
           <tbody>
             {filteredEmployees.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
+                <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -138,6 +144,9 @@ export function EmployeeTable({
                   </td>
                   <td className="px-4 py-3.5 text-zinc-300">
                     {employee.department || '—'}
+                  </td>
+                  <td className="px-4 py-3.5 text-zinc-300">
+                    {getLocationLabel(employee.locationId, locations)}
                   </td>
                   <td className="px-4 py-3.5">
                     <StatusBadge active={employee.active} />
@@ -208,10 +217,16 @@ export function EmployeeTable({
                     {formatHourlyRate(employee.hourlyRate ?? 0)}
                   </dd>
                 </div>
-                <div className="flex justify-between gap-3">
+                <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
                   <dt className="text-zinc-500">Department</dt>
                   <dd className="text-right text-zinc-300">
                     {employee.department || '—'}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-zinc-500">Location</dt>
+                  <dd className="text-right text-zinc-300">
+                    {getLocationLabel(employee.locationId, locations)}
                   </dd>
                 </div>
               </dl>

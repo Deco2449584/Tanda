@@ -7,6 +7,7 @@ export interface EmployeeFirestore {
   /** Optional access role, e.g. "Admin". */
   role?: string;
   department: string;
+  locationId?: string;
   hourlyRate: number;
   active: boolean;
   lastAction: string;
@@ -23,5 +24,6 @@ export interface CreateEmployeeInput {
   name: string;
   email: string;
   department: string;
+  locationId?: string;
   hourlyRate: number;
 }

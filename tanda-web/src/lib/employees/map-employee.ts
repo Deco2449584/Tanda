@@ -17,6 +17,10 @@ export function mapEmployeeDoc(
         : '',
     role: typeof employee.role === 'string' ? employee.role.trim() : undefined,
     department: employee.department ?? '',
+    locationId:
+      typeof employee.locationId === 'string' && employee.locationId.trim()
+        ? employee.locationId.trim()
+        : undefined,
     hourlyRate: typeof employee.hourlyRate === 'number' ? employee.hourlyRate : 0,
     active: employee.active ?? false,
     lastAction: employee.lastAction ?? 'none',

@@ -18,11 +18,16 @@ service cloud.firestore {
           'hourlyRate',
           'employeeId',
           'photoUrl',
+          'locationId',
         ]) &&
         request.resource.data.name is string &&
         request.resource.data.email is string &&
         request.resource.data.employeeId is string &&
         request.resource.data.active is bool &&
+        (
+          !('locationId' in request.resource.data) ||
+          request.resource.data.locationId is string
+        ) &&
         (
           !('lastAction' in request.resource.data) ||
           request.resource.data.lastAction in ['check_in', 'check_out', 'none']
@@ -56,6 +61,7 @@ service cloud.firestore {
           'hourlyRate',
           'photoUrl',
           'active',
+          'locationId',
         ]);
 
       allow delete: if request.auth != null;
@@ -117,6 +123,11 @@ service cloud.firestore {
 
     // 7. Portal clientes B2B (forwarders / aduanas) — solo admin autenticado
     match /portal_clients/{clientId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 8. Sedes / ubicaciones de empleados
+    match /locations/{locationId} {
       allow read, write: if request.auth != null;
     }
 

@@ -1,8 +1,9 @@
 ﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
+import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
@@ -20,6 +21,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     name: '',
     email: '',
     department: '',
+    locationId: '',
     hourlyRate: 0,
   });
   const [active, setActive] = useState(true);
@@ -38,6 +40,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       name: employee.name,
       email: employee.email,
       department: employee.department,
+      locationId: employee.locationId ?? '',
       hourlyRate: employee.hourlyRate,
     });
     setActive(employee.active);
@@ -102,6 +105,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
       if (photoUrl) {
         payload.photoUrl = photoUrl;
+      }
+
+      if (form.locationId?.trim()) {
+        payload.locationId = form.locationId.trim();
+      } else {
+        payload.locationId = deleteField();
       }
 
       await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), payload);
@@ -227,6 +236,16 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
+
+          <EmployeeLocationSelect
+            id="edit-emp-location"
+            value={form.locationId ?? ''}
+            onChange={(locationId) =>
+              setForm((prev) => ({ ...prev, locationId }))
+            }
+            disabled={isBusy}
+            allowUnassigned
+          />
 
           <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-3">
             <div>

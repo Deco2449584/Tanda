@@ -9,7 +9,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { Download, FileSpreadsheet, Search } from 'lucide-react';
+import { Download, FileSpreadsheet, MapPin, Search } from 'lucide-react';
 import {
   AttendanceDateFilterBar,
   type AttendanceDatePreset,
@@ -32,6 +32,7 @@ import {
 } from '@/lib/attendance/date-range';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
+import { useLocations } from '@/providers/LocationsProvider';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
@@ -55,9 +56,11 @@ function resolveAttendancePreset(range: DateRange): AttendanceDatePreset {
 export default function AttendancePage() {
   const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
+  const { locations } = useLocations();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
   const [datePreset, setDatePreset] = useState<AttendanceDatePreset>('thisWeek');
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
@@ -106,9 +109,42 @@ export default function AttendancePage() {
 
   const pageLoading = loading || employeesLoading;
 
+  const locationOptions = useMemo(
+    () => [
+      { id: 'all', label: 'All locations' },
+      ...locations.map((location) => ({
+        id: location.id,
+        label: location.city
+          ? `${location.name} (${location.city})`
+          : location.name,
+      })),
+    ],
+    [locations],
+  );
+
+  const employeesForFilters = useMemo(() => {
+    if (locationFilter === 'all') return employees;
+    return employees.filter((employee) => employee.locationId === locationFilter);
+  }, [employees, locationFilter]);
+
+  const allowedEmployeeIds = useMemo(
+    () =>
+      new Set(
+        employeesForFilters
+          .map((employee) => employee.employeeId)
+          .filter((employeeId) => Boolean(employeeId)),
+      ),
+    [employeesForFilters],
+  );
+
+  const locationFilteredRecords = useMemo(() => {
+    if (locationFilter === 'all') return records;
+    return records.filter((record) => allowedEmployeeIds.has(record.employeeId));
+  }, [allowedEmployeeIds, locationFilter, records]);
+
   const employeeCodes = useMemo(() => {
     const map: Record<string, string> = {};
-    employees.forEach((employee) => {
+    employeesForFilters.forEach((employee) => {
       const code = employee.employeeId || '—';
       map[employee.id] = code;
       if (employee.employeeId) {
@@ -116,36 +152,41 @@ export default function AttendancePage() {
       }
     });
     return map;
-  }, [employees]);
+  }, [employeesForFilters]);
 
   const filteredForExport = useMemo(
-    () => filterRecordsByEmployeeName(records, searchQuery),
-    [records, searchQuery],
+    () => filterRecordsByEmployeeName(locationFilteredRecords, searchQuery),
+    [locationFilteredRecords, searchQuery],
   );
 
   const employeesByCode = useMemo(() => {
     const map: Record<string, Employee> = {};
-    employees.forEach((employee) => {
+    employeesForFilters.forEach((employee) => {
       if (employee.employeeId) {
         map[employee.employeeId] = employee;
       }
     });
     return map;
-  }, [employees]);
+  }, [employeesForFilters]);
 
   const manualCheckoutEmployee = manualCheckoutRecord
     ? employeesByCode[manualCheckoutRecord.employeeId] ?? null
     : null;
 
   const activeEmployeeCount = useMemo(
-    () => employees.filter((employee) => employee.active).length,
-    [employees],
+    () => employeesForFilters.filter((employee) => employee.active).length,
+    [employeesForFilters],
   );
 
   function handlePayrollExport() {
-    const exported = exportPayrollReportToCsv(records, employees, dateRange, {
-      currency: settings.currency,
-    });
+    const exported = exportPayrollReportToCsv(
+      locationFilteredRecords,
+      employeesForFilters,
+      dateRange,
+      {
+        currency: settings.currency,
+      },
+    );
 
     if (!exported) {
       window.alert('No active employees to include in the payroll report.');
@@ -153,7 +194,7 @@ export default function AttendancePage() {
     }
 
     const summary = formatPayrollSummaryText(
-      buildPayrollReport(records, employees, dateRange, {
+      buildPayrollReport(locationFilteredRecords, employeesForFilters, dateRange, {
         currency: settings.currency,
       }),
     );
@@ -178,6 +219,25 @@ export default function AttendancePage() {
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:min-w-[220px]">
+            <MapPin
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden
+            />
+            <select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="w-full appearance-none rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-9 text-sm text-zinc-200 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+              aria-label="Filter by location"
+            >
+              {locationOptions.map((location) => (
+                <option key={location.id} value={location.id} className="bg-zinc-900">
+                  {location.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="relative w-full sm:min-w-[280px]">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
@@ -219,7 +279,7 @@ export default function AttendancePage() {
       </div>
 
       <AttendanceTable
-        records={records}
+        records={locationFilteredRecords}
         employeeCodes={employeeCodes}
         loading={pageLoading}
         searchQuery={searchQuery}
@@ -235,7 +295,7 @@ export default function AttendancePage() {
       <AddManualCheckoutModal
         checkInRecord={manualCheckoutRecord}
         employee={manualCheckoutEmployee}
-        allRecords={records}
+        allRecords={locationFilteredRecords}
         onClose={() => setManualCheckoutRecord(null)}
       />
     </div>
