@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Plus, RefreshCw } from 'lucide-react';
+import { Copy, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import {
   createPortalClient,
+  deletePortalClient,
   regeneratePortalClientPin,
   setPortalClientActive,
   subscribePortalClients,
@@ -24,6 +25,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
   const [saving, setSaving] = useState(false);
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribePortalClients(
@@ -93,6 +95,28 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
       );
     } catch {
       onToast('Could not update client status.', 'error');
+    }
+  }
+
+  async function handleDelete(client: PortalClient) {
+    const confirmed = window.confirm(
+      `Delete "${client.companyName}" permanently?\n\nInspections assigned to this client will lose portal access. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(client.id);
+
+    try {
+      const detachedCount = await deletePortalClient(client.id);
+      onToast(
+        detachedCount > 0
+          ? `${client.companyName} deleted. Portal access removed from ${detachedCount} inspection(s).`
+          : `${client.companyName} deleted.`,
+      );
+    } catch {
+      onToast('Could not delete client.', 'error');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -235,6 +259,15 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                     className="rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500"
                   >
                     {client.active ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(client)}
+                    disabled={deletingId === client.id}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-900/60 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:border-red-700 hover:bg-red-950/40 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" aria-hidden />
+                    {deletingId === client.id ? 'Deleting…' : 'Delete'}
                   </button>
                 </div>
               </li>

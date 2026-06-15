@@ -21,6 +21,7 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
   leaveRequests: false,
   cargoInspections: false,
   cargoInspectionsStorage: false,
+  portalClients: false,
   resetEmployeePresence: true,
 };
 
@@ -41,9 +42,15 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
       }
       if (key === 'cargoInspections' && next.cargoInspections) {
         next.cargoInspectionsStorage = true;
+        next.portalClients = true;
       }
       if (key === 'cargoInspectionsStorage' && !next.cargoInspectionsStorage) {
         next.cargoInspections = false;
+        next.portalClients = false;
+      }
+      if (key === 'portalClients' && !next.portalClients && next.cargoInspections) {
+        next.cargoInspections = false;
+        next.cargoInspectionsStorage = false;
       }
       return next;
     });
@@ -70,6 +77,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         leaveRequestsDeleted: 0,
         cargoInspectionsDeleted: 0,
         cargoInspectionsStorageDeleted: 0,
+        portalClientsDeleted: 0,
         employeesReset: 0,
         errors: [
           error instanceof Error ? error.message : 'Cleanup failed.',
@@ -126,6 +134,12 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           onChange={() => toggleOption('leaveRequests')}
           label="Leave requests"
           hint="All pending, approved, and rejected requests"
+        />
+        <OptionRow
+          checked={options.portalClients}
+          onChange={() => toggleOption('portalClients')}
+          label="Portal clients (Firestore)"
+          hint="Registered forwarders / customs agencies with AWB + PIN access"
         />
         <OptionRow
           checked={options.cargoInspectionsStorage}
@@ -185,6 +199,9 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
               ) : null}
               {result.cargoInspectionsDeleted > 0 ? (
                 <p>Cargo inspections removed: {result.cargoInspectionsDeleted}</p>
+              ) : null}
+              {result.portalClientsDeleted > 0 ? (
+                <p>Portal clients removed: {result.portalClientsDeleted}</p>
               ) : null}
               {result.employeesReset > 0 ? (
                 <p>Employees reset: {result.employeesReset}</p>

@@ -4,6 +4,7 @@ import {
   getDocs,
   limit,
   query,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import {
@@ -24,6 +25,7 @@ export interface DataPurgeOptions {
   leaveRequests: boolean;
   cargoInspections: boolean;
   cargoInspectionsStorage: boolean;
+  portalClients: boolean;
   resetEmployeePresence: boolean;
 }
 
@@ -34,6 +36,7 @@ export interface DataPurgeResult {
   leaveRequestsDeleted: number;
   cargoInspectionsDeleted: number;
   cargoInspectionsStorageDeleted: number;
+  portalClientsDeleted: number;
   employeesReset: number;
   errors: string[];
 }
@@ -109,6 +112,46 @@ async function deleteStorageTree(
   return deleted;
 }
 
+async function clearInspectionPortalAccess(
+  onProgress?: PurgeProgressCallback,
+): Promise<number> {
+  if (!db) {
+    throw new Error('Firebase is not available.');
+  }
+
+  let cleared = 0;
+
+  while (true) {
+    const snapshot = await getDocs(
+      query(
+        collection(db, COLLECTIONS.CARGO_INSPECTIONS),
+        where('portalEnabled', '==', true),
+        limit(BATCH_SIZE),
+      ),
+    );
+
+    if (snapshot.empty) break;
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((document) => {
+      batch.update(document.ref, {
+        portalEnabled: false,
+        portalClientId: deleteField(),
+      });
+    });
+    await batch.commit();
+
+    cleared += snapshot.size;
+    onProgress?.(
+      `Cleared portal access on ${cleared} inspection${cleared === 1 ? '' : 's'}…`,
+    );
+
+    if (snapshot.size < BATCH_SIZE) break;
+  }
+
+  return cleared;
+}
+
 async function resetAllEmployeePresence(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
@@ -154,6 +197,7 @@ export async function purgeOperationalData(
     leaveRequestsDeleted: 0,
     cargoInspectionsDeleted: 0,
     cargoInspectionsStorageDeleted: 0,
+    portalClientsDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -165,6 +209,7 @@ export async function purgeOperationalData(
     options.leaveRequests ||
     options.cargoInspections ||
     options.cargoInspectionsStorage ||
+    options.portalClients ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -254,6 +299,24 @@ export async function purgeOperationalData(
     }
   }
 
+  if (options.portalClients) {
+    try {
+      if (!options.cargoInspections) {
+        await clearInspectionPortalAccess(onProgress);
+      }
+      result.portalClientsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.PORTAL_CLIENTS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete portal clients.';
+      result.errors.push(message);
+    }
+  }
+
   if (options.resetEmployeePresence) {
     try {
       result.employeesReset = await resetAllEmployeePresence(onProgress);
@@ -274,6 +337,7 @@ export async function purgeOperationalData(
     result.leaveRequestsDeleted === 0 &&
     result.cargoInspectionsDeleted === 0 &&
     result.cargoInspectionsStorageDeleted === 0 &&
+    result.portalClientsDeleted === 0 &&
     result.employeesReset === 0
   ) {
     throw new Error(result.errors.join(' '));
