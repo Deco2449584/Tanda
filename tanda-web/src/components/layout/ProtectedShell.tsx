@@ -5,9 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
+import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
 import { LocationsProvider } from '@/providers/LocationsProvider';
 
 interface ProtectedShellProps {
@@ -90,21 +92,13 @@ function ProtectedLayoutContent({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuthRole();
 
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
 
-  const mainContent =
-    role === 'admin' ? (
-      <EmployeesProvider>
-        <LocationsProvider>{children}</LocationsProvider>
-      </EmployeesProvider>
-    ) : (
-      children
-    );
-
-  return (
+  const layout = (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0a]">
       <Sidebar
         role={role}
@@ -113,8 +107,42 @@ function ProtectedLayoutContent({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header role={role} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="relative z-0 flex-1 overflow-y-auto">{mainContent}</main>
+        <main className="relative z-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
+  );
+
+  if (role === 'admin') {
+    return (
+      <EmployeesProvider>
+        <LocationsProvider>{layout}</LocationsProvider>
+      </EmployeesProvider>
+    );
+  }
+
+  return (
+    <EmployeeNotificationsShell userEmail={user?.email}>
+      {layout}
+    </EmployeeNotificationsShell>
+  );
+}
+
+function EmployeeNotificationsShell({
+  userEmail,
+  children,
+}: {
+  userEmail: string | null | undefined;
+  children: React.ReactNode;
+}) {
+  const { employee, loading } = useCurrentEmployee(userEmail);
+
+  if (loading) {
+    return <LoadingScreen message="Loading profile..." />;
+  }
+
+  return (
+    <EmployeeShiftNotificationsProvider employeeCode={employee?.employeeId ?? ''}>
+      {children}
+    </EmployeeShiftNotificationsProvider>
   );
 }

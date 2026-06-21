@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ChevronDown, LogOut, Menu, UserCircle } from 'lucide-react';
 import { AdminNotificationsMenu } from '@/components/layout/AdminNotificationsMenu';
+import { EmployeeNotificationsMenu } from '@/components/layout/EmployeeNotificationsMenu';
 import { useSignOut } from '@/hooks/useSignOut';
 import { auth } from '@/lib/firebase';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
@@ -72,6 +73,7 @@ export function Header({ onMenuClick, role }: HeaderProps) {
 
       <div className="flex shrink-0 items-center gap-2 md:gap-4">
         <AdminNotificationsMenu enabled={role === 'admin'} />
+        <EmployeeNotificationsMenu enabled={role === 'empleado'} />
 
         <div className="relative z-[100]" ref={menuRef}>
           <button

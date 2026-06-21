@@ -16,6 +16,28 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return outputArray;
 }
 
+async function getExistingServiceWorkerRegistration(): Promise<ServiceWorkerRegistration | null> {
+  if (!('serviceWorker' in navigator)) {
+    return null;
+  }
+
+  return (
+    (await navigator.serviceWorker.getRegistration('/')) ??
+    (await navigator.serviceWorker.getRegistration()) ??
+    null
+  );
+}
+
+async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  const existing = await getExistingServiceWorkerRegistration();
+  if (existing) {
+    return existing;
+  }
+
+  await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  return navigator.serviceWorker.ready;
+}
+
 async function getAuthHeaders(): Promise<HeadersInit | null> {
   const user = auth?.currentUser;
   if (!user) return null;
@@ -57,7 +79,7 @@ export function usePushNotifications() {
     try {
       setPermission(Notification.permission);
 
-      const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+      const registration = await getExistingServiceWorkerRegistration();
       if (!registration) {
         setSubscribed(false);
         return;
@@ -92,10 +114,11 @@ export function usePushNotifications() {
         return;
       }
 
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/',
-      });
-      await navigator.serviceWorker.ready;
+      const registration = await registerServiceWorker();
+      if (!registration) {
+        setError('Could not register the notification service.');
+        return;
+      }
 
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
@@ -140,7 +163,7 @@ export function usePushNotifications() {
     setError('');
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+      const registration = await getExistingServiceWorkerRegistration();
       const subscription = registration
         ? await registration.pushManager.getSubscription()
         : null;
