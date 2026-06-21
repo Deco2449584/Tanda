@@ -1,7 +1,6 @@
 'use client';
 
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
-import { ShiftNotificationsPrompt } from '@/components/notifications/ShiftNotificationsPrompt';
 import { ShiftListCard } from '@/components/my-schedule/ShiftListCard';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -44,8 +43,6 @@ export default function MySchedulePage() {
 
       {employee && (
         <>
-          <ShiftNotificationsPrompt />
-
           <EmployeeWeeklySchedule
             weekDays={week.days}
             weekStart={week.start}

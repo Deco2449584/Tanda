@@ -57,6 +57,8 @@ export function EmployeeNotificationsMenu({ enabled }: EmployeeNotificationsMenu
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-zinc-950 md:ring-[#0a0a0a]">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
+        ) : pushSupported && !pushSubscribed ? (
+          <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-zinc-950 md:ring-[#0a0a0a]" />
         ) : null}
       </button>
 
@@ -77,7 +79,8 @@ export function EmployeeNotificationsMenu({ enabled }: EmployeeNotificationsMenu
           {pushSupported && !pushSubscribed ? (
             <div className="border-b border-zinc-800 px-4 py-3">
               <p className="text-xs text-zinc-400">
-                Enable browser alerts to get notified when the app is closed.
+                Tap below to receive phone alerts when your schedule changes (required
+                once per device).
               </p>
               <button
                 type="button"
@@ -85,7 +88,7 @@ export function EmployeeNotificationsMenu({ enabled }: EmployeeNotificationsMenu
                 onClick={() => void enablePush()}
                 className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
               >
-                {pushBusy ? 'Enabling…' : 'Enable push alerts'}
+                {pushBusy ? 'Enabling…' : 'Enable phone alerts'}
               </button>
             </div>
           ) : null}

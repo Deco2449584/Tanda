@@ -98,8 +98,45 @@ export function usePushNotifications() {
     void refreshSubscriptionState();
   }, [refreshSubscriptionState]);
 
+  const syncSubscriptionInternal = useCallback(async (): Promise<boolean> => {
+    const registration = await registerServiceWorker();
+    if (!registration) {
+      setError('Could not register the notification service.');
+      return false;
+    }
+
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+    }
+
+    const headers = await getAuthHeaders();
+    if (!headers) {
+      setError('You must be signed in to enable notifications.');
+      return false;
+    }
+
+    const response = await fetch('/api/notifications/subscribe', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ subscription: subscription.toJSON() }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(data?.error ?? 'Could not enable notifications.');
+    }
+
+    setSubscribed(true);
+    setPermission('granted');
+    return true;
+  }, [vapidPublicKey]);
+
   const enable = useCallback(async () => {
-    if (!supported || busy) return;
+    if (!supported || busy) return false;
 
     setBusy(true);
     setError('');
@@ -111,50 +148,41 @@ export function usePushNotifications() {
       if (result !== 'granted') {
         setError('Notification permission was not granted.');
         setSubscribed(false);
-        return;
+        return false;
       }
 
-      const registration = await registerServiceWorker();
-      if (!registration) {
-        setError('Could not register the notification service.');
-        return;
-      }
-
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        });
-      }
-
-      const headers = await getAuthHeaders();
-      if (!headers) {
-        setError('You must be signed in to enable notifications.');
-        return;
-      }
-
-      const response = await fetch('/api/notifications/subscribe', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ subscription: subscription.toJSON() }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? 'Could not enable notifications.');
-      }
-
-      setSubscribed(true);
+      return await syncSubscriptionInternal();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Could not enable notifications.';
       setError(message);
       setSubscribed(false);
+      return false;
     } finally {
       setBusy(false);
     }
-  }, [busy, supported, vapidPublicKey]);
+  }, [busy, supported, syncSubscriptionInternal]);
+
+  const syncSubscription = useCallback(async () => {
+    if (!supported || busy || Notification.permission !== 'granted') {
+      return false;
+    }
+
+    setBusy(true);
+    setError('');
+
+    try {
+      return await syncSubscriptionInternal();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not enable notifications.';
+      setError(message);
+      setSubscribed(false);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, supported, syncSubscriptionInternal]);
 
   const disable = useCallback(async () => {
     if (!supported || busy) return;
@@ -196,6 +224,7 @@ export function usePushNotifications() {
     busy,
     error,
     enable,
+    syncSubscription,
     disable,
     refreshSubscriptionState,
   };

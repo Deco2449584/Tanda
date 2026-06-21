@@ -10,6 +10,7 @@ import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
 import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
+import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
 import { LocationsProvider } from '@/providers/LocationsProvider';
 
 interface ProtectedShellProps {
@@ -142,6 +143,7 @@ function EmployeeNotificationsShell({
 
   return (
     <EmployeeShiftNotificationsProvider employeeCode={employee?.employeeId ?? ''}>
+      <PushNotificationSetup />
       {children}
     </EmployeeShiftNotificationsProvider>
   );

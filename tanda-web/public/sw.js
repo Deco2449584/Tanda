@@ -1,4 +1,14 @@
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
+  const iconUrl = `${self.location.origin}/apple-icon`;
+
   let payload = {
     title: 'TimeTracker',
     body: 'Your schedule was updated.',
@@ -16,8 +26,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: '/apple-icon',
-      badge: '/apple-icon',
+      icon: iconUrl,
+      badge: iconUrl,
       data: { url: payload.url || '/my-schedule' },
     }),
   );
@@ -26,14 +36,15 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification.data?.url || '/my-schedule';
+  const targetPath = event.notification.data?.url || '/my-schedule';
+  const targetUrl = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
         for (const client of windowClients) {
-          if (client.url.includes(targetUrl) && 'focus' in client) {
+          if (client.url.startsWith(self.location.origin) && 'focus' in client) {
             return client.focus();
           }
         }
