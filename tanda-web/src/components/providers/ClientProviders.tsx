@@ -2,7 +2,12 @@
 
 import type { ReactNode } from 'react';
 import { CompanySettingsProvider } from '@/providers/CompanySettingsProvider';
+import { AuthProvider } from '@/providers/AuthProvider';
 
 export function ClientProviders({ children }: { children: ReactNode }) {
-  return <CompanySettingsProvider>{children}</CompanySettingsProvider>;
+  return (
+    <AuthProvider>
+      <CompanySettingsProvider>{children}</CompanySettingsProvider>
+    </AuthProvider>
+  );
 }

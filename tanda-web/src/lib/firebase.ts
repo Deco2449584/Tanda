@@ -1,5 +1,10 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import {
+  browserLocalPersistence,
+  getAuth,
+  setPersistence,
+  type Auth,
+} from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
@@ -24,9 +29,15 @@ export const app: FirebaseApp = isClient
   ? createFirebaseApp()
   : (null as unknown as FirebaseApp);
 
-export const auth: Auth = isClient
-  ? getAuth(app)
-  : (null as unknown as Auth);
+const clientAuth = isClient ? getAuth(app) : null;
+
+if (clientAuth) {
+  void setPersistence(clientAuth, browserLocalPersistence).catch((error) => {
+    console.error('Firebase auth persistence', error);
+  });
+}
+
+export const auth: Auth = clientAuth ?? (null as unknown as Auth);
 
 export const db: Firestore = isClient
   ? getFirestore(app)

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import {
@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
+import { useAuthRole } from '@/hooks/useAuthRole';
 import { fetchUserRoleForEmail } from '@/lib/auth/resolve-role';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
@@ -52,10 +53,24 @@ const highlights = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, role, loading: authLoading } = useAuthRole();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (authLoading || !user || !role) return;
+    router.replace(getHomeRouteForRole(role));
+  }, [authLoading, role, router, user]);
+
+  if (authLoading) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-[#060606]">
+        <p className="text-sm text-zinc-400">Loading session…</p>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

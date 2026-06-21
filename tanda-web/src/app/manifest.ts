@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: `${COMPANY_NAME} | TimeTracker PRO`,
     short_name: 'TimeTracker',
     description: 'Employee schedule, attendance, and leave management.',
-    start_url: '/login',
+    start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
