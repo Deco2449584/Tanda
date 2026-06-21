@@ -5,6 +5,7 @@ import { addDoc, collection } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import { notifyShiftChange } from '@/lib/notifications/client-notify';
 import type { Employee } from '@/lib/types/employee';
 import type { AssignShiftInput } from '@/lib/types/shift';
 
@@ -99,6 +100,15 @@ export function AssignShiftModal({
         endTime,
         department: department.trim(),
         status: 'scheduled',
+      });
+
+      void notifyShiftChange({
+        type: 'assigned',
+        employeeId: employeeId.trim(),
+        date: shiftDate,
+        startTime,
+        endTime,
+        department: department.trim(),
       });
 
       onClose();

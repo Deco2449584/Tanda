@@ -9,6 +9,7 @@ import { ShiftCard } from '@/components/schedule/ShiftCard';
 import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfirmModal';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import { notifyShiftChange } from '@/lib/notifications/client-notify';
 import { normalizeInputDate } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
@@ -69,7 +70,19 @@ export function ScheduleGrid({
     setDeletingId(pendingDelete.shift.id);
 
     try {
-      await deleteDoc(doc(db, COLLECTIONS.SHIFTS, pendingDelete.shift.id));
+      const { shift } = pendingDelete;
+
+      await deleteDoc(doc(db, COLLECTIONS.SHIFTS, shift.id));
+
+      void notifyShiftChange({
+        type: 'cancelled',
+        employeeId: shift.employeeId,
+        date: normalizeInputDate(shift.date),
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        department: shift.department,
+      });
+
       setPendingDelete(null);
     } catch {
       window.alert('Could not delete the shift.');

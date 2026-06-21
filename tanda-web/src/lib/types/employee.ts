@@ -13,6 +13,9 @@ export interface EmployeeFirestore {
   lastAction: string;
   lastTimestampServer?: Timestamp;
   photoUrl?: string;
+  /** Server-managed via push notification API routes. */
+  pushSubscription?: string;
+  notificationsEnabledAt?: Timestamp;
 }
 
 export interface Employee extends EmployeeFirestore {

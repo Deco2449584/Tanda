@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
+import { ShiftNotificationsPrompt } from '@/components/notifications/ShiftNotificationsPrompt';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
@@ -74,6 +75,8 @@ export default function EmployeeDashboardPage() {
 
       {employee && (
         <>
+          <ShiftNotificationsPrompt />
+
           <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
             <WeeklyHoursCard hours={weeklyHours} loading={recordsLoading} />
             <MonthlyHoursCard hours={monthlyHours} loading={recordsLoading} />
