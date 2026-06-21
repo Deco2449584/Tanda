@@ -72,8 +72,8 @@ export function Header({ onMenuClick, role }: HeaderProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-4">
-        <AdminNotificationsMenu enabled={role === 'admin'} />
-        <EmployeeNotificationsMenu enabled={role === 'empleado'} />
+        {role === 'admin' ? <AdminNotificationsMenu enabled /> : null}
+        {role === 'empleado' ? <EmployeeNotificationsMenu /> : null}
 
         <div className="relative z-[100]" ref={menuRef}>
           <button

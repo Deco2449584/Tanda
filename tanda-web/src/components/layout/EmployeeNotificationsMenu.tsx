@@ -7,11 +7,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotificationsProvider';
 import type { EmployeeShiftAlert } from '@/lib/notifications/employee-shift-alerts';
 
-interface EmployeeNotificationsMenuProps {
-  enabled: boolean;
-}
-
-export function EmployeeNotificationsMenu({ enabled }: EmployeeNotificationsMenuProps) {
+export function EmployeeNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { alerts, unreadCount, markAllRead, markRead } = useEmployeeShiftNotifications();
@@ -39,8 +35,6 @@ export function EmployeeNotificationsMenu({ enabled }: EmployeeNotificationsMenu
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [markAllRead, open]);
-
-  if (!enabled) return null;
 
   return (
     <div className="relative" ref={containerRef}>
