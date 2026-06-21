@@ -3,30 +3,33 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Fotos de asistencia (kiosk / tablet / web)
+    // Reglas originales: Fotos de asistencia desde la Tablet (Expo)
     match /attendance/{employeeId}/{year}/{month}/{fileName} {
       allow read: if true;
-      allow create: if
+      allow write: if
         employeeId is string &&
         employeeId.size() > 0 &&
-        request.resource.size < 512 * 1024 &&
+        request.resource.size < 8 * 1024 * 1024 &&
         request.resource.contentType.matches('image/.*');
     }
 
     // Admin cleanup: listar y borrar fotos de asistencia (Settings → Data cleanup)
+    // listAll() on "attendance" requires list on the root prefix, not only nested paths.
+    match /attendance {
+      allow list: if request.auth != null;
+    }
     match /attendance/{allPaths=**} {
       allow list, delete: if request.auth != null;
     }
 
     // NUEVAS REGLAS: Fotos de perfil (Avatares) desde la Web
     match /avatars/{fileName} {
-      allow read: if true; // Permite que cualquier usuario vea las fotos en las tablas
+      allow read: if true;
       allow write: if
-        request.auth != null && // SOLO el administrador logueado en la web puede subirlas/editarlas
-        request.resource.size < 512 * 1024 &&
+        request.auth != null &&
+        request.resource.size < 5 * 1024 * 1024 &&
         request.resource.contentType.matches('image/.*');
     }
-
 
     // Continental Inspect — evidencias logísticas (fotos y videos)
     // Ruta en app: cargo_inspections/{userId}/{inspectionId}/photos|videos/{fileName}
@@ -36,19 +39,27 @@ service firebase.storage {
         request.auth != null &&
         request.auth.uid == userId &&
         folder in ['photos', 'videos'] &&
-        request.resource.size < 50 * 1024 * 1024 &&
         (
-          request.resource.contentType.matches('image/.*') ||
-          request.resource.contentType.matches('video/.*')
+          (
+            request.resource.contentType.matches('video/.*') &&
+            request.resource.size < 100 * 1024 * 1024
+          )
+          ||
+          (
+            request.resource.contentType.matches('image/.*') &&
+            request.resource.size < 50 * 1024 * 1024
+          )
         );
     }
 
     // Admin cleanup: listar y borrar evidencias de inspección (Settings → Data cleanup)
+    match /cargo_inspections {
+      allow list: if request.auth != null;
+    }
     match /cargo_inspections/{allPaths=**} {
       allow list, delete: if request.auth != null;
     }
 
-    // Bloquea todo lo demás por defecto
     match /{allPaths=**} {
       allow read, write: if false;
     }
