@@ -16,6 +16,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Continental Cargo | TimeTracker PRO',
   description: 'Continental Cargo attendance management platform',
+  applicationName: 'TimeTracker PRO',
+  appleWebApp: {
+    capable: true,
+    title: 'TimeTracker PRO',
+    statusBarStyle: 'black-translucent',
+  },
+  icons: {
+    icon: [{ url: '/icon', type: 'image/png' }],
+    apple: [{ url: '/apple-icon', type: 'image/png' }],
+  },
 };
 
 export default function RootLayout({
