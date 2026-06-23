@@ -16,6 +16,7 @@ import {
 import {
   buildGoogleMapsUrl,
   formatExactLocation,
+  formatShortLocation,
   formatWarehouseLabel,
 } from '@/lib/attendance/location-display';
 import { COLLECTIONS } from '@/lib/constants';
@@ -99,7 +100,7 @@ export function AttendanceTable({
                 <th className="px-4 py-3.5 font-semibold text-white">
                   Warehouse
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-white">
+                <th className="max-w-[11rem] px-4 py-3.5 font-semibold text-white">
                   Location
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-white">
@@ -314,11 +315,20 @@ function LocationCell({
   compact?: boolean;
 }) {
   const mapsUrl = buildGoogleMapsUrl(record);
-  const label = formatExactLocation(record);
+  const fullLabel = formatExactLocation(record);
+  const shortLabel = formatShortLocation(record);
 
-  if (label === '—') {
+  if (shortLabel === '—') {
     return <span className={compact ? 'mt-1 block text-[11px] text-zinc-600' : ''}>—</span>;
   }
+
+  const content = (
+    <span className="line-clamp-2 break-words">{shortLabel}</span>
+  );
+
+  const className = compact
+    ? 'mt-1 block max-w-full text-[11px] text-primary hover:underline'
+    : 'block max-w-[11rem] text-xs leading-snug text-primary hover:underline';
 
   if (mapsUrl) {
     return (
@@ -326,21 +336,24 @@ function LocationCell({
         href={mapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className={
-          compact
-            ? 'mt-1 block truncate text-[11px] text-primary hover:underline'
-            : 'text-primary hover:underline'
-        }
-        title={label}
+        className={className}
+        title={fullLabel !== shortLabel ? fullLabel : undefined}
       >
-        {label}
+        {content}
       </a>
     );
   }
 
   return (
-    <span className={compact ? 'mt-1 block text-[11px] text-zinc-500' : 'text-zinc-300'}>
-      {label}
+    <span
+      className={
+        compact
+          ? 'mt-1 block max-w-full text-[11px] text-zinc-500'
+          : 'block max-w-[11rem] text-xs leading-snug text-zinc-300'
+      }
+      title={fullLabel !== shortLabel ? fullLabel : undefined}
+    >
+      {content}
     </span>
   );
 }

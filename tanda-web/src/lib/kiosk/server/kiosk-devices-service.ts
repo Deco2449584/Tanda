@@ -31,11 +31,28 @@ export async function registerKioskDevice(input: {
   token: string;
   userAgent?: string;
   platform?: string;
+  reRequest?: boolean;
 }): Promise<KioskDeviceSession> {
   const existing = await findKioskDeviceByToken(input.token);
   const db = getAdminFirestore();
 
   if (existing) {
+    if (existing.status === 'revoked' && input.reRequest) {
+      await existing.ref.update({
+        status: 'pending',
+        requestedAt: FieldValue.serverTimestamp(),
+        lastSeenAt: FieldValue.serverTimestamp(),
+        locationId: FieldValue.delete(),
+        approvedAt: FieldValue.delete(),
+        approvedBy: FieldValue.delete(),
+        label: FieldValue.delete(),
+      });
+
+      const updated = await existing.ref.get();
+      const device = mapKioskDeviceDoc(updated.id, updated.data() ?? {});
+      return buildKioskDeviceSession(device);
+    }
+
     await existing.ref.update({ lastSeenAt: FieldValue.serverTimestamp() });
     return buildKioskDeviceSession(existing);
   }

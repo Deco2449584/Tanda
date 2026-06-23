@@ -11,6 +11,7 @@ export async function POST(request: Request) {
       deviceToken?: string;
       userAgent?: string;
       platform?: string;
+      reRequest?: boolean;
     };
 
     const token =
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       token,
       userAgent: body.userAgent ?? request.headers.get('user-agent') ?? '',
       platform: body.platform ?? 'web',
+      reRequest: body.reRequest === true,
     });
 
     return NextResponse.json({ session });

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
-import { X } from 'lucide-react';
+import { Coffee, X } from 'lucide-react';
 import {
   formatAttendanceType,
   formatRecordDate,
@@ -294,15 +294,46 @@ export function EditAttendanceModal({
           </div>
 
           {type === 'check_out' && attendanceBreak.enabled ? (
-            <label className="flex items-start gap-2 text-sm text-zinc-300">
-              <input
-                type="checkbox"
-                checked={breakWaived}
-                onChange={(e) => setBreakWaived(e.target.checked)}
-                className="mt-1"
-              />
-              <span>Employee did not take break (do not deduct unpaid break)</span>
-            </label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={breakWaived}
+              onClick={() => setBreakWaived((current) => !current)}
+              className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition ${
+                breakWaived
+                  ? 'border-amber-500/40 bg-amber-950/25'
+                  : 'border-zinc-800 bg-zinc-950/50 hover:border-zinc-700'
+              }`}
+            >
+              <span
+                className={`mt-0.5 rounded-lg p-2 ${
+                  breakWaived ? 'bg-amber-500/20 text-amber-300' : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                <Coffee className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-white">
+                  Employee did not take break
+                </span>
+                <span className="mt-0.5 block text-xs text-zinc-500">
+                  {breakWaived
+                    ? 'Unpaid break will not be deducted from this shift.'
+                    : `A ${attendanceBreak.durationMinutes}-minute unpaid break applies if the shift is ${attendanceBreak.minShiftHours}h or longer.`}
+                </span>
+              </span>
+              <span
+                className={`relative mt-1 h-7 w-12 shrink-0 rounded-full transition ${
+                  breakWaived ? 'bg-amber-500' : 'bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition ${
+                    breakWaived ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </button>
           ) : null}
 
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs text-zinc-500">

@@ -35,6 +35,28 @@ export function formatExactLocation(record: AttendanceRecord): string {
   return coords ?? '—';
 }
 
+/** Short label for table cells — keeps street + suburb when possible. */
+export function formatShortLocation(record: AttendanceRecord): string {
+  if (record.geoAddress?.trim()) {
+    const parts = record.geoAddress
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      return `${parts[0]}, ${parts[1]}`;
+    }
+
+    const single = parts[0] ?? record.geoAddress.trim();
+    return single.length > 42 ? `${single.slice(0, 39)}…` : single;
+  }
+
+  const coords = formatGeoCoordinates(record);
+  if (coords) return coords;
+
+  return '—';
+}
+
 export function formatExportWarehouse(record: AttendanceRecord): string {
   return formatWarehouseLabel(record);
 }

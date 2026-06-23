@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
+import { AttendanceSettingsTab } from '@/components/settings/AttendanceSettingsTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { LocationsTab } from '@/components/settings/LocationsTab';
@@ -19,6 +20,7 @@ import {
 
 type SettingsTab =
   | 'localization'
+  | 'attendance'
   | 'profile'
   | 'data'
   | 'portal'
@@ -28,6 +30,7 @@ type SettingsTab =
 
 const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
+  { id: 'attendance', label: 'Time & attendance' },
   { id: 'profile', label: 'Administrator' },
   { id: 'locations', label: 'Locations' },
   { id: 'locationGroups', label: 'Location groups' },
@@ -61,7 +64,8 @@ export default function SettingsPage() {
             tab.id !== 'portal' &&
             tab.id !== 'locations' &&
             tab.id !== 'locationGroups' &&
-            tab.id !== 'kioskDevices',
+            tab.id !== 'kioskDevices' &&
+            tab.id !== 'attendance',
         );
   const { settings, loading: settingsLoading, saving, saveSettings } =
     useCompanySettings();
@@ -134,6 +138,14 @@ export default function SettingsPage() {
         <div className="max-w-2xl">
           {activeTab === 'localization' && (
             <LocalizationTab
+              draft={draft}
+              saving={saving}
+              onChange={setDraft}
+              onSave={() => void handleSaveSettings(draft)}
+            />
+          )}
+          {activeTab === 'attendance' && role === 'admin' && (
+            <AttendanceSettingsTab
               draft={draft}
               saving={saving}
               onChange={setDraft}

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { MonitorSmartphone } from 'lucide-react';
+import { MonitorSmartphone, RefreshCw } from 'lucide-react';
 import { KioskScreen } from '@/components/kiosk/KioskScreen';
 import {
   getOrCreateKioskDeviceToken,
@@ -17,6 +17,7 @@ export function KioskAuthGuard() {
   const [status, setStatus] = useState<DeviceStatus>('checking');
   const [session, setSession] = useState<KioskDeviceSession | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [reRequesting, setReRequesting] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     const response = await fetch('/api/kiosk/devices/status', {
@@ -41,28 +42,44 @@ export function KioskAuthGuard() {
     setStatus('pending');
   }, []);
 
+  const registerDevice = useCallback(async (reRequest = false) => {
+    const deviceToken = getOrCreateKioskDeviceToken();
+    const registerResponse = await fetch('/api/kiosk/devices/register', {
+      method: 'POST',
+      headers: kioskDeviceHeaders(),
+      body: JSON.stringify({
+        deviceToken,
+        userAgent: navigator.userAgent,
+        platform: 'web',
+        reRequest,
+      }),
+    });
+
+    if (!registerResponse.ok) {
+      throw new Error('Could not register this device.');
+    }
+
+    const data = (await registerResponse.json()) as { session: KioskDeviceSession };
+    setSession(data.session);
+
+    if (data.session.status === 'active' && data.session.locationId) {
+      setStatus('active');
+      return;
+    }
+    if (data.session.status === 'revoked') {
+      setStatus('revoked');
+      return;
+    }
+    setStatus('pending');
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     async function bootstrap() {
       try {
-        const deviceToken = getOrCreateKioskDeviceToken();
-        const registerResponse = await fetch('/api/kiosk/devices/register', {
-          method: 'POST',
-          headers: kioskDeviceHeaders(),
-          body: JSON.stringify({
-            deviceToken,
-            userAgent: navigator.userAgent,
-            platform: 'web',
-          }),
-        });
-
-        if (!registerResponse.ok) {
-          throw new Error('Could not register this device.');
-        }
-
         if (cancelled) return;
-        await refreshStatus();
+        await registerDevice(false);
       } catch (error) {
         if (cancelled) return;
         setStatus('error');
@@ -77,7 +94,7 @@ export function KioskAuthGuard() {
     return () => {
       cancelled = true;
     };
-  }, [refreshStatus]);
+  }, [registerDevice]);
 
   useEffect(() => {
     if (status !== 'pending') return;
@@ -88,6 +105,20 @@ export function KioskAuthGuard() {
 
     return () => window.clearInterval(intervalId);
   }, [refreshStatus, status]);
+
+  async function handleReRequest() {
+    setReRequesting(true);
+    setErrorMessage('');
+    try {
+      await registerDevice(true);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not submit a new request.',
+      );
+    } finally {
+      setReRequesting(false);
+    }
+  }
 
   if (status === 'checking') {
     return (
@@ -111,8 +142,23 @@ export function KioskAuthGuard() {
         <MonitorSmartphone className="mb-4 h-10 w-10 text-red-400" />
         <h1 className="text-lg font-semibold text-white">Access revoked</h1>
         <p className="mt-2 max-w-md text-sm text-zinc-400">
-          This kiosk was disabled by an administrator. Contact support to restore access.
+          This kiosk was disabled by an administrator. You can submit a new approval request
+          or contact support.
         </p>
+        <button
+          type="button"
+          disabled={reRequesting}
+          onClick={() => void handleReRequest()}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+        >
+          <RefreshCw className={`h-4 w-4 ${reRequesting ? 'animate-spin' : ''}`} />
+          {reRequesting ? 'Submitting request…' : 'Request access again'}
+        </button>
+        {errorMessage ? (
+          <p className="mt-3 text-xs text-red-400" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
       </div>
     );
   }
