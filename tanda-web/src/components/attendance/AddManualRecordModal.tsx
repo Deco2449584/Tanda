@@ -196,14 +196,14 @@ export function AddManualRecordModal({
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-lg">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Add manual record</h2>
           <button
             type="button"
             onClick={handleClose}
             disabled={saving}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -211,7 +211,7 @@ export function AddManualRecordModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="manual-employee" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="manual-employee" className="mb-1.5 block text-sm text-muted">
               Employee
             </label>
             <select
@@ -219,7 +219,7 @@ export function AddManualRecordModal({
               required
               value={employeeDocId}
               onChange={(e) => setEmployeeDocId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="">Select employee…</option>
               {activeEmployees.map((employee) => (
@@ -231,14 +231,14 @@ export function AddManualRecordModal({
           </div>
 
           <div>
-            <label htmlFor="manual-type" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="manual-type" className="mb-1.5 block text-sm text-muted">
               Record type
             </label>
             <select
               id="manual-type"
               value={type}
               onChange={(e) => setType(e.target.value as AttendanceType)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="check_in">Check-in</option>
               <option value="check_out">Check-out</option>
@@ -247,7 +247,7 @@ export function AddManualRecordModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="manual-date" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="manual-date" className="mb-1.5 block text-sm text-muted">
                 Date
               </label>
               <input
@@ -256,11 +256,11 @@ export function AddManualRecordModal({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label htmlFor="manual-time" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="manual-time" className="mb-1.5 block text-sm text-muted">
                 Time
               </label>
               <input
@@ -269,20 +269,20 @@ export function AddManualRecordModal({
                 required
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="manual-location" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="manual-location" className="mb-1.5 block text-sm text-muted">
               Warehouse
             </label>
             <select
               id="manual-location"
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="">No warehouse</option>
               {activeLocations.map((location) => (
@@ -294,12 +294,12 @@ export function AddManualRecordModal({
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-zinc-400">GPS (optional)</p>
+            <p className="text-sm text-muted">GPS (optional)</p>
             <button
               type="button"
               onClick={() => void handleUseCurrentLocation()}
               disabled={capturingGeo}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs text-muted hover:bg-surface-hover disabled:opacity-50"
             >
               <MapPin className="h-3.5 w-3.5" />
               {capturingGeo ? 'Capturing…' : 'Use current location'}
@@ -313,7 +313,7 @@ export function AddManualRecordModal({
               placeholder="Latitude"
               value={latitude}
               onChange={(e) => setLatitude(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
             <input
               type="text"
@@ -321,7 +321,7 @@ export function AddManualRecordModal({
               placeholder="Longitude"
               value={longitude}
               onChange={(e) => setLongitude(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -331,7 +331,7 @@ export function AddManualRecordModal({
             placeholder="GPS accuracy (m)"
             value={geoAccuracy}
             onChange={(e) => setGeoAccuracy(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
 
           <textarea
@@ -339,7 +339,7 @@ export function AddManualRecordModal({
             placeholder="Exact location (optional)"
             value={geoAddress}
             onChange={(e) => setGeoAddress(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
 
           {error ? (
@@ -353,7 +353,7 @@ export function AddManualRecordModal({
               type="button"
               onClick={handleClose}
               disabled={saving}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm text-muted hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

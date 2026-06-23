@@ -52,7 +52,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="relative rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100"
+        className="relative rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover/60 hover:text-foreground"
         aria-label="Notifications"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -68,11 +68,11 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-full z-[100] mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl"
+          className="absolute right-0 top-full z-[100] mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-xl border border-border bg-surface-raised shadow-xl"
         >
-          <div className="border-b border-zinc-800 px-4 py-3">
+          <div className="border-b border-border px-4 py-3">
             <p className="text-sm font-semibold text-white">Notifications</p>
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-0.5 text-xs text-subtle">
               {loading
                 ? 'Updating…'
                 : displayCount === 0
@@ -82,9 +82,9 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
           </div>
 
           {loading ? (
-            <p className="px-4 py-6 text-center text-sm text-zinc-500">Loading…</p>
+            <p className="px-4 py-6 text-center text-sm text-subtle">Loading…</p>
           ) : items.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-zinc-500">
+            <p className="px-4 py-6 text-center text-sm text-subtle">
               You are all caught up.
             </p>
           ) : (
@@ -119,19 +119,19 @@ function NotificationRow({
         href={item.href}
         role="menuitem"
         onClick={onNavigate}
-        className="flex gap-3 px-4 py-3 transition-colors hover:bg-zinc-800/60"
+        className="flex gap-3 px-4 py-3 transition-colors hover:bg-surface-hover/60"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-start justify-between gap-2">
-            <span className="text-sm font-medium text-zinc-100">{item.title}</span>
-            <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+            <span className="text-sm font-medium text-foreground">{item.title}</span>
+            <span className="shrink-0 rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-muted">
               {item.count}
             </span>
           </span>
-          <span className="mt-0.5 block text-xs leading-snug text-zinc-500">
+          <span className="mt-0.5 block text-xs leading-snug text-subtle">
             {item.description}
           </span>
         </span>

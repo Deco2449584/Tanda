@@ -19,8 +19,8 @@ export function MonthlyHoursCard({
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
   return (
-    <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+    <article className="rounded-2xl border border-border bg-surface-raised p-5 backdrop-blur-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-subtle">
         Total monthly hours
       </p>
 
@@ -28,12 +28,12 @@ export function MonthlyHoursCard({
         <div>
           <p className="text-3xl font-bold text-white">
             {loading ? (
-              <span className="inline-block animate-pulse text-zinc-500">...</span>
+              <span className="inline-block animate-pulse text-subtle">...</span>
             ) : (
               `${roundedHours} hrs`
             )}
           </p>
-          <p className="mt-2 text-xs text-zinc-500">Current month</p>
+          <p className="mt-2 text-xs text-subtle">Current month</p>
         </div>
 
         <div className="relative h-24 w-24 shrink-0">

@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import {
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
@@ -46,19 +47,17 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
   }, [yMax]);
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
-      <div className="mb-1">
-        <h2 className="text-sm font-semibold text-zinc-100">
-          Today&apos;s Operational Shift Load
-        </h2>
-        <p className="text-xs text-zinc-500">Shifts assigned by department</p>
-      </div>
+    <Card padding="md" className="backdrop-blur-sm">
+      <CardHeader className="mb-1">
+        <CardTitle>Today&apos;s Operational Shift Load</CardTitle>
+        <CardDescription>Shifts assigned by department</CardDescription>
+      </CardHeader>
 
       <div className="mt-4 w-full overflow-x-auto scrollbar-hide">
         <div className="relative h-[220px] w-full min-w-[320px]">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/40">
-            <span className="text-xs text-zinc-500">Loading data...</span>
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface-raised/40">
+            <span className="text-xs text-subtle">Loading data...</span>
           </div>
         )}
 
@@ -114,14 +113,14 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
             </BarChart>
           </ResponsiveContainer>
         ) : mounted && !loading ? (
-          <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-zinc-800 text-sm text-zinc-500">
+          <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-subtle">
             No shifts scheduled for today.
           </div>
         ) : (
-          <div className="h-full w-full animate-pulse rounded-lg bg-zinc-800/30" />
+          <div className="h-full w-full animate-pulse rounded-lg bg-surface-hover/30" />
         )}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

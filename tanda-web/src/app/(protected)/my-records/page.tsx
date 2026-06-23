@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import {
   useEmployeeAttendance,
   type EmployeeRecordsRange,
@@ -27,15 +29,11 @@ export default function MyRecordsPage() {
   const loading = authLoading || employeeLoading || recordsLoading;
 
   return (
-    <div className="min-h-full space-y-5 bg-[#121212] p-4 md:space-y-6 md:p-6">
-      <div>
-        <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-          My attendance records
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Check-ins, check-outs, and photo verification for your shifts.
-        </p>
-      </div>
+    <PageContent className="space-y-5 md:space-y-6">
+      <PageHeader
+        title="My attendance records"
+        description="Check-ins, check-outs, and photo verification for your shifts."
+      />
 
       {employeeError && !employeeLoading && (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -57,6 +55,6 @@ export default function MyRecordsPage() {
           onRangeChange={setRecordsRange}
         />
       )}
-    </div>
+    </PageContent>
   );
 }

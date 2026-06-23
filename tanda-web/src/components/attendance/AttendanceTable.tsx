@@ -71,8 +71,8 @@ export function AttendanceTable({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 py-16">
-        <p className="text-sm text-zinc-400">Loading...</p>
+      <div className="flex items-center justify-center rounded-xl border border-border bg-surface-raised py-16">
+        <p className="text-sm text-muted">Loading...</p>
       </div>
     );
   }
@@ -83,7 +83,7 @@ export function AttendanceTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
         <div className="hidden md:block">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
@@ -120,7 +120,7 @@ export function AttendanceTable({
             <tbody>
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-subtle">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -128,11 +128,11 @@ export function AttendanceTable({
                 filteredRecords.map((record, index) => (
                   <tr
                     key={record.id}
-                    className={`border-b border-zinc-800/80 transition-colors hover:bg-zinc-800/20 ${
-                      index % 2 === 1 ? 'bg-zinc-950/40' : ''
+                    className={`border-b border-border/80 transition-colors hover:bg-surface-hover/20 ${
+                      index % 2 === 1 ? 'bg-surface-base/40' : ''
                     }`}
                   >
-                    <td className="px-4 py-3.5 font-mono text-zinc-400">
+                    <td className="px-4 py-3.5 font-mono text-muted">
                       {employeeCodes[record.employeeId] ?? record.employeeId ?? '—'}
                     </td>
                     <td className="px-4 py-3.5">
@@ -144,19 +144,19 @@ export function AttendanceTable({
                     <td className="px-4 py-3.5 font-medium text-white">
                       {record.employeeNameSnapshot}
                     </td>
-                    <td className="px-4 py-3.5 text-zinc-300">
+                    <td className="px-4 py-3.5 text-muted">
                       {formatWarehouseLabel(record)}
                     </td>
-                    <td className="px-4 py-3.5 text-zinc-300">
+                    <td className="px-4 py-3.5 text-muted">
                       <LocationCell record={record} />
                     </td>
-                    <td className="px-4 py-3.5 text-zinc-300">
+                    <td className="px-4 py-3.5 text-muted">
                       {formatRecordDate(record.timestampServer)}
                     </td>
                     <td className="px-4 py-3.5">
                       <AttendanceTypeBadge type={record.type} />
                     </td>
-                    <td className="px-4 py-3.5 text-zinc-300">
+                    <td className="px-4 py-3.5 text-muted">
                       {isForgottenCheckIn(record, records) ? (
                         <div className="flex flex-col items-start gap-2">
                           <ForgottenCheckoutBadge />
@@ -178,7 +178,7 @@ export function AttendanceTable({
                         <button
                           type="button"
                           onClick={() => onEdit(record)}
-                          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-primary"
+                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
                           aria-label={`Edit record for ${record.employeeNameSnapshot}`}
                         >
                           <Pencil className="h-4 w-4" />
@@ -187,7 +187,7 @@ export function AttendanceTable({
                           type="button"
                           onClick={() => setPendingDelete(record)}
                           disabled={deletingId === record.id}
-                          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={`Delete record for ${record.employeeNameSnapshot}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -203,7 +203,7 @@ export function AttendanceTable({
 
         <ul className="divide-y divide-zinc-800/80 md:hidden">
           {filteredRecords.length === 0 ? (
-            <li className="px-3 py-8 text-center text-sm text-zinc-500">{emptyMessage}</li>
+            <li className="px-3 py-8 text-center text-sm text-subtle">{emptyMessage}</li>
           ) : (
             filteredRecords.map((record) => {
               const forgotten = isForgottenCheckIn(record, records);
@@ -224,7 +224,7 @@ export function AttendanceTable({
                           <p className="truncate text-sm font-medium leading-tight text-white">
                             {record.employeeNameSnapshot}
                           </p>
-                          <p className="font-mono text-[10px] leading-tight text-zinc-500">
+                          <p className="font-mono text-[10px] leading-tight text-subtle">
                             {employeeCode}
                           </p>
                         </div>
@@ -233,7 +233,7 @@ export function AttendanceTable({
                           <button
                             type="button"
                             onClick={() => onEdit(record)}
-                            className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-primary"
+                            className="rounded-md p-1.5 text-subtle transition-colors hover:bg-surface-hover hover:text-primary"
                             aria-label={`Edit record for ${record.employeeNameSnapshot}`}
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -242,7 +242,7 @@ export function AttendanceTable({
                             type="button"
                             onClick={() => setPendingDelete(record)}
                             disabled={deletingId === record.id}
-                            className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-md p-1.5 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                             aria-label={`Delete record for ${record.employeeNameSnapshot}`}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -250,22 +250,22 @@ export function AttendanceTable({
                         </div>
                       </div>
 
-                      <div className="mt-1 text-[11px] text-zinc-500">
+                      <div className="mt-1 text-[11px] text-subtle">
                         {formatWarehouseLabel(record)}
                       </div>
                       <LocationCell record={record} compact />
 
-                      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-zinc-400">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted">
                         <span className="tabular-nums">
                           {formatRecordDateShort(record.timestampServer)}
                         </span>
-                        <span className="text-zinc-600" aria-hidden>
+                        <span className="text-subtle" aria-hidden>
                           ·
                         </span>
                         {forgotten ? (
                           <ForgottenCheckoutBadge compact />
                         ) : (
-                          <span className="tabular-nums text-zinc-300">
+                          <span className="tabular-nums text-muted">
                             {formatRecordTime(record.timestampServer)}
                           </span>
                         )}
@@ -290,7 +290,7 @@ export function AttendanceTable({
           )}
         </ul>
 
-        <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3 text-xs text-zinc-500">
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-subtle">
           <span>
             Showing {filteredRecords.length} of {records.length} records
           </span>
@@ -319,7 +319,7 @@ function LocationCell({
   const shortLabel = formatShortLocation(record);
 
   if (shortLabel === '—') {
-    return <span className={compact ? 'mt-1 block text-[11px] text-zinc-600' : ''}>—</span>;
+    return <span className={compact ? 'mt-1 block text-[11px] text-subtle' : ''}>—</span>;
   }
 
   const content = (
@@ -348,8 +348,8 @@ function LocationCell({
     <span
       className={
         compact
-          ? 'mt-1 block max-w-full text-[11px] text-zinc-500'
-          : 'block max-w-[11rem] text-xs leading-snug text-zinc-300'
+          ? 'mt-1 block max-w-full text-[11px] text-subtle'
+          : 'block max-w-[11rem] text-xs leading-snug text-muted'
       }
       title={fullLabel !== shortLabel ? fullLabel : undefined}
     >

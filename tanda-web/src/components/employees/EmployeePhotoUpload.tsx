@@ -36,9 +36,9 @@ export function EmployeePhotoUpload({
 
   return (
     <div>
-      <label className="mb-1.5 block text-sm text-zinc-400">Profile photo</label>
+      <label className="mb-1.5 block text-sm text-muted">Profile photo</label>
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-2 ring-zinc-700">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-hover ring-2 ring-zinc-700">
           {displayUrl ? (
             isFirebaseStorageUrl(displayUrl) ? (
               <FirebaseImage
@@ -60,7 +60,7 @@ export function EmployeePhotoUpload({
               />
             )
           ) : (
-            <User className="h-7 w-7 text-zinc-500" aria-hidden />
+            <User className="h-7 w-7 text-subtle" aria-hidden />
           )}
         </div>
 
@@ -80,7 +80,7 @@ export function EmployeePhotoUpload({
             }
             onFileChange(file);
           }}
-          className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
+          className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
         />
       </div>
     </div>

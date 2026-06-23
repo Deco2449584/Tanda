@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import { ClientProviders } from '@/components/providers/ClientProviders';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const jakarta = Plus_Jakarta_Sans({
+  variable: '--font-jakarta',
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const geistMono = Geist_Mono({
@@ -14,12 +15,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Continental Cargo | TimeTracker PRO',
-  description: 'Continental Cargo attendance management platform',
-  applicationName: 'TimeTracker PRO',
+  title: 'Continental Cargo | Workforce',
+  description: 'Continental Cargo workforce operations platform',
+  applicationName: 'Continental Cargo',
   appleWebApp: {
     capable: true,
-    title: 'TimeTracker PRO',
+    title: 'Continental Cargo',
     statusBarStyle: 'black-translucent',
   },
   icons: {
@@ -34,11 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col bg-surface-base text-foreground">
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

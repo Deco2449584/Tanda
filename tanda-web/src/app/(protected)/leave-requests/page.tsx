@@ -13,6 +13,8 @@ import {
   type LeaveDatePreset,
 } from '@/components/leave-requests/LeaveDateFilterBar';
 import { LeaveRequestsAdminTable } from '@/components/leave-requests/LeaveRequestsAdminTable';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { COLLECTIONS, LEAVE_REQUEST_STATUSES } from '@/lib/constants';
 import {
   getCurrentMonthRange,
@@ -117,10 +119,8 @@ export default function LeaveRequestsPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Leave requests center
-      </h1>
+    <PageContent className="space-y-6">
+      <PageHeader title="Leave requests center" />
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <LeaveDateFilterBar
@@ -141,27 +141,27 @@ export default function LeaveRequestsPage() {
               onChange={(e) =>
                 setStatusFilter(e.target.value as LeaveRequestStatus | 'all')
               }
-              className="w-full appearance-none rounded-lg border border-primary/30 bg-zinc-900 py-2.5 pl-10 pr-9 text-sm font-medium text-white shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+              className="w-full appearance-none rounded-lg border border-primary/30 bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
               aria-label="Filter by status"
             >
-              <option value="all" className="bg-zinc-900">
+              <option value="all" className="bg-surface-raised">
                 All statuses
               </option>
               {LEAVE_REQUEST_STATUSES.map((status) => (
-                <option key={status} value={status} className="bg-zinc-900">
+                <option key={status} value={status} className="bg-surface-raised">
                   {status}
                 </option>
               ))}
             </select>
             <ChevronDown
-              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
           </div>
 
           <div className="relative w-full sm:min-w-[280px]">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
             <input
@@ -169,7 +169,7 @@ export default function LeaveRequestsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search employee..."
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+              className="w-full rounded-lg border border-border bg-surface-raised py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
             />
           </div>
         </div>
@@ -181,6 +181,6 @@ export default function LeaveRequestsPage() {
         loading={pageLoading}
         searchQuery={searchQuery}
       />
-    </div>
+    </PageContent>
   );
 }

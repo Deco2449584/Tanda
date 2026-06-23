@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
+import { cn } from '@/lib/cn';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 
 interface NavItem {
@@ -23,21 +24,50 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-const adminNavItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Time & Attendance', href: '/attendance', icon: Clock },
-  { label: 'Staff Management', href: '/employees', icon: Users },
-  { label: 'Schedule', href: '/schedule', icon: CalendarDays },
-  { label: 'Leave Requests', href: '/leave-requests', icon: ShieldCheck },
-  { label: 'Inspections', href: '/inspections', icon: PackageSearch },
-  { label: 'Settings', href: '/settings', icon: Settings },
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const adminNavGroups: NavGroup[] = [
+  {
+    title: 'Operations',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Attendance', href: '/attendance', icon: Clock },
+      { label: 'Schedule', href: '/schedule', icon: CalendarDays },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { label: 'Employees', href: '/employees', icon: Users },
+      { label: 'Leave requests', href: '/leave-requests', icon: ShieldCheck },
+    ],
+  },
+  {
+    title: 'Compliance',
+    items: [{ label: 'Inspections', href: '/inspections', icon: PackageSearch }],
+  },
+  {
+    title: 'System',
+    items: [{ label: 'Settings', href: '/settings', icon: Settings }],
+  },
 ];
 
-const employeeNavItems: NavItem[] = [
-  { label: 'My Dashboard', href: '/employee-dashboard', icon: LayoutDashboard },
-  { label: 'My Records', href: '/my-records', icon: ClipboardList },
-  { label: 'My Schedule', href: '/my-schedule', icon: CalendarDays },
-  { label: 'My Leave', href: '/my-requests', icon: ShieldCheck },
+const employeeNavGroups: NavGroup[] = [
+  {
+    title: 'Overview',
+    items: [{ label: 'My dashboard', href: '/employee-dashboard', icon: LayoutDashboard }],
+  },
+  {
+    title: 'My work',
+    items: [
+      { label: 'My records', href: '/my-records', icon: ClipboardList },
+      { label: 'My schedule', href: '/my-schedule', icon: CalendarDays },
+      { label: 'My leave', href: '/my-requests', icon: ShieldCheck },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -52,7 +82,8 @@ interface SidebarProps {
 
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
-  const navItems = role === 'admin' ? adminNavItems : employeeNavItems;
+  const navGroups = role === 'admin' ? adminNavGroups : employeeNavGroups;
+  const roleLabel = role === 'admin' ? 'Administrator' : 'Employee';
 
   return (
     <>
@@ -66,13 +97,14 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col border-r border-zinc-800/80 bg-[#121212] transition-transform duration-200 ease-out md:relative md:z-auto md:translate-x-0 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface-sidebar transition-transform duration-200 ease-out md:relative md:z-auto md:translate-x-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
       >
-        <div className="relative mb-4 flex w-full items-center justify-center border-b border-zinc-800 px-3 py-10">
+        <div className="relative flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
           <CompanyLogo
-            className="h-28 w-full max-w-[220px] object-contain brightness-0 invert drop-shadow-md md:h-32 md:max-w-[240px]"
+            className="h-8 w-auto max-w-[160px] object-contain brightness-0 invert"
             priority
             invert
           />
@@ -80,37 +112,58 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-3 top-6 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-white md:hidden"
+            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {navItems.map(({ label, href, icon: Icon }) => {
-            const active = isActive(pathname, href);
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin">
+          {navGroups.map((group) => (
+            <div key={group.title}>
+              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-subtle">
+                {group.title}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map(({ label, href, icon: Icon }) => {
+                  const active = isActive(pathname, href);
 
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onClose}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-white'
-                }`}
-              >
-                <Icon
-                  className={`h-5 w-5 shrink-0 ${active ? 'text-primary' : ''}`}
-                  strokeWidth={1.75}
-                />
-                {label}
-              </Link>
-            );
-          })}
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={onClose}
+                      className={cn(
+                        'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
+                        active
+                          ? 'bg-surface-raised text-primary'
+                          : 'text-muted hover:bg-surface-hover hover:text-foreground',
+                      )}
+                    >
+                      {active ? (
+                        <span
+                          className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary"
+                          aria-hidden
+                        />
+                      ) : null}
+                      <Icon
+                        className={cn('h-4 w-4 shrink-0', active ? 'text-primary' : '')}
+                        strokeWidth={1.75}
+                      />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
+
+        <div className="shrink-0 border-t border-border px-4 py-3">
+          <p className="text-[11px] font-medium text-subtle">Continental Cargo</p>
+          <p className="text-xs text-muted">{roleLabel}</p>
+        </div>
       </aside>
     </>
   );

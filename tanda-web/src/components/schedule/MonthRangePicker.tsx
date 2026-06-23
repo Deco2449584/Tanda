@@ -15,24 +15,24 @@ export function MonthRangePicker({
   onChange,
 }: MonthRangePickerProps) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-2 py-1.5">
+    <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-2 py-1.5">
       <button
         type="button"
         onClick={() => onChange(shiftMonth(referenceDate, -1))}
-        className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+        className="rounded-md p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
         aria-label="Previous month"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
 
-      <span className="min-w-[140px] text-center text-sm font-medium capitalize text-zinc-200">
+      <span className="min-w-[140px] text-center text-sm font-medium capitalize text-foreground">
         {label}
       </span>
 
       <button
         type="button"
         onClick={() => onChange(shiftMonth(referenceDate, 1))}
-        className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+        className="rounded-md p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
         aria-label="Next month"
       >
         <ChevronRight className="h-4 w-4" />

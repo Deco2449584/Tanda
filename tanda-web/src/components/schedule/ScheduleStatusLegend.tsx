@@ -34,10 +34,10 @@ interface ScheduleStatusLegendProps {
 export function ScheduleStatusLegend({ className = '' }: ScheduleStatusLegendProps) {
   return (
     <div
-      className={`w-full max-w-full rounded-xl border border-zinc-800/80 bg-zinc-950/50 px-3 py-2.5 ${className}`}
+      className={`w-full max-w-full rounded-xl border border-border/80 bg-surface-base/50 px-3 py-2.5 ${className}`}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
           Legend
         </span>
         {LEGEND_ITEMS.map(({ status, label, chip, Icon }) => (
@@ -49,7 +49,7 @@ export function ScheduleStatusLegend({ className = '' }: ScheduleStatusLegendPro
             {label}
           </span>
         ))}
-        <span className="min-w-0 text-[10px] leading-snug text-zinc-600">
+        <span className="min-w-0 text-[10px] leading-snug text-subtle">
           Based on assigned shifts and attendance records
         </span>
       </div>

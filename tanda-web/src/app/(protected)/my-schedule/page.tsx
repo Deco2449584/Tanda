@@ -1,6 +1,8 @@
 'use client';
 
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ShiftListCard } from '@/components/my-schedule/ShiftListCard';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -24,10 +26,8 @@ export default function MySchedulePage() {
   const loading = authLoading || employeeLoading || shiftsLoading;
 
   return (
-    <div className="min-h-full space-y-5 bg-[#121212] p-4 md:p-6">
-      <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-        My schedule
-      </h1>
+    <PageContent className="space-y-5">
+      <PageHeader title="My schedule" />
 
       {employeeError && !employeeLoading && (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -53,14 +53,14 @@ export default function MySchedulePage() {
           />
 
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-white">Upcoming shifts</h2>
+            <h2 className="text-sm font-semibold text-foreground">Upcoming shifts</h2>
 
             {loading && (
-              <p className="text-sm text-zinc-500">Loading shifts...</p>
+              <p className="text-sm text-muted">Loading shifts...</p>
             )}
 
             {!loading && futureShifts.length === 0 && (
-              <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-8 text-center text-sm text-zinc-400">
+              <p className="rounded-xl border border-border bg-surface-raised px-4 py-8 text-center text-sm text-subtle">
                 You have no upcoming shifts scheduled.
               </p>
             )}
@@ -75,6 +75,6 @@ export default function MySchedulePage() {
           </section>
         </>
       )}
-    </div>
+    </PageContent>
   );
 }

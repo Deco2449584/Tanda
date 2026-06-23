@@ -63,7 +63,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-600"
+        className="inline-flex items-center gap-2 rounded-lg border border-border-strong bg-surface-raised px-4 py-2.5 text-sm text-foreground transition-colors hover:border-zinc-600"
         aria-expanded={open}
       >
         <CalendarRange className="h-4 w-4 text-primary" />
@@ -71,33 +71,33 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow-2xl">
-          <p className="mb-3 text-xs font-medium text-zinc-400">
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-border bg-surface-raised p-4 shadow-2xl">
+          <p className="mb-3 text-xs font-medium text-muted">
             Date range
           </p>
 
           <div className="space-y-3">
             <label className="block">
-              <span className="mb-1 block text-xs text-zinc-500">From</span>
+              <span className="mb-1 block text-xs text-subtle">From</span>
               <input
                 type="date"
                 value={draft.start}
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, start: e.target.value }))
                 }
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-xs text-zinc-500">To</span>
+              <span className="mb-1 block text-xs text-subtle">To</span>
               <input
                 type="date"
                 value={draft.end}
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, end: e.target.value }))
                 }
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary"
               />
             </label>
           </div>
@@ -106,7 +106,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
             <button
               type="button"
               onClick={handleReset}
-              className="flex-1 rounded-lg border border-zinc-700 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
+              className="flex-1 rounded-lg border border-border-strong py-2 text-xs font-medium text-muted hover:bg-surface-hover"
             >
               This week
             </button>

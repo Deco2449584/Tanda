@@ -151,21 +151,21 @@ export function EditAttendanceModal({
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-lg">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Edit record</h2>
           <button
             type="button"
             onClick={handleClose}
             disabled={saving}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-zinc-400">
-          <span className="text-zinc-200">{record.employeeNameSnapshot}</span>
+        <p className="mb-4 text-sm text-muted">
+          <span className="text-foreground">{record.employeeNameSnapshot}</span>
           {' · '}
           Current: {formatAttendanceType(record.type)} —{' '}
           {formatRecordDate(record.timestampServer)}{' '}
@@ -174,14 +174,14 @@ export function EditAttendanceModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="record-type" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="record-type" className="mb-1.5 block text-sm text-muted">
               Record type
             </label>
             <select
               id="record-type"
               value={type}
               onChange={(e) => setType(e.target.value as AttendanceType)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="check_in">Check-in</option>
               <option value="check_out">Check-out</option>
@@ -190,7 +190,7 @@ export function EditAttendanceModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="record-date" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="record-date" className="mb-1.5 block text-sm text-muted">
                 Date
               </label>
               <input
@@ -199,12 +199,12 @@ export function EditAttendanceModal({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
-              <label htmlFor="record-time" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="record-time" className="mb-1.5 block text-sm text-muted">
                 Time
               </label>
               <input
@@ -213,20 +213,20 @@ export function EditAttendanceModal({
                 required
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="record-location" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="record-location" className="mb-1.5 block text-sm text-muted">
               Warehouse
             </label>
             <select
               id="record-location"
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="">No warehouse</option>
               {activeLocations.map((location) => (
@@ -239,7 +239,7 @@ export function EditAttendanceModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="record-latitude" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="record-latitude" className="mb-1.5 block text-sm text-muted">
                 Latitude
               </label>
               <input
@@ -248,11 +248,11 @@ export function EditAttendanceModal({
                 inputMode="decimal"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label htmlFor="record-longitude" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="record-longitude" className="mb-1.5 block text-sm text-muted">
                 Longitude
               </label>
               <input
@@ -261,13 +261,13 @@ export function EditAttendanceModal({
                 inputMode="decimal"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="record-geo-accuracy" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="record-geo-accuracy" className="mb-1.5 block text-sm text-muted">
               GPS accuracy (m)
             </label>
             <input
@@ -276,12 +276,12 @@ export function EditAttendanceModal({
               inputMode="decimal"
               value={geoAccuracy}
               onChange={(e) => setGeoAccuracy(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div>
-            <label htmlFor="record-geo-address" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="record-geo-address" className="mb-1.5 block text-sm text-muted">
               Exact location
             </label>
             <textarea
@@ -289,7 +289,7 @@ export function EditAttendanceModal({
               rows={2}
               value={geoAddress}
               onChange={(e) => setGeoAddress(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -302,12 +302,12 @@ export function EditAttendanceModal({
               className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition ${
                 breakWaived
                   ? 'border-amber-500/40 bg-amber-950/25'
-                  : 'border-zinc-800 bg-zinc-950/50 hover:border-zinc-700'
+                  : 'border-border bg-surface-base/50 hover:border-border-strong'
               }`}
             >
               <span
                 className={`mt-0.5 rounded-lg p-2 ${
-                  breakWaived ? 'bg-amber-500/20 text-amber-300' : 'bg-zinc-800 text-zinc-400'
+                  breakWaived ? 'bg-amber-500/20 text-amber-300' : 'bg-surface-hover text-muted'
                 }`}
               >
                 <Coffee className="h-4 w-4" />
@@ -316,7 +316,7 @@ export function EditAttendanceModal({
                 <span className="block text-sm font-medium text-white">
                   Employee did not take break
                 </span>
-                <span className="mt-0.5 block text-xs text-zinc-500">
+                <span className="mt-0.5 block text-xs text-subtle">
                   {breakWaived
                     ? 'Unpaid break will not be deducted from this shift.'
                     : `A ${attendanceBreak.durationMinutes}-minute unpaid break applies if the shift is ${attendanceBreak.minShiftHours}h or longer.`}
@@ -336,7 +336,7 @@ export function EditAttendanceModal({
             </button>
           ) : null}
 
-          <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs text-zinc-500">
+          <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-2 text-xs text-subtle">
             <p>Source: {record.source || '—'}</p>
             {record.kioskDeviceLabelSnapshot ? (
               <p>Kiosk: {record.kioskDeviceLabelSnapshot}</p>
@@ -355,7 +355,7 @@ export function EditAttendanceModal({
               type="button"
               onClick={handleClose}
               disabled={saving}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm text-muted hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

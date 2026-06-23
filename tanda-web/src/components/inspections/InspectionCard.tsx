@@ -22,12 +22,12 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
   return (
     <Link
       href={`/inspections/${inspection.id}`}
-      className="group flex overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition-colors hover:border-zinc-600 hover:bg-zinc-900"
+      className="group flex overflow-hidden rounded-xl border border-border bg-surface-raised transition-colors hover:border-zinc-600 hover:bg-surface-raised"
     >
       <div className="w-1 shrink-0 bg-primary" aria-hidden />
 
       <div className="flex min-w-0 flex-1 gap-3 p-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-800">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-hover">
           {thumbUri ? (
             <FirebaseImage
               src={thumbUri}
@@ -49,20 +49,20 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
               <p className="truncate text-base font-semibold text-white">
                 {inspection.uldId}
               </p>
-              <p className="truncate text-xs text-zinc-500">
+              <p className="truncate text-xs text-subtle">
                 AWB {inspection.awbNumber}
               </p>
             </div>
             <ChevronRight
-              className="h-4 w-4 shrink-0 text-zinc-600 transition group-hover:text-zinc-400"
+              className="h-4 w-4 shrink-0 text-subtle transition group-hover:text-muted"
               aria-hidden
             />
           </div>
 
-          <p className="mt-1 truncate text-sm text-zinc-300">
+          <p className="mt-1 truncate text-sm text-muted">
             {inspection.foodType}
           </p>
-          <p className="mt-0.5 truncate text-xs text-zinc-500">
+          <p className="mt-0.5 truncate text-xs text-subtle">
             {getConservationLabel(inspection.conservationType)} ·{' '}
             {inspection.weightKg} kg · {inspection.boxCount} boxes
           </p>
@@ -81,7 +81,7 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
               ) : null}
             </div>
 
-            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+            <div className="flex items-center gap-2 text-[10px] text-subtle">
               {mediaCount > 0 && (
                 <span className="inline-flex items-center gap-1">
                   <Paperclip className="h-3 w-3" aria-hidden />

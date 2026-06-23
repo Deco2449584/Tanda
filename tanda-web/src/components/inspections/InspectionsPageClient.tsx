@@ -101,7 +101,7 @@ export function InspectionsPageClient() {
         <h1 className="text-base font-bold tracking-wide text-white uppercase">
           Cargo inspections
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-subtle">
           ULD / AWB records from Continental Inspect — same data as the mobile app.
         </p>
       </div>
@@ -130,7 +130,7 @@ export function InspectionsPageClient() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-md">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
             aria-hidden
           />
           <input
@@ -138,7 +138,7 @@ export function InspectionsPageClient() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search ULD, AWB, or food type..."
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/60 py-3 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            className="w-full rounded-xl border border-border bg-surface-raised py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-subtle outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
           />
         </div>
 
@@ -148,7 +148,7 @@ export function InspectionsPageClient() {
           disabled={loading || filteredInspections.length === 0}
           title="Export filtered inspections (CSV)"
           aria-label="Export filtered inspections CSV"
-          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 lg:self-auto"
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-border-strong bg-surface-raised px-4 text-sm font-medium text-muted transition-colors hover:border-zinc-500 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:self-auto"
         >
           <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
           Export CSV
@@ -172,9 +172,9 @@ export function InspectionsPageClient() {
       )}
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Loading inspections...</p>
+        <p className="text-sm text-subtle">Loading inspections...</p>
       ) : filteredInspections.length === 0 ? (
-        <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-10 text-center text-sm text-zinc-400">
+        <p className="rounded-xl border border-border bg-surface-raised px-4 py-10 text-center text-sm text-muted">
           No inspections match the current filters.
         </p>
       ) : (

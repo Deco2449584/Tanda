@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 export interface ToastMessage {
   id: string;
@@ -16,15 +17,14 @@ interface ToastProps {
 }
 
 const variantStyles: Record<NonNullable<ToastMessage['variant']>, string> = {
-  success: 'border-primary/40 bg-primary/20 text-primary',
-  error: 'border-red-500/40 bg-red-950/80 text-red-100',
-  info: 'border-primary/40 bg-primary/20 text-primary',
+  success: 'border-success/30 bg-success/10 text-success',
+  error: 'border-danger/30 bg-danger/10 text-danger',
+  info: 'border-primary/30 bg-primary-muted text-primary',
 };
 
 export function Toast({ toast, onDismiss, durationMs = 4000 }: ToastProps) {
   useEffect(() => {
     if (!toast) return;
-
     const timer = window.setTimeout(onDismiss, durationMs);
     return () => window.clearTimeout(timer);
   }, [toast, onDismiss, durationMs]);
@@ -36,9 +36,12 @@ export function Toast({ toast, onDismiss, durationMs = 4000 }: ToastProps) {
   return (
     <div
       role="status"
-      className={`fixed bottom-6 right-6 z-[100] flex max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-xl backdrop-blur-sm ${variantStyles[variant]}`}
+      className={cn(
+        'fixed bottom-6 right-6 z-[100] flex max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-[var(--shadow-card)] backdrop-blur-sm',
+        variantStyles[variant],
+      )}
     >
-      <p className="flex-1 text-sm">{toast.text}</p>
+      <p className="flex-1 text-sm font-medium">{toast.text}</p>
       <button
         type="button"
         onClick={onDismiss}

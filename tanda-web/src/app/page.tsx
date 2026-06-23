@@ -23,8 +23,8 @@ export default function Home() {
   }, [loading, role, router, user]);
 
   return (
-    <div className="flex h-dvh items-center justify-center bg-[#0a0a0a]">
-      <p className="text-sm text-zinc-400">Loading…</p>
+    <div className="app-ambient flex h-dvh items-center justify-center bg-surface-base">
+      <p className="text-sm text-muted">Loading…</p>
     </div>
   );
 }

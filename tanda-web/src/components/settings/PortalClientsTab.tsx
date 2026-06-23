@@ -131,9 +131,9 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h2 className="text-sm font-semibold text-white">Client portal (Suite 04)</h2>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-muted">
           Forwarders and customs agencies access{' '}
           <button
             type="button"
@@ -156,30 +156,30 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
           <p className="mt-2 text-xs text-amber-200/80">
             This PIN is shown only once. Store it securely before closing.
           </p>
-          <p className="mt-2 text-xs text-zinc-400">
+          <p className="mt-2 text-xs text-muted">
             Then open an inspection, enable portal access, and assign this client
             before testing at /portal.
           </p>
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">New portal client</h3>
         <form onSubmit={(e) => void handleCreate(e)} className="mt-4 space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-400">
+            <label className="mb-1 block text-xs font-medium text-muted">
               Company name
             </label>
             <input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">
+              <label className="mb-1 block text-xs font-medium text-muted">
                 Access code
               </label>
               <input
@@ -187,11 +187,11 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 placeholder="FWD-ACME"
                 required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">
+              <label className="mb-1 block text-xs font-medium text-muted">
                 PIN (6–8 digits)
               </label>
               <input
@@ -199,7 +199,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 inputMode="numeric"
                 required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
           </div>
@@ -214,12 +214,12 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
         </form>
       </section>
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">Registered clients</h3>
         {loading ? (
-          <p className="mt-4 text-sm text-zinc-500">Loading…</p>
+          <p className="mt-4 text-sm text-subtle">Loading…</p>
         ) : clients.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">No portal clients yet.</p>
+          <p className="mt-4 text-sm text-subtle">No portal clients yet.</p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-800">
             {clients.map((client) => (
@@ -229,14 +229,14 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
               >
                 <div>
                   <p className="font-medium text-white">{client.companyName}</p>
-                  <p className="text-xs text-zinc-500">Code: {client.accessCode}</p>
+                  <p className="text-xs text-subtle">Code: {client.accessCode}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
                       client.active
                         ? 'bg-emerald-500/20 text-emerald-300'
-                        : 'bg-zinc-700 text-zinc-400'
+                        : 'bg-zinc-700 text-muted'
                     }`}
                   >
                     {client.active ? 'Active' : 'Inactive'}
@@ -245,7 +245,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                     type="button"
                     onClick={() => void handleRegeneratePin(client)}
                     disabled={regeneratingId === client.id}
-                    className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 disabled:opacity-50"
                   >
                     <RefreshCw
                       className={`h-3 w-3 ${regeneratingId === client.id ? 'animate-spin' : ''}`}
@@ -256,7 +256,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                   <button
                     type="button"
                     onClick={() => void handleToggleActive(client)}
-                    className="rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500"
+                    className="rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
                   >
                     {client.active ? 'Deactivate' : 'Activate'}
                   </button>

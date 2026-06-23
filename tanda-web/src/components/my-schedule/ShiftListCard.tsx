@@ -23,20 +23,20 @@ export function ShiftListCard({ shift }: ShiftListCardProps) {
   const label = statusLabels[shift.status] ?? shift.status;
 
   return (
-    <article className={`rounded-2xl border border-zinc-800 p-4 ${style}`}>
+    <article className={`rounded-2xl border border-border p-4 ${style}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-lg font-bold text-white">
             {formatShortDate(shift.date)}
           </p>
-          <p className="mt-1 text-sm text-zinc-400">{label}</p>
+          <p className="mt-1 text-sm text-muted">{label}</p>
         </div>
-        <span className="rounded-full bg-zinc-900/80 px-2.5 py-1 text-xs font-medium text-zinc-300">
+        <span className="rounded-full bg-surface-raised px-2.5 py-1 text-xs font-medium text-muted">
           {shift.department}
         </span>
       </div>
 
-      <p className="mt-4 text-base font-semibold text-zinc-100">
+      <p className="mt-4 text-base font-semibold text-foreground">
         {formatTimeLabel(shift.startTime)} – {formatTimeLabel(shift.endTime)}
       </p>
     </article>

@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import {
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
@@ -46,25 +47,23 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
   }, [yMax]);
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-zinc-100">
-          Weekly Hours Summary
-        </h2>
-        <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+    <Card padding="md" className="backdrop-blur-sm">
+      <CardHeader className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <CardTitle>Weekly Hours Summary</CardTitle>
+        <span className="flex items-center gap-1.5 text-xs text-muted">
           <span
             className="h-2 w-2 rounded-full"
             style={{ backgroundColor: chartColor }}
           />
           Scheduled hours
         </span>
-      </div>
+      </CardHeader>
 
       <div className="w-full overflow-x-auto scrollbar-hide">
         <div className="relative h-[280px] w-full min-w-[280px] sm:h-[320px]">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/40">
-            <span className="text-xs text-zinc-500">Loading data...</span>
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface-raised/40">
+            <span className="text-xs text-subtle">Loading data...</span>
           </div>
         )}
 
@@ -124,14 +123,14 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
             </AreaChart>
           </ResponsiveContainer>
         ) : mounted && !loading ? (
-          <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-zinc-800 text-sm text-zinc-500">
+          <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-subtle">
             No shifts in the current week.
           </div>
         ) : (
-          <div className="h-full w-full animate-pulse rounded-lg bg-zinc-800/30" />
+          <div className="h-full w-full animate-pulse rounded-lg bg-surface-hover/30" />
         )}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

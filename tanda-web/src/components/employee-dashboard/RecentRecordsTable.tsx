@@ -15,7 +15,7 @@ interface RecentRecordsTableProps {
 
 function RecordPhoto({ photoUrl }: { photoUrl: string }) {
   if (!photoUrl) {
-    return <span className="text-xs text-zinc-600">—</span>;
+    return <span className="text-xs text-subtle">—</span>;
   }
 
   return (
@@ -38,8 +38,8 @@ export function RecentRecordsTable({
   onRangeChange,
 }: RecentRecordsTableProps) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
-      <div className="flex flex-col gap-3 border-b border-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5 md:py-4">
+    <section className="overflow-hidden rounded-2xl border border-border bg-surface-raised backdrop-blur-sm">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5 md:py-4">
         <h2 className="text-sm font-semibold text-white">My recent records</h2>
 
         <div className="flex gap-2">
@@ -49,7 +49,7 @@ export function RecentRecordsTable({
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               range === '7days'
                 ? 'bg-primary text-white'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                : 'bg-surface-hover text-muted hover:text-foreground'
             }`}
           >
             Last 7 days
@@ -60,7 +60,7 @@ export function RecentRecordsTable({
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               range === 'month'
                 ? 'bg-primary text-white'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                : 'bg-surface-hover text-muted hover:text-foreground'
             }`}
           >
             Last month
@@ -69,11 +69,11 @@ export function RecentRecordsTable({
       </div>
 
       {loading ? (
-        <div className="px-4 py-10 text-center text-sm text-zinc-500 md:px-5">
+        <div className="px-4 py-10 text-center text-sm text-subtle md:px-5">
           Loading records...
         </div>
       ) : records.length === 0 ? (
-        <div className="px-4 py-10 text-center text-sm text-zinc-500 md:px-5">
+        <div className="px-4 py-10 text-center text-sm text-subtle md:px-5">
           No records in the selected period.
         </div>
       ) : (
@@ -81,13 +81,13 @@ export function RecentRecordsTable({
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[640px] border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-950/40">
-                  <th className="px-5 py-3 font-semibold text-zinc-400">Date</th>
-                  <th className="px-5 py-3 font-semibold text-zinc-400">Type</th>
-                  <th className="px-5 py-3 font-semibold text-zinc-400">
+                <tr className="border-b border-border bg-surface-base/40">
+                  <th className="px-5 py-3 font-semibold text-muted">Date</th>
+                  <th className="px-5 py-3 font-semibold text-muted">Type</th>
+                  <th className="px-5 py-3 font-semibold text-muted">
                     Recorded time
                   </th>
-                  <th className="px-5 py-3 font-semibold text-zinc-400">
+                  <th className="px-5 py-3 font-semibold text-muted">
                     Photo verification
                   </th>
                 </tr>
@@ -96,15 +96,15 @@ export function RecentRecordsTable({
                 {records.map((record) => (
                   <tr
                     key={record.id}
-                    className="border-b border-zinc-800/80 hover:bg-zinc-800/20"
+                    className="border-b border-border/80 hover:bg-surface-hover/20"
                   >
-                    <td className="px-5 py-3.5 text-zinc-300">
+                    <td className="px-5 py-3.5 text-muted">
                       {formatRecordDate(record.timestampServer)}
                     </td>
                     <td className="px-5 py-3.5">
                       <AttendanceTypeBadge type={record.type} />
                     </td>
-                    <td className="px-5 py-3.5 text-zinc-300">
+                    <td className="px-5 py-3.5 text-muted">
                       {formatRecordTime(record.timestampServer)}
                     </td>
                     <td className="px-5 py-3.5">
@@ -120,35 +120,35 @@ export function RecentRecordsTable({
             {records.map((record) => (
               <article
                 key={record.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"
+                className="rounded-xl border border-border bg-surface-base/50 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-2 text-sm">
                     <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
                         Date
                       </p>
-                      <p className="font-medium text-zinc-200">
+                      <p className="font-medium text-foreground">
                         {formatRecordDate(record.timestampServer)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
                         Time
                       </p>
-                      <p className="font-medium text-zinc-200">
+                      <p className="font-medium text-foreground">
                         {formatRecordTime(record.timestampServer)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
                         Type
                       </p>
                       <AttendanceTypeBadge type={record.type} />
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-subtle">
                       Photo
                     </p>
                     <RecordPhoto photoUrl={record.photoUrl} />

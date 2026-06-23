@@ -39,7 +39,7 @@ export function EmployeeAvatar({
 
   return (
     <div
-      className={`flex ${sizeClass} items-center justify-center rounded-full bg-zinc-800 font-bold text-primary ring-2 ring-zinc-700`}
+      className={`flex ${sizeClass} items-center justify-center rounded-full bg-surface-hover font-bold text-primary ring-2 ring-zinc-700`}
     >
       {getInitials(name) || '?'}
     </div>

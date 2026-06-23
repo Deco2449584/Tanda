@@ -5,6 +5,8 @@ import { Plus, Search } from 'lucide-react';
 import { CreateEmployeeModal } from '@/components/employees/CreateEmployeeModal';
 import { EditEmployeeModal } from '@/components/employees/EditEmployeeModal';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import type { Employee } from '@/lib/types/employee';
 
@@ -15,10 +17,8 @@ export default function EmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        Staff Management
-      </h1>
+    <PageContent className="space-y-6">
+      <PageHeader title="Staff Management" />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <button
@@ -32,7 +32,7 @@ export default function EmployeesPage() {
 
         <div className="relative w-full sm:max-w-xs">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             aria-hidden
           />
           <input
@@ -40,7 +40,7 @@ export default function EmployeesPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search employee..."
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-surface-raised py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
           />
         </div>
       </div>
@@ -61,6 +61,6 @@ export default function EmployeesPage() {
         employee={editingEmployee}
         onClose={() => setEditingEmployee(null)}
       />
-    </div>
+    </PageContent>
   );
 }

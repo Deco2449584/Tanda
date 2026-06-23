@@ -22,7 +22,7 @@ function presetButtonClass(isActive: boolean): string {
   return `rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:text-sm ${
     isActive
       ? 'bg-primary text-white shadow-sm'
-      : 'border border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
+      : 'border border-border-strong bg-surface-raised text-muted hover:border-zinc-500 hover:text-foreground'
   }`;
 }
 

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
+import { PageContent } from '@/components/ui/PageContent';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
@@ -17,47 +18,47 @@ export default function InspectionDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6">
-        <p className="text-sm text-zinc-500">Loading inspection...</p>
-      </div>
+      <PageContent>
+        <p className="text-sm text-muted">Loading inspection…</p>
+      </PageContent>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
-        <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+      <PageContent className="space-y-4">
+        <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
         </p>
         <Link href="/inspections" className="text-sm text-primary hover:underline">
           Back to inspections
         </Link>
-      </div>
+      </PageContent>
     );
   }
 
   if (!inspection) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
-        <h1 className="text-lg font-bold text-white">Inspection not found</h1>
-        <p className="text-sm text-zinc-500">
+      <PageContent className="space-y-4">
+        <h1 className="text-lg font-semibold text-foreground">Inspection not found</h1>
+        <p className="text-sm text-muted">
           This record may have been removed or you do not have access.
         </p>
         <Link href="/inspections" className="text-sm text-primary hover:underline">
           Back to inspections
         </Link>
-      </div>
+      </PageContent>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-6">
+    <PageContent className="max-w-4xl">
       <InspectionDetailView
         inspection={inspection}
         canEdit={isAdmin}
         editorEmail={user?.email ?? ''}
         onUpdated={() => void refresh()}
       />
-    </div>
+    </PageContent>
   );
 }

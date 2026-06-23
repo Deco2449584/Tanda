@@ -106,28 +106,28 @@ export function ScheduleMonthCalendar({
 
   if (loading) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/60">
-        <p className="text-sm text-zinc-400">Loading monthly calendar...</p>
+      <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border bg-surface-raised">
+        <p className="text-sm text-muted">Loading monthly calendar...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm">
-      <div className="border-b border-zinc-800 bg-zinc-950/60 px-4 py-3">
+    <div className="w-full overflow-hidden rounded-2xl border border-border bg-surface-raised/40 backdrop-blur-sm">
+      <div className="border-b border-border bg-surface-base/60 px-4 py-3">
         <h2 className="text-sm font-semibold capitalize text-white">{monthLabel}</h2>
         {onDayClick ? (
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className="mt-0.5 text-xs text-subtle">
             Tap a day to assign a shift
           </p>
         ) : null}
       </div>
 
-      <div className="grid grid-cols-7 border-b border-zinc-800 bg-zinc-950/50">
+      <div className="grid grid-cols-7 border-b border-border bg-surface-base/50">
         {WEEKDAY_HEADERS.map((label) => (
           <div
             key={label}
-            className="border-r border-zinc-800/60 px-0.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-500 last:border-r-0 sm:text-[11px]"
+            className="border-r border-border/60 px-0.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-subtle last:border-r-0 sm:text-[11px]"
           >
             {label}
           </div>
@@ -159,12 +159,12 @@ export function ScheduleMonthCalendar({
                   onDayClick(normalizeInputDate(day.date));
                 }
               }}
-              className={`flex min-h-[4.5rem] flex-col border-b border-r border-zinc-800/60 p-1 last:border-r-0 sm:min-h-[5.5rem] sm:p-1.5 ${
+              className={`flex min-h-[4.5rem] flex-col border-b border-r border-border/60 p-1 last:border-r-0 sm:min-h-[5.5rem] sm:p-1.5 ${
                 day.isCurrentMonth
                   ? onDayClick
-                    ? 'cursor-pointer bg-zinc-950/20 transition-colors hover:bg-zinc-800/35 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-primary/40'
-                    : 'bg-zinc-950/20'
-                  : 'bg-zinc-950/5 opacity-45'
+                    ? 'cursor-pointer bg-surface-base/20 transition-colors hover:bg-surface-hover/35 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-primary/40'
+                    : 'bg-surface-base/20'
+                  : 'bg-surface-base/5 opacity-45'
               } ${today && day.isCurrentMonth ? 'bg-primary/5' : ''}`}
             >
               <div className="mb-1 flex items-start justify-between gap-0.5">
@@ -173,8 +173,8 @@ export function ScheduleMonthCalendar({
                     today && day.isCurrentMonth
                       ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-white'
                       : day.isCurrentMonth
-                        ? 'text-zinc-200'
-                        : 'text-zinc-600'
+                        ? 'text-foreground'
+                        : 'text-subtle'
                   }`}
                 >
                   {day.dayNumber}
@@ -213,7 +213,7 @@ export function ScheduleMonthCalendar({
                     />
                   ))}
                   {hiddenCount > 0 ? (
-                    <p className="text-center text-[9px] font-medium text-zinc-500">
+                    <p className="text-center text-[9px] font-medium text-subtle">
                       +{hiddenCount} more
                     </p>
                   ) : null}
@@ -226,14 +226,14 @@ export function ScheduleMonthCalendar({
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3 border-t border-zinc-800 px-4 py-3 sm:gap-4">
+      <div className="flex flex-wrap gap-3 border-t border-border px-4 py-3 sm:gap-4">
         {(Object.keys(STATUS_META) as ShiftStatus[]).map((status) => {
           const meta = STATUS_META[status];
           const Icon = meta.Icon;
           return (
             <span
               key={status}
-              className="flex items-center gap-1.5 text-[11px] text-zinc-400"
+              className="flex items-center gap-1.5 text-[11px] text-muted"
             >
               <span
                 className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 ${meta.chip}`}

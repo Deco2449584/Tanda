@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { LeaveRequestHistoryTable } from '@/components/leave-requests/LeaveRequestHistoryTable';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { NewLeaveRequestForm } from '@/components/leave-requests/NewLeaveRequestForm';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -62,10 +64,8 @@ export default function MyRequestsPage() {
   );
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        My leave
-      </h1>
+    <PageContent className="space-y-6">
+      <PageHeader title="My leave" />
 
       {employeeError && !loading && (
         <p className="rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -84,6 +84,6 @@ export default function MyRequestsPage() {
           loading={loading || requestsLoading}
         />
       </div>
-    </div>
+    </PageContent>
   );
 }

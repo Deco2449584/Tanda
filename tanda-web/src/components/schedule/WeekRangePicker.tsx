@@ -18,21 +18,21 @@ export function WeekRangePicker({
 
   return (
     <div
-      className={`flex items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900/70 ${
+      className={`flex items-center gap-1 rounded-xl border border-border bg-surface-raised ${
         fullWidth ? 'w-full justify-between px-1 py-1' : 'inline-flex gap-2 px-2 py-1.5'
       }`}
     >
       <button
         type="button"
         onClick={() => onChange(shiftWeek(referenceDate, -1))}
-        className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+        className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
         aria-label="Previous week"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
 
       <div
-        className={`flex min-w-0 items-center justify-center gap-2 text-zinc-200 ${
+        className={`flex min-w-0 items-center justify-center gap-2 text-foreground ${
           fullWidth ? 'flex-1 px-1 text-xs font-medium' : 'px-2 text-sm'
         }`}
       >
@@ -45,7 +45,7 @@ export function WeekRangePicker({
       <button
         type="button"
         onClick={() => onChange(shiftWeek(referenceDate, 1))}
-        className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+        className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
         aria-label="Next week"
       >
         <ChevronRight className="h-4 w-4" />

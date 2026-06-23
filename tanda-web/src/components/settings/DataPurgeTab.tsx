@@ -96,7 +96,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         </div>
         <div>
           <h2 className="text-sm font-semibold text-white">Data cleanup</h2>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+          <p className="mt-1 text-xs leading-relaxed text-muted">
             Manual purge for testing or freeing space. Employees, avatars, and
             localization settings are kept. This cannot be undone.
           </p>
@@ -155,9 +155,9 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         />
       </div>
 
-      <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-        <p className="text-xs text-zinc-500">
-          Signed in as <span className="text-zinc-300">{adminEmail}</span>. Type{' '}
+      <div className="mt-5 rounded-xl border border-border bg-surface-base/50 p-4">
+        <p className="text-xs text-subtle">
+          Signed in as <span className="text-muted">{adminEmail}</span>. Type{' '}
           <span className="font-mono font-semibold text-red-300">{CONFIRM_PHRASE}</span>{' '}
           to enable the button.
         </p>
@@ -167,19 +167,19 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           onChange={(e) => setConfirmText(e.target.value)}
           disabled={running}
           placeholder={CONFIRM_PHRASE}
-          className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 font-mono text-sm text-zinc-100 outline-none focus:border-red-500/50 disabled:opacity-50"
+          className="mt-2 w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-red-500/50 disabled:opacity-50"
           autoComplete="off"
           spellCheck={false}
         />
       </div>
 
       {(progressLog.length > 0 || result) && (
-        <div className="mt-4 max-h-40 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-3 font-mono text-[11px] leading-relaxed text-zinc-500">
+        <div className="mt-4 max-h-40 overflow-y-auto rounded-lg border border-border bg-surface-base/80 p-3 font-mono text-[11px] leading-relaxed text-subtle">
           {progressLog.map((line, index) => (
             <p key={`${line}-${index}`}>{line}</p>
           ))}
           {result ? (
-            <div className="mt-2 border-t border-zinc-800 pt-2 text-zinc-300">
+            <div className="mt-2 border-t border-border pt-2 text-muted">
               {result.storageFilesDeleted > 0 ? (
                 <p>Storage files removed: {result.storageFilesDeleted}</p>
               ) : null}
@@ -253,8 +253,8 @@ function OptionRow({
 }) {
   return (
     <label
-      className={`flex cursor-pointer gap-3 rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 ${
-        disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-zinc-700'
+      className={`flex cursor-pointer gap-3 rounded-lg border border-border/80 bg-surface-base/40 px-3 py-2.5 ${
+        disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-border-strong'
       }`}
     >
       <input
@@ -262,11 +262,11 @@ function OptionRow({
         checked={checked}
         onChange={onChange}
         disabled={disabled}
-        className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-600 bg-zinc-900 text-primary focus:ring-primary/40"
+        className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-600 bg-surface-raised text-primary focus:ring-primary/40"
       />
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-zinc-200">{label}</span>
-        <span className="mt-0.5 block text-xs text-zinc-500">{hint}</span>
+        <span className="block text-sm font-medium text-foreground">{label}</span>
+        <span className="mt-0.5 block text-xs text-subtle">{hint}</span>
       </span>
     </label>
   );

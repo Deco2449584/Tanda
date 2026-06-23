@@ -15,6 +15,8 @@ import { MonthRangePicker } from '@/components/schedule/MonthRangePicker';
 import { ScheduleGrid } from '@/components/schedule/ScheduleGrid';
 import { ScheduleMonthCalendar } from '@/components/schedule/ScheduleMonthCalendar';
 import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
@@ -236,15 +238,11 @@ export default function SchedulePage() {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4 md:gap-6 md:p-6">
-      <div className="md:hidden">
-        <h1 className="text-base font-bold tracking-tight text-white">Roster</h1>
-        <p className="mt-0.5 text-xs text-zinc-500">Weekly schedule</p>
-      </div>
-
-      <h1 className="hidden text-base font-bold tracking-wide text-white uppercase md:block">
-        Scheduling and rosters (Agenda)
-      </h1>
+    <PageContent className="flex h-full min-h-0 flex-col gap-3 md:gap-6">
+      <PageHeader
+        title="Scheduling and rosters (Agenda)"
+        description="Weekly schedule"
+      />
 
       <div className="flex flex-col gap-2.5 md:hidden">
         <WeekRangePicker
@@ -260,17 +258,17 @@ export default function SchedulePage() {
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/70 py-2.5 pl-10 pr-9 text-sm font-medium text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            className="w-full appearance-none rounded-xl border border-border bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
             aria-label="Filter by department"
           >
             {departments.map((department) => (
-              <option key={department} value={department} className="bg-zinc-900">
+              <option key={department} value={department} className="bg-surface-raised">
                 {department === 'all' ? 'All departments' : department}
               </option>
             ))}
           </select>
           <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             aria-hidden
           />
         </div>
@@ -282,17 +280,17 @@ export default function SchedulePage() {
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            className="w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/70 py-2.5 pl-10 pr-9 text-sm font-medium text-white outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            className="w-full appearance-none rounded-xl border border-border bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
             aria-label="Filter by location"
           >
             {locationOptions.map((location) => (
-              <option key={location.id} value={location.id} className="bg-zinc-900">
+              <option key={location.id} value={location.id} className="bg-surface-raised">
                 {location.label}
               </option>
             ))}
           </select>
           <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             aria-hidden
           />
         </div>
@@ -313,14 +311,14 @@ export default function SchedulePage() {
         )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/60 p-1">
+          <div className="inline-flex rounded-lg border border-border bg-surface-raised p-1">
             <button
               type="button"
               onClick={() => setViewMode('weekly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'weekly'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                  ? 'bg-primary text-foreground shadow-sm'
+                  : 'text-muted hover:bg-surface-hover hover:text-foreground'
               }`}
             >
               Weekly
@@ -330,8 +328,8 @@ export default function SchedulePage() {
               onClick={() => setViewMode('monthly')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'monthly'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                  ? 'bg-primary text-foreground shadow-sm'
+                  : 'text-muted hover:bg-surface-hover hover:text-foreground'
               }`}
             >
               Monthly
@@ -346,17 +344,17 @@ export default function SchedulePage() {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-primary/30 bg-zinc-900 py-2.5 pl-10 pr-9 text-sm font-medium text-white shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+              className="w-full appearance-none rounded-lg border border-primary/30 bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
               aria-label="Filter by department"
             >
               {departments.map((department) => (
-                <option key={department} value={department} className="bg-zinc-900">
+                <option key={department} value={department} className="bg-surface-raised">
                   {department === 'all' ? 'All departments' : department}
                 </option>
               ))}
             </select>
             <ChevronDown
-              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
           </div>
@@ -369,17 +367,17 @@ export default function SchedulePage() {
             <select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-primary/30 bg-zinc-900 py-2.5 pl-10 pr-9 text-sm font-medium text-white shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+              className="w-full appearance-none rounded-lg border border-primary/30 bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
               aria-label="Filter by location"
             >
               {locationOptions.map((location) => (
-                <option key={location.id} value={location.id} className="bg-zinc-900">
+                <option key={location.id} value={location.id} className="bg-surface-raised">
                   {location.label}
                 </option>
               ))}
             </select>
             <ChevronDown
-              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
           </div>
@@ -424,6 +422,6 @@ export default function SchedulePage() {
           setAssignData(null);
         }}
       />
-    </div>
+    </PageContent>
   );
 }

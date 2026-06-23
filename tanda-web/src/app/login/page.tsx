@@ -3,18 +3,14 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import {
-  CalendarDays,
-  Clock,
-  Lock,
-  Mail,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react';
+import { Lock, Mail, Truck } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { fetchUserRoleForEmail } from '@/lib/auth/resolve-role';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
@@ -33,24 +29,6 @@ function getAuthErrorMessage(code: string): string {
   }
 }
 
-const highlights = [
-  {
-    icon: Clock,
-    title: 'Time & attendance',
-    description: 'Real-time check-ins with photo verification.',
-  },
-  {
-    icon: CalendarDays,
-    title: 'Smart scheduling',
-    description: 'Plan shifts and manage coverage in one place.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Leave & compliance',
-    description: 'Approve requests and keep payroll audit-ready.',
-  },
-];
-
 export default function LoginPage() {
   const router = useRouter();
   const { user, role, loading: authLoading } = useAuthRole();
@@ -66,8 +44,8 @@ export default function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-[#060606]">
-        <p className="text-sm text-zinc-400">Loading session…</p>
+      <div className="flex h-dvh items-center justify-center bg-surface-base app-ambient">
+        <p className="text-sm text-muted">Loading session…</p>
       </div>
     );
   }
@@ -78,13 +56,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const credential = await signInWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password,
-      );
-      const role = await fetchUserRoleForEmail(credential.user.email);
-      router.push(getHomeRouteForRole(role));
+      const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const resolvedRole = await fetchUserRoleForEmail(credential.user.email);
+      router.push(getHomeRouteForRole(resolvedRole));
     } catch (err) {
       const code =
         err && typeof err === 'object' && 'code' in err
@@ -98,108 +72,59 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden lg:flex-row">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.18),transparent)]"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -left-32 top-1/4 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
-        aria-hidden
-      />
-
-      <section className="relative hidden h-full min-h-0 flex-1 flex-col justify-between overflow-y-auto border-r border-zinc-800/80 bg-[#0a0a0a] p-10 lg:flex xl:p-14">
-        <div>
-          <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            TimeTracker PRO
+      <section className="relative hidden min-h-0 flex-1 flex-col justify-between overflow-hidden border-r border-border bg-surface-sidebar p-10 lg:flex xl:p-14">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(77,124,255,0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(77,124,255,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '48px 48px',
+          }}
+          aria-hidden
+        />
+        <div className="relative">
+          <CompanyLogo invert priority className="h-12 w-auto object-contain" />
+          <div className="mt-10 inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface-raised px-3 py-1 text-xs font-medium text-secondary">
+            <Truck className="h-3.5 w-3.5" />
+            Logistics workforce platform
           </div>
-
-          <CompanyLogo
-            invert
-            priority
-            className="h-28 w-auto max-w-full object-contain drop-shadow-md xl:h-36"
-          />
-
-          <h1 className="mt-8 max-w-md text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
-            Workforce operations,{' '}
-            <span className="text-primary">under control.</span>
+          <h1 className="mt-8 max-w-md text-3xl font-semibold leading-tight tracking-tight text-foreground xl:text-4xl">
+            Operations hub for{' '}
+            <span className="text-primary">{COMPANY_NAME}</span>
           </h1>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-400">
-            The {COMPANY_NAME} portal for admins and staff — attendance,
-            schedules, leave, and payroll insights in a single secure workspace.
+          <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
+            Attendance, scheduling, leave management and compliance — one secure
+            workspace for administrators and field staff.
           </p>
         </div>
-
-        <ul className="mt-10 space-y-4">
-          {highlights.map(({ icon: Icon, title, description }) => (
-            <li
-              key={title}
-              className="flex gap-4 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 backdrop-blur-sm"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                <Icon className="h-5 w-5" strokeWidth={1.75} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-100">{title}</p>
-                <p className="mt-0.5 text-sm text-zinc-500">{description}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-10 text-xs text-zinc-600">
-          © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
+        <p className="relative text-xs text-subtle">
+          © {new Date().getFullYear()} {COMPANY_NAME}
         </p>
       </section>
 
-      <section className="relative flex h-full min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-10 sm:py-8 lg:justify-center lg:px-14 lg:py-10 xl:px-20">
-        <div className="mx-auto my-auto w-full max-w-md lg:my-0">
+      <section className="app-ambient relative flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-5 py-8 sm:px-10 lg:px-16 xl:px-20">
+        <div className="mx-auto w-full max-w-md">
           <div className="mb-8 flex flex-col items-center lg:hidden">
-            <CompanyLogo
-              invert
-              priority
-              className="h-24 w-full max-w-[320px] object-contain drop-shadow-md sm:h-28"
-            />
-            <p className="mt-3 text-center text-xs font-medium uppercase tracking-widest text-primary/90">
-              TimeTracker PRO
-            </p>
+            <CompanyLogo invert priority className="h-10 w-auto object-contain" />
           </div>
 
-          <div className="rounded-2xl border border-zinc-800/90 bg-zinc-900/70 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-            <div className="mb-8 hidden lg:block">
-              <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-              <p className="mt-1.5 text-sm text-zinc-400">
-                Sign in with your company email to continue.
-              </p>
-            </div>
+          <Card padding="lg">
+            <h2 className="text-xl font-semibold text-foreground">Sign in</h2>
+            <p className="mt-1 text-sm text-muted">Use your company email to continue.</p>
 
-            <div className="mb-6 lg:hidden">
-              <h2 className="text-center text-xl font-bold text-white">
-                Welcome back
-              </h2>
-              <p className="mt-1 text-center text-sm text-zinc-400">
-                Sign in to access your dashboard
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
-                >
-                  Email address
+                <label htmlFor="email" className="mb-1.5 block text-sm text-muted">
+                  Email
                 </label>
                 <div className="relative">
                   <Mail
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
                     aria-hidden
                   />
-                  <input
+                  <Input
                     id="email"
                     type="email"
                     autoComplete="email"
@@ -207,24 +132,21 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@continental.com"
-                    className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950/80 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+                    className="pl-10"
                   />
                 </div>
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
-                >
+                <label htmlFor="password" className="mb-1.5 block text-sm text-muted">
                   Password
                 </label>
                 <div className="relative">
                   <Lock
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
                     aria-hidden
                   />
-                  <input
+                  <Input
                     id="password"
                     type="password"
                     autoComplete="current-password"
@@ -232,42 +154,27 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950/80 py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+                    className="pl-10"
                   />
                 </div>
               </div>
 
-              {error && (
+              {error ? (
                 <div
-                  className="rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-center text-sm text-red-300"
+                  className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-center text-sm text-danger"
                   role="alert"
                 >
                   {error}
                 </div>
-              )}
+              ) : null}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="relative w-full overflow-hidden rounded-xl bg-primary py-3.5 text-sm font-bold tracking-wide text-white shadow-lg shadow-black/30 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Signing in...
-                  </span>
-                ) : (
-                  'Sign in to platform'
-                )}
-              </button>
+              <Button type="submit" disabled={loading} className="w-full" size="lg">
+                {loading ? 'Signing in…' : 'Sign in'}
+              </Button>
             </form>
+          </Card>
 
-            <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-600 lg:hidden">
-              Secure access for {COMPANY_NAME} employees and administrators.
-            </p>
-          </div>
-
-          <p className="mt-6 hidden text-center text-xs text-zinc-600 lg:block">
+          <p className="mt-6 text-center text-xs text-subtle">
             Need help? Contact your system administrator.
           </p>
         </div>

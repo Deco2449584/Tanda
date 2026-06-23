@@ -144,7 +144,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
           <h2
             id="create-employee-title"
@@ -156,7 +156,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
             type="button"
             onClick={handleClose}
             disabled={isBusy}
-            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -171,7 +171,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
           />
 
           <div>
-            <label htmlFor="emp-id" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="emp-id" className="mb-1.5 block text-sm text-muted">
               Employee ID
             </label>
             <input
@@ -183,13 +183,13 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 setForm((prev) => ({ ...prev, employeeId: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="0045"
             />
           </div>
 
           <div>
-            <label htmlFor="emp-name" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="emp-name" className="mb-1.5 block text-sm text-muted">
               Name
             </label>
             <input
@@ -199,13 +199,13 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="Full name"
             />
           </div>
 
           <div>
-            <label htmlFor="emp-email" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="emp-email" className="mb-1.5 block text-sm text-muted">
               Email
             </label>
             <input
@@ -215,13 +215,13 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="email@company.com"
             />
           </div>
 
           <div>
-            <label htmlFor="emp-dept" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="emp-dept" className="mb-1.5 block text-sm text-muted">
               Department
             </label>
             <input
@@ -233,7 +233,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="Logistics, Operations..."
             />
           </div>
@@ -249,7 +249,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
           />
 
           <div>
-            <label htmlFor="emp-rate" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="emp-rate" className="mb-1.5 block text-sm text-muted">
               Hourly rate ($)
             </label>
             <input
@@ -266,7 +266,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
                 }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               placeholder="18.50"
             />
           </div>
@@ -282,7 +282,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm font-medium text-muted transition-colors hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

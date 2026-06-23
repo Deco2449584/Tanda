@@ -97,8 +97,8 @@ export function ScheduleGrid({
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 md:min-h-[420px]">
-        <p className="text-sm text-zinc-400">Loading schedule...</p>
+      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-border bg-surface-raised md:min-h-[420px]">
+        <p className="text-sm text-muted">Loading schedule...</p>
       </div>
     );
   }
@@ -119,37 +119,37 @@ export function ScheduleGrid({
         />
       </div>
 
-      <div className="hidden min-w-0 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm md:block">
+      <div className="hidden min-w-0 w-full overflow-hidden rounded-xl border border-border bg-surface-raised/40 backdrop-blur-sm md:block">
         <div className="w-full overflow-x-auto scrollbar-hide">
           <div className="min-w-[900px]">
-            <div className="sticky top-0 z-10 grid grid-cols-8 border-b border-zinc-800 bg-zinc-950">
-              <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            <div className="sticky top-0 z-10 grid grid-cols-8 border-b border-border bg-surface-base">
+              <div className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
                 Employee
               </div>
               {weekDays.map((day) => (
                 <div
                   key={day.date}
-                  className="border-l border-zinc-800/80 px-2 py-3 text-center"
+                  className="border-l border-border/80 px-2 py-3 text-center"
                 >
-                  <p className="text-xs font-semibold text-zinc-200">{day.label}</p>
-                  <p className="text-[10px] text-zinc-500">{day.date.slice(5)}</p>
+                  <p className="text-xs font-semibold text-foreground">{day.label}</p>
+                  <p className="text-[10px] text-subtle">{day.date.slice(5)}</p>
                 </div>
               ))}
             </div>
 
             {employees.length === 0 ? (
-              <div className="px-4 py-12 text-center text-sm text-zinc-500">
+              <div className="px-4 py-12 text-center text-sm text-subtle">
                 No employees to show this week.
               </div>
             ) : (
               employees.map((employee) => (
                 <div
                   key={employee.id}
-                  className="grid grid-cols-8 border-b border-zinc-800/60"
+                  className="grid grid-cols-8 border-b border-border/60"
                 >
-                  <div className="border-r border-zinc-800/60 bg-zinc-950/30 px-3 py-3">
+                  <div className="border-r border-border/60 bg-surface-base/30 px-3 py-3">
                     <p className="text-sm font-semibold text-white">{employee.name}</p>
-                    <p className="mt-0.5 text-[11px] text-zinc-500">
+                    <p className="mt-0.5 text-[11px] text-subtle">
                       ({employee.employeeId} {employee.department})
                     </p>
                   </div>
@@ -174,7 +174,7 @@ export function ScheduleGrid({
                         tabIndex={0}
                         onClick={() => onCellClick(employee, day.date)}
                         onKeyDown={handleCellKeyDown}
-                        className="group min-h-[88px] cursor-pointer border-l border-zinc-800/60 bg-zinc-950/20 p-1.5 text-left transition-colors hover:bg-zinc-800/40 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        className="group min-h-[88px] cursor-pointer border-l border-border/60 bg-surface-base/20 p-1.5 text-left transition-colors hover:bg-surface-hover/40 focus:outline-none focus:ring-1 focus:ring-primary/50"
                       >
                         {hasShift ? (
                           <div
@@ -198,12 +198,12 @@ export function ScheduleGrid({
                             ))}
                           </div>
                         ) : (
-                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-zinc-700/80 text-zinc-500 group-hover:border-zinc-500 group-hover:text-zinc-300">
+                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-border-strong/80 text-subtle group-hover:border-zinc-500 group-hover:text-muted">
                             <Plus className="h-4 w-4" />
                           </div>
                         )}
                         {hasShift ? (
-                          <p className="pointer-events-none mt-1 text-center text-[9px] font-medium uppercase tracking-wide text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100">
+                          <p className="pointer-events-none mt-1 text-center text-[9px] font-medium uppercase tracking-wide text-subtle opacity-0 transition-opacity group-hover:opacity-100">
                             + Add shift
                           </p>
                         ) : null}

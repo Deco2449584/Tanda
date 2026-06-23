@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { ShiftLoadChart } from '@/components/dashboard/ShiftLoadChart';
 import { WeeklyHoursChart } from '@/components/dashboard/WeeklyHoursChart';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { baseKpiMetrics } from '@/lib/dashboard/kpi-definitions';
 import type { KpiMetric } from '@/lib/dashboard/types';
 import { useAdminDashboardData } from '@/hooks/useAdminDashboardData';
@@ -97,16 +99,14 @@ export default function DashboardPage() {
   const chartsLoading = dashboardLoading.shifts;
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <h1 className="text-base font-bold tracking-wide text-white uppercase">
-        General control panel
-      </h1>
+    <PageContent className="space-y-6">
+      <PageHeader title="General control panel" />
 
       <KpiGrid metrics={metrics} loadingIds={loadingIds} />
 
       <WeeklyHoursChart data={weeklyHoursData} loading={chartsLoading} />
 
       <ShiftLoadChart data={shiftLoadData} loading={chartsLoading} />
-    </div>
+    </PageContent>
   );
 }

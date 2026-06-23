@@ -26,7 +26,7 @@ export function EmployeeLocationSelect({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm text-zinc-400">
+      <label htmlFor={id} className="mb-1.5 block text-sm text-muted">
         Location
         {required ? <span className="text-red-400"> *</span> : null}
       </label>
@@ -36,7 +36,7 @@ export function EmployeeLocationSelect({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled || loading}
         required={required && options.length > 0}
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+        className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
       >
         {allowUnassigned || !required ? (
           <option value="">Unassigned</option>

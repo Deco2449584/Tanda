@@ -82,15 +82,15 @@ export function NewLeaveRequestForm({
   }
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
+    <section className="rounded-xl border border-border bg-surface-raised p-5 backdrop-blur-sm">
       <h2 className="text-sm font-semibold text-white">New request</h2>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="mt-1 text-xs text-subtle">
         Complete the form to submit your leave request.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <div>
-          <label htmlFor="leave-type" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="leave-type" className="mb-1.5 block text-sm text-muted">
             Leave type
           </label>
           <select
@@ -103,7 +103,7 @@ export function NewLeaveRequestForm({
               }))
             }
             disabled={disabled || isSubmitting}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
           >
             {LEAVE_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -115,7 +115,7 @@ export function NewLeaveRequestForm({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="leave-start" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="leave-start" className="mb-1.5 block text-sm text-muted">
               From
             </label>
             <input
@@ -127,11 +127,11 @@ export function NewLeaveRequestForm({
                 setForm((prev) => ({ ...prev, startDate: e.target.value }))
               }
               disabled={disabled || isSubmitting}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
             />
           </div>
           <div>
-            <label htmlFor="leave-end" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="leave-end" className="mb-1.5 block text-sm text-muted">
               To
             </label>
             <input
@@ -143,13 +143,13 @@ export function NewLeaveRequestForm({
                 setForm((prev) => ({ ...prev, endDate: e.target.value }))
               }
               disabled={disabled || isSubmitting}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="leave-justification" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="leave-justification" className="mb-1.5 block text-sm text-muted">
             Justification
           </label>
           <textarea
@@ -162,7 +162,7 @@ export function NewLeaveRequestForm({
             }
             disabled={disabled || isSubmitting}
             placeholder="Describe the reason for your request..."
-            className="w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+            className="w-full resize-none rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
           />
         </div>
 

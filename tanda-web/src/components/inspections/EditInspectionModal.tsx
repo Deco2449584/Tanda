@@ -203,22 +203,22 @@ export function EditInspectionModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
       <div
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-zinc-800 bg-zinc-950 shadow-2xl sm:rounded-2xl"
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-border bg-surface-base shadow-2xl sm:rounded-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-inspection-title"
       >
-        <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
             <h2 id="edit-inspection-title" className="text-lg font-bold text-white">
               Edit inspection
             </h2>
-            <p className="text-xs text-zinc-500">ULD cannot be changed after registration.</p>
+            <p className="text-xs text-subtle">ULD cannot be changed after registration.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-foreground"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -231,29 +231,29 @@ export function EditInspectionModal({
         >
           <div className="space-y-4">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                 ULD ID
               </span>
               <input
                 value={uldId}
                 readOnly
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-3 text-sm text-zinc-400"
+                className="w-full rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-muted"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                 AWB number
               </span>
               <input
                 value={awbNumber}
                 onChange={(event) => setAwbNumber(event.target.value)}
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                 Conservation
               </span>
               <select
@@ -261,7 +261,7 @@ export function EditInspectionModal({
                 onChange={(event) =>
                   setConservationType(event.target.value as ConservationType)
                 }
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
               >
                 {CONSERVATION_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -272,19 +272,19 @@ export function EditInspectionModal({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                 Food type
               </span>
               <input
                 value={foodType}
                 onChange={(event) => setFoodType(event.target.value)}
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
               />
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                   Weight (kg)
                 </span>
                 <input
@@ -293,12 +293,12 @@ export function EditInspectionModal({
                   step="0.1"
                   value={weightKg}
                   onChange={(event) => setWeightKg(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                   Box count
                 </span>
                 <input
@@ -307,41 +307,41 @@ export function EditInspectionModal({
                   step="1"
                   value={boxCount}
                   onChange={(event) => setBoxCount(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
                 />
               </label>
             </div>
 
-            <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3">
+            <label className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised px-4 py-3">
               <input
                 type="checkbox"
                 checked={hasIssues}
                 onChange={(event) => setHasIssues(event.target.checked)}
                 className="h-4 w-4 rounded border-zinc-600"
               />
-              <span className="text-sm text-zinc-200">Report damage or issues</span>
+              <span className="text-sm text-foreground">Report damage or issues</span>
             </label>
 
             {hasIssues && (
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                   Issue description
                 </span>
                 <textarea
                   value={issueDescription}
                   onChange={(event) => setIssueDescription(event.target.value)}
                   rows={4}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
                 />
               </label>
             )}
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
                   Photo evidence ({photoCount}/{MAX_INSPECTION_PHOTOS})
                 </span>
-                <label className="cursor-pointer rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700">
+                <label className="cursor-pointer rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-zinc-700">
                   Add photos
                   <input
                     type="file"
@@ -382,10 +382,10 @@ export function EditInspectionModal({
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
                   Video evidence ({videos.length})
                 </span>
-                <label className="cursor-pointer rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700">
+                <label className="cursor-pointer rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-zinc-700">
                   Add video
                   <input
                     type="file"
@@ -399,15 +399,15 @@ export function EditInspectionModal({
                 {videos.map((video, index) => (
                   <div
                     key={`video-${index}`}
-                    className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-3 py-2"
                   >
-                    <span className="truncate text-xs text-zinc-300">
+                    <span className="truncate text-xs text-muted">
                       {video.kind === 'url' ? video.url : video.file.name}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeVideo(index)}
-                      className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                      className="rounded p-1 text-muted hover:bg-surface-hover hover:text-foreground"
                       aria-label="Remove video"
                     >
                       <X className="h-4 w-4" />
@@ -428,7 +428,7 @@ export function EditInspectionModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-zinc-700 py-3 text-sm font-semibold text-zinc-300 hover:bg-zinc-800"
+              className="flex-1 rounded-xl border border-border-strong py-3 text-sm font-semibold text-muted hover:bg-surface-hover"
             >
               Cancel
             </button>

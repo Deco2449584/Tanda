@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
@@ -63,10 +65,8 @@ export default function EmployeeDashboardPage() {
   const dataError = shiftsError || recordsError;
 
   return (
-    <div className="min-h-full space-y-5 bg-[#121212] p-4 md:space-y-6 md:p-6">
-      <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-        My overview
-      </h1>
+    <PageContent className="space-y-5 md:space-y-6">
+      <PageHeader title="My overview" />
 
       {employeeError && !employeeLoading && (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -101,6 +101,6 @@ export default function EmployeeDashboardPage() {
           />
         </>
       )}
-    </div>
+    </PageContent>
   );
 }

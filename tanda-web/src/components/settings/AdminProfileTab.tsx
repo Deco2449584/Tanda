@@ -107,15 +107,15 @@ export function AdminProfileTab({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+    <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
       <h2 className="text-sm font-semibold text-white">Administrator profile</h2>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="mt-1 text-xs text-subtle">
         Update your display name and sign-in password (Firebase Auth).
       </p>
 
       <form onSubmit={handleSaveProfile} className="mt-6 space-y-4">
         <div>
-          <label htmlFor="admin-name" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="admin-name" className="mb-1.5 block text-sm text-muted">
             Display name
           </label>
           <input
@@ -124,12 +124,12 @@ export function AdminProfileTab({
             value={name}
             disabled={loading}
             onChange={(e) => onNameChange(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-primary/50 disabled:opacity-60"
+            className="w-full rounded-lg border border-border-strong bg-surface-base/60 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 disabled:opacity-60"
           />
         </div>
 
         <div>
-          <label htmlFor="admin-email" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="admin-email" className="mb-1.5 block text-sm text-muted">
             Email
           </label>
           <input
@@ -137,26 +137,26 @@ export function AdminProfileTab({
             type="email"
             value={email}
             readOnly
-            className="w-full cursor-not-allowed rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2.5 text-sm text-zinc-500"
+            className="w-full cursor-not-allowed rounded-lg border border-border bg-surface-base/40 px-3 py-2.5 text-sm text-subtle"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading || profileSaving}
-          className="rounded-lg border border-zinc-700 px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-primary/40 hover:text-primary disabled:opacity-50"
+          className="rounded-lg border border-border-strong px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary disabled:opacity-50"
         >
           {profileSaving ? 'Saving…' : 'Save name'}
         </button>
       </form>
 
-      <form onSubmit={handleChangePassword} className="mt-8 space-y-4 border-t border-zinc-800 pt-6">
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+      <form onSubmit={handleChangePassword} className="mt-8 space-y-4 border-t border-border pt-6">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-subtle">
           Change password
         </h3>
 
         <div>
-          <label htmlFor="current-password" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="current-password" className="mb-1.5 block text-sm text-muted">
             Current password
           </label>
           <input
@@ -165,12 +165,12 @@ export function AdminProfileTab({
             autoComplete="current-password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-primary/50"
+            className="w-full rounded-lg border border-border-strong bg-surface-base/60 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
           />
         </div>
 
         <div>
-          <label htmlFor="new-password" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="new-password" className="mb-1.5 block text-sm text-muted">
             New password
           </label>
           <input
@@ -179,12 +179,12 @@ export function AdminProfileTab({
             autoComplete="new-password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-primary/50"
+            className="w-full rounded-lg border border-border-strong bg-surface-base/60 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
           />
         </div>
 
         <div>
-          <label htmlFor="confirm-password" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="confirm-password" className="mb-1.5 block text-sm text-muted">
             Confirm new password
           </label>
           <input
@@ -193,7 +193,7 @@ export function AdminProfileTab({
             autoComplete="new-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-primary/50"
+            className="w-full rounded-lg border border-border-strong bg-surface-base/60 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
           />
         </div>
 

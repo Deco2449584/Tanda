@@ -20,8 +20,8 @@ interface ProtectedShellProps {
 
 function LoadingScreen({ message }: { message: string }) {
   return (
-    <div className="flex h-screen items-center justify-center bg-[#0a0a0a]">
-      <p className="text-sm text-zinc-400">{message}</p>
+    <div className="app-ambient flex h-screen items-center justify-center bg-surface-base">
+      <p className="text-sm text-muted">{message}</p>
     </div>
   );
 }
@@ -37,11 +37,11 @@ export function ProtectedShell({ children }: ProtectedShellProps) {
   }, [loading, user, router]);
 
   if (loading) {
-    return <LoadingScreen message="Loading session..." />;
+    return <LoadingScreen message="Loading session…" />;
   }
 
   if (!user || !role) {
-    return <LoadingScreen message="Signing out..." />;
+    return <LoadingScreen message="Signing out…" />;
   }
 
   return <AuthenticatedShell role={role}>{children}</AuthenticatedShell>;
@@ -79,7 +79,7 @@ function RouteGuard({
   }, [redirectTo, router]);
 
   if (redirectTo) {
-    return <LoadingScreen message="Redirecting..." />;
+    return <LoadingScreen message="Redirecting…" />;
   }
 
   return <>{children}</>;
@@ -101,7 +101,7 @@ function ProtectedLayoutContent({
   }, [pathname]);
 
   const layout = (
-    <div className="flex h-screen overflow-hidden bg-[#0a0a0a]">
+    <div className="flex h-screen overflow-hidden bg-surface-base">
       <Sidebar
         role={role}
         mobileOpen={sidebarOpen}
@@ -141,7 +141,7 @@ function EmployeeNotificationsShell({
   const { employee, loading } = useCurrentEmployee(userEmail);
 
   if (loading) {
-    return <LoadingScreen message="Loading profile..." />;
+    return <LoadingScreen message="Loading profile…" />;
   }
 
   return (

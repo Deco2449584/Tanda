@@ -138,22 +138,22 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
           <MapPin className="h-4 w-4 text-primary" aria-hidden />
           Branch locations
         </h2>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-muted">
           Define offices or sites and assign each employee to a location. Used
           in staff management, schedule, and attendance filters.
         </p>
       </section>
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">New location</h3>
         <form onSubmit={(e) => void handleCreate(e)} className="mt-4 space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-400">
+            <label className="mb-1 block text-xs font-medium text-muted">
               Location name
             </label>
             <input
@@ -161,12 +161,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Sydney Warehouse"
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">
+              <label className="mb-1 block text-xs font-medium text-muted">
                 City
               </label>
               <input
@@ -174,18 +174,18 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                 onChange={(e) => setCity(e.target.value)}
                 required
                 placeholder="Sydney"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">
+              <label className="mb-1 block text-xs font-medium text-muted">
                 Code (optional)
               </label>
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="SYD"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
           </div>
@@ -200,12 +200,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         </form>
       </section>
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">Registered locations</h3>
         {loading ? (
-          <p className="mt-4 text-sm text-zinc-500">Loading…</p>
+          <p className="mt-4 text-sm text-subtle">Loading…</p>
         ) : locations.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">No locations yet.</p>
+          <p className="mt-4 text-sm text-subtle">No locations yet.</p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-800">
             {locations.map((location) => (
@@ -220,7 +220,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       onChange={(e) =>
                         setEditForm((prev) => ({ ...prev, name: e.target.value }))
                       }
-                      className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
+                      className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
                     />
                     <div className="grid gap-3 sm:grid-cols-2">
                       <input
@@ -229,7 +229,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                           setEditForm((prev) => ({ ...prev, city: e.target.value }))
                         }
                         placeholder="City"
-                        className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
+                        className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
                       />
                       <input
                         value={editForm.code}
@@ -240,7 +240,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                           }))
                         }
                         placeholder="Code"
-                        className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
+                        className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -255,7 +255,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       <button
                         type="button"
                         onClick={cancelEdit}
-                        className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300"
+                        className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted"
                       >
                         Cancel
                       </button>
@@ -265,7 +265,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                   <>
                     <div className="min-w-0">
                       <p className="font-medium text-white">{location.name}</p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-subtle">
                         {location.city}
                         {location.code ? ` · ${location.code}` : ''}
                       </p>
@@ -275,7 +275,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                         className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
                           location.active
                             ? 'bg-emerald-500/20 text-emerald-300'
-                            : 'bg-zinc-700 text-zinc-400'
+                            : 'bg-zinc-700 text-muted'
                         }`}
                       >
                         {location.active ? 'Active' : 'Inactive'}
@@ -283,7 +283,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       <button
                         type="button"
                         onClick={() => startEdit(location)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500"
+                        className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
                       >
                         <Pencil className="h-3 w-3" aria-hidden />
                         Edit
@@ -291,7 +291,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       <button
                         type="button"
                         onClick={() => void handleToggleActive(location)}
-                        className="rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500"
+                        className="rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
                       >
                         {location.active ? 'Deactivate' : 'Activate'}
                       </button>

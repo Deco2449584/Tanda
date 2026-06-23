@@ -1,33 +1,36 @@
 ﻿import type { KpiMetric } from '@/lib/dashboard/types';
+import { cn } from '@/lib/cn';
+import { Card } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const accentStyles = {
   blue: {
     bar: 'bg-primary',
-    iconBg: 'bg-primary/15',
+    iconBg: 'bg-primary-muted',
     icon: 'text-primary',
     value: 'text-primary',
     sparkline: 'bg-primary',
   },
   emerald: {
-    bar: 'bg-emerald-600',
-    iconBg: 'bg-emerald-500/15',
-    icon: 'text-emerald-500',
-    value: 'text-emerald-400',
-    sparkline: 'bg-emerald-500',
+    bar: 'bg-success',
+    iconBg: 'bg-success/10',
+    icon: 'text-success',
+    value: 'text-success',
+    sparkline: 'bg-success',
   },
   orange: {
-    bar: 'bg-orange-500',
-    iconBg: 'bg-orange-500/15',
-    icon: 'text-orange-500',
-    value: 'text-orange-400',
-    sparkline: 'bg-orange-500',
+    bar: 'bg-secondary',
+    iconBg: 'bg-secondary-muted',
+    icon: 'text-secondary',
+    value: 'text-secondary',
+    sparkline: 'bg-secondary',
   },
   yellow: {
-    bar: 'bg-yellow-500',
-    iconBg: 'bg-yellow-500/15',
-    icon: 'text-yellow-500',
-    value: 'text-yellow-400',
-    sparkline: 'bg-yellow-500',
+    bar: 'bg-warning',
+    iconBg: 'bg-warning/10',
+    icon: 'text-warning',
+    value: 'text-warning',
+    sparkline: 'bg-warning',
   },
 } as const;
 
@@ -39,60 +42,50 @@ interface KpiCardProps {
 export function KpiCard({ metric, loading = false }: KpiCardProps) {
   const styles = accentStyles[metric.accent];
   const Icon = metric.icon;
-  const sparklineMax = metric.sparkline
-    ? Math.max(...metric.sparkline)
-    : 0;
+  const sparklineMax = metric.sparkline ? Math.max(...metric.sparkline) : 0;
 
   return (
-    <article className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
-      <div className={`absolute left-0 top-0 h-full w-1 ${styles.bar}`} aria-hidden />
+    <Card padding="md" className="relative overflow-hidden">
+      <div className={cn('absolute left-0 top-0 h-full w-1', styles.bar)} aria-hidden />
 
       <div className="flex items-start justify-between gap-3 pl-2">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-zinc-400">{metric.title}</p>
-          {metric.valueLabel && (
-            <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">{metric.title}</p>
+          {metric.valueLabel ? (
+            <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-subtle">
               {metric.valueLabel}
             </p>
-          )}
-          <p className={`mt-1 text-2xl font-bold tracking-tight ${styles.value}`}>
-            {loading ? (
-              <span className="inline-block animate-pulse text-zinc-500">...</span>
-            ) : (
-              metric.value
-            )}
-          </p>
-          {metric.description && (
-            <p
-              className={`mt-1.5 ${
-                metric.id === 'payroll-cost'
-                  ? 'text-xs font-normal text-zinc-500'
-                  : 'text-[11px] font-semibold uppercase tracking-wide text-zinc-500'
-              }`}
-            >
-              {metric.description}
+          ) : null}
+          {loading ? (
+            <Skeleton className="mt-2 h-8 w-24" />
+          ) : (
+            <p className={cn('mt-2 text-2xl font-semibold tracking-tight', styles.value)}>
+              {metric.value}
             </p>
           )}
+          {metric.description ? (
+            <p className="mt-1.5 text-xs text-subtle">{metric.description}</p>
+          ) : null}
         </div>
 
-        <div className={`shrink-0 rounded-xl p-3 ${styles.iconBg}`}>
-          <Icon className={`h-6 w-6 ${styles.icon}`} strokeWidth={1.75} />
+        <div className={cn('shrink-0 rounded-lg p-2.5', styles.iconBg)}>
+          <Icon className={cn('h-5 w-5', styles.icon)} strokeWidth={1.75} />
         </div>
       </div>
 
-      {metric.sparkline && metric.sparkline.length > 0 && (
+      {metric.sparkline && metric.sparkline.length > 0 ? (
         <div className="mt-4 flex h-10 items-end gap-1 pl-2">
           {metric.sparkline.map((value, index) => (
             <div
               key={`${metric.id}-bar-${index}`}
-              className={`flex-1 rounded-sm ${styles.sparkline} opacity-80`}
+              className={cn('flex-1 rounded-sm opacity-80', styles.sparkline)}
               style={{
                 height: `${Math.max(12, (value / sparklineMax) * 100)}%`,
               }}
             />
           ))}
         </div>
-      )}
-    </article>
+      ) : null}
+    </Card>
   );
 }

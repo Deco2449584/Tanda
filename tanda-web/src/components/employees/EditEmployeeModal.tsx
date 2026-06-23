@@ -149,7 +149,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
           <h2 id="edit-employee-title" className="text-lg font-semibold text-white">
             Edit employee
@@ -158,7 +158,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
             type="button"
             onClick={handleClose}
             disabled={isBusy}
-            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -174,7 +174,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
           />
 
           <div>
-            <label htmlFor="edit-emp-id" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-id" className="mb-1.5 block text-sm text-muted">
               Employee ID
             </label>
             <input
@@ -186,12 +186,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 setForm((prev) => ({ ...prev, employeeId: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label htmlFor="edit-emp-name" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-name" className="mb-1.5 block text-sm text-muted">
               Name
             </label>
             <input
@@ -201,12 +201,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label htmlFor="edit-emp-email" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-email" className="mb-1.5 block text-sm text-muted">
               Email
             </label>
             <input
@@ -216,12 +216,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label htmlFor="edit-emp-dept" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-dept" className="mb-1.5 block text-sm text-muted">
               Department
             </label>
             <input
@@ -233,7 +233,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -246,10 +246,10 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
             disabled={isBusy}
           />
 
-          <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-3">
             <div>
-              <p className="text-sm font-medium text-zinc-200">Active employee</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="text-sm font-medium text-foreground">Active employee</p>
+              <p className="mt-0.5 text-xs text-subtle">
                 Inactive employees are hidden from scheduling and kiosk PIN lookup.
               </p>
             </div>
@@ -273,7 +273,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
           </div>
 
           <div>
-            <label htmlFor="edit-emp-rate" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="edit-emp-rate" className="mb-1.5 block text-sm text-muted">
               Hourly rate ($)
             </label>
             <input
@@ -290,7 +290,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
                 }))
               }
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -305,7 +305,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm font-medium text-muted transition-colors hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

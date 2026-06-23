@@ -145,13 +145,13 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+      <section className="rounded-2xl border border-border bg-surface-raised p-5">
         <div className="flex items-start gap-3">
           <MonitorSmartphone className="mt-0.5 h-5 w-5 text-primary" />
           <div>
             <h2 className="text-sm font-semibold text-white">Kiosk devices</h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              Approve tablets that open <code className="text-zinc-300">/kiosk</code> and assign
+            <p className="mt-1 text-sm text-subtle">
+              Approve tablets that open <code className="text-muted">/kiosk</code> and assign
               each terminal to one warehouse.
             </p>
           </div>
@@ -159,7 +159,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       </section>
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Loading devices…</p>
+        <p className="text-sm text-subtle">Loading devices…</p>
       ) : (
         <>
           <DeviceSection
@@ -168,8 +168,8 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
             devices={pendingDevices}
             renderActions={(device) => (
               <div className="mt-3 space-y-2">
-                <p className="text-xs text-zinc-500">
-                  Device code: <span className="font-mono text-zinc-300">{device.id.slice(-6).toUpperCase()}</span>
+                <p className="text-xs text-subtle">
+                  Device code: <span className="font-mono text-muted">{device.id.slice(-6).toUpperCase()}</span>
                 </p>
                 <input
                   value={approveForms[device.id]?.label ?? ''}
@@ -183,7 +183,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
                     }))
                   }
                   placeholder="Device label (optional)"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
                 />
                 <select
                   value={approveForms[device.id]?.locationId ?? ''}
@@ -196,7 +196,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
                       },
                     }))
                   }
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white"
+                  className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
                 >
                   <option value="">Select warehouse…</option>
                   {activeLocations.map((location) => (
@@ -234,7 +234,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
             emptyText="No active kiosk devices."
             devices={activeDevices}
             renderMeta={(device) => (
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-subtle">
                 Warehouse: {locationLabel(device.locationId)}
                 {device.label ? ` · ${device.label}` : ''}
               </p>
@@ -270,25 +270,25 @@ function DeviceSection({
   renderActions: (device: KioskDevice) => ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+    <section className="rounded-2xl border border-border bg-surface-raised p-5">
       <h3 className="mb-4 text-sm font-semibold text-white">{title}</h3>
       {devices.length === 0 ? (
-        <p className="text-sm text-zinc-500">{emptyText}</p>
+        <p className="text-sm text-subtle">{emptyText}</p>
       ) : (
         <ul className="space-y-3">
           {devices.map((device) => (
             <li
               key={device.id}
-              className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"
+              className="rounded-xl border border-border bg-surface-base/50 p-4"
             >
               <p className="text-sm font-medium text-white">
                 {device.label || `Device ${device.id.slice(-6).toUpperCase()}`}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-subtle">
                 Requested {new Date(device.requestedAt).toLocaleString()}
               </p>
               {device.userAgent ? (
-                <p className="mt-1 truncate text-xs text-zinc-600">{device.userAgent}</p>
+                <p className="mt-1 truncate text-xs text-subtle">{device.userAgent}</p>
               ) : null}
               {renderMeta?.(device)}
               {renderActions(device)}

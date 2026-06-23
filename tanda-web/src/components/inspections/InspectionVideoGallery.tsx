@@ -63,7 +63,7 @@ function VideoThumbnail({
       {large ? (
         <p
           className={`mt-3 max-w-[90%] truncate px-4 text-center text-xs ${
-            light ? 'text-slate-500' : 'text-zinc-500'
+            light ? 'text-slate-500' : 'text-subtle'
           }`}
         >
           {label}
@@ -109,7 +109,7 @@ export function InspectionVideoGallery({
 
   if (videos.length === 0) {
     return (
-      <p className="text-sm italic text-zinc-500">No videos attached.</p>
+      <p className="text-sm italic text-subtle">No videos attached.</p>
     );
   }
 
@@ -140,7 +140,7 @@ export function InspectionVideoGallery({
 
   const frameClass = isLight
     ? 'overflow-hidden rounded-xl border border-slate-200 bg-slate-50'
-    : 'overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950';
+    : 'overflow-hidden rounded-xl border border-border bg-surface-base';
 
   const actionClass = isLight
     ? 'inline-flex items-center gap-2 rounded-lg border border-[#001A3F]/25 bg-[#001A3F]/5 px-4 py-2 text-xs font-semibold text-[#001A3F] transition hover:bg-[#001A3F]/10'
@@ -153,7 +153,7 @@ export function InspectionVideoGallery({
       </div>
 
       <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-        <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-zinc-500'}`}>
+        <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-subtle'}`}>
           Clip {activeIndex + 1} / {videos.length}
         </p>
         {isLinkMode ? (
@@ -202,7 +202,7 @@ export function InspectionVideoGallery({
                     : 'border-primary'
                   : isLight
                     ? 'border-slate-200 opacity-70 hover:opacity-100'
-                    : 'border-zinc-800 opacity-70 hover:opacity-100'
+                    : 'border-border opacity-70 hover:opacity-100'
               }`}
             >
               <VideoThumbnail label={videoFileName(video, index)} light={isLight} />

@@ -13,7 +13,7 @@ export function InspectionPhotoGallery({ photos }: InspectionPhotoGalleryProps) 
 
   if (photos.length === 0) {
     return (
-      <p className="text-sm italic text-zinc-500">No photos attached.</p>
+      <p className="text-sm italic text-subtle">No photos attached.</p>
     );
   }
 
@@ -21,7 +21,7 @@ export function InspectionPhotoGallery({ photos }: InspectionPhotoGalleryProps) 
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface-base">
         <FirebaseImage
           src={activePhoto}
           alt={`Photo evidence ${activeIndex + 1}`}
@@ -33,7 +33,7 @@ export function InspectionPhotoGallery({ photos }: InspectionPhotoGalleryProps) 
         />
       </div>
 
-      <p className="text-center text-xs text-zinc-500">
+      <p className="text-center text-xs text-subtle">
         {activeIndex + 1} / {photos.length}
       </p>
 
@@ -47,7 +47,7 @@ export function InspectionPhotoGallery({ photos }: InspectionPhotoGalleryProps) 
               className={`shrink-0 overflow-hidden rounded-lg border-2 transition ${
                 index === activeIndex
                   ? 'border-primary'
-                  : 'border-zinc-800 opacity-70 hover:opacity-100'
+                  : 'border-border opacity-70 hover:opacity-100'
               }`}
             >
               <FirebaseImage

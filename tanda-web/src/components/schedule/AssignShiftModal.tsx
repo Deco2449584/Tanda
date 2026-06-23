@@ -132,28 +132,28 @@ export function AssignShiftModal({
         onClick={handleClose}
       />
 
-      <div className="relative z-10 w-[95%] rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
+      <div className="relative z-10 w-[95%] rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Assign shift</h2>
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-sm">
-          <p className="text-zinc-300">
-            <span className="text-zinc-500">Date:</span> {initialData.date}
+        <div className="mb-4 rounded-lg border border-border bg-surface-base/60 px-3 py-2.5 text-sm">
+          <p className="text-muted">
+            <span className="text-subtle">Date:</span> {initialData.date}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="shift-employee" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="shift-employee" className="mb-1.5 block text-sm text-muted">
               Employee
             </label>
             <select
@@ -162,7 +162,7 @@ export function AssignShiftModal({
               value={employeeId}
               onChange={(e) => handleEmployeeChange(e.target.value)}
               disabled={isSubmitting || employees.length === 0}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
             >
               <option value="">Select employee…</option>
               {employees.map((employee) => (
@@ -172,13 +172,13 @@ export function AssignShiftModal({
               ))}
             </select>
             {employeeName && employeeId ? (
-              <p className="mt-1 text-xs text-zinc-500">Assigning to {employeeName}</p>
+              <p className="mt-1 text-xs text-subtle">Assigning to {employeeName}</p>
             ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="shift-start" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="shift-start" className="mb-1.5 block text-sm text-muted">
                 Start time
               </label>
               <input
@@ -188,11 +188,11 @@ export function AssignShiftModal({
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
             </div>
             <div>
-              <label htmlFor="shift-end" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="shift-end" className="mb-1.5 block text-sm text-muted">
                 End time
               </label>
               <input
@@ -202,13 +202,13 @@ export function AssignShiftModal({
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="shift-dept" className="mb-1.5 block text-sm text-zinc-400">
+            <label htmlFor="shift-dept" className="mb-1.5 block text-sm text-muted">
               Department
             </label>
             <input
@@ -218,7 +218,7 @@ export function AssignShiftModal({
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
               disabled={isSubmitting}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               placeholder="Logistics"
             />
           </div>
@@ -234,7 +234,7 @@ export function AssignShiftModal({
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm text-muted hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

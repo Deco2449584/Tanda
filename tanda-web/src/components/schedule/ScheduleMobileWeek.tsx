@@ -81,7 +81,7 @@ function MobileDayCell({
       } ${
         hasShift && primaryShift
           ? SHIFT_PILL_CLASS[primaryShift.status]
-          : 'border-dashed border-zinc-700/70 bg-zinc-950/40 hover:border-zinc-500 hover:bg-zinc-900/60'
+          : 'border-dashed border-border-strong/70 bg-surface-base/40 hover:border-zinc-500 hover:bg-surface-raised'
       }`}
     >
       {hasShift && primaryShift ? (
@@ -106,14 +106,14 @@ function MobileDayCell({
                 employeesByCode.get(primaryShift.employeeId)?.name ?? employee.name,
               );
             }}
-            className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-500 shadow-sm hover:text-red-400"
+            className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-border-strong bg-surface-raised text-subtle shadow-sm hover:text-red-400"
             aria-label={`Delete shift for ${employee.name}`}
           >
             <Trash2 className="h-2.5 w-2.5" />
           </button>
         </>
       ) : (
-        <Plus className="h-4 w-4 text-zinc-600" aria-hidden />
+        <Plus className="h-4 w-4 text-subtle" aria-hidden />
       )}
     </div>
   );
@@ -140,9 +140,9 @@ export function ScheduleMobileWeek({
 
   if (employees.length === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 px-4 py-12 text-center">
-        <p className="text-sm font-medium text-zinc-300">No employees to schedule</p>
-        <p className="mt-1 text-xs text-zinc-500">
+      <div className="rounded-2xl border border-border/80 bg-surface-raised/40 px-4 py-12 text-center">
+        <p className="text-sm font-medium text-muted">No employees to schedule</p>
+        <p className="mt-1 text-xs text-subtle">
           Adjust the department filter or add active staff.
         </p>
       </div>
@@ -151,7 +151,7 @@ export function ScheduleMobileWeek({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between px-1 text-xs text-zinc-500">
+      <div className="flex items-center justify-between px-1 text-xs text-subtle">
         <span>
           {totalShifts} shift{totalShifts === 1 ? '' : 's'} this week
         </span>
@@ -160,15 +160,15 @@ export function ScheduleMobileWeek({
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950/50">
-        <div className="grid grid-cols-7 gap-1 border-b border-zinc-800/80 bg-zinc-900/60 px-2 py-2">
+      <div className="overflow-hidden rounded-2xl border border-border/80 bg-surface-base/50">
+        <div className="grid grid-cols-7 gap-1 border-b border-border/80 bg-surface-raised px-2 py-2">
           {weekDays.map((day) => {
             const today = isToday(parseISO(`${day.date}T12:00:00`));
             return (
               <div key={day.date} className="text-center">
                 <p
                   className={`text-[10px] font-semibold uppercase tracking-wide ${
-                    today ? 'text-primary' : 'text-zinc-500'
+                    today ? 'text-primary' : 'text-subtle'
                   }`}
                 >
                   {day.label}
@@ -177,7 +177,7 @@ export function ScheduleMobileWeek({
                   className={`mt-0.5 text-xs font-bold tabular-nums ${
                     today
                       ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white'
-                      : 'text-zinc-300'
+                      : 'text-muted'
                   }`}
                 >
                   {dayNumberFromDate(day.date)}
@@ -187,7 +187,7 @@ export function ScheduleMobileWeek({
           })}
         </div>
 
-        <p className="border-b border-zinc-800/60 px-3 py-1.5 text-[10px] text-zinc-600">
+        <p className="border-b border-border/60 px-3 py-1.5 text-[10px] text-subtle">
           Tap a day to assign or edit a shift
         </p>
       </div>
@@ -199,8 +199,8 @@ export function ScheduleMobileWeek({
 
           return (
             <li key={employee.id}>
-              <article className="overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/50 shadow-sm shadow-black/20">
-                <div className="flex items-center gap-3 border-b border-zinc-800/60 px-3 py-2.5">
+              <article className="overflow-hidden rounded-2xl border border-border/80 bg-surface-raised/50 shadow-sm shadow-black/20">
+                <div className="flex items-center gap-3 border-b border-border/60 px-3 py-2.5">
                   <EmployeeAvatar
                     name={employee.name}
                     photoUrl={employee.photoUrl}
@@ -210,17 +210,17 @@ export function ScheduleMobileWeek({
                     <p className="truncate text-sm font-semibold text-white">
                       {employee.name}
                     </p>
-                    <p className="truncate text-xs text-zinc-500">
+                    <p className="truncate text-xs text-subtle">
                       {employee.employeeId}
                       {employee.department ? ` · ${employee.department}` : ''}
                     </p>
                   </div>
                   {weekShiftCount > 0 ? (
-                    <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+                    <span className="shrink-0 rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-muted">
                       {weekShiftCount}
                     </span>
                   ) : (
-                    <span className="shrink-0 text-[10px] text-zinc-600">Off</span>
+                    <span className="shrink-0 text-[10px] text-subtle">Off</span>
                   )}
                 </div>
 

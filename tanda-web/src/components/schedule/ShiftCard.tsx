@@ -13,18 +13,18 @@ interface ShiftCardProps {
 
 const statusStyles = {
   scheduled: {
-    container: 'border-l-4 border-primary bg-zinc-800/90',
-    compactContainer: 'border-l-2 border-primary bg-zinc-800/90',
-    text: 'text-zinc-100',
-    subtext: 'text-zinc-400',
+    container: 'border-l-4 border-primary bg-surface-overlay/90',
+    compactContainer: 'border-l-2 border-primary bg-surface-overlay/90',
+    text: 'text-foreground',
+    subtext: 'text-muted',
     icon: Clock,
     iconClass: 'text-primary',
   },
   completed: {
-    container: 'border-l-4 border-emerald-500 bg-zinc-800/90',
-    compactContainer: 'border-l-2 border-emerald-500 bg-zinc-800/90',
-    text: 'text-zinc-100',
-    subtext: 'text-zinc-400',
+    container: 'border-l-4 border-emerald-500 bg-surface-overlay/90',
+    compactContainer: 'border-l-2 border-emerald-500 bg-surface-overlay/90',
+    text: 'text-foreground',
+    subtext: 'text-muted',
     icon: Check,
     iconClass: 'text-emerald-400',
   },
@@ -66,7 +66,7 @@ export function ShiftCard({
                 event.stopPropagation();
                 onDelete(shift);
               }}
-              className="shrink-0 rounded p-0.5 text-zinc-500 hover:text-red-400"
+              className="shrink-0 rounded p-0.5 text-subtle hover:text-red-400"
               aria-label={`Delete shift for ${employeeName}`}
             >
               <Trash2 className="h-2.5 w-2.5" />
@@ -112,7 +112,7 @@ export function ShiftCard({
                 event.stopPropagation();
                 onDelete(shift);
               }}
-              className="rounded p-1 text-zinc-400 transition-colors hover:bg-black/20 hover:text-red-400"
+              className="rounded p-1 text-muted transition-colors hover:bg-black/20 hover:text-red-400"
               aria-label={`Delete shift for ${employeeName}`}
             >
               <Trash2 className="h-3.5 w-3.5" />

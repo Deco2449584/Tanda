@@ -1,25 +1,86 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  /* Full colors — overridden at runtime from Settings (hex). */
-  --brand-primary: #2563eb;
+  --surface-base: #0b0d10;
+  --surface-sidebar: #12151a;
+  --surface-raised: #181c24;
+  --surface-overlay: #1f2530;
+  --surface-hover: #252b36;
+
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a8b3;
+  --text-muted: #6b7280;
+
+  --accent: #4d7cff;
+  --accent-muted: rgba(77, 124, 255, 0.15);
+  --accent-secondary: #e5a23c;
+  --accent-secondary-muted: rgba(229, 162, 60, 0.15);
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--brand-primary);
-  --color-secondary: var(--brand-primary);
-  --font-sans: var(--font-geist-sans);
+  --color-surface-base: var(--surface-base);
+  --color-surface-sidebar: var(--surface-sidebar);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-hover: var(--surface-hover);
+
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-subtle: var(--text-muted);
+
+  --color-primary: var(--accent);
+  --color-primary-muted: var(--accent-muted);
+  --color-secondary: var(--accent-secondary);
+  --color-secondary-muted: var(--accent-secondary-muted);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+
+.app-ambient {
+  background-color: var(--surface-base);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(77, 124, 255, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(229, 162, 60, 0.04), transparent);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-overlay) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--surface-overlay);
+  border-radius: 3px;
 }
 
 .scrollbar-hide {

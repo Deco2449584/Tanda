@@ -28,11 +28,11 @@ export function DeleteConfirmModal({
         onClick={onCancel}
       />
 
-      <div className="relative z-10 w-[95%] rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
+      <div className="relative z-10 w-[95%] rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-md">
         <h2 className="text-lg font-semibold text-white">Delete record</h2>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-muted">
           Delete the record for{' '}
-          <span className="font-medium text-zinc-200">{employeeName}</span>?
+          <span className="font-medium text-foreground">{employeeName}</span>?
           This action cannot be undone.
         </p>
 
@@ -41,7 +41,7 @@ export function DeleteConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+            className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm text-muted hover:bg-surface-hover disabled:opacity-50"
           >
             Cancel
           </button>

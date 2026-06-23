@@ -8,7 +8,7 @@ export function PlaceholderPage({ title }: PlaceholderPageProps) {
       <h1 className="text-base font-bold tracking-wide text-white uppercase">
         {title}
       </h1>
-      <p className="mt-2 text-sm text-zinc-500">Module under construction.</p>
+      <p className="mt-2 text-sm text-subtle">Module under construction.</p>
     </div>
   );
 }

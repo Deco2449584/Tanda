@@ -26,7 +26,7 @@ export default function LoginLayout({
   }, []);
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-[#060606]">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-surface-base">
       {children}
     </div>
   );

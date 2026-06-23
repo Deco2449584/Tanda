@@ -9,6 +9,8 @@ import { LocationsTab } from '@/components/settings/LocationsTab';
 import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
 import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
 import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
+import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
@@ -105,17 +107,13 @@ export default function SettingsPage() {
   const pageLoading = authLoading || settingsLoading;
 
   return (
-    <div className="relative min-h-full space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-sm font-bold tracking-wide text-white uppercase md:text-base">
-          System settings
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Regional configuration for {COMPANY_NAME}
-        </p>
-      </div>
+    <PageContent className="relative min-h-full space-y-6">
+      <PageHeader
+        title="System settings"
+        description={`Regional configuration for ${COMPANY_NAME}`}
+      />
 
-      <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-1">
+      <div className="flex flex-wrap gap-2 border-b border-border pb-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -124,7 +122,7 @@ export default function SettingsPage() {
             className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition ${
               activeTab === tab.id
                 ? 'border-b-2 border-primary text-primary'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-muted hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -133,7 +131,7 @@ export default function SettingsPage() {
       </div>
 
       {pageLoading ? (
-        <div className="h-96 animate-pulse rounded-2xl bg-zinc-900/60" />
+        <div className="h-96 animate-pulse rounded-2xl bg-surface-raised" />
       ) : (
         <div className="max-w-2xl">
           {activeTab === 'localization' && (
@@ -179,6 +177,6 @@ export default function SettingsPage() {
       )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
-    </div>
+    </PageContent>
   );
 }

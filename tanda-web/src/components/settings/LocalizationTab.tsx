@@ -17,22 +17,22 @@ export function LocalizationTab({
   onSave,
 }: LocalizationTabProps) {
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+    <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
       <h2 className="text-sm font-semibold text-white">Localization</h2>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="mt-1 text-xs text-subtle">
         Regional defaults for schedules, reports, and kiosk clock display.
       </p>
 
       <div className="mt-6 space-y-4">
         <div>
-          <label htmlFor="timezone" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="timezone" className="mb-1.5 block text-sm text-muted">
             Time zone
           </label>
           <select
             id="timezone"
             value={draft.timeZone}
             onChange={(e) => onChange({ ...draft, timeZone: e.target.value })}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-primary/50"
+            className="w-full rounded-lg border border-border-strong bg-surface-base/60 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
           >
             {TIMEZONE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -43,14 +43,14 @@ export function LocalizationTab({
         </div>
 
         <div>
-          <label htmlFor="currency" className="mb-1.5 block text-sm text-zinc-400">
+          <label htmlFor="currency" className="mb-1.5 block text-sm text-muted">
             Currency
           </label>
           <select
             id="currency"
             value={draft.currency}
             onChange={(e) => onChange({ ...draft, currency: e.target.value })}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-primary/50"
+            className="w-full rounded-lg border border-border-strong bg-surface-base/60 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
           >
             {CURRENCY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>

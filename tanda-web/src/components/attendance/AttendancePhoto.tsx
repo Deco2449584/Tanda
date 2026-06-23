@@ -9,8 +9,8 @@ interface AttendancePhotoProps {
 export function AttendancePhoto({ photoUrl, name }: AttendancePhotoProps) {
   if (!photoUrl) {
     return (
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 ring-2 ring-zinc-700">
-        <User className="h-4 w-4 text-zinc-500" aria-hidden />
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-hover ring-2 ring-zinc-700">
+        <User className="h-4 w-4 text-subtle" aria-hidden />
         <span className="sr-only">No photo for {name}</span>
       </div>
     );

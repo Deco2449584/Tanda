@@ -19,14 +19,14 @@ export function AttendanceSettingsTab({
   const { attendanceBreak } = draft;
 
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 md:p-6">
+    <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
       <div className="flex items-start gap-3">
         <div className="rounded-xl bg-primary/15 p-2.5">
           <Coffee className="h-5 w-5 text-primary" />
         </div>
         <div>
           <h2 className="text-sm font-semibold text-white">Unpaid breaks</h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-subtle">
             Deduct a configured break from billable hours on shifts that meet the minimum
             duration.
           </p>
@@ -50,12 +50,12 @@ export function AttendanceSettingsTab({
           className={`flex w-full items-center justify-between gap-4 rounded-xl border px-4 py-3.5 text-left transition ${
             attendanceBreak.enabled
               ? 'border-primary/40 bg-primary/10'
-              : 'border-zinc-800 bg-zinc-950/50 hover:border-zinc-700'
+              : 'border-border bg-surface-base/50 hover:border-border-strong'
           }`}
         >
           <div>
             <p className="text-sm font-medium text-white">Auto-deduct unpaid break</p>
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-0.5 text-xs text-subtle">
               Applied to completed check-in / check-out sessions
             </p>
           </div>
@@ -77,8 +77,8 @@ export function AttendanceSettingsTab({
             attendanceBreak.enabled ? 'opacity-100' : 'pointer-events-none opacity-40'
           }`}
         >
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-            <div className="mb-2 flex items-center gap-2 text-zinc-400">
+          <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+            <div className="mb-2 flex items-center gap-2 text-muted">
               <Timer className="h-4 w-4" />
               <label htmlFor="break-duration" className="text-xs font-medium uppercase tracking-wide">
                 Break duration
@@ -101,14 +101,14 @@ export function AttendanceSettingsTab({
                     },
                   })
                 }
-                className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-lg font-semibold text-white outline-none focus:border-primary/50"
+                className="w-20 rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-lg font-semibold text-white outline-none focus:border-primary/50"
               />
-              <span className="text-sm text-zinc-500">minutes</span>
+              <span className="text-sm text-subtle">minutes</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-            <div className="mb-2 flex items-center gap-2 text-zinc-400">
+          <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+            <div className="mb-2 flex items-center gap-2 text-muted">
               <Timer className="h-4 w-4" />
               <label htmlFor="break-min-hours" className="text-xs font-medium uppercase tracking-wide">
                 Minimum shift
@@ -131,14 +131,14 @@ export function AttendanceSettingsTab({
                     },
                   })
                 }
-                className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-lg font-semibold text-white outline-none focus:border-primary/50"
+                className="w-20 rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-lg font-semibold text-white outline-none focus:border-primary/50"
               />
-              <span className="text-sm text-zinc-500">hours or more</span>
+              <span className="text-sm text-subtle">hours or more</span>
             </div>
           </div>
         </div>
 
-        <p className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-500">
+        <p className="rounded-lg border border-border/80 bg-surface-base/40 px-3 py-2 text-xs text-subtle">
           When editing a check-out, admins can mark that the employee did not take a break
           so the deduction is skipped for that session.
         </p>

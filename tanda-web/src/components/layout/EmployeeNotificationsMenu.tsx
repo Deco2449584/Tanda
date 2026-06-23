@@ -41,7 +41,7 @@ export function EmployeeNotificationsMenu() {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="relative rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-zinc-100"
+        className="relative rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover/60 hover:text-foreground"
         aria-label="Notifications"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -59,11 +59,11 @@ export function EmployeeNotificationsMenu() {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-full z-[100] mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl"
+          className="absolute right-0 top-full z-[100] mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-xl border border-border bg-surface-raised shadow-xl"
         >
-          <div className="border-b border-zinc-800 px-4 py-3">
+          <div className="border-b border-border px-4 py-3">
             <p className="text-sm font-semibold text-white">Notifications</p>
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-0.5 text-xs text-subtle">
               {alerts.length === 0
                 ? 'No schedule updates yet'
                 : `${alerts.length} update${alerts.length === 1 ? '' : 's'}`}
@@ -71,8 +71,8 @@ export function EmployeeNotificationsMenu() {
           </div>
 
           {pushSupported && !pushSubscribed ? (
-            <div className="border-b border-zinc-800 px-4 py-3">
-              <p className="text-xs text-zinc-400">
+            <div className="border-b border-border px-4 py-3">
+              <p className="text-xs text-muted">
                 Tap below to receive phone alerts when your schedule changes (required
                 once per device).
               </p>
@@ -88,7 +88,7 @@ export function EmployeeNotificationsMenu() {
           ) : null}
 
           {alerts.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-zinc-500">
+            <p className="px-4 py-6 text-center text-sm text-subtle">
               You are all caught up.
             </p>
           ) : (
@@ -126,14 +126,14 @@ function NotificationRow({
         href={alert.href}
         role="menuitem"
         onClick={onNavigate}
-        className="flex gap-3 px-4 py-3 transition-colors hover:bg-zinc-800/60"
+        className="flex gap-3 px-4 py-3 transition-colors hover:bg-surface-hover/60"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium text-zinc-100">{alert.title}</span>
-          <span className="mt-0.5 block text-xs leading-snug text-zinc-500">
+          <span className="block text-sm font-medium text-foreground">{alert.title}</span>
+          <span className="mt-0.5 block text-xs leading-snug text-subtle">
             {alert.description}
           </span>
         </span>

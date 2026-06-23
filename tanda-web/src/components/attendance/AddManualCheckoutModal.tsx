@@ -152,7 +152,7 @@ export function AddManualCheckoutModal({
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
           <h2 id="manual-checkout-title" className="text-lg font-semibold text-white">
             Add manual check-out
@@ -161,19 +161,19 @@ export function AddManualCheckoutModal({
             type="button"
             onClick={handleClose}
             disabled={saving}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-zinc-400">
+        <p className="mb-4 text-sm text-muted">
           Close the open shift for{' '}
-          <span className="font-medium text-zinc-200">
+          <span className="font-medium text-foreground">
             {checkInRecord.employeeNameSnapshot}
           </span>
           . Check-in was on{' '}
-          <span className="text-zinc-300">
+          <span className="text-muted">
             {formatRecordDate(checkInRecord.timestampServer)}{' '}
             {formatRecordTime(checkInRecord.timestampServer)}
           </span>
@@ -183,7 +183,7 @@ export function AddManualCheckoutModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="checkout-date" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="checkout-date" className="mb-1.5 block text-sm text-muted">
                 Check-out date
               </label>
               <input
@@ -192,12 +192,12 @@ export function AddManualCheckoutModal({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
-              <label htmlFor="checkout-time" className="mb-1.5 block text-sm text-zinc-400">
+              <label htmlFor="checkout-time" className="mb-1.5 block text-sm text-muted">
                 Check-out time
               </label>
               <input
@@ -206,12 +206,12 @@ export function AddManualCheckoutModal({
                 required
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-subtle">
             Hours will be calculated from check-in to this check-out. The employee&apos;s
             current kiosk status is only updated if this is their latest record.
           </p>
@@ -227,7 +227,7 @@ export function AddManualCheckoutModal({
               type="button"
               onClick={handleClose}
               disabled={saving}
-              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center rounded-lg border border-border-strong text-sm text-muted hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

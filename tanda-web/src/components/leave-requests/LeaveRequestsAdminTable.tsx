@@ -66,8 +66,8 @@ export function LeaveRequestsAdminTable({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 py-16">
-        <p className="text-sm text-zinc-400">Loading requests...</p>
+      <div className="flex items-center justify-center rounded-xl border border-border bg-surface-raised py-16">
+        <p className="text-sm text-muted">Loading requests...</p>
       </div>
     );
   }
@@ -75,7 +75,7 @@ export function LeaveRequestsAdminTable({
   const emptyMessage = 'No requests match the current filters.';
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
       <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
@@ -104,7 +104,7 @@ export function LeaveRequestsAdminTable({
           <tbody>
             {filteredRequests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-zinc-500">
+                <td colSpan={7} className="px-4 py-12 text-center text-subtle">
                   {emptyMessage}
                 </td>
               </tr>
@@ -117,8 +117,8 @@ export function LeaveRequestsAdminTable({
                 return (
                   <tr
                     key={request.id}
-                    className={`border-b border-zinc-800/80 transition-colors hover:bg-zinc-800/20 ${
-                      index % 2 === 1 ? 'bg-zinc-950/30' : ''
+                    className={`border-b border-border/80 transition-colors hover:bg-surface-hover/20 ${
+                      index % 2 === 1 ? 'bg-surface-base/30' : ''
                     }`}
                   >
                     <td className="px-4 py-3.5">
@@ -129,18 +129,18 @@ export function LeaveRequestsAdminTable({
                       />
                     </td>
                     <td className="px-4 py-3.5">
-                      <p className="font-mono text-zinc-400">
+                      <p className="font-mono text-muted">
                         {request.employeeId}
                       </p>
                       <p className="text-sm font-medium text-white">
                         {employee?.name ?? '—'}
                       </p>
                     </td>
-                    <td className="px-4 py-3.5 text-zinc-200">{request.type}</td>
-                    <td className="px-4 py-3.5 text-zinc-300">
+                    <td className="px-4 py-3.5 text-foreground">{request.type}</td>
+                    <td className="px-4 py-3.5 text-muted">
                       {formatLeaveDateRange(request.startDate, request.endDate)}
                     </td>
-                    <td className="max-w-[240px] px-4 py-3.5 text-zinc-400">
+                    <td className="max-w-[240px] px-4 py-3.5 text-muted">
                       {truncateText(request.justification, 56)}
                     </td>
                     <td className="px-4 py-3.5">
@@ -172,14 +172,14 @@ export function LeaveRequestsAdminTable({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="rounded-lg p-2 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-primary"
+                            className="rounded-lg p-2 text-primary/80 transition-colors hover:bg-surface-hover hover:text-primary"
                             aria-label="Edit request"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
-                            className="rounded-lg p-2 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
+                            className="rounded-lg p-2 text-primary/80 transition-colors hover:bg-surface-hover hover:text-red-400"
                             aria-label="Delete request"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -197,7 +197,7 @@ export function LeaveRequestsAdminTable({
 
       <div className="flex flex-col gap-4 p-4 md:hidden">
         {filteredRequests.length === 0 ? (
-          <p className="py-8 text-center text-sm text-zinc-500">{emptyMessage}</p>
+          <p className="py-8 text-center text-sm text-subtle">{emptyMessage}</p>
         ) : (
           filteredRequests.map((request) => {
             const employee = employeesByCode[request.employeeId];
@@ -207,7 +207,7 @@ export function LeaveRequestsAdminTable({
             return (
               <article
                 key={request.id}
-                className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4"
+                className="rounded-xl border border-border/80 bg-surface-base/40 p-4"
               >
                 <div className="flex items-start gap-3">
                   <EmployeeAvatar
@@ -219,32 +219,32 @@ export function LeaveRequestsAdminTable({
                     <p className="text-lg font-semibold text-white">
                       {employee?.name ?? request.employeeId}
                     </p>
-                    <p className="font-mono text-xs text-zinc-500">{request.employeeId}</p>
+                    <p className="font-mono text-xs text-subtle">{request.employeeId}</p>
                   </div>
                   <LeaveRequestStatusBadge status={request.status} />
                 </div>
 
                 <dl className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
-                    <dt className="text-zinc-500">Leave type</dt>
-                    <dd className="text-right text-zinc-200">{request.type}</dd>
+                  <div className="flex justify-between gap-3 border-b border-border/60 pb-2">
+                    <dt className="text-subtle">Leave type</dt>
+                    <dd className="text-right text-foreground">{request.type}</dd>
                   </div>
-                  <div className="flex justify-between gap-3 border-b border-zinc-800/60 pb-2">
-                    <dt className="text-zinc-500">Date range</dt>
-                    <dd className="text-right text-zinc-300">
+                  <div className="flex justify-between gap-3 border-b border-border/60 pb-2">
+                    <dt className="text-subtle">Date range</dt>
+                    <dd className="text-right text-muted">
                       {formatLeaveDateRange(request.startDate, request.endDate)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Justification</dt>
-                    <dd className="mt-1 text-zinc-400">
+                    <dt className="text-subtle">Justification</dt>
+                    <dd className="mt-1 text-muted">
                       {truncateText(request.justification, 120)}
                     </dd>
                   </div>
                 </dl>
 
                 {isPending ? (
-                  <div className="mt-4 flex gap-2 border-t border-zinc-800/60 pt-3">
+                  <div className="mt-4 flex gap-2 border-t border-border/60 pt-3">
                     <button
                       type="button"
                       onClick={() => updateStatus(request.id, 'Approved')}
@@ -265,17 +265,17 @@ export function LeaveRequestsAdminTable({
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800/60 pt-3">
+                  <div className="mt-4 flex justify-end gap-2 border-t border-border/60 pt-3">
                     <button
                       type="button"
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-primary"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-primary/80 transition-colors hover:bg-surface-hover hover:text-primary"
                       aria-label="Edit request"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
-                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-zinc-700 px-3 text-primary/80 transition-colors hover:bg-zinc-800 hover:text-red-400"
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-primary/80 transition-colors hover:bg-surface-hover hover:text-red-400"
                       aria-label="Delete request"
                     >
                       <Trash2 className="h-4 w-4" />

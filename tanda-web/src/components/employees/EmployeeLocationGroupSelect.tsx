@@ -30,7 +30,7 @@ export function EmployeeLocationGroupSelect({
       onChange={(event) => onChange(event.target.value)}
       disabled={disabled || options.length === 0}
       required={required}
-      className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
+      className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
     >
       <option value="">Select location group…</option>
       {options.map((group) => (

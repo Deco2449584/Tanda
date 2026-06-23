@@ -67,8 +67,8 @@ export function EmployeeWeeklySchedule({
   ).length;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-zinc-800/90 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 shadow-lg shadow-black/20">
-      <div className="flex flex-col gap-3 border-b border-zinc-800/80 bg-zinc-900/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
+    <section className="overflow-hidden rounded-2xl border border-border/90 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 shadow-lg shadow-black/20">
+      <div className="flex flex-col gap-3 border-b border-border/80 bg-surface-raised/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">
             This week
@@ -76,19 +76,19 @@ export function EmployeeWeeklySchedule({
           <h2 className="mt-1 text-base font-bold text-white md:text-lg">
             My schedule
           </h2>
-          <p className="mt-0.5 text-xs text-zinc-500">{weekLabel}</p>
+          <p className="mt-0.5 text-xs text-subtle">{weekLabel}</p>
         </div>
 
         <div className="flex items-center gap-3">
           {!loading && (
-            <p className="rounded-full bg-zinc-800/80 px-3 py-1 text-xs font-medium text-zinc-300">
+            <p className="rounded-full bg-surface-hover/80 px-3 py-1 text-xs font-medium text-muted">
               {scheduledCount} shift{scheduledCount === 1 ? '' : 's'} this week
             </p>
           )}
           {showViewAllLink && (
             <Link
               href="/my-schedule"
-              className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-white"
+              className="inline-flex items-center gap-1 rounded-lg border border-border-strong bg-surface-hover/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
             >
               Full schedule
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -102,7 +102,7 @@ export function EmployeeWeeklySchedule({
           {weekDays.map((day) => (
             <div
               key={day.date}
-              className="h-28 animate-pulse rounded-xl bg-zinc-800/60"
+              className="h-28 animate-pulse rounded-xl bg-surface-hover/60"
               aria-hidden
             />
           ))}
@@ -120,17 +120,17 @@ export function EmployeeWeeklySchedule({
                 return (
                   <article
                     key={day.date}
-                    className={`flex min-w-[88px] flex-col rounded-xl border border-dashed border-zinc-800 bg-zinc-950/50 p-3 md:min-w-0 ${
+                    className={`flex min-w-[88px] flex-col rounded-xl border border-dashed border-border bg-surface-base/50 p-3 md:min-w-0 ${
                       isPast ? 'opacity-55' : ''
                     } ${isToday ? 'ring-2 ring-zinc-600 ring-offset-2 ring-offset-zinc-950' : ''}`}
                   >
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-subtle">
                       {day.label}
                     </p>
-                    <p className="mt-1 text-2xl font-bold text-zinc-600">
+                    <p className="mt-1 text-2xl font-bold text-subtle">
                       {dayNumber(day.date)}
                     </p>
-                    <div className="mt-auto flex items-center gap-1.5 pt-3 text-zinc-600">
+                    <div className="mt-auto flex items-center gap-1.5 pt-3 text-subtle">
                       <CalendarOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       <span className="text-[10px] font-semibold uppercase tracking-wide">
                         Off
@@ -159,7 +159,7 @@ export function EmployeeWeeklySchedule({
                   <div className="flex items-center justify-between gap-1">
                     <p
                       className={`text-[11px] font-bold uppercase tracking-wide ${
-                        isToday ? 'text-primary' : 'text-zinc-400'
+                        isToday ? 'text-primary' : 'text-muted'
                       }`}
                     >
                       {day.label}
@@ -173,12 +173,12 @@ export function EmployeeWeeklySchedule({
                   <p className="mt-0.5 text-2xl font-bold text-white">
                     {dayNumber(day.date)}
                   </p>
-                  <p className="mt-2 text-[11px] font-medium leading-tight text-zinc-300">
+                  <p className="mt-2 text-[11px] font-medium leading-tight text-muted">
                     {formatTimeLabel(shift.startTime)}
-                    <span className="text-zinc-600"> – </span>
+                    <span className="text-subtle"> – </span>
                     {formatTimeLabel(shift.endTime)}
                   </p>
-                  <p className="mt-1 truncate text-[10px] text-zinc-500">
+                  <p className="mt-1 truncate text-[10px] text-subtle">
                     {formatShortDate(shift.date)}
                   </p>
                   <span
@@ -192,7 +192,7 @@ export function EmployeeWeeklySchedule({
             })}
           </div>
 
-          <div className="flex flex-wrap gap-3 border-t border-zinc-800/80 px-4 py-3 text-[10px] font-medium uppercase tracking-wide text-zinc-500 md:px-5">
+          <div className="flex flex-wrap gap-3 border-t border-border/80 px-4 py-3 text-[10px] font-medium uppercase tracking-wide text-subtle md:px-5">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-sky-400" />
               Scheduled
