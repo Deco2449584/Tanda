@@ -92,6 +92,9 @@ export function AttendanceTable({
                   Employee
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-white">
+                  Warehouse
+                </th>
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Date
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-white">
@@ -108,7 +111,7 @@ export function AttendanceTable({
             <tbody>
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -131,6 +134,9 @@ export function AttendanceTable({
                     </td>
                     <td className="px-4 py-3.5 font-medium text-white">
                       {record.employeeNameSnapshot}
+                    </td>
+                    <td className="px-4 py-3.5 text-zinc-300">
+                      {formatWarehouseLabel(record)}
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
                       {formatRecordDate(record.timestampServer)}
@@ -282,6 +288,15 @@ export function AttendanceTable({
       />
     </>
   );
+}
+
+function formatWarehouseLabel(record: AttendanceRecord): string {
+  if (record.locationNameSnapshot) {
+    return record.locationCitySnapshot
+      ? `${record.locationNameSnapshot} (${record.locationCitySnapshot})`
+      : record.locationNameSnapshot;
+  }
+  return '—';
 }
 
 export function filterRecordsByEmployeeName(

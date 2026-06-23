@@ -11,6 +11,7 @@ import type { UserRole } from '@/lib/auth/roles';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
 import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
 import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
+import { LocationGroupsProvider } from '@/providers/LocationGroupsProvider';
 import { LocationsProvider } from '@/providers/LocationsProvider';
 
 interface ProtectedShellProps {
@@ -116,7 +117,9 @@ function ProtectedLayoutContent({
   if (role === 'admin') {
     return (
       <EmployeesProvider>
-        <LocationsProvider>{layout}</LocationsProvider>
+        <LocationsProvider>
+          <LocationGroupsProvider>{layout}</LocationGroupsProvider>
+        </LocationsProvider>
       </EmployeesProvider>
     );
   }

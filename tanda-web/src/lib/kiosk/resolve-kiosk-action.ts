@@ -1,5 +1,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
+type TimestampLike = Timestamp | { toDate(): Date } | null | undefined;
+
 function toInputDate(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -11,7 +13,7 @@ function compareInputDates(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
-function dateFromTimestamp(timestamp: Timestamp): string {
+function dateFromTimestamp(timestamp: { toDate(): Date }): string {
   const date = timestamp.toDate();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -24,7 +26,7 @@ function dateFromTimestamp(timestamp: Timestamp): string {
  */
 export function resolveKioskAction(
   lastAction: string | undefined,
-  lastTimestampServer: Timestamp | null | undefined,
+  lastTimestampServer: TimestampLike,
 ): 'check_in' | 'check_out' {
   if (lastAction !== 'check_in') {
     return 'check_in';

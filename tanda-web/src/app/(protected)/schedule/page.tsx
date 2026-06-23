@@ -20,7 +20,9 @@ import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { useEmployees } from '@/providers/EmployeesProvider';
+import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
+import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
 import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
@@ -34,6 +36,7 @@ type ViewMode = 'weekly' | 'monthly';
 export default function SchedulePage() {
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations } = useLocations();
+  const { groups } = useLocationGroups();
   const [weekReference, setWeekReference] = useState(() => new Date());
   const [monthReference, setMonthReference] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
@@ -172,11 +175,13 @@ export default function SchedulePage() {
     }
 
     if (locationFilter !== 'all') {
-      base = base.filter((employee) => employee.locationId === locationFilter);
+      base = base.filter((employee) =>
+        employeeMatchesLocationFilter(employee.locationGroupId, locationFilter, groups),
+      );
     }
 
     return base;
-  }, [activeEmployees, departmentFilter, locationFilter]);
+  }, [activeEmployees, departmentFilter, groups, locationFilter]);
 
   const filteredShifts = useMemo(() => {
     const allowedIds = new Set(

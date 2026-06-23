@@ -5,9 +5,9 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { COLLECTIONS } from '@/lib/constants';
-import { getLocationLabel } from '@/lib/locations/format-location';
+import { getLocationGroupLabel } from '@/lib/location-groups/format-location-group';
+import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { db } from '@/lib/firebase';
-import { useLocations } from '@/providers/LocationsProvider';
 import type { Employee } from '@/lib/types/employee';
 
 function formatHourlyRate(rate: number): string {
@@ -43,7 +43,7 @@ export function EmployeeTable({
   searchQuery,
   onEdit,
 }: EmployeeTableProps) {
-  const { locations } = useLocations();
+  const { groups } = useLocationGroups();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredEmployees = useMemo(() => {
@@ -52,7 +52,7 @@ export function EmployeeTable({
 
     return employees.filter((employee) => {
       const employeeCode = employee.employeeId.toLowerCase();
-      const locationLabel = getLocationLabel(employee.locationId, locations).toLowerCase();
+      const locationLabel = getLocationGroupLabel(employee.locationGroupId, groups).toLowerCase();
       return (
         employee.name.toLowerCase().includes(query) ||
         employee.email.toLowerCase().includes(query) ||
@@ -61,7 +61,7 @@ export function EmployeeTable({
         employeeCode.includes(query)
       );
     });
-  }, [employees, locations, searchQuery]);
+  }, [employees, groups, searchQuery]);
 
   async function handleDelete(employee: Employee) {
     if (!db) return;
@@ -146,7 +146,7 @@ export function EmployeeTable({
                     {employee.department || '—'}
                   </td>
                   <td className="px-4 py-3.5 text-zinc-300">
-                    {getLocationLabel(employee.locationId, locations)}
+                    {getLocationGroupLabel(employee.locationGroupId, groups)}
                   </td>
                   <td className="px-4 py-3.5">
                     <StatusBadge active={employee.active} />
@@ -226,7 +226,7 @@ export function EmployeeTable({
                 <div className="flex justify-between gap-3">
                   <dt className="text-zinc-500">Location</dt>
                   <dd className="text-right text-zinc-300">
-                    {getLocationLabel(employee.locationId, locations)}
+                    {getLocationGroupLabel(employee.locationGroupId, groups)}
                   </dd>
                 </div>
               </dl>

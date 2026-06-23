@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, CalendarClock, Clock, LogOut, Palmtree } from 'lucide-react';
+import { Bell, CalendarClock, Clock, LogOut, MonitorSmartphone, Palmtree } from 'lucide-react';
 import {
   useAdminNotificationBadge,
   useAdminNotifications,
@@ -14,6 +14,7 @@ const ICON_BY_ID: Record<string, typeof Palmtree> = {
   missing_checkin: Clock,
   late_today: CalendarClock,
   forgotten_checkout: LogOut,
+  kiosk_pending: MonitorSmartphone,
 };
 
 interface AdminNotificationsMenuProps {

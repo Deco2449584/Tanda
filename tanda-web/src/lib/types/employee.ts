@@ -8,6 +8,7 @@ export interface EmployeeFirestore {
   role?: string;
   department: string;
   locationId?: string;
+  locationGroupId?: string;
   hourlyRate: number;
   active: boolean;
   lastAction: string;
@@ -28,5 +29,6 @@ export interface CreateEmployeeInput {
   email: string;
   department: string;
   locationId?: string;
+  locationGroupId?: string;
   hourlyRate: number;
 }

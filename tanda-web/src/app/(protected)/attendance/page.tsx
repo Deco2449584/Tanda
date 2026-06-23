@@ -32,7 +32,9 @@ import {
 } from '@/lib/attendance/date-range';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
+import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
+import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
@@ -56,6 +58,7 @@ function resolveAttendancePreset(range: DateRange): AttendanceDatePreset {
 export default function AttendancePage() {
   const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
+  const { groups } = useLocationGroups();
   const { locations } = useLocations();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +127,9 @@ export default function AttendancePage() {
 
   const employeesForFilters = useMemo(() => {
     if (locationFilter === 'all') return employees;
-    return employees.filter((employee) => employee.locationId === locationFilter);
+    return employees.filter((employee) =>
+      employeeMatchesLocationFilter(employee.locationGroupId, locationFilter, groups),
+    );
   }, [employees, locationFilter]);
 
   const allowedEmployeeIds = useMemo(

@@ -1,23 +1,10 @@
 ﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Lock } from 'lucide-react';
-import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  limit,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-  type Timestamp,
-} from 'firebase/firestore';
+import { MapPin } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/images/storage-upload';
 import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
-import { KioskMasterPinModal } from '@/components/kiosk/KioskMasterPinModal';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
 import {
   KioskSuccessModal,
@@ -25,19 +12,16 @@ import {
 } from '@/components/kiosk/KioskSuccessModal';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
-import { COLLECTIONS } from '@/lib/constants';
-import { db, storage } from '@/lib/firebase';
-import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
+import { kioskDeviceHeaders } from '@/lib/kiosk/device-token';
+import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
 type KioskStep = 'pin' | 'camera' | 'success';
 
 const SUCCESS_AUTO_RESET_MS = 4000;
 
 interface KioskSession {
-  employeeDocId: string;
   employeeId: string;
   employeeName: string;
-  employeeEmail: string;
   actionType: 'check_in' | 'check_out';
 }
 
@@ -49,10 +33,10 @@ function createToast(
 }
 
 interface KioskScreenProps {
-  onLockDevice?: () => void;
+  deviceSession: KioskDeviceSession;
 }
 
-export function KioskScreen({ onLockDevice }: KioskScreenProps) {
+export function KioskScreen({ deviceSession }: KioskScreenProps) {
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,7 +44,11 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   const [session, setSession] = useState<KioskSession | null>(null);
   const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
-  const [lockModalOpen, setLockModalOpen] = useState(false);
+
+  const warehouseLabel =
+    deviceSession.locationName && deviceSession.locationCity
+      ? `${deviceSession.locationName} (${deviceSession.locationCity})`
+      : deviceSession.locationName || 'Assigned warehouse';
 
   const resetToPin = useCallback(() => {
     setSuccessData((current) => {
@@ -92,11 +80,6 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   };
 
   const handleValidatePin = async () => {
-    if (!db) {
-      setToast(createToast('Firebase is not available.', 'error'));
-      return;
-    }
-
     if (!pin.trim()) {
       setToast(createToast('Please enter your PIN.', 'error'));
       return;
@@ -105,50 +88,37 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
     setLoading(true);
 
     try {
-      const cleanPin = pin.trim();
-      const employeesQuery = query(
-        collection(db, COLLECTIONS.EMPLOYEES),
-        where('employeeId', '==', cleanPin),
-        limit(1),
-      );
-      const snapshot = await getDocs(employeesQuery);
+      const response = await fetch('/api/kiosk/lookup', {
+        method: 'POST',
+        headers: kioskDeviceHeaders(),
+        body: JSON.stringify({ employeePin: pin.trim() }),
+      });
 
-      if (snapshot.empty) {
-        setToast(createToast('Invalid or unknown employee PIN.', 'error'));
-        return;
-      }
+      const data = (await response.json().catch(() => null)) as
+        | {
+            employeeId: string;
+            employeeName: string;
+            actionType: 'check_in' | 'check_out';
+            error?: string;
+          }
+        | null;
 
-      const employeeDoc = snapshot.docs[0];
-      const data = employeeDoc.data() as {
-        employeeId?: string;
-        name?: string;
-        email?: string;
-        active?: boolean;
-        lastAction?: string;
-        lastTimestampServer?: Timestamp;
-      };
-
-      if (data.active === false) {
+      if (!response.ok) {
         setToast(
-          createToast(
-            'This employee is inactive. Contact your administrator.',
-            'error',
-          ),
+          createToast(data?.error ?? 'Could not validate PIN. Please try again.', 'error'),
         );
         return;
       }
 
-      const actionType = resolveKioskAction(
-        data.lastAction,
-        data.lastTimestampServer,
-      );
+      if (!data) {
+        setToast(createToast('Could not validate PIN. Please try again.', 'error'));
+        return;
+      }
 
       setSession({
-        employeeDocId: employeeDoc.id,
-        employeeId: data.employeeId ?? cleanPin,
-        employeeName: data.name ?? '',
-        employeeEmail: data.email ?? '',
-        actionType,
+        employeeId: data.employeeId,
+        employeeName: data.employeeName,
+        actionType: data.actionType,
       });
       setStep('camera');
     } catch (error) {
@@ -160,8 +130,9 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
   };
 
   const handleCapture = async (imageBlob: Blob, previewDataUrl: string) => {
-    if (!db || !storage || !session) {
-      setToast(createToast('Firebase is not available.', 'error'));
+    if (!session) {
+      setToast(createToast('Session expired. Enter your PIN again.', 'error'));
+      resetToPin();
       return;
     }
 
@@ -176,37 +147,38 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
 
       const photoUrl = await uploadImageToStorage(photoPath, imageBlob);
 
-      await addDoc(collection(db, COLLECTIONS.ATTENDANCE_RECORDS), {
-        employeeId: session.employeeId,
-        employeeNameSnapshot: session.employeeName,
-        employeeEmailSnapshot: session.employeeEmail,
-        type: session.actionType,
-        timestampServer: serverTimestamp(),
-        source: 'web-kiosk',
-        photoCaptured: true,
-        photoPath,
-        photoUrl,
+      const response = await fetch('/api/kiosk/punch', {
+        method: 'POST',
+        headers: kioskDeviceHeaders(),
+        body: JSON.stringify({
+          employeePin: pin.trim(),
+          photoPath,
+          photoUrl,
+        }),
       });
 
-      await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, session.employeeDocId), {
-        lastAction: session.actionType,
-        lastTimestampServer: serverTimestamp(),
-      });
+      const data = (await response.json().catch(() => null)) as
+        | { employeeName: string; actionType: 'check_in' | 'check_out'; error?: string }
+        | null;
+
+      if (!response.ok) {
+        setToast(
+          createToast(data?.error ?? 'Could not save attendance. Please try again.', 'error'),
+        );
+        return;
+      }
 
       setSuccessData({
-        employeeName: session.employeeName,
-        actionType: session.actionType,
+        employeeName: data?.employeeName ?? session.employeeName,
+        actionType: data?.actionType ?? session.actionType,
         recordedAt,
         photoPreviewUrl: previewDataUrl,
+        warehouseLabel,
       });
       setStep('success');
     } catch (error) {
       console.error('Kiosk capture save failed:', error);
-      const message =
-        error instanceof Error && error.message.includes('permission')
-          ? 'Permission denied. Check Firestore rules for web-kiosk.'
-          : 'Could not save attendance. Please try again.';
-      setToast(createToast(message, 'error'));
+      setToast(createToast('Could not save attendance. Please try again.', 'error'));
     } finally {
       setProcessing(false);
     }
@@ -216,18 +188,18 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
 
   return (
     <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden bg-zinc-950 px-4 py-10">
-      <div
-        className="pointer-events-none absolute -left-10 -top-20 h-56 w-56 rounded-full bg-primary/20 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-24 -right-12 h-64 w-64 rounded-full bg-primary/15 blur-3xl"
-        aria-hidden
-      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-4 pt-4">
+        <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/30 bg-zinc-900/90 px-4 py-2 text-xs text-zinc-200 backdrop-blur">
+          <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <span className="truncate">
+            Clocking in at: <strong className="font-semibold text-white">{warehouseLabel}</strong>
+          </span>
+        </div>
+      </div>
 
       {step === 'pin' ? (
         <>
-          <div className="flex shrink-0 flex-col items-center gap-6">
+          <div className="mt-12 flex shrink-0 flex-col items-center gap-6">
             {showLogo && (
               <CompanyLogo
                 priority
@@ -250,7 +222,7 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
           </div>
         </>
       ) : (
-        <div className="flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
+        <div className="mt-12 flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
           {showLogo && (
             <CompanyLogo
               priority
@@ -274,30 +246,6 @@ export function KioskScreen({ onLockDevice }: KioskScreenProps) {
           )}
         </div>
       )}
-
-      {step === 'pin' && onLockDevice && (
-        <button
-          type="button"
-          onClick={() => setLockModalOpen(true)}
-          className="fixed bottom-4 left-4 z-40 rounded-full p-2 text-zinc-400 opacity-20 transition hover:bg-zinc-800/50 hover:text-primary hover:opacity-100"
-          aria-label="Lock kiosk terminal"
-        >
-          <Lock className="h-5 w-5" />
-        </button>
-      )}
-
-      <KioskMasterPinModal
-        open={lockModalOpen}
-        title="Lock terminal"
-        description="Enter master admin PIN to de-authorize this device."
-        submitLabel="Lock device"
-        onClose={() => setLockModalOpen(false)}
-        onSuccess={() => {
-          setLockModalOpen(false);
-          onLockDevice?.();
-        }}
-        onError={(message) => setToast(createToast(message, 'error'))}
-      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>

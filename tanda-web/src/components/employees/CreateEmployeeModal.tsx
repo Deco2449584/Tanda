@@ -3,12 +3,12 @@
 import { FormEvent, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { X } from 'lucide-react';
-import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
+import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
-import { useLocations } from '@/providers/LocationsProvider';
+import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import type { CreateEmployeeInput } from '@/lib/types/employee';
 
 interface CreateEmployeeModalProps {
@@ -21,12 +21,12 @@ const initialForm: CreateEmployeeInput = {
   name: '',
   email: '',
   department: '',
-  locationId: '',
+  locationGroupId: '',
   hourlyRate: 0,
 };
 
 export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps) {
-  const { activeLocations } = useLocations();
+  const { activeGroups } = useLocationGroups();
   const [form, setForm] = useState<CreateEmployeeInput>(initialForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -73,8 +73,8 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
       return;
     }
 
-    if (activeLocations.length > 0 && !form.locationId?.trim()) {
-      setError('Select a location for this employee.');
+    if (activeGroups.length > 0 && !form.locationGroupId?.trim()) {
+      setError('Select a location group for this employee.');
       return;
     }
 
@@ -104,8 +104,8 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
         payload.photoUrl = photoUrl;
       }
 
-      if (form.locationId?.trim()) {
-        payload.locationId = form.locationId.trim();
+      if (form.locationGroupId?.trim()) {
+        payload.locationGroupId = form.locationGroupId.trim();
       }
 
       await addDoc(collection(db, COLLECTIONS.EMPLOYEES), payload);
@@ -238,14 +238,14 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
             />
           </div>
 
-          <EmployeeLocationSelect
-            id="emp-location"
-            value={form.locationId ?? ''}
-            onChange={(locationId) =>
-              setForm((prev) => ({ ...prev, locationId }))
+          <EmployeeLocationGroupSelect
+            id="emp-location-group"
+            value={form.locationGroupId ?? ''}
+            onChange={(locationGroupId) =>
+              setForm((prev) => ({ ...prev, locationGroupId }))
             }
             disabled={isBusy}
-            required={activeLocations.length > 0}
+            required={activeGroups.length > 0}
           />
 
           <div>

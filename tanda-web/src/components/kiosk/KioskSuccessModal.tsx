@@ -7,6 +7,7 @@ export interface KioskSuccessData {
   actionType: 'check_in' | 'check_out';
   recordedAt: Date;
   photoPreviewUrl: string;
+  warehouseLabel?: string;
 }
 
 interface KioskSuccessModalProps {
@@ -63,7 +64,7 @@ export function KioskSuccessModal({ data }: KioskSuccessModalProps) {
           </h2>
 
           <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-            Recorded at
+            {data.warehouseLabel ? `Recorded at ${data.warehouseLabel}` : 'Recorded at'}
           </p>
 
           <p className="my-2 text-5xl font-black tabular-nums text-white">

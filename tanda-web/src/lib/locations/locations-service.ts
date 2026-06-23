@@ -111,6 +111,18 @@ export async function countEmployeesAtLocation(
   return snapshot.size;
 }
 
+export async function countLocationGroupsUsingLocation(
+  locationId: string,
+): Promise<number> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  const snapshot = await getDocs(collection(db, COLLECTIONS.LOCATION_GROUPS));
+  return snapshot.docs.filter((document) => {
+    const locationIds = document.data().locationIds;
+    return Array.isArray(locationIds) && locationIds.includes(locationId);
+  }).length;
+}
+
 export async function deleteLocation(locationId: string): Promise<void> {
   if (!db) throw new Error('Firestore is not available.');
 
@@ -118,6 +130,13 @@ export async function deleteLocation(locationId: string): Promise<void> {
   if (assignedCount > 0) {
     throw new Error(
       `Cannot delete this location. ${assignedCount} employee${assignedCount === 1 ? '' : 's'} still assigned. Reassign them first.`,
+    );
+  }
+
+  const groupCount = await countLocationGroupsUsingLocation(locationId);
+  if (groupCount > 0) {
+    throw new Error(
+      `Cannot delete this location. It is used by ${groupCount} location group${groupCount === 1 ? '' : 's'}.`,
     );
   }
 

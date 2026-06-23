@@ -19,6 +19,7 @@ service cloud.firestore {
           'employeeId',
           'photoUrl',
           'locationId',
+          'locationGroupId',
         ]) &&
         request.resource.data.name is string &&
         request.resource.data.email is string &&
@@ -29,17 +30,21 @@ service cloud.firestore {
           request.resource.data.locationId is string
         ) &&
         (
+          !('locationGroupId' in request.resource.data) ||
+          request.resource.data.locationGroupId is string
+        ) &&
+        (
           !('lastAction' in request.resource.data) ||
           request.resource.data.lastAction in ['check_in', 'check_out', 'none']
         );
 
-      // Tablet / web manual check-out: solo lastAction + lastTimestampServer
+      // Tablet: solo lastAction + lastTimestampServer
       allow update: if
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['lastAction', 'lastTimestampServer']) &&
         request.resource.data.lastAction in ['check_in', 'check_out', 'none'];
 
-      // Web admin: edición completa del empleado (puede omitir photoUrl)
+      // Web admin: edición completa del empleado
       allow update: if
         request.resource.data.keys().hasAll([
           'name',
@@ -62,6 +67,7 @@ service cloud.firestore {
           'photoUrl',
           'active',
           'locationId',
+          'locationGroupId',
         ]);
 
       allow delete: if request.auth != null;
@@ -87,7 +93,7 @@ service cloud.firestore {
         request.resource.data.employeeNameSnapshot is string &&
         request.resource.data.employeeEmailSnapshot is string &&
         request.resource.data.type in ['check_in', 'check_out'] &&
-        request.resource.data.source in ['expo-app', 'web-admin-manual-checkout', 'web-kiosk'] &&
+        request.resource.data.source in ['expo-app', 'web-admin-manual-checkout'] &&
         request.resource.data.photoCaptured is bool &&
         request.resource.data.photoPath is string &&
         request.resource.data.photoUrl is string;
@@ -129,6 +135,16 @@ service cloud.firestore {
     // 8. Sedes / ubicaciones de empleados
     match /locations/{locationId} {
       allow read, write: if request.auth != null;
+    }
+
+    // 9. Grupos de sedes (multi-warehouse access)
+    match /location_groups/{groupId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 10. Dispositivos kiosk — solo Admin SDK (API routes)
+    match /kiosk_devices/{deviceId} {
+      allow read, write: if false;
     }
 
     // Bloqueo de seguridad global por defecto

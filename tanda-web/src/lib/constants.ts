@@ -6,6 +6,8 @@ export const COLLECTIONS = {
   CARGO_INSPECTIONS: 'cargo_inspections',
   PORTAL_CLIENTS: 'portal_clients',
   LOCATIONS: 'locations',
+  LOCATION_GROUPS: 'location_groups',
+  KIOSK_DEVICES: 'kiosk_devices',
   SETTINGS: 'settings',
 } as const;
 

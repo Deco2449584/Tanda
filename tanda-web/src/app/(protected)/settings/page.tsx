@@ -5,6 +5,8 @@ import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { LocationsTab } from '@/components/settings/LocationsTab';
+import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
+import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
 import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAuthRole } from '@/hooks/useAuthRole';
@@ -15,12 +17,21 @@ import {
   type CompanySettings,
 } from '@/lib/types/company-settings';
 
-type SettingsTab = 'localization' | 'profile' | 'data' | 'portal' | 'locations';
+type SettingsTab =
+  | 'localization'
+  | 'profile'
+  | 'data'
+  | 'portal'
+  | 'locations'
+  | 'locationGroups'
+  | 'kioskDevices';
 
 const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
   { id: 'profile', label: 'Administrator' },
   { id: 'locations', label: 'Locations' },
+  { id: 'locationGroups', label: 'Location groups' },
+  { id: 'kioskDevices', label: 'Kiosk devices' },
   { id: 'portal', label: 'Portal clients' },
   { id: 'data', label: 'Data cleanup' },
 ];
@@ -45,7 +56,12 @@ export default function SettingsPage() {
     role === 'admin'
       ? ADMIN_TABS
       : ADMIN_TABS.filter(
-          (tab) => tab.id !== 'data' && tab.id !== 'portal' && tab.id !== 'locations',
+          (tab) =>
+            tab.id !== 'data' &&
+            tab.id !== 'portal' &&
+            tab.id !== 'locations' &&
+            tab.id !== 'locationGroups' &&
+            tab.id !== 'kioskDevices',
         );
   const { settings, loading: settingsLoading, saving, saveSettings } =
     useCompanySettings();
@@ -137,6 +153,12 @@ export default function SettingsPage() {
           )}
           {activeTab === 'locations' && role === 'admin' && (
             <LocationsTab onToast={showToast} />
+          )}
+          {activeTab === 'locationGroups' && role === 'admin' && (
+            <LocationGroupsTab onToast={showToast} />
+          )}
+          {activeTab === 'kioskDevices' && role === 'admin' && (
+            <KioskDevicesTab onToast={showToast} />
           )}
           {activeTab === 'portal' && role === 'admin' && (
             <PortalClientsTab onToast={showToast} />

@@ -1,0 +1,175 @@
+import { FieldValue } from 'firebase-admin/firestore';
+import { COLLECTIONS } from '@/lib/constants';
+import { getAdminFirestore } from '@/lib/firebase-admin';
+import { canEmployeePunchAtLocation } from '@/lib/location-groups/can-punch-at-location';
+import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
+import { findKioskDeviceByToken } from '@/lib/kiosk/server/kiosk-devices-service';
+import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
+
+export interface KioskLookupResult {
+  employeeDocId: string;
+  employeeId: string;
+  employeeName: string;
+  employeeEmail: string;
+  actionType: 'check_in' | 'check_out';
+}
+
+export async function lookupKioskEmployee(input: {
+  deviceToken: string;
+  employeePin: string;
+}): Promise<KioskLookupResult> {
+  const device = await requireActiveKioskDevice(input.deviceToken);
+  const employee = await requireAuthorizedEmployee(
+    input.employeePin,
+    device.locationId!,
+  );
+
+  const actionType = resolveKioskAction(
+    employee.data.lastAction as string | undefined,
+    employee.data.lastTimestampServer as { toDate(): Date } | undefined,
+  );
+
+  return {
+    employeeDocId: employee.id,
+    employeeId: employee.data.employeeId as string,
+    employeeName: employee.data.name as string,
+    employeeEmail: employee.data.email as string,
+    actionType,
+  };
+}
+
+export async function recordKioskPunch(input: {
+  deviceToken: string;
+  employeePin: string;
+  photoPath: string;
+  photoUrl: string;
+}): Promise<KioskLookupResult & { recordedAt: string }> {
+  const device = await requireActiveKioskDevice(input.deviceToken);
+  const employee = await requireAuthorizedEmployee(
+    input.employeePin,
+    device.locationId!,
+  );
+
+  const actionType = resolveKioskAction(
+    employee.data.lastAction as string | undefined,
+    employee.data.lastTimestampServer as { toDate(): Date } | undefined,
+  );
+
+  const locationDoc = await getAdminFirestore()
+    .collection(COLLECTIONS.LOCATIONS)
+    .doc(device.locationId!)
+    .get();
+
+  const locationData = locationDoc.data() ?? {};
+
+  const db = getAdminFirestore();
+  await db.collection(COLLECTIONS.ATTENDANCE_RECORDS).add({
+    employeeId: employee.data.employeeId,
+    employeeNameSnapshot: employee.data.name,
+    employeeEmailSnapshot: employee.data.email,
+    type: actionType,
+    timestampServer: FieldValue.serverTimestamp(),
+    source: 'web-kiosk',
+    photoCaptured: true,
+    photoPath: input.photoPath,
+    photoUrl: input.photoUrl,
+    locationId: device.locationId,
+    locationNameSnapshot: typeof locationData.name === 'string' ? locationData.name : '',
+    locationCitySnapshot: typeof locationData.city === 'string' ? locationData.city : '',
+    kioskDeviceId: device.id,
+    kioskDeviceLabelSnapshot: device.label ?? '',
+  });
+
+  await db.collection(COLLECTIONS.EMPLOYEES).doc(employee.id).update({
+    lastAction: actionType,
+    lastTimestampServer: FieldValue.serverTimestamp(),
+  });
+
+  return {
+    employeeDocId: employee.id,
+    employeeId: employee.data.employeeId as string,
+    employeeName: employee.data.name as string,
+    employeeEmail: employee.data.email as string,
+    actionType,
+    recordedAt: new Date().toISOString(),
+  };
+}
+
+async function requireActiveKioskDevice(token: string) {
+  const device = await findKioskDeviceByToken(token);
+  if (!device) {
+    throw new KioskPunchError('Device not registered.', 404);
+  }
+  if (device.status !== 'active' || !device.locationId) {
+    throw new KioskPunchError('This kiosk is not approved yet.', 403);
+  }
+  return device;
+}
+
+async function requireAuthorizedEmployee(employeePin: string, kioskLocationId: string) {
+  const cleanPin = employeePin.trim();
+  if (!cleanPin) {
+    throw new KioskPunchError('Employee PIN is required.', 400);
+  }
+
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.EMPLOYEES)
+    .where('employeeId', '==', cleanPin)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    throw new KioskPunchError('Invalid or unknown employee PIN.', 404);
+  }
+
+  const employeeDoc = snapshot.docs[0];
+  const data = employeeDoc.data();
+
+  if (data.active === false) {
+    throw new KioskPunchError(
+      'This employee is inactive. Contact your administrator.',
+      403,
+    );
+  }
+
+  const locationGroupId =
+    typeof data.locationGroupId === 'string' ? data.locationGroupId.trim() : '';
+
+  if (!locationGroupId) {
+    throw new KioskPunchError(
+      'You are not authorized to clock in at this warehouse.',
+      403,
+    );
+  }
+
+  const groupDoc = await getAdminFirestore()
+    .collection(COLLECTIONS.LOCATION_GROUPS)
+    .doc(locationGroupId)
+    .get();
+
+  if (!groupDoc.exists) {
+    throw new KioskPunchError(
+      'You are not authorized to clock in at this warehouse.',
+      403,
+    );
+  }
+
+  const group = mapLocationGroupDoc(groupDoc.id, groupDoc.data() ?? {});
+  if (!canEmployeePunchAtLocation(group, kioskLocationId)) {
+    throw new KioskPunchError(
+      'You are not authorized to clock in at this warehouse.',
+      403,
+    );
+  }
+
+  return { id: employeeDoc.id, data };
+}
+
+export class KioskPunchError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
