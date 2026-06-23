@@ -214,8 +214,8 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
             {showLogo && (
               <CompanyLogo
                 priority
-                invert
-                className="h-16 w-auto shrink-0 brightness-0 invert drop-shadow-md"
+                variant="light"
+                className="h-16 w-auto shrink-0 drop-shadow-md"
               />
             )}
             <KioskClock />
@@ -237,8 +237,8 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
           {showLogo && (
             <CompanyLogo
               priority
-              invert
-              className="mb-6 h-12 w-auto shrink-0 brightness-0 invert drop-shadow-md md:h-16"
+              variant="light"
+              className="mb-6 h-12 w-auto shrink-0 drop-shadow-md md:h-16"
             />
           )}
 

@@ -71,7 +71,7 @@ export default function PortalLoginPage() {
 
           <div className="relative">
             <CompanyLogo
-              invert
+              variant="light"
               priority
               className="h-20 w-auto max-w-[280px] object-contain sm:h-24"
             />

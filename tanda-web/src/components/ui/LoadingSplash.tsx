@@ -27,7 +27,7 @@ export function LoadingSplash({
       aria-busy="true"
     >
       <CompanyLogo
-        invert
+        variant="light"
         priority
         className="h-20 w-auto max-w-[min(100%,14rem)] animate-pulse object-contain md:h-24"
       />
@@ -53,7 +53,7 @@ export function LoadingIndicator({
       aria-live="polite"
       aria-busy="true"
     >
-      <CompanyLogo invert className="h-14 w-auto max-w-[10rem] animate-pulse object-contain" />
+      <CompanyLogo variant="light" className="h-14 w-auto max-w-[10rem] animate-pulse object-contain" />
       <p className="text-sm text-muted">{message}</p>
     </div>
   );

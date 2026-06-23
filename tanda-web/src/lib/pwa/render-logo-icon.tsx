@@ -2,16 +2,21 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ImageResponse } from 'next/og';
 
-let cachedLogoDataUrl: string | null = null;
+const BRAND_BLUE = '#001A3F';
 
-async function getLogoDataUrl(): Promise<string> {
-  if (cachedLogoDataUrl) {
-    return cachedLogoDataUrl;
+let cachedMarkDataUrl: string | null = null;
+
+async function getMarkDataUrl(): Promise<string> {
+  if (cachedMarkDataUrl) {
+    return cachedMarkDataUrl;
   }
 
-  const svg = await readFile(path.join(process.cwd(), 'public/logo.svg'), 'utf8');
-  cachedLogoDataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
-  return cachedLogoDataUrl;
+  const svg = await readFile(
+    path.join(process.cwd(), 'public/logo-mark-light.svg'),
+    'utf8',
+  );
+  cachedMarkDataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  return cachedMarkDataUrl;
 }
 
 interface RenderLogoIconOptions {
@@ -22,12 +27,12 @@ interface RenderLogoIconOptions {
 
 export async function renderLogoIcon({
   size,
-  paddingRatio = 0.1,
-  background = '#ffffff',
+  paddingRatio = 0.18,
+  background = BRAND_BLUE,
 }: RenderLogoIconOptions) {
-  const logoSrc = await getLogoDataUrl();
+  const markSrc = await getMarkDataUrl();
   const padding = Math.round(size * paddingRatio);
-  const logoSize = size - padding * 2;
+  const markSize = size - padding * 2;
 
   return new ImageResponse(
     (
@@ -39,9 +44,10 @@ export async function renderLogoIcon({
           alignItems: 'center',
           justifyContent: 'center',
           background,
+          borderRadius: Math.round(size * 0.2),
         }}
       >
-        <img src={logoSrc} width={logoSize} height={logoSize} />
+        <img src={markSrc} width={markSize} height={markSize} />
       </div>
     ),
     { width: size, height: size },

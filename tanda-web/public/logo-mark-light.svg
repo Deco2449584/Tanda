@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="157 97 186 186" width="100%" height="100%">
+  <defs>
+    <path id="blade" d="M 0,-115 L 18,-26 L 0,0 L -36,-36 Z" />
+
+    <g id="star">
+      <use href="#blade" />
+      <use href="#blade" transform="rotate(90)" />
+      <use href="#blade" transform="rotate(180)" />
+      <use href="#blade" transform="rotate(270)" />
+    </g>
+
+    <mask id="ring-cutout" maskUnits="userSpaceOnUse" x="157" y="97" width="186" height="186">
+      <rect x="157" y="97" width="186" height="186" fill="white" />
+      <use href="#star" transform="translate(250, 190)" fill="black" stroke="black" stroke-width="11" stroke-linejoin="miter" stroke-miterlimit="10" />
+    </mask>
+  </defs>
+
+  <g mask="url(#ring-cutout)">
+    <g transform="translate(250, 190)">
+      <circle cx="0" cy="0" r="85" fill="none" stroke="#ffffff" stroke-width="16" />
+      <circle cx="0" cy="0" r="53" fill="none" stroke="#ffffff" stroke-width="16" />
+    </g>
+  </g>
+
+  <g transform="translate(250, 190)">
+    <use href="#star" fill="#ffffff" />
+  </g>
+</svg>

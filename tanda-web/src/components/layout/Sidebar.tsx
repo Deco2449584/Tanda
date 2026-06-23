@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
 import { cn } from '@/lib/cn';
-import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { CompanyLogoSidebar } from '@/components/ui/CompanyLogo';
 
 interface NavItem {
   label: string;
@@ -103,22 +103,16 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         )}
       >
         <div className="relative shrink-0 border-b border-border px-4 py-5">
-          <div className="flex w-full justify-center pr-8 md:pr-0">
-            <CompanyLogo
-              className="h-auto w-full max-w-[200px] object-contain"
-              priority
-              invert
-            />
-          </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-2 top-2 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
+            className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>
+
+          <CompanyLogoSidebar className="px-2" />
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin">

@@ -5,11 +5,25 @@ import { Building2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
+export type CompanyLogoVariant = 'default' | 'light' | 'mark' | 'mark-light';
+
+const LOGO_ASSETS: Record<
+  CompanyLogoVariant,
+  { src: string; width: number; height: number }
+> = {
+  default: { src: '/logo.svg', width: 548, height: 480 },
+  light: { src: '/logo-light.svg', width: 548, height: 480 },
+  mark: { src: '/logo-mark.svg', width: 186, height: 186 },
+  'mark-light': { src: '/logo-mark-light.svg', width: 186, height: 186 },
+};
+
 interface CompanyLogoProps {
   alt?: string;
   className?: string;
   priority?: boolean;
+  /** @deprecated Use variant="light" instead */
   invert?: boolean;
+  variant?: CompanyLogoVariant;
 }
 
 export function CompanyLogo({
@@ -17,18 +31,37 @@ export function CompanyLogo({
   className = 'h-16 w-auto object-contain',
   priority = false,
   invert = false,
+  variant,
 }: CompanyLogoProps) {
   const label = alt ?? COMPANY_NAME;
+  const resolvedVariant = variant ?? (invert ? 'light' : 'default');
+  const asset = LOGO_ASSETS[resolvedVariant];
 
   return (
     <Image
-      src="/logo.svg"
+      src={asset.src}
       alt={label}
-      width={548}
-      height={480}
+      width={asset.width}
+      height={asset.height}
       priority={priority}
-      className={cn('object-contain object-center', invert && 'brightness-0 invert', className)}
+      className={cn('object-contain object-center', className)}
     />
+  );
+}
+
+export function CompanyLogoSidebar({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex flex-col items-center gap-2.5 text-center', className)}>
+      <CompanyLogo variant="mark-light" className="h-11 w-11 shrink-0" priority />
+      <div className="min-w-0">
+        <p className="text-[11px] font-extrabold leading-tight tracking-wide text-foreground">
+          CONTINENTAL CARGO
+        </p>
+        <p className="mt-0.5 text-[9px] font-semibold tracking-[0.16em] text-subtle">
+          LOGISTICS COMPANY
+        </p>
+      </div>
+    </div>
   );
 }
 
