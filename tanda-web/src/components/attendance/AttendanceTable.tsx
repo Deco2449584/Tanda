@@ -13,6 +13,11 @@ import {
   formatRecordDateShort,
   formatRecordTime,
 } from '@/lib/attendance/format';
+import {
+  buildGoogleMapsUrl,
+  formatExactLocation,
+  formatWarehouseLabel,
+} from '@/lib/attendance/location-display';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -95,6 +100,9 @@ export function AttendanceTable({
                   Warehouse
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-white">
+                  Location
+                </th>
+                <th className="px-4 py-3.5 font-semibold text-white">
                   Date
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-white">
@@ -111,7 +119,7 @@ export function AttendanceTable({
             <tbody>
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -137,6 +145,9 @@ export function AttendanceTable({
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
                       {formatWarehouseLabel(record)}
+                    </td>
+                    <td className="px-4 py-3.5 text-zinc-300">
+                      <LocationCell record={record} />
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
                       {formatRecordDate(record.timestampServer)}
@@ -238,6 +249,11 @@ export function AttendanceTable({
                         </div>
                       </div>
 
+                      <div className="mt-1 text-[11px] text-zinc-500">
+                        {formatWarehouseLabel(record)}
+                      </div>
+                      <LocationCell record={record} compact />
+
                       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-zinc-400">
                         <span className="tabular-nums">
                           {formatRecordDateShort(record.timestampServer)}
@@ -290,13 +306,43 @@ export function AttendanceTable({
   );
 }
 
-function formatWarehouseLabel(record: AttendanceRecord): string {
-  if (record.locationNameSnapshot) {
-    return record.locationCitySnapshot
-      ? `${record.locationNameSnapshot} (${record.locationCitySnapshot})`
-      : record.locationNameSnapshot;
+function LocationCell({
+  record,
+  compact = false,
+}: {
+  record: AttendanceRecord;
+  compact?: boolean;
+}) {
+  const mapsUrl = buildGoogleMapsUrl(record);
+  const label = formatExactLocation(record);
+
+  if (label === '—') {
+    return <span className={compact ? 'mt-1 block text-[11px] text-zinc-600' : ''}>—</span>;
   }
-  return '—';
+
+  if (mapsUrl) {
+    return (
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={
+          compact
+            ? 'mt-1 block truncate text-[11px] text-primary hover:underline'
+            : 'text-primary hover:underline'
+        }
+        title={label}
+      >
+        {label}
+      </a>
+    );
+  }
+
+  return (
+    <span className={compact ? 'mt-1 block text-[11px] text-zinc-500' : 'text-zinc-300'}>
+      {label}
+    </span>
+  );
 }
 
 export function filterRecordsByEmployeeName(

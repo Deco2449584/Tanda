@@ -17,6 +17,12 @@ export interface AttendanceRecordFirestore {
   locationCitySnapshot?: string;
   kioskDeviceId?: string;
   kioskDeviceLabelSnapshot?: string;
+  latitude?: number;
+  longitude?: number;
+  geoAccuracy?: number;
+  geoCapturedAt?: string;
+  geoAddress?: string;
+  breakWaived?: boolean;
 }
 
 export interface AttendanceRecord extends AttendanceRecordFirestore {

@@ -36,5 +36,15 @@ export function mapAttendanceDoc(
       typeof record.kioskDeviceLabelSnapshot === 'string'
         ? record.kioskDeviceLabelSnapshot
         : undefined,
+    latitude: typeof record.latitude === 'number' ? record.latitude : undefined,
+    longitude: typeof record.longitude === 'number' ? record.longitude : undefined,
+    geoAccuracy:
+      typeof record.geoAccuracy === 'number' ? record.geoAccuracy : undefined,
+    geoCapturedAt:
+      typeof record.geoCapturedAt === 'string' ? record.geoCapturedAt : undefined,
+    geoAddress:
+      typeof record.geoAddress === 'string' ? record.geoAddress : undefined,
+    breakWaived:
+      typeof record.breakWaived === 'boolean' ? record.breakWaived : undefined,
   };
 }

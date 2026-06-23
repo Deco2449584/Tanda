@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import {
   formatAttendanceType,
@@ -13,27 +13,50 @@ import {
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
+import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
+import type { Location } from '@/lib/types/location';
 
 interface EditAttendanceModalProps {
   record: AttendanceRecord | null;
+  locations: Location[];
+  attendanceBreak: AttendanceBreakSettings;
   onClose: () => void;
 }
 
-export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProps) {
+export function EditAttendanceModal({
+  record,
+  locations,
+  attendanceBreak,
+  onClose,
+}: EditAttendanceModalProps) {
   const [type, setType] = useState<AttendanceType>('check_in');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [locationId, setLocationId] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [geoAccuracy, setGeoAccuracy] = useState('');
+  const [geoAddress, setGeoAddress] = useState('');
+  const [breakWaived, setBreakWaived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const activeLocations = locations.filter((location) => location.active);
+
   useEffect(() => {
-    if (record) {
-      const formValues = timestampToFormValues(record.timestampServer);
-      setType(record.type);
-      setDate(formValues.date);
-      setTime(formValues.time);
-      setError('');
-    }
+    if (!record) return;
+
+    const formValues = timestampToFormValues(record.timestampServer);
+    setType(record.type);
+    setDate(formValues.date);
+    setTime(formValues.time);
+    setLocationId(record.locationId ?? '');
+    setLatitude(record.latitude != null ? String(record.latitude) : '');
+    setLongitude(record.longitude != null ? String(record.longitude) : '');
+    setGeoAccuracy(record.geoAccuracy != null ? String(record.geoAccuracy) : '');
+    setGeoAddress(record.geoAddress ?? '');
+    setBreakWaived(record.breakWaived === true);
+    setError('');
   }, [record]);
 
   if (!record) return null;
@@ -43,23 +66,18 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
     onClose();
   }
 
-  function hasChanges(): boolean {
-    if (!record) return false;
-
-    const newTimestamp = formValuesToTimestamp(date, time);
-    const originalMs = record.timestampServer?.toMillis() ?? null;
-    const newMs = newTimestamp.toMillis();
-
-    return type !== record.type || originalMs !== newMs;
+  function parseOptionalNumber(value: string): number | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
 
-    if (!record) return;
-
-    if (!db) {
+    if (!record || !db) {
       setError('Firebase is not available.');
       return;
     }
@@ -69,18 +87,49 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
       return;
     }
 
-    if (!hasChanges()) {
-      onClose();
+    const parsedLatitude = parseOptionalNumber(latitude);
+    const parsedLongitude = parseOptionalNumber(longitude);
+    const parsedAccuracy = parseOptionalNumber(geoAccuracy);
+
+    if (latitude.trim() && parsedLatitude == null) {
+      setError('Latitude must be a valid number.');
       return;
+    }
+
+    if (longitude.trim() && parsedLongitude == null) {
+      setError('Longitude must be a valid number.');
+      return;
+    }
+
+    if (geoAccuracy.trim() && parsedAccuracy == null) {
+      setError('GPS accuracy must be a valid number.');
+      return;
+    }
+
+    const selectedLocation = activeLocations.find((item) => item.id === locationId);
+
+    const payload: Record<string, unknown> = {
+      type,
+      timestampServer: formValuesToTimestamp(date, time),
+      locationId: selectedLocation ? selectedLocation.id : deleteField(),
+      locationNameSnapshot: selectedLocation ? selectedLocation.name : deleteField(),
+      locationCitySnapshot: selectedLocation?.city ? selectedLocation.city : deleteField(),
+      latitude: parsedLatitude ?? deleteField(),
+      longitude: parsedLongitude ?? deleteField(),
+      geoAccuracy: parsedAccuracy ?? deleteField(),
+      geoAddress: geoAddress.trim() ? geoAddress.trim() : deleteField(),
+    };
+
+    if (type === 'check_out') {
+      payload.breakWaived = breakWaived;
+    } else {
+      payload.breakWaived = deleteField();
     }
 
     setSaving(true);
 
     try {
-      await updateDoc(doc(db, COLLECTIONS.ATTENDANCE_RECORDS, record.id), {
-        type,
-        timestampServer: formValuesToTimestamp(date, time),
-      });
+      await updateDoc(doc(db, COLLECTIONS.ATTENDANCE_RECORDS, record.id), payload);
       onClose();
     } catch {
       setError('Could not update the record.');
@@ -102,7 +151,7 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
         onClick={handleClose}
       />
 
-      <div className="relative z-10 w-[95%] rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-md">
+      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl md:w-full md:max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Edit record</h2>
           <button
@@ -169,11 +218,106 @@ export function EditAttendanceModal({ record, onClose }: EditAttendanceModalProp
             </div>
           </div>
 
-          {error && (
+          <div>
+            <label htmlFor="record-location" className="mb-1.5 block text-sm text-zinc-400">
+              Warehouse
+            </label>
+            <select
+              id="record-location"
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              <option value="">No warehouse</option>
+              {activeLocations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.city ? `${location.name} (${location.city})` : location.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="record-latitude" className="mb-1.5 block text-sm text-zinc-400">
+                Latitude
+              </label>
+              <input
+                id="record-latitude"
+                type="text"
+                inputMode="decimal"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label htmlFor="record-longitude" className="mb-1.5 block text-sm text-zinc-400">
+                Longitude
+              </label>
+              <input
+                id="record-longitude"
+                type="text"
+                inputMode="decimal"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="record-geo-accuracy" className="mb-1.5 block text-sm text-zinc-400">
+              GPS accuracy (m)
+            </label>
+            <input
+              id="record-geo-accuracy"
+              type="text"
+              inputMode="decimal"
+              value={geoAccuracy}
+              onChange={(e) => setGeoAccuracy(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="record-geo-address" className="mb-1.5 block text-sm text-zinc-400">
+              Exact location
+            </label>
+            <textarea
+              id="record-geo-address"
+              rows={2}
+              value={geoAddress}
+              onChange={(e) => setGeoAddress(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          {type === 'check_out' && attendanceBreak.enabled ? (
+            <label className="flex items-start gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={breakWaived}
+                onChange={(e) => setBreakWaived(e.target.checked)}
+                className="mt-1"
+              />
+              <span>Employee did not take break (do not deduct unpaid break)</span>
+            </label>
+          ) : null}
+
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs text-zinc-500">
+            <p>Source: {record.source || '—'}</p>
+            {record.kioskDeviceLabelSnapshot ? (
+              <p>Kiosk: {record.kioskDeviceLabelSnapshot}</p>
+            ) : null}
+            {record.photoCaptured ? <p>Photo captured: yes</p> : <p>Photo captured: no</p>}
+          </div>
+
+          {error ? (
             <p className="text-center text-xs text-red-500" role="alert">
               {error}
             </p>
-          )}
+          ) : null}
 
           <div className="flex gap-3 pt-2">
             <button

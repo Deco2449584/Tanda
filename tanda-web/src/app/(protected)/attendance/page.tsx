@@ -9,13 +9,14 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { Download, FileSpreadsheet, MapPin, Search } from 'lucide-react';
+import { Download, FileSpreadsheet, MapPin, Plus, Search } from 'lucide-react';
 import {
   AttendanceDateFilterBar,
   type AttendanceDatePreset,
 } from '@/components/attendance/AttendanceDateFilterBar';
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
+import { AddManualRecordModal } from '@/components/attendance/AddManualRecordModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import {
@@ -71,6 +72,7 @@ export default function AttendancePage() {
   );
   const [manualCheckoutRecord, setManualCheckoutRecord] =
     useState<AttendanceRecord | null>(null);
+  const [manualRecordOpen, setManualRecordOpen] = useState(false);
 
   useEffect(() => {
     if (!db) {
@@ -190,6 +192,7 @@ export default function AttendancePage() {
       dateRange,
       {
         currency: settings.currency,
+        attendanceBreak: settings.attendanceBreak,
       },
     );
 
@@ -201,6 +204,7 @@ export default function AttendancePage() {
     const summary = formatPayrollSummaryText(
       buildPayrollReport(locationFilteredRecords, employeesForFilters, dateRange, {
         currency: settings.currency,
+        attendanceBreak: settings.attendanceBreak,
       }),
     );
     window.alert(`Payroll CSV downloaded.\n\n${summary}`);
@@ -259,6 +263,17 @@ export default function AttendancePage() {
 
           <button
             type="button"
+            onClick={() => setManualRecordOpen(true)}
+            disabled={pageLoading}
+            title="Add manual check-in or check-out"
+            aria-label="Add manual check-in or check-out"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+          </button>
+
+          <button
+            type="button"
             onClick={() =>
               exportAttendanceRecordsToCsv(filteredForExport, employeeCodes)
             }
@@ -294,7 +309,17 @@ export default function AttendancePage() {
 
       <EditAttendanceModal
         record={editingRecord}
+        locations={locations}
+        attendanceBreak={settings.attendanceBreak}
         onClose={() => setEditingRecord(null)}
+      />
+
+      <AddManualRecordModal
+        open={manualRecordOpen}
+        employees={employeesForFilters}
+        locations={locations}
+        allRecords={locationFilteredRecords}
+        onClose={() => setManualRecordOpen(false)}
       />
 
       <AddManualCheckoutModal

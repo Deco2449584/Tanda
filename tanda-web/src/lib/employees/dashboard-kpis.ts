@@ -3,6 +3,10 @@ import { shiftDurationHours } from '@/lib/dashboard/compute-metrics';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
+import {
+  DEFAULT_ATTENDANCE_BREAK,
+  type AttendanceBreakSettings,
+} from '@/lib/types/company-settings';
 
 export interface ActiveStaffKpi {
   checkedIn: number;
@@ -65,6 +69,7 @@ export function computeScheduledPayrollKpi(
 export function computeActualPayrollKpi(
   employees: Employee[],
   todayAttendance: AttendanceRecord[],
+  attendanceBreak: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ): PayrollKpi {
   const employeesByCode = new Map(
     employees.map((employee) => [employee.employeeId, employee]),
@@ -83,11 +88,11 @@ export function computeActualPayrollKpi(
     const employee = employeesByCode.get(employeeId);
     if (!employee) return;
 
-    const hoursWorked = buildWorkSessions(records)
+    const hoursWorked = buildWorkSessions(records, attendanceBreak)
       .filter(
-        (session) => session.status === 'complete' && session.hours !== null,
+        (session) => session.status === 'complete' && session.billableHours !== null,
       )
-      .reduce((sum, session) => sum + (session.hours ?? 0), 0);
+      .reduce((sum, session) => sum + (session.billableHours ?? 0), 0);
 
     total += hoursWorked * employee.hourlyRate;
   });
@@ -99,9 +104,10 @@ export function computeDualPayrollKpi(
   employees: Employee[],
   todayShifts: Shift[],
   todayAttendance: AttendanceRecord[],
+  attendanceBreak: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ): DualPayrollKpi {
   return {
     projected: computeScheduledPayrollKpi(employees, todayShifts),
-    actual: computeActualPayrollKpi(employees, todayAttendance),
+    actual: computeActualPayrollKpi(employees, todayAttendance, attendanceBreak),
   };
 }

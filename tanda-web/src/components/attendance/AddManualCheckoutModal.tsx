@@ -100,6 +100,7 @@ export function AddManualCheckoutModal({
         photoCaptured: false,
         photoPath: '',
         photoUrl: '',
+        breakWaived: false,
       });
 
       const employeeRecords = allRecords.filter(

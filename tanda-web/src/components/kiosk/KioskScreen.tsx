@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/images/storage-upload';
+import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
@@ -147,6 +148,8 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
 
       const photoUrl = await uploadImageToStorage(photoPath, imageBlob);
 
+      const geo = await captureCurrentPosition();
+
       const response = await fetch('/api/kiosk/punch', {
         method: 'POST',
         headers: kioskDeviceHeaders(),
@@ -154,6 +157,14 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
           employeePin: pin.trim(),
           photoPath,
           photoUrl,
+          ...(geo
+            ? {
+                latitude: geo.latitude,
+                longitude: geo.longitude,
+                geoAccuracy: geo.accuracy,
+                geoCapturedAt: geo.geoCapturedAt,
+              }
+            : {}),
         }),
       });
 

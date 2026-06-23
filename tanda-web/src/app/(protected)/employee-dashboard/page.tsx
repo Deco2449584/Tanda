@@ -6,6 +6,7 @@ import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCa
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
 import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
@@ -16,6 +17,7 @@ import {
 
 export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
+  const { settings } = useCompanySettings();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
 
@@ -41,14 +43,20 @@ export default function EmployeeDashboardPage() {
         attendanceRecords,
         week.start,
         week.end,
+        settings.attendanceBreak,
       ),
-    [attendanceRecords, week.end, week.start],
+    [attendanceRecords, week.end, week.start, settings.attendanceBreak],
   );
 
   const monthlyHours = useMemo(() => {
     const { start, end } = getMonthDateRange();
-    return calculateWorkedHoursInRange(attendanceRecords, start, end);
-  }, [attendanceRecords]);
+    return calculateWorkedHoursInRange(
+      attendanceRecords,
+      start,
+      end,
+      settings.attendanceBreak,
+    );
+  }, [attendanceRecords, settings.attendanceBreak]);
 
   const dataLoading = shiftsLoading || recordsLoading;
   const loading = authLoading || employeeLoading || dataLoading;

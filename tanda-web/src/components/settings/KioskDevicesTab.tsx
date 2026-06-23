@@ -16,6 +16,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [approveForms, setApproveForms] = useState<
     Record<string, { label: string; locationId: string }>
   >({});
@@ -90,7 +91,18 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
     }
   }
 
-  async function handleRevoke(deviceId: string) {
+  async function handleRevoke(deviceId: string, options?: { pending?: boolean }) {
+    const isPending = options?.pending === true;
+    const confirmMessage = isPending
+      ? 'Reject this tablet request? It will not be able to clock in until it registers again.'
+      : 'Revoke access for this kiosk device?';
+
+    if (!window.confirm(confirmMessage)) return;
+
+    if (isPending) {
+      setRejectingId(deviceId);
+    }
+
     try {
       const user = auth?.currentUser;
       if (!user) throw new Error('Not signed in.');
@@ -105,11 +117,22 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
         body: JSON.stringify({ deviceId }),
       });
 
-      if (!response.ok) throw new Error('Revoke failed.');
-      onToast('Kiosk device revoked.');
+      if (!response.ok) throw new Error(isPending ? 'Reject failed.' : 'Revoke failed.');
+      onToast(isPending ? 'Kiosk request rejected.' : 'Kiosk device revoked.');
       await loadDevices();
     } catch (error) {
-      onToast(error instanceof Error ? error.message : 'Revoke failed.', 'error');
+      onToast(
+        error instanceof Error
+          ? error.message
+          : isPending
+            ? 'Reject failed.'
+            : 'Revoke failed.',
+        'error',
+      );
+    } finally {
+      if (isPending) {
+        setRejectingId(null);
+      }
     }
   }
 
@@ -182,15 +205,26 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  disabled={approvingId === device.id}
-                  onClick={() => void handleApprove(device.id)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  {approvingId === device.id ? 'Approving…' : 'Approve device'}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={approvingId === device.id || rejectingId === device.id}
+                    onClick={() => void handleApprove(device.id)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    {approvingId === device.id ? 'Approving…' : 'Approve device'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={approvingId === device.id || rejectingId === device.id}
+                    onClick={() => void handleRevoke(device.id, { pending: true })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-900/50 px-3 py-2 text-xs text-red-300 hover:bg-red-950/30 disabled:opacity-60"
+                  >
+                    <ShieldOff className="h-4 w-4" />
+                    {rejectingId === device.id ? 'Rejecting…' : 'Reject request'}
+                  </button>
+                </div>
               </div>
             )}
           />

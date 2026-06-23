@@ -13,6 +13,10 @@ export async function POST(request: Request) {
       employeePin?: string;
       photoPath?: string;
       photoUrl?: string;
+      latitude?: number;
+      longitude?: number;
+      geoAccuracy?: number;
+      geoCapturedAt?: string;
     };
 
     const employeePin = body.employeePin?.trim() ?? '';
@@ -28,6 +32,10 @@ export async function POST(request: Request) {
       employeePin,
       photoPath,
       photoUrl,
+      latitude: body.latitude,
+      longitude: body.longitude,
+      geoAccuracy: body.geoAccuracy,
+      geoCapturedAt: body.geoCapturedAt,
     });
 
     return NextResponse.json(result);

@@ -1,4 +1,8 @@
 import { formatAttendanceType, formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
+import {
+  formatExportExactLocation,
+  formatExportWarehouse,
+} from '@/lib/attendance/location-display';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
 export function exportAttendanceRecordsToCsv(
@@ -13,6 +17,13 @@ export function exportAttendanceRecordsToCsv(
     'Date',
     'Record Type',
     'Time',
+    'Warehouse',
+    'Latitude',
+    'Longitude',
+    'GPS accuracy (m)',
+    'Exact location',
+    'Source',
+    'Kiosk device',
   ];
 
   const csvRows = records.map((record) => [
@@ -21,6 +32,13 @@ export function exportAttendanceRecordsToCsv(
     formatRecordDate(record.timestampServer),
     formatAttendanceType(record.type),
     formatRecordTime(record.timestampServer),
+    formatExportWarehouse(record),
+    record.latitude ?? '',
+    record.longitude ?? '',
+    record.geoAccuracy ?? '',
+    formatExportExactLocation(record),
+    record.source,
+    record.kioskDeviceLabelSnapshot ?? '',
   ]);
 
   const csvContent = [headers, ...csvRows]

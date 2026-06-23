@@ -1,5 +1,9 @@
 import { formatRecordDate } from '@/lib/attendance/format';
 import { compareInputDates, toInputDate } from '@/lib/dates/input-date';
+import {
+  DEFAULT_ATTENDANCE_BREAK,
+  type AttendanceBreakSettings,
+} from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
 export type WorkSessionStatus = 'complete' | 'open_today' | 'forgotten';
@@ -8,6 +12,7 @@ export interface WorkSession {
   checkIn: AttendanceRecord;
   checkOut: AttendanceRecord | null;
   hours: number | null;
+  billableHours: number | null;
   status: WorkSessionStatus;
 }
 
@@ -22,6 +27,20 @@ function diffHours(checkIn: AttendanceRecord, checkOut: AttendanceRecord): numbe
   return (end - start) / (1000 * 60 * 60);
 }
 
+export function calculateSessionBillableHours(
+  rawHours: number,
+  checkOut: AttendanceRecord | null,
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+): number {
+  if (!checkOut || rawHours <= 0) return 0;
+  if (!breakSettings.enabled) return rawHours;
+  if (rawHours < breakSettings.minShiftHours) return rawHours;
+  if (checkOut.breakWaived) return rawHours;
+
+  const deduction = breakSettings.durationMinutes / 60;
+  return Math.max(0, rawHours - deduction);
+}
+
 function resolveOpenCheckIn(
   checkIn: AttendanceRecord,
   today: string,
@@ -33,6 +52,7 @@ function resolveOpenCheckIn(
       checkIn,
       checkOut: null,
       hours: null,
+      billableHours: null,
       status: 'forgotten',
     };
   }
@@ -41,11 +61,15 @@ function resolveOpenCheckIn(
     checkIn,
     checkOut: null,
     hours: null,
+    billableHours: null,
     status: 'open_today',
   };
 }
 
-export function buildWorkSessions(records: AttendanceRecord[]): WorkSession[] {
+export function buildWorkSessions(
+  records: AttendanceRecord[],
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+): WorkSession[] {
   const sorted = [...records].sort(
     (a, b) => recordTimestamp(a) - recordTimestamp(b),
   );
@@ -63,10 +87,12 @@ export function buildWorkSessions(records: AttendanceRecord[]): WorkSession[] {
     }
 
     if (record.type === 'check_out' && pendingCheckIn) {
+      const hours = diffHours(pendingCheckIn, record);
       sessions.push({
         checkIn: pendingCheckIn,
         checkOut: record,
-        hours: diffHours(pendingCheckIn, record),
+        hours,
+        billableHours: calculateSessionBillableHours(hours, record, breakSettings),
         status: 'complete',
       });
       pendingCheckIn = null;
@@ -109,8 +135,9 @@ function completeSessionsInRange(
   records: AttendanceRecord[],
   rangeStart: string,
   rangeEnd: string,
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ) {
-  return buildWorkSessions(records).filter((session) => {
+  return buildWorkSessions(records, breakSettings).filter((session) => {
     if (session.status !== 'complete' || session.hours === null) {
       return false;
     }
@@ -127,9 +154,10 @@ export function calculateWorkedHoursInRange(
   records: AttendanceRecord[],
   rangeStart: string,
   rangeEnd: string,
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ): number {
-  return completeSessionsInRange(records, rangeStart, rangeEnd).reduce(
-    (total, session) => total + (session.hours ?? 0),
+  return completeSessionsInRange(records, rangeStart, rangeEnd, breakSettings).reduce(
+    (total, session) => total + (session.billableHours ?? 0),
     0,
   );
 }
@@ -138,12 +166,15 @@ export function calculateWorkedDaysInRange(
   records: AttendanceRecord[],
   rangeStart: string,
   rangeEnd: string,
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ): number {
   const dates = new Set<string>();
 
-  completeSessionsInRange(records, rangeStart, rangeEnd).forEach((session) => {
-    dates.add(formatRecordDate(session.checkIn.timestampServer));
-  });
+  completeSessionsInRange(records, rangeStart, rangeEnd, breakSettings).forEach(
+    (session) => {
+      dates.add(formatRecordDate(session.checkIn.timestampServer));
+    },
+  );
 
   return dates.size;
 }

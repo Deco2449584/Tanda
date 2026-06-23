@@ -88,15 +88,64 @@ service cloud.firestore {
           'photoCaptured',
           'photoPath',
           'photoUrl',
+          'locationId',
+          'locationNameSnapshot',
+          'locationCitySnapshot',
+          'latitude',
+          'longitude',
+          'geoAccuracy',
+          'geoCapturedAt',
+          'geoAddress',
+          'breakWaived',
         ]) &&
         request.resource.data.employeeId is string &&
         request.resource.data.employeeNameSnapshot is string &&
         request.resource.data.employeeEmailSnapshot is string &&
         request.resource.data.type in ['check_in', 'check_out'] &&
-        request.resource.data.source in ['expo-app', 'web-admin-manual-checkout'] &&
+        request.resource.data.source in [
+          'expo-app',
+          'web-admin-manual-checkout',
+          'web-admin-manual',
+        ] &&
         request.resource.data.photoCaptured is bool &&
         request.resource.data.photoPath is string &&
-        request.resource.data.photoUrl is string;
+        request.resource.data.photoUrl is string &&
+        (
+          !('locationId' in request.resource.data) ||
+          request.resource.data.locationId is string
+        ) &&
+        (
+          !('locationNameSnapshot' in request.resource.data) ||
+          request.resource.data.locationNameSnapshot is string
+        ) &&
+        (
+          !('locationCitySnapshot' in request.resource.data) ||
+          request.resource.data.locationCitySnapshot is string
+        ) &&
+        (
+          !('latitude' in request.resource.data) ||
+          request.resource.data.latitude is number
+        ) &&
+        (
+          !('longitude' in request.resource.data) ||
+          request.resource.data.longitude is number
+        ) &&
+        (
+          !('geoAccuracy' in request.resource.data) ||
+          request.resource.data.geoAccuracy is number
+        ) &&
+        (
+          !('geoCapturedAt' in request.resource.data) ||
+          request.resource.data.geoCapturedAt is string
+        ) &&
+        (
+          !('geoAddress' in request.resource.data) ||
+          request.resource.data.geoAddress is string
+        ) &&
+        (
+          !('breakWaived' in request.resource.data) ||
+          request.resource.data.breakWaived is bool
+        );
 
       allow update, delete: if request.auth != null;
     }

@@ -1,6 +1,11 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import {
+  isValidLatitude,
+  isValidLongitude,
+  reverseGeocode,
+} from '@/lib/geo/reverse-geocode';
 import { canEmployeePunchAtLocation } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
 import { findKioskDeviceByToken } from '@/lib/kiosk/server/kiosk-devices-service';
@@ -43,6 +48,10 @@ export async function recordKioskPunch(input: {
   employeePin: string;
   photoPath: string;
   photoUrl: string;
+  latitude?: number;
+  longitude?: number;
+  geoAccuracy?: number;
+  geoCapturedAt?: string;
 }): Promise<KioskLookupResult & { recordedAt: string }> {
   const device = await requireActiveKioskDevice(input.deviceToken);
   const employee = await requireAuthorizedEmployee(
@@ -62,6 +71,23 @@ export async function recordKioskPunch(input: {
 
   const locationData = locationDoc.data() ?? {};
 
+  const geoFields: Record<string, unknown> = {};
+  if (isValidLatitude(input.latitude) && isValidLongitude(input.longitude)) {
+    geoFields.latitude = input.latitude;
+    geoFields.longitude = input.longitude;
+    if (typeof input.geoAccuracy === 'number' && Number.isFinite(input.geoAccuracy)) {
+      geoFields.geoAccuracy = input.geoAccuracy;
+    }
+    if (typeof input.geoCapturedAt === 'string' && input.geoCapturedAt.trim()) {
+      geoFields.geoCapturedAt = input.geoCapturedAt.trim();
+    }
+
+    const address = await reverseGeocode(input.latitude, input.longitude);
+    if (address) {
+      geoFields.geoAddress = address;
+    }
+  }
+
   const db = getAdminFirestore();
   await db.collection(COLLECTIONS.ATTENDANCE_RECORDS).add({
     employeeId: employee.data.employeeId,
@@ -78,6 +104,8 @@ export async function recordKioskPunch(input: {
     locationCitySnapshot: typeof locationData.city === 'string' ? locationData.city : '',
     kioskDeviceId: device.id,
     kioskDeviceLabelSnapshot: device.label ?? '',
+    ...(actionType === 'check_out' ? { breakWaived: false } : {}),
+    ...geoFields,
   });
 
   await db.collection(COLLECTIONS.EMPLOYEES).doc(employee.id).update({

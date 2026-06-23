@@ -7,6 +7,8 @@ import { formatRecordDate } from '@/lib/attendance/format';
 import { compareInputDates } from '@/lib/dates/input-date';
 import { formatPayPeriodLabel, type DateRange } from '@/lib/attendance/date-range';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
+import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
+import { DEFAULT_ATTENDANCE_BREAK } from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
@@ -81,10 +83,15 @@ export function buildPayrollReport(
   records: AttendanceRecord[],
   employees: Employee[],
   dateRange: DateRange,
-  options?: { companyName?: string; currency?: string },
+  options?: {
+    companyName?: string;
+    currency?: string;
+    attendanceBreak?: AttendanceBreakSettings;
+  },
 ): PayrollReport {
   const companyName = options?.companyName ?? COMPANY_NAME;
   const currency = options?.currency ?? 'AUD';
+  const attendanceBreak = options?.attendanceBreak ?? DEFAULT_ATTENDANCE_BREAK;
 
   const activeEmployees = employees
     .filter((employee) => employee.active)
@@ -105,12 +112,14 @@ export function buildPayrollReport(
       employeeRecords,
       dateRange.start,
       dateRange.end,
+      attendanceBreak,
     );
 
     const daysWorked = calculateWorkedDaysInRange(
       employeeRecords,
       dateRange.start,
       dateRange.end,
+      attendanceBreak,
     );
     const hourlyRate = employee.hourlyRate ?? 0;
     const roundedHours = Math.round(totalHours * 100) / 100;
@@ -260,7 +269,11 @@ export function exportPayrollReportToCsv(
   records: AttendanceRecord[],
   employees: Employee[],
   dateRange: DateRange,
-  options?: { companyName?: string; currency?: string },
+  options?: {
+    companyName?: string;
+    currency?: string;
+    attendanceBreak?: AttendanceBreakSettings;
+  },
 ): boolean {
   const report = buildPayrollReport(records, employees, dateRange, options);
   const hasActiveEmployees = employees.some((employee) => employee.active);

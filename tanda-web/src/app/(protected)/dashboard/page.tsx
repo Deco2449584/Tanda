@@ -11,10 +11,12 @@ import {
   computeActiveStaffKpi,
   computeDualPayrollKpi,
 } from '@/lib/employees/dashboard-kpis';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 
 export default function DashboardPage() {
   const { employees, loading: employeesLoading } = useEmployees();
+  const { settings } = useCompanySettings();
 
   const {
     pendingPermits,
@@ -32,6 +34,7 @@ export default function DashboardPage() {
       employees,
       todayShifts,
       todayAttendance,
+      settings.attendanceBreak,
     );
 
     return baseKpiMetrics.map((metric) => {
@@ -68,7 +71,7 @@ export default function DashboardPage() {
 
       return metric;
     });
-  }, [employees, lateAlerts, pendingPermits, todayAttendance, todayShifts]);
+  }, [employees, lateAlerts, pendingPermits, settings.attendanceBreak, todayAttendance, todayShifts]);
 
   const loadingIds = useMemo(() => {
     const ids: string[] = [];
