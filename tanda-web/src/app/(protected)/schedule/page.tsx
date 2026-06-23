@@ -178,7 +178,7 @@ export default function SchedulePage() {
 
     if (locationFilter !== 'all') {
       base = base.filter((employee) =>
-        employeeMatchesLocationFilter(employee.locationGroupId, locationFilter, groups),
+        employeeMatchesLocationFilter(employee, locationFilter, groups),
       );
     }
 

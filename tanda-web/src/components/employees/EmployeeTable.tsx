@@ -5,8 +5,10 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { COLLECTIONS } from '@/lib/constants';
-import { getLocationGroupLabel } from '@/lib/location-groups/format-location-group';
+import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
+import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
+import { useLocations } from '@/providers/LocationsProvider';
 import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
 
@@ -44,6 +46,7 @@ export function EmployeeTable({
   onEdit,
 }: EmployeeTableProps) {
   const { groups } = useLocationGroups();
+  const { locations } = useLocations();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredEmployees = useMemo(() => {
@@ -52,7 +55,7 @@ export function EmployeeTable({
 
     return employees.filter((employee) => {
       const employeeCode = employee.employeeId.toLowerCase();
-      const locationLabel = getLocationGroupLabel(employee.locationGroupId, groups).toLowerCase();
+      const locationLabel = getEmployeeLocationLabel(employee, locations, groups).toLowerCase();
       return (
         employee.name.toLowerCase().includes(query) ||
         employee.email.toLowerCase().includes(query) ||
@@ -61,10 +64,15 @@ export function EmployeeTable({
         employeeCode.includes(query)
       );
     });
-  }, [employees, groups, searchQuery]);
+  }, [employees, groups, locations, searchQuery]);
 
   async function handleDelete(employee: Employee) {
     if (!db) return;
+
+    if (isProtectedAdminEmployee(employee)) {
+      window.alert('Administrator accounts cannot be deleted from staff management.');
+      return;
+    }
 
     const confirmed = window.confirm(
       `Delete ${employee.name}? This action cannot be undone.`,
@@ -121,7 +129,10 @@ export function EmployeeTable({
                 </td>
               </tr>
             ) : (
-              filteredEmployees.map((employee) => (
+              filteredEmployees.map((employee) => {
+                const isAdminAccount = isProtectedAdminEmployee(employee);
+
+                return (
                 <tr
                   key={employee.id}
                   className="border-b border-border/80 transition-colors hover:bg-surface-hover/20"
@@ -146,7 +157,7 @@ export function EmployeeTable({
                     {employee.department || '—'}
                   </td>
                   <td className="px-4 py-3.5 text-muted">
-                    {getLocationGroupLabel(employee.locationGroupId, groups)}
+                    {getEmployeeLocationLabel(employee, locations, groups)}
                   </td>
                   <td className="px-4 py-3.5">
                     <StatusBadge active={employee.active} />
@@ -164,7 +175,12 @@ export function EmployeeTable({
                       <button
                         type="button"
                         onClick={() => handleDelete(employee)}
-                        disabled={deletingId === employee.id}
+                        disabled={deletingId === employee.id || isAdminAccount}
+                        title={
+                          isAdminAccount
+                            ? 'Administrator accounts cannot be deleted'
+                            : `Delete ${employee.name}`
+                        }
                         className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Delete ${employee.name}`}
                       >
@@ -173,7 +189,8 @@ export function EmployeeTable({
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>
@@ -183,7 +200,10 @@ export function EmployeeTable({
         {filteredEmployees.length === 0 ? (
           <p className="py-8 text-center text-sm text-subtle">{emptyMessage}</p>
         ) : (
-          filteredEmployees.map((employee) => (
+          filteredEmployees.map((employee) => {
+            const isAdminAccount = isProtectedAdminEmployee(employee);
+
+            return (
             <article
               key={employee.id}
               className="rounded-xl border border-border/80 bg-surface-base/40 p-4"
@@ -226,7 +246,7 @@ export function EmployeeTable({
                 <div className="flex justify-between gap-3">
                   <dt className="text-subtle">Location</dt>
                   <dd className="text-right text-muted">
-                    {getLocationGroupLabel(employee.locationGroupId, groups)}
+                    {getEmployeeLocationLabel(employee, locations, groups)}
                   </dd>
                 </div>
               </dl>
@@ -243,7 +263,12 @@ export function EmployeeTable({
                 <button
                   type="button"
                   onClick={() => handleDelete(employee)}
-                  disabled={deletingId === employee.id}
+                  disabled={deletingId === employee.id || isAdminAccount}
+                  title={
+                    isAdminAccount
+                      ? 'Administrator accounts cannot be deleted'
+                      : `Delete ${employee.name}`
+                  }
                   className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label={`Delete ${employee.name}`}
                 >
@@ -251,7 +276,8 @@ export function EmployeeTable({
                 </button>
               </div>
             </article>
-          ))
+          );
+          })
         )}
       </div>
     </div>

@@ -26,6 +26,9 @@ export interface DataPurgeOptions {
   cargoInspections: boolean;
   cargoInspectionsStorage: boolean;
   portalClients: boolean;
+  locations: boolean;
+  locationGroups: boolean;
+  kioskDevices: boolean;
   resetEmployeePresence: boolean;
 }
 
@@ -37,6 +40,9 @@ export interface DataPurgeResult {
   cargoInspectionsDeleted: number;
   cargoInspectionsStorageDeleted: number;
   portalClientsDeleted: number;
+  locationsDeleted: number;
+  locationGroupsDeleted: number;
+  kioskDevicesDeleted: number;
   employeesReset: number;
   errors: string[];
 }
@@ -198,6 +204,9 @@ export async function purgeOperationalData(
     cargoInspectionsDeleted: 0,
     cargoInspectionsStorageDeleted: 0,
     portalClientsDeleted: 0,
+    locationsDeleted: 0,
+    locationGroupsDeleted: 0,
+    kioskDevicesDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -210,6 +219,9 @@ export async function purgeOperationalData(
     options.cargoInspections ||
     options.cargoInspectionsStorage ||
     options.portalClients ||
+    options.locations ||
+    options.locationGroups ||
+    options.kioskDevices ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -329,6 +341,47 @@ export async function purgeOperationalData(
     }
   }
 
+  if (options.kioskDevices) {
+    try {
+      result.kioskDevicesDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.KIOSK_DEVICES,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not delete kiosk devices.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.locationGroups) {
+    try {
+      result.locationGroupsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.LOCATION_GROUPS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete location groups.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.locations) {
+    try {
+      result.locationsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.LOCATIONS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not delete locations.';
+      result.errors.push(message);
+    }
+  }
+
   if (
     result.errors.length > 0 &&
     result.attendanceRecordsDeleted === 0 &&
@@ -338,6 +391,9 @@ export async function purgeOperationalData(
     result.cargoInspectionsDeleted === 0 &&
     result.cargoInspectionsStorageDeleted === 0 &&
     result.portalClientsDeleted === 0 &&
+    result.locationsDeleted === 0 &&
+    result.locationGroupsDeleted === 0 &&
+    result.kioskDevicesDeleted === 0 &&
     result.employeesReset === 0
   ) {
     throw new Error(result.errors.join(' '));

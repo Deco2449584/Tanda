@@ -6,7 +6,7 @@ import {
   isValidLongitude,
   reverseGeocode,
 } from '@/lib/geo/reverse-geocode';
-import { canEmployeePunchAtLocation } from '@/lib/location-groups/can-punch-at-location';
+import { canEmployeePunchAtKiosk } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
 import { findKioskDeviceByToken } from '@/lib/kiosk/server/kiosk-devices-service';
 import { resolveKioskAction } from '@/lib/kiosk/resolve-kiosk-action';
@@ -160,30 +160,37 @@ async function requireAuthorizedEmployee(employeePin: string, kioskLocationId: s
     );
   }
 
+  const employeeLocationId =
+    typeof data.locationId === 'string' ? data.locationId.trim() : '';
   const locationGroupId =
     typeof data.locationGroupId === 'string' ? data.locationGroupId.trim() : '';
 
-  if (!locationGroupId) {
+  if (!employeeLocationId && !locationGroupId) {
     throw new KioskPunchError(
       'You are not authorized to clock in at this warehouse.',
       403,
     );
   }
 
-  const groupDoc = await getAdminFirestore()
-    .collection(COLLECTIONS.LOCATION_GROUPS)
-    .doc(locationGroupId)
-    .get();
+  let group = null;
+  if (locationGroupId) {
+    const groupDoc = await getAdminFirestore()
+      .collection(COLLECTIONS.LOCATION_GROUPS)
+      .doc(locationGroupId)
+      .get();
 
-  if (!groupDoc.exists) {
-    throw new KioskPunchError(
-      'You are not authorized to clock in at this warehouse.',
-      403,
-    );
+    if (groupDoc.exists) {
+      group = mapLocationGroupDoc(groupDoc.id, groupDoc.data() ?? {});
+    }
   }
 
-  const group = mapLocationGroupDoc(groupDoc.id, groupDoc.data() ?? {});
-  if (!canEmployeePunchAtLocation(group, kioskLocationId)) {
+  if (
+    !canEmployeePunchAtKiosk(
+      { locationId: employeeLocationId, locationGroupId },
+      kioskLocationId,
+      group,
+    )
+  ) {
     throw new KioskPunchError(
       'You are not authorized to clock in at this warehouse.',
       403,

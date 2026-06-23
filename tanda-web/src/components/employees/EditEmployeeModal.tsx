@@ -4,10 +4,13 @@ import { FormEvent, useEffect, useState } from 'react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
+import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
+import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
+import { useLocations } from '@/providers/LocationsProvider';
 import type { CreateEmployeeInput, Employee } from '@/lib/types/employee';
 
 interface EditEmployeeModalProps {
@@ -16,11 +19,13 @@ interface EditEmployeeModalProps {
 }
 
 export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps) {
+  const { activeLocations } = useLocations();
   const [form, setForm] = useState<CreateEmployeeInput>({
     employeeId: '',
     name: '',
     email: '',
     department: '',
+    locationId: '',
     locationGroupId: '',
     hourlyRate: 0,
   });
@@ -40,6 +45,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       name: employee.name,
       email: employee.email,
       department: employee.department,
+      locationId: employee.locationId ?? '',
       locationGroupId: employee.locationGroupId ?? '',
       hourlyRate: employee.hourlyRate,
     });
@@ -83,6 +89,11 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       return;
     }
 
+    if (activeLocations.length > 0 && !form.locationId?.trim()) {
+      setError('Select a primary location for this employee.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -105,6 +116,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
       if (photoUrl) {
         payload.photoUrl = photoUrl;
+      }
+
+      if (form.locationId?.trim()) {
+        payload.locationId = form.locationId.trim();
+      } else {
+        payload.locationId = deleteField();
       }
 
       if (form.locationGroupId?.trim()) {
@@ -236,6 +253,16 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
+
+          <EmployeeLocationSelect
+            id="edit-emp-location"
+            value={form.locationId ?? ''}
+            onChange={(locationId) =>
+              setForm((prev) => ({ ...prev, locationId }))
+            }
+            disabled={isBusy}
+            required={activeLocations.length > 0}
+          />
 
           <EmployeeLocationGroupSelect
             id="edit-emp-location-group"

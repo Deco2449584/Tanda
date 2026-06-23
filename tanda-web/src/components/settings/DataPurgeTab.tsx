@@ -22,6 +22,9 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
   cargoInspections: false,
   cargoInspectionsStorage: false,
   portalClients: false,
+  locations: false,
+  locationGroups: false,
+  kioskDevices: false,
   resetEmployeePresence: true,
 };
 
@@ -78,6 +81,9 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         cargoInspectionsDeleted: 0,
         cargoInspectionsStorageDeleted: 0,
         portalClientsDeleted: 0,
+        locationsDeleted: 0,
+        locationGroupsDeleted: 0,
+        kioskDevicesDeleted: 0,
         employeesReset: 0,
         errors: [
           error instanceof Error ? error.message : 'Cleanup failed.',
@@ -134,6 +140,24 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           onChange={() => toggleOption('leaveRequests')}
           label="Leave requests"
           hint="All pending, approved, and rejected requests"
+        />
+        <OptionRow
+          checked={options.kioskDevices}
+          onChange={() => toggleOption('kioskDevices')}
+          label="Kiosk devices (Firestore)"
+          hint="Registered tablets and approval state — re-pair after purge"
+        />
+        <OptionRow
+          checked={options.locationGroups}
+          onChange={() => toggleOption('locationGroups')}
+          label="Location groups (Firestore)"
+          hint="Multi-site groupings — employees keep primary site assignments"
+        />
+        <OptionRow
+          checked={options.locations}
+          onChange={() => toggleOption('locations')}
+          label="Locations / warehouses (Firestore)"
+          hint="Site master data — also clears references on employees and kiosks"
         />
         <OptionRow
           checked={options.portalClients}
@@ -202,6 +226,15 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
               ) : null}
               {result.portalClientsDeleted > 0 ? (
                 <p>Portal clients removed: {result.portalClientsDeleted}</p>
+              ) : null}
+              {result.kioskDevicesDeleted > 0 ? (
+                <p>Kiosk devices removed: {result.kioskDevicesDeleted}</p>
+              ) : null}
+              {result.locationGroupsDeleted > 0 ? (
+                <p>Location groups removed: {result.locationGroupsDeleted}</p>
+              ) : null}
+              {result.locationsDeleted > 0 ? (
+                <p>Locations removed: {result.locationsDeleted}</p>
               ) : null}
               {result.employeesReset > 0 ? (
                 <p>Employees reset: {result.employeesReset}</p>

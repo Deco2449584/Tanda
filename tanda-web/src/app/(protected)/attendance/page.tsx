@@ -132,7 +132,7 @@ export default function AttendancePage() {
   const employeesForFilters = useMemo(() => {
     if (locationFilter === 'all') return employees;
     return employees.filter((employee) =>
-      employeeMatchesLocationFilter(employee.locationGroupId, locationFilter, groups),
+      employeeMatchesLocationFilter(employee, locationFilter, groups),
     );
   }, [employees, locationFilter]);
 
