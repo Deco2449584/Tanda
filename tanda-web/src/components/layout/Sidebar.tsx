@@ -102,9 +102,9 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="relative flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+        <div className="relative flex shrink-0 items-center justify-center border-b border-border px-2 py-5">
           <CompanyLogo
-            className="h-8 w-auto max-w-[160px] object-contain brightness-0 invert"
+            className="h-24 w-full object-contain"
             priority
             invert
           />
@@ -112,7 +112,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
+            className="absolute right-2 top-2 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />

@@ -23,8 +23,8 @@ export function CompanyLogo({
     <Image
       src="/logo.svg"
       alt={label}
-      width={280}
-      height={100}
+      width={500}
+      height={480}
       priority={priority}
       className={`${className}${invert ? ' brightness-0 invert' : ''}`}
     />

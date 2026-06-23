@@ -85,7 +85,7 @@ export default function LoginPage() {
           aria-hidden
         />
         <div className="relative">
-          <CompanyLogo invert priority className="h-12 w-auto object-contain" />
+          <CompanyLogo invert priority className="h-20 w-auto object-contain" />
           <div className="mt-10 inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface-raised px-3 py-1 text-xs font-medium text-secondary">
             <Truck className="h-3.5 w-3.5" />
             Logistics workforce platform
@@ -107,7 +107,7 @@ export default function LoginPage() {
       <section className="app-ambient relative flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-5 py-8 sm:px-10 lg:px-16 xl:px-20">
         <div className="mx-auto w-full max-w-md">
           <div className="mb-8 flex flex-col items-center lg:hidden">
-            <CompanyLogo invert priority className="h-10 w-auto object-contain" />
+            <CompanyLogo invert priority className="h-16 w-auto object-contain" />
           </div>
 
           <Card padding="lg">

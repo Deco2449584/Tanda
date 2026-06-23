@@ -89,7 +89,7 @@ export function Header({ onMenuClick, role }: HeaderProps) {
         </button>
 
         <CompanyLogo
-          className="h-9 w-auto max-w-[120px] shrink-0 object-contain brightness-0 invert md:hidden"
+          className="h-12 w-auto max-w-[180px] shrink-0 object-contain md:hidden"
           priority
           invert
         />
