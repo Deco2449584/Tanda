@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Plus } from 'lucide-react';
@@ -98,7 +100,7 @@ export function ScheduleGrid({
   if (loading) {
     return (
       <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-border bg-surface-raised md:min-h-[420px]">
-        <p className="text-sm text-muted">Loading schedule...</p>
+        <LoadingIndicator />
       </div>
     );
   }

@@ -102,12 +102,14 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="relative flex shrink-0 items-center justify-center border-b border-border px-2 py-5">
-          <CompanyLogo
-            className="h-24 w-full object-contain"
-            priority
-            invert
-          />
+        <div className="relative shrink-0 border-b border-border px-4 py-5">
+          <div className="flex w-full justify-center pr-8 md:pr-0">
+            <CompanyLogo
+              className="h-auto w-full max-w-[200px] object-contain"
+              priority
+              invert
+            />
+          </div>
 
           <button
             type="button"

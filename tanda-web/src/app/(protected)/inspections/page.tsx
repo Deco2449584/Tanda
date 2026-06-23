@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { Suspense } from 'react';
 import { InspectionsPageClient } from '@/components/inspections/InspectionsPageClient';
 import { PageContent } from '@/components/ui/PageContent';
@@ -7,7 +8,7 @@ export default function InspectionsPage() {
     <Suspense
       fallback={
         <PageContent>
-          <p className="text-sm text-muted">Loading inspections…</p>
+          <LoadingIndicator />
         </PageContent>
       }
     >

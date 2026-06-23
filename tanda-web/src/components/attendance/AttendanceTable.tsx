@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { LogOut, Pencil, Trash2 } from 'lucide-react';
 import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
 import { ForgottenCheckoutBadge } from '@/components/attendance/ForgottenCheckoutBadge';
@@ -71,8 +72,8 @@ export function AttendanceTable({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-border bg-surface-raised py-16">
-        <p className="text-sm text-muted">Loading...</p>
+      <div className="rounded-xl border border-border bg-surface-raised">
+        <LoadingIndicator message="Loading attendance…" />
       </div>
     );
   }

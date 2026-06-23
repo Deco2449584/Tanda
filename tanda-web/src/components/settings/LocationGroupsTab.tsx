@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Layers, Pencil, Plus, Trash2, Wand2 } from 'lucide-react';
+import { Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   createLocationGroup,
   deleteLocationGroup,
-  migrateEmployeesToLocationGroups,
   setLocationGroupActive,
   subscribeLocationGroups,
   updateLocationGroup,
 } from '@/lib/location-groups/location-groups-service';
 import { formatLocationGroupSites } from '@/lib/location-groups/format-location-group';
 import { subscribeLocations } from '@/lib/locations/locations-service';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import type { Location } from '@/lib/types/location';
 import type { LocationGroup } from '@/lib/types/location-group';
 
@@ -29,7 +29,6 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editLocationIds, setEditLocationIds] = useState<string[]>([]);
-  const [migrating, setMigrating] = useState(false);
 
   const activeLocations = locations.filter((location) => location.active);
 
@@ -97,20 +96,6 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
     }
   }
 
-  async function handleMigrate() {
-    setMigrating(true);
-    try {
-      const result = await migrateEmployeesToLocationGroups();
-      onToast(
-        `Migration complete: ${result.groupsCreated} group(s), ${result.employeesUpdated} employee(s) updated.`,
-      );
-    } catch (error) {
-      onToast(error instanceof Error ? error.message : 'Migration failed.', 'error');
-    } finally {
-      setMigrating(false);
-    }
-  }
-
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-border bg-surface-raised p-5">
@@ -119,21 +104,12 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
           <div>
             <h2 className="text-sm font-semibold text-white">Location groups</h2>
             <p className="mt-1 text-sm text-subtle">
-              Assign employees to one or more warehouses. Kiosk devices only accept
-              punches when the terminal warehouse is included in the employee group.
+              Optional multi-warehouse access on top of each employee&apos;s primary
+              location. Kiosk punches are allowed at the primary site, or at any site
+              in the group when one is assigned.
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          disabled={migrating}
-          onClick={() => void handleMigrate()}
-          className="inline-flex items-center gap-2 rounded-lg border border-border-strong px-3 py-2 text-xs text-muted hover:bg-surface-hover disabled:opacity-60"
-        >
-          <Wand2 className="h-3.5 w-3.5" />
-          {migrating ? 'Migrating…' : 'Migrate legacy single-location employees'}
-        </button>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface-raised p-5">
@@ -165,7 +141,7 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
       <section className="rounded-2xl border border-border bg-surface-raised p-5">
         <h3 className="mb-4 text-sm font-semibold text-white">Registered groups</h3>
         {loading ? (
-          <p className="text-sm text-subtle">Loading…</p>
+          <LoadingIndicator message="Loading groups…" />
         ) : groups.length === 0 ? (
           <p className="text-sm text-subtle">No location groups yet.</p>
         ) : (

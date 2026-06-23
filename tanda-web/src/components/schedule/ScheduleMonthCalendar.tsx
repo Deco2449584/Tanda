@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { useMemo } from 'react';
 import { isToday, parseISO } from 'date-fns';
 import { AlertCircle, Check, Clock } from 'lucide-react';
@@ -107,7 +109,7 @@ export function ScheduleMonthCalendar({
   if (loading) {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border bg-surface-raised">
-        <p className="text-sm text-muted">Loading monthly calendar...</p>
+        <LoadingIndicator />
       </div>
     );
   }

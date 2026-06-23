@@ -9,6 +9,7 @@ import { LocationsTab } from '@/components/settings/LocationsTab';
 import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
 import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
 import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
@@ -131,7 +132,7 @@ export default function SettingsPage() {
       </div>
 
       {pageLoading ? (
-        <div className="h-96 animate-pulse rounded-2xl bg-surface-raised" />
+        <LoadingIndicator message="Loading settings…" className="h-96" />
       ) : (
         <div className="max-w-2xl">
           {activeTab === 'localization' && (

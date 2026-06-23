@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
@@ -63,7 +64,7 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
         <div className="relative h-[280px] w-full min-w-[280px] sm:h-[320px]">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface-raised/40">
-            <span className="text-xs text-subtle">Loading data...</span>
+            <LoadingIndicator message="Loading data…" className="py-0" />
           </div>
         )}
 

@@ -10,7 +10,8 @@ import type { EmployeeShiftAlert } from '@/lib/notifications/employee-shift-aler
 export function EmployeeNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { alerts, unreadCount, markAllRead, markRead } = useEmployeeShiftNotifications();
+  const { alerts, unreadCount, markAllRead, markRead, clearAll } =
+    useEmployeeShiftNotifications();
   const {
     supported: pushSupported,
     subscribed: pushSubscribed,
@@ -62,12 +63,25 @@ export function EmployeeNotificationsMenu() {
           className="absolute right-0 top-full z-[100] mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-xl border border-border bg-surface-raised shadow-xl"
         >
           <div className="border-b border-border px-4 py-3">
-            <p className="text-sm font-semibold text-white">Notifications</p>
-            <p className="mt-0.5 text-xs text-subtle">
-              {alerts.length === 0
-                ? 'No schedule updates yet'
-                : `${alerts.length} update${alerts.length === 1 ? '' : 's'}`}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">Notifications</p>
+                <p className="mt-0.5 text-xs text-subtle">
+                  {alerts.length === 0
+                    ? 'No schedule updates yet'
+                    : `${alerts.length} update${alerts.length === 1 ? '' : 's'}`}
+                </p>
+              </div>
+              {alerts.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-hover/60 hover:text-foreground"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {pushSupported && !pushSubscribed ? (

@@ -1,3 +1,4 @@
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { formatTimeLabel } from '@/lib/schedule/week';
@@ -24,7 +25,7 @@ export function NextShiftCard({
           </p>
 
           {loading ? (
-            <p className="mt-3 text-sm text-subtle">Loading...</p>
+            <LoadingIndicator />
           ) : nextShift ? (
             <div className="mt-3 space-y-1.5 text-sm">
               <p className="text-muted">

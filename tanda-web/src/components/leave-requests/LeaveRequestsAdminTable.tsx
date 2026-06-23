@@ -5,6 +5,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { LeaveRequestStatusBadge } from '@/components/leave-requests/LeaveRequestStatusBadge';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   formatLeaveDateRange,
@@ -66,8 +67,8 @@ export function LeaveRequestsAdminTable({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-border bg-surface-raised py-16">
-        <p className="text-sm text-muted">Loading requests...</p>
+      <div className="rounded-xl border border-border bg-surface-raised">
+        <LoadingIndicator message="Loading requests…" />
       </div>
     );
   }

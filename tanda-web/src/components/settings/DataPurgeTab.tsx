@@ -2,11 +2,8 @@
 
 import { useState } from 'react';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
-import {
-  purgeOperationalData,
-  type DataPurgeOptions,
-  type DataPurgeResult,
-} from '@/lib/admin/data-purge';
+import type { DataPurgeOptions, DataPurgeResult } from '@/lib/admin/data-purge';
+import { auth } from '@/lib/firebase';
 
 const CONFIRM_PHRASE = 'DELETE DATA';
 
@@ -67,10 +64,36 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
     setProgressLog(['Starting cleanup…']);
 
     try {
-      const purgeResult = await purgeOperationalData(options, (message) => {
-        setProgressLog((prev) => [...prev.slice(-12), message]);
+      const user = auth?.currentUser;
+      if (!user) {
+        throw new Error('You must be signed in to run cleanup.');
+      }
+
+      const token = await user.getIdToken();
+      const response = await fetch('/api/admin/data-purge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ options }),
       });
-      setResult(purgeResult);
+
+      const data = (await response.json()) as {
+        result?: DataPurgeResult;
+        progress?: string[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Cleanup failed.');
+      }
+
+      if (data.progress?.length) {
+        setProgressLog(['Starting cleanup…', ...data.progress]);
+      }
+
+      setResult(data.result ?? null);
       setConfirmText('');
     } catch (error) {
       setResult({

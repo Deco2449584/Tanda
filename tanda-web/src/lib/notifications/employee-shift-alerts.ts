@@ -44,6 +44,14 @@ export function saveEmployeeShiftAlerts(
   window.localStorage.setItem(storageKey(employeeCode), JSON.stringify(alerts));
 }
 
+export function clearEmployeeShiftAlerts(employeeCode: string) {
+  if (typeof window === 'undefined' || !employeeCode.trim()) {
+    return;
+  }
+
+  window.localStorage.removeItem(storageKey(employeeCode));
+}
+
 export function buildShiftAlert(input: {
   type: EmployeeShiftAlertType;
   shiftId: string;

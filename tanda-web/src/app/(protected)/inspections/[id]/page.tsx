@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
@@ -19,7 +21,7 @@ export default function InspectionDetailPage() {
   if (loading) {
     return (
       <PageContent>
-        <p className="text-sm text-muted">Loading inspection…</p>
+        <LoadingIndicator />
       </PageContent>
     );
   }

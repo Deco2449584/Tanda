@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
@@ -92,8 +93,8 @@ export function EmployeeTable({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-border bg-surface-raised py-16">
-        <p className="text-sm text-muted">Loading...</p>
+      <div className="rounded-xl border border-border bg-surface-raised">
+        <LoadingIndicator message="Loading staff…" />
       </div>
     );
   }

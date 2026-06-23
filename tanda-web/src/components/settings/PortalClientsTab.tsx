@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { useEffect, useState } from 'react';
 import { Copy, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import {
@@ -217,7 +219,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">Registered clients</h3>
         {loading ? (
-          <p className="mt-4 text-sm text-subtle">Loading…</p>
+          <LoadingIndicator />
         ) : clients.length === 0 ? (
           <p className="mt-4 text-sm text-subtle">No portal clients yet.</p>
         ) : (

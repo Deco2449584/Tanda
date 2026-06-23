@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -56,7 +58,7 @@ export default function MySchedulePage() {
             <h2 className="text-sm font-semibold text-foreground">Upcoming shifts</h2>
 
             {loading && (
-              <p className="text-sm text-muted">Loading shifts...</p>
+              <LoadingIndicator />
             )}
 
             {!loading && futureShifts.length === 0 && (

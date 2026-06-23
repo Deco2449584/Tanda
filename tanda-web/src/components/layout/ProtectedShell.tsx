@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { LoadingSplash } from '@/components/ui/LoadingSplash';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getRedirectForRole } from '@/lib/auth/routes';
@@ -19,11 +20,7 @@ interface ProtectedShellProps {
 }
 
 function LoadingScreen({ message }: { message: string }) {
-  return (
-    <div className="app-ambient flex h-screen items-center justify-center bg-surface-base">
-      <p className="text-sm text-muted">{message}</p>
-    </div>
-  );
+  return <LoadingSplash message={message} />;
 }
 
 export function ProtectedShell({ children }: ProtectedShellProps) {

@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Download, Package, Search, Truck } from 'lucide-react';
 import { InspectionCard } from '@/components/inspections/InspectionCard';
@@ -172,7 +174,7 @@ export function InspectionsPageClient() {
       )}
 
       {loading ? (
-        <p className="text-sm text-subtle">Loading inspections...</p>
+        <LoadingIndicator />
       ) : filteredInspections.length === 0 ? (
         <p className="rounded-xl border border-border bg-surface-raised px-4 py-10 text-center text-sm text-muted">
           No inspections match the current filters.

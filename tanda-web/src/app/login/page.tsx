@@ -11,6 +11,7 @@ import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { LoadingSplash } from '@/components/ui/LoadingSplash';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
@@ -43,11 +44,7 @@ export default function LoginPage() {
   }, [authLoading, role, router, user]);
 
   if (authLoading) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-surface-base app-ambient">
-        <p className="text-sm text-muted">Loading session…</p>
-      </div>
-    );
+    return <LoadingSplash message="Loading session…" />;
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {

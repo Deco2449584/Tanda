@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { MonitorSmartphone, ShieldCheck, ShieldOff } from 'lucide-react';
 import { auth } from '@/lib/firebase';
@@ -159,7 +161,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       </section>
 
       {loading ? (
-        <p className="text-sm text-subtle">Loading devices…</p>
+        <LoadingIndicator />
       ) : (
         <>
           <DeviceSection

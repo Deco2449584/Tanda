@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
@@ -69,9 +71,7 @@ export function RecentRecordsTable({
       </div>
 
       {loading ? (
-        <div className="px-4 py-10 text-center text-sm text-subtle md:px-5">
-          Loading records...
-        </div>
+        <LoadingIndicator message="Loading records…" className="py-8" />
       ) : records.length === 0 ? (
         <div className="px-4 py-10 text-center text-sm text-subtle md:px-5">
           No records in the selected period.

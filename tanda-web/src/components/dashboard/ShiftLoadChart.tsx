@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
@@ -57,7 +58,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
         <div className="relative h-[220px] w-full min-w-[320px]">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface-raised/40">
-            <span className="text-xs text-subtle">Loading data...</span>
+            <LoadingIndicator message="Loading data…" className="py-0" />
           </div>
         )}
 

@@ -8,7 +8,6 @@ import { EmployeeNotificationsMenu } from '@/components/layout/EmployeeNotificat
 import { useSignOut } from '@/hooks/useSignOut';
 import { auth } from '@/lib/firebase';
 import { cn } from '@/lib/cn';
-import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import type { UserRole } from '@/lib/auth/roles';
 
 const DEFAULT_PROFILE_NAME = 'Admin';
@@ -78,22 +77,18 @@ export function Header({ onMenuClick, role }: HeaderProps) {
 
   return (
     <header className="relative z-50 flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface-base/80 px-4 backdrop-blur-sm">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center md:hidden">
         <button
           type="button"
           onClick={onMenuClick}
-          className="shrink-0 rounded-lg p-2 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground md:hidden"
+          className="shrink-0 rounded-lg p-2 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground"
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </button>
-
-        <CompanyLogo
-          className="h-12 w-auto max-w-[180px] shrink-0 object-contain md:hidden"
-          priority
-          invert
-        />
       </div>
+
+      <div className="hidden min-w-0 flex-1 md:block" />
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
         {role === 'admin' ? <AdminNotificationsMenu enabled /> : null}

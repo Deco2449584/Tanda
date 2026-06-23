@@ -20,6 +20,7 @@ import {
 import { db } from '@/lib/firebase';
 import {
   buildShiftAlert,
+  clearEmployeeShiftAlerts,
   loadEmployeeShiftAlerts,
   saveEmployeeShiftAlerts,
   type EmployeeShiftAlert,
@@ -38,6 +39,7 @@ interface EmployeeShiftNotificationsContextValue {
   dismissToast: () => void;
   markAllRead: () => void;
   markRead: (alertId: string) => void;
+  clearAll: () => void;
 }
 
 const EmployeeShiftNotificationsContext =
@@ -162,6 +164,12 @@ export function EmployeeShiftNotificationsProvider({
     setToastAlert(null);
   }, []);
 
+  const clearAll = useCallback(() => {
+    clearEmployeeShiftAlerts(code);
+    setAlerts([]);
+    setToastAlert(null);
+  }, [code]);
+
   useEffect(() => {
     if (!toastAlert) return;
 
@@ -185,8 +193,9 @@ export function EmployeeShiftNotificationsProvider({
       dismissToast,
       markAllRead,
       markRead,
+      clearAll,
     }),
-    [alerts, dismissToast, markAllRead, markRead, toastAlert, unreadCount],
+    [alerts, clearAll, dismissToast, markAllRead, markRead, toastAlert, unreadCount],
   );
 
   return (

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { Building2 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 interface CompanyLogoProps {
@@ -23,10 +24,10 @@ export function CompanyLogo({
     <Image
       src="/logo.svg"
       alt={label}
-      width={500}
+      width={548}
       height={480}
       priority={priority}
-      className={`${className}${invert ? ' brightness-0 invert' : ''}`}
+      className={cn('object-contain object-center', invert && 'brightness-0 invert', className)}
     />
   );
 }

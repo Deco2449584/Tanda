@@ -1,5 +1,7 @@
 'use client';
 
+import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+
 import { formatLeaveDateRange, truncateText } from '@/lib/leave-requests/format';
 import { LeaveRequestStatusBadge } from '@/components/leave-requests/LeaveRequestStatusBadge';
 import type { LeaveRequest } from '@/lib/types/leave-request';
@@ -16,7 +18,7 @@ export function LeaveRequestHistoryTable({
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-border bg-surface-raised py-16">
-        <p className="text-sm text-muted">Loading history...</p>
+        <LoadingIndicator />
       </div>
     );
   }
