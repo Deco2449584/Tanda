@@ -63,13 +63,14 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       if (!user) throw new Error('Not signed in.');
 
       const token = await user.getIdToken();
-      const response = await fetch(`/api/kiosk/devices/${deviceId}/approve`, {
+      const response = await fetch('/api/kiosk/devices/approve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          deviceId,
           locationId: form.locationId,
           label: form.label,
         }),
@@ -95,9 +96,13 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       if (!user) throw new Error('Not signed in.');
 
       const token = await user.getIdToken();
-      const response = await fetch(`/api/kiosk/devices/${deviceId}/revoke`, {
+      const response = await fetch('/api/kiosk/devices/revoke', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ deviceId }),
       });
 
       if (!response.ok) throw new Error('Revoke failed.');
