@@ -98,21 +98,21 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface-sidebar transition-transform duration-200 ease-out md:relative md:z-auto md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col overflow-visible border-r border-border bg-surface-sidebar transition-transform duration-200 ease-out md:relative md:z-auto md:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="relative shrink-0 border-b border-border px-4 py-5">
+        <div className="relative shrink-0 overflow-visible border-b border-border px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:py-5">
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
+            className="absolute right-2 top-[max(0.75rem,env(safe-area-inset-top))] z-10 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:hidden"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>
 
-          <CompanyLogoSidebar className="px-2" />
+          <CompanyLogoSidebar className="mx-auto max-w-[12rem] pt-1 md:pt-0" />
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin">

@@ -13,8 +13,8 @@ const LOGO_ASSETS: Record<
 > = {
   default: { src: '/logo.svg', width: 548, height: 480 },
   light: { src: '/logo-light.svg', width: 548, height: 480 },
-  mark: { src: '/logo-mark.svg', width: 186, height: 186 },
-  'mark-light': { src: '/logo-mark-light.svg', width: 186, height: 186 },
+  mark: { src: '/logo-mark.svg', width: 250, height: 250 },
+  'mark-light': { src: '/logo-mark-light.svg', width: 250, height: 250 },
 };
 
 interface CompanyLogoProps {
@@ -51,9 +51,11 @@ export function CompanyLogo({
 
 export function CompanyLogoSidebar({ className }: { className?: string }) {
   return (
-    <div className={cn('flex flex-col items-center gap-2.5 text-center', className)}>
-      <CompanyLogo variant="mark-light" className="h-11 w-11 shrink-0" priority />
-      <div className="min-w-0">
+    <div className={cn('flex flex-col items-center gap-2.5 overflow-visible text-center', className)}>
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-visible">
+        <CompanyLogo variant="mark-light" className="h-12 w-12 max-h-full max-w-full" priority />
+      </div>
+      <div className="min-w-0 px-1">
         <p className="text-[11px] font-extrabold leading-tight tracking-wide text-foreground">
           CONTINENTAL CARGO
         </p>
