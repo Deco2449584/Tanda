@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   title: 'Continental Cargo | Workforce',
   description: 'Continental Cargo workforce operations platform',
   applicationName: 'Continental Cargo',
+  manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'Continental Cargo',

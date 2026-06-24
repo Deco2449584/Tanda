@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import { buildPwaIconEntries } from '@/lib/pwa/manifest-icons';
 
-export default function manifest(): MetadataRoute.Manifest {
+export function getWorkforceManifest(): MetadataRoute.Manifest {
   return {
     id: '/',
     name: `${COMPANY_NAME} | TimeTracker PRO`,

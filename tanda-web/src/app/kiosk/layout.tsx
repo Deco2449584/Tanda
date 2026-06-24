@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { KioskShell } from '@/components/kiosk/KioskShell';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
@@ -16,6 +16,18 @@ export const metadata: Metadata = {
     icon: [{ url: '/kiosk/icon', type: 'image/png' }],
     apple: [{ url: '/kiosk/apple-icon', type: 'image/png' }],
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#09090b',
 };
 
 export default function KioskLayout({ children }: { children: React.ReactNode }) {
