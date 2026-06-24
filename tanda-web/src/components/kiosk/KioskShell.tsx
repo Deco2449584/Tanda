@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
+import { KioskBrowserGate } from '@/components/kiosk/KioskBrowserGate';
+import { useKioskFullscreenOnInteraction } from '@/hooks/useKioskFullscreen';
 import { isKioskStandaloneDisplay } from '@/lib/pwa/ensure-kiosk-pwa-head';
 
 const KIOSK_SW_URL = '/kiosk/sw.js';
 const KIOSK_SW_SCOPE = '/kiosk/';
 
 export function KioskShell({ children }: { children: ReactNode }) {
+  useKioskFullscreenOnInteraction();
+
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -52,11 +56,13 @@ export function KioskShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-50 h-[100dvh] w-dvw touch-manipulation select-none overflow-x-hidden overflow-y-auto bg-zinc-950 [-webkit-overflow-scrolling:touch] [-webkit-touch-callout:none]"
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {children}
-    </div>
+    <KioskBrowserGate>
+      <div
+        className="fixed inset-0 z-50 h-[100dvh] w-dvw touch-manipulation select-none overflow-x-hidden overflow-y-auto bg-zinc-950 [-webkit-overflow-scrolling:touch] [-webkit-touch-callout:none] kiosk-standalone:pt-[env(safe-area-inset-top)]"
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {children}
+      </div>
+    </KioskBrowserGate>
   );
 }
