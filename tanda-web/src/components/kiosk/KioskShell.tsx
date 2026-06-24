@@ -1,18 +1,13 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import {
-  ensureKioskPwaHead,
-  isKioskStandaloneDisplay,
-} from '@/lib/pwa/ensure-kiosk-pwa-head';
+import { isKioskStandaloneDisplay } from '@/lib/pwa/ensure-kiosk-pwa-head';
 
 const KIOSK_SW_URL = '/kiosk/sw.js';
 const KIOSK_SW_SCOPE = '/kiosk/';
 
 export function KioskShell({ children }: { children: ReactNode }) {
   useEffect(() => {
-    ensureKioskPwaHead();
-
     const html = document.documentElement;
     const body = document.body;
     const prevHtmlOverflow = html.style.overflow;
@@ -43,17 +38,6 @@ export function KioskShell({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     void (async () => {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      if (cancelled) return;
-
-      for (const registration of registrations) {
-        const scope = registration.scope;
-        const isKioskScope = scope.includes('/kiosk');
-        if (!isKioskScope && scope.includes(self.location.origin)) {
-          await registration.unregister();
-        }
-      }
-
       const existing = await navigator.serviceWorker.getRegistration(KIOSK_SW_SCOPE);
       if (cancelled) return;
 

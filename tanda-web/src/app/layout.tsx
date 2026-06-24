@@ -18,16 +18,6 @@ export const metadata: Metadata = {
   title: 'Continental Cargo | Workforce',
   description: 'Continental Cargo workforce operations platform',
   applicationName: 'Continental Cargo',
-  manifest: '/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    title: 'Continental Cargo',
-    statusBarStyle: 'black-translucent',
-  },
-  icons: {
-    icon: [{ url: '/icon', type: 'image/png' }],
-    apple: [{ url: '/apple-icon', type: 'image/png' }],
-  },
 };
 
 export default function RootLayout({

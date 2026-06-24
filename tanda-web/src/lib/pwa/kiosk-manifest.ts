@@ -10,7 +10,7 @@ export function getKioskManifest(): MetadataRoute.Manifest {
     description: 'Shared tablet check-in for employee attendance.',
     start_url: '/kiosk/',
     scope: '/kiosk/',
-    display: 'standalone',
+    display: 'fullscreen',
     display_override: ['fullscreen', 'standalone'],
     orientation: 'any',
     background_color: '#09090b',

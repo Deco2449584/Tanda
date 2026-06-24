@@ -1,24 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import { KioskShell } from '@/components/kiosk/KioskShell';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
+import { kioskPwaMetadata } from '@/lib/pwa/kiosk-metadata';
 
 export const metadata: Metadata = {
   title: `Kiosk | ${COMPANY_NAME}`,
   description: 'Employee check-in kiosk for tablets and shared devices.',
   applicationName: `${COMPANY_NAME} Kiosk`,
-  manifest: '/kiosk/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    title: 'Kiosk',
-    statusBarStyle: 'black-translucent',
-  },
-  icons: {
-    icon: [{ url: '/kiosk/icon', type: 'image/png' }],
-    apple: [{ url: '/kiosk/apple-icon', type: 'image/png' }],
-  },
-  other: {
-    'mobile-web-app-capable': 'yes',
-  },
+  ...kioskPwaMetadata,
 };
 
 export const viewport: Viewport = {
