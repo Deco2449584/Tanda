@@ -1,8 +1,12 @@
 ﻿'use client';
 
+import { ArrowRight, Delete, RotateCcw } from 'lucide-react';
+import { cn } from '@/lib/cn';
+
 interface KioskPinPadProps {
   pin: string;
   loading: boolean;
+  maxLength?: number;
   onDigit: (digit: string) => void;
   onBackspace: () => void;
   onClear: () => void;
@@ -11,84 +15,123 @@ interface KioskPinPadProps {
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 
+const keyClass =
+  'flex items-center justify-center rounded-[clamp(0.85rem,2.5vw,1.25rem)] border border-white/10 ' +
+  'bg-white/[0.06] font-semibold tabular-nums text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ' +
+  'transition hover:bg-white/[0.12] active:scale-95 disabled:opacity-40 disabled:active:scale-100 ' +
+  'h-[clamp(2.85rem,7.2vh,4.5rem)] text-[clamp(1.15rem,3.2vh,2rem)]';
+
+const iconClass = 'h-[clamp(1.1rem,2.6vh,1.6rem)] w-[clamp(1.1rem,2.6vh,1.6rem)]';
+
 export function KioskPinPad({
   pin,
   loading,
+  maxLength = 8,
   onDigit,
   onBackspace,
   onClear,
   onSubmit,
 }: KioskPinPadProps) {
-  const display = pin.padEnd(8, '•').slice(0, 8);
+  const visibleSlots = Math.min(maxLength, Math.max(4, pin.length + 1));
+  const slots = Array.from({ length: visibleSlots });
 
   return (
-    <div className="w-full max-w-[640px] shrink-0 rounded-2xl border border-primary/25 bg-white/5 px-3 py-3 shadow-xl backdrop-blur-sm md:rounded-3xl md:px-8 md:py-8">
-     
-      <p className="mt-1 text-center text-xs text-zinc-300 md:mt-2 md:text-base">
-        Enter your PIN
-      </p>
-
-      <div
-        className="mx-auto mt-3 flex h-10 w-full max-w-[460px] items-center justify-center rounded-full border border-white/15 bg-white/10 md:mt-5 md:h-[66px]"
-        aria-label="PIN entry"
-      >
-        <span className="font-mono text-lg font-bold tracking-[0.3em] text-emerald-50 md:text-[34px] md:tracking-[0.35em]">
-          {display}
-        </span>
+    <div className="flex h-full w-full flex-col rounded-[clamp(1.25rem,4vw,2rem)] border border-white/10 bg-white/[0.03] p-[clamp(1rem,3.5vw,1.75rem)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-md lg:landscape:justify-between">
+      <div className="shrink-0">
+        <p className="text-center text-[clamp(0.58rem,1.5vh,0.7rem)] font-semibold uppercase tracking-[0.32em] text-primary/80">
+          Time Clock
+        </p>
+        <h2 className="mt-[clamp(0.15rem,0.6vh,0.4rem)] text-center text-[clamp(1.2rem,3.2vh,1.75rem)] font-bold text-white">
+          Enter your ID
+        </h2>
       </div>
-      <p className="mt-1 text-center text-[10px] tracking-widest text-slate-400 md:mt-2 md:text-xs">
-        EMPLOYEE PIN
-      </p>
 
-      <div className="mx-auto mt-3 grid w-full max-w-[470px] grid-cols-3 gap-2 md:mt-5 md:gap-4">
+      <div className="mt-[clamp(0.85rem,2.4vh,1.4rem)] lg:landscape:mt-0 lg:landscape:flex lg:landscape:flex-1 lg:landscape:flex-col lg:landscape:justify-center">
+      <div
+        className="flex items-center justify-center gap-[clamp(0.5rem,2vw,0.85rem)]"
+        aria-label="ID entry"
+      >
+        {slots.map((_, index) => {
+          const filled = index < pin.length;
+          const active = index === pin.length && pin.length < maxLength;
+
+          return (
+            <div
+              key={index}
+              className={cn(
+                'flex aspect-[5/6] w-[clamp(2.4rem,11vw,3.5rem)] items-center justify-center rounded-[clamp(0.7rem,2vw,1.1rem)] border transition',
+                active
+                  ? 'border-primary bg-primary/15 ring-2 ring-primary/60'
+                  : filled
+                    ? 'border-white/20 bg-white/[0.08]'
+                    : 'border-white/10 bg-white/[0.03]',
+              )}
+            >
+              {filled && (
+                <span className="h-[clamp(0.55rem,1.6vh,0.8rem)] w-[clamp(0.55rem,1.6vh,0.8rem)] rounded-full bg-white" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-[clamp(0.85rem,2.4vh,1.4rem)] grid grid-cols-3 gap-[clamp(0.5rem,2vw,0.85rem)]">
         {KEYS.map((key) => (
           <button
             key={key}
             type="button"
             disabled={loading}
             onClick={() => onDigit(key)}
-            className="flex h-12 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-xl font-semibold text-white transition active:scale-95 hover:bg-white/15 disabled:opacity-50 md:h-20 md:rounded-xl md:text-4xl"
+            className={keyClass}
           >
             {key}
           </button>
         ))}
+
         <button
           type="button"
-          disabled={loading}
+          disabled={loading || pin.length === 0}
           onClick={onClear}
-          className="flex h-12 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-base font-semibold text-white transition active:scale-95 hover:bg-white/15 disabled:opacity-50 md:h-20 md:rounded-xl md:text-xl"
+          className={keyClass}
+          aria-label="Clear"
         >
-          C
+          <RotateCcw className={iconClass} strokeWidth={2} />
         </button>
+
         <button
           type="button"
           disabled={loading}
           onClick={() => onDigit('0')}
-          className="flex h-12 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-xl font-semibold text-white transition active:scale-95 hover:bg-white/15 disabled:opacity-50 md:h-20 md:rounded-xl md:text-4xl"
+          className={keyClass}
         >
           0
         </button>
+
         <button
           type="button"
-          disabled={loading}
+          disabled={loading || pin.length === 0}
           onClick={onBackspace}
-          className="flex h-12 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-lg font-semibold text-white transition active:scale-95 hover:bg-white/15 disabled:opacity-50 md:h-20 md:rounded-xl md:text-2xl"
+          className={keyClass}
           aria-label="Backspace"
         >
-          ⌫
+          <Delete className={iconClass} strokeWidth={2} />
         </button>
+      </div>
       </div>
 
       <button
         type="button"
         disabled={loading || !pin}
         onClick={onSubmit}
-        className="mx-auto mt-3 flex h-11 w-full max-w-[470px] items-center justify-center rounded-full bg-primary text-base font-bold tracking-wide text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-[74px] md:text-xl"
+        className="mt-[clamp(0.85rem,2.5vh,1.4rem)] flex h-[clamp(2.85rem,6.5vh,3.75rem)] w-full shrink-0 items-center justify-center gap-2 rounded-[clamp(0.9rem,3vw,1.35rem)] bg-primary text-[clamp(0.95rem,2.4vh,1.15rem)] font-semibold text-white shadow-lg shadow-primary/25 transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none lg:landscape:mt-0"
       >
         {loading ? (
-          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white md:h-6 md:w-6" />
+          <span className="inline-block h-[clamp(1.1rem,2.6vh,1.5rem)] w-[clamp(1.1rem,2.6vh,1.5rem)] animate-spin rounded-full border-2 border-white/30 border-t-white" />
         ) : (
-          'CONTINUE'
+          <>
+            Continue
+            <ArrowRight className={iconClass} strokeWidth={2.25} />
+          </>
         )}
       </button>
     </div>

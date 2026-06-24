@@ -82,7 +82,7 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
 
   const handleValidatePin = async () => {
     if (!pin.trim()) {
-      setToast(createToast('Please enter your PIN.', 'error'));
+      setToast(createToast('Please enter your ID.', 'error'));
       return;
     }
 
@@ -106,13 +106,13 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
 
       if (!response.ok) {
         setToast(
-          createToast(data?.error ?? 'Could not validate PIN. Please try again.', 'error'),
+          createToast(data?.error ?? 'Could not validate ID. Please try again.', 'error'),
         );
         return;
       }
 
       if (!data) {
-        setToast(createToast('Could not validate PIN. Please try again.', 'error'));
+        setToast(createToast('Could not validate ID. Please try again.', 'error'));
         return;
       }
 
@@ -132,7 +132,7 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
 
   const handleCapture = async (imageBlob: Blob, previewDataUrl: string) => {
     if (!session) {
-      setToast(createToast('Session expired. Enter your PIN again.', 'error'));
+      setToast(createToast('Session expired. Enter your ID again.', 'error'));
       resetToPin();
       return;
     }
@@ -198,65 +198,68 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
   const showLogo = step !== 'success';
 
   return (
-    <div className="relative flex min-h-[100dvh] max-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden bg-zinc-950 px-4 py-10">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-4 pt-4">
-        <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary/30 bg-zinc-900/90 px-4 py-2 text-xs text-zinc-200 backdrop-blur">
+    <div className="relative flex min-h-[100dvh] w-full flex-col bg-[radial-gradient(125%_85%_at_50%_-10%,#13224a_0%,#0a1020_42%,#05070d_100%)] text-white">
+      <header className="z-20 flex shrink-0 flex-col items-center gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] lg:landscape:gap-4">
+        {step === 'pin' && showLogo && (
+          <CompanyLogo
+            priority
+            variant="light"
+            className="h-auto w-[min(84vw,18rem)] max-h-[5.25rem] shrink-0 object-contain drop-shadow-lg lg:landscape:w-[min(100%,20rem)] lg:landscape:max-h-[6rem]"
+          />
+        )}
+        <div className="inline-flex max-w-[92%] items-center gap-2 rounded-full border border-primary/30 bg-white/[0.04] px-4 py-2 text-[clamp(0.65rem,1.6vh,0.8rem)] text-zinc-200 shadow-lg backdrop-blur">
           <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="truncate">
-            Clocking in at: <strong className="font-semibold text-white">{warehouseLabel}</strong>
+            Clocking in at:{' '}
+            <strong className="font-semibold text-white">{warehouseLabel}</strong>
           </span>
         </div>
-      </div>
+      </header>
 
-      {step === 'pin' ? (
-        <>
-          <div className="mt-12 flex shrink-0 flex-col items-center gap-6">
+      <main className="flex w-full flex-1 flex-col items-center justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 max-lg:landscape:pt-3 lg:landscape:py-[clamp(1.5rem,4.5vh,2.5rem)]">
+        {step === 'pin' ? (
+          <div className="flex w-full max-w-sm flex-col items-stretch gap-4 max-lg:landscape:gap-3 lg:landscape:min-h-[min(68vh,520px)] lg:landscape:max-w-4xl lg:landscape:flex-row lg:landscape:items-stretch lg:landscape:gap-8">
+            <div className="flex w-full min-w-0 lg:landscape:flex-1">
+              <KioskClock />
+            </div>
+
+            <div className="flex w-full min-w-0 lg:landscape:flex-1">
+              <KioskPinPad
+                pin={pin}
+                loading={loading}
+                onDigit={handleDigit}
+                onBackspace={() => setPin((prev) => prev.slice(0, -1))}
+                onClear={() => setPin('')}
+                onSubmit={() => void handleValidatePin()}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex w-full max-w-2xl flex-col items-center">
             {showLogo && (
               <CompanyLogo
                 priority
                 variant="light"
-                className="h-16 w-auto shrink-0 drop-shadow-md"
+                className="mb-[clamp(1rem,3vh,1.5rem)] h-auto w-[min(88vw,20rem)] max-h-[clamp(5.5rem,14vh,9rem)] shrink-0 object-contain drop-shadow-lg"
               />
             )}
-            <KioskClock />
+
+            {step === 'camera' && session && (
+              <KioskCamera
+                actionType={session.actionType}
+                employeeName={session.employeeName}
+                processing={processing}
+                onCapture={(blob, previewUrl) => void handleCapture(blob, previewUrl)}
+                onCancel={resetToPin}
+              />
+            )}
+
+            {step === 'success' && successData && (
+              <KioskSuccessModal data={successData} />
+            )}
           </div>
-
-          <div className="flex w-full max-w-[640px] shrink-0 flex-col items-center gap-4">
-            <KioskPinPad
-              pin={pin}
-              loading={loading}
-              onDigit={handleDigit}
-              onBackspace={() => setPin((prev) => prev.slice(0, -1))}
-              onClear={() => setPin('')}
-              onSubmit={() => void handleValidatePin()}
-            />
-          </div>
-        </>
-      ) : (
-        <div className="mt-12 flex min-h-0 w-full max-w-[640px] flex-1 flex-col items-center justify-center">
-          {showLogo && (
-            <CompanyLogo
-              priority
-              variant="light"
-              className="mb-6 h-12 w-auto shrink-0 drop-shadow-md md:h-16"
-            />
-          )}
-
-          {step === 'camera' && session && (
-            <KioskCamera
-              actionType={session.actionType}
-              employeeName={session.employeeName}
-              processing={processing}
-              onCapture={(blob, previewUrl) => void handleCapture(blob, previewUrl)}
-              onCancel={resetToPin}
-            />
-          )}
-
-          {step === 'success' && successData && (
-            <KioskSuccessModal data={successData} />
-          )}
-        </div>
-      )}
+        )}
+      </main>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>

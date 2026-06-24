@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CalendarRange } from 'lucide-react';
+import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   formatDateRangeLabel,
   getDefaultDateRange,
@@ -12,9 +12,10 @@ import {
 interface DateRangePickerProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
+  onStepWeek?: (direction: -1 | 1) => void;
 }
 
-export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
+export function DateRangePicker({ value, onChange, onStepWeek }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange>(value);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,16 +60,42 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   }
 
   return (
-    <div className="relative" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-2 rounded-lg border border-border-strong bg-surface-raised px-4 py-2.5 text-sm text-foreground transition-colors hover:border-zinc-600"
-        aria-expanded={open}
-      >
-        <CalendarRange className="h-4 w-4 text-primary" />
-        {formatDateRangeLabel(value)}
-      </button>
+    <div className="relative inline-block" ref={containerRef}>
+      <div className="flex items-center gap-1 rounded-xl border border-border-strong bg-surface-raised p-1 transition-colors focus-within:border-primary/40">
+        {onStepWeek && (
+          <button
+            type="button"
+            onClick={() => onStepWeek(-1)}
+            className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+            aria-label="Previous week"
+            title="Previous week"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-surface-hover"
+          aria-expanded={open}
+        >
+          <CalendarRange className="h-4 w-4 shrink-0 text-primary" />
+          <span className="whitespace-nowrap">{formatDateRangeLabel(value)}</span>
+        </button>
+
+        {onStepWeek && (
+          <button
+            type="button"
+            onClick={() => onStepWeek(1)}
+            className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+            aria-label="Next week"
+            title="Next week"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-border bg-surface-raised p-4 shadow-2xl">

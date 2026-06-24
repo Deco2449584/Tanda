@@ -12,7 +12,6 @@ import {
 import { Download, FileSpreadsheet, MapPin, Plus, Search } from 'lucide-react';
 import {
   AttendanceDateFilterBar,
-  type AttendanceDatePreset,
 } from '@/components/attendance/AttendanceDateFilterBar';
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
@@ -25,9 +24,7 @@ import {
   formatPayrollSummaryText,
 } from '@/lib/attendance/export-payroll-csv';
 import {
-  getCurrentWeekDateRange,
   getDefaultDateRange,
-  getLastWeekRange,
   toFirestoreRangeBounds,
   type DateRange,
 } from '@/lib/attendance/date-range';
@@ -44,20 +41,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
-function resolveAttendancePreset(range: DateRange): AttendanceDatePreset {
-  const thisWeek = getCurrentWeekDateRange();
-  if (range.start === thisWeek.start && range.end === thisWeek.end) {
-    return 'thisWeek';
-  }
-
-  const lastWeek = getLastWeekRange();
-  if (range.start === lastWeek.start && range.end === lastWeek.end) {
-    return 'lastWeek';
-  }
-
-  return 'custom';
-}
-
 export default function AttendancePage() {
   const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
@@ -68,7 +51,6 @@ export default function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
-  const [datePreset, setDatePreset] = useState<AttendanceDatePreset>('thisWeek');
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
     null,
   );
@@ -219,12 +201,7 @@ export default function AttendancePage() {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <AttendanceDateFilterBar
           dateRange={dateRange}
-          activePreset={datePreset}
-          onPresetChange={setDatePreset}
-          onRangeChange={(range) => {
-            setDateRange(range);
-            setDatePreset(resolveAttendancePreset(range));
-          }}
+          onRangeChange={setDateRange}
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

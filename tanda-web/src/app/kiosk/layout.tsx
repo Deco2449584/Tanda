@@ -27,7 +27,7 @@ export default function KioskLayout({
 
   return (
     <div
-      className="fixed inset-0 z-50 min-h-[100dvh] h-[100dvh] w-dvw touch-manipulation select-none overflow-hidden bg-zinc-950 [-webkit-touch-callout:none]"
+      className="fixed inset-0 z-50 h-[100dvh] w-dvw touch-manipulation select-none overflow-x-hidden overflow-y-auto bg-zinc-950 [-webkit-overflow-scrolling:touch] [-webkit-touch-callout:none]"
       onContextMenu={(e) => e.preventDefault()}
     >
       {children}

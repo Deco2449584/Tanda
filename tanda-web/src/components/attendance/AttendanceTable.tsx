@@ -85,8 +85,8 @@ export function AttendanceTable({
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
-        <div className="hidden md:block">
-          <table className="w-full border-collapse text-left text-sm">
+        <div className="hidden overflow-x-auto scrollbar-modern md:block">
+          <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-primary/25 bg-primary/10">
                 <th className="px-4 py-3.5 font-semibold text-white">
