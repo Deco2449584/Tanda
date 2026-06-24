@@ -1,17 +1,15 @@
 import type { MetadataRoute } from 'next';
-import { COMPANY_NAME } from '@/lib/types/company-settings';
 import { buildPwaIconEntries } from '@/lib/pwa/manifest-icons';
 
 export function getKioskManifest(): MetadataRoute.Manifest {
   return {
-    id: '/kiosk/',
-    name: `${COMPANY_NAME} Kiosk`,
+    id: '/kiosk',
+    name: 'Kiosk Continental Cargo',
     short_name: 'Kiosk',
     description: 'Shared tablet check-in for employee attendance.',
-    start_url: '/kiosk/',
-    scope: '/kiosk/',
+    start_url: '/kiosk',
+    scope: '/',
     display: 'fullscreen',
-    display_override: ['fullscreen', 'standalone'],
     orientation: 'any',
     background_color: '#09090b',
     theme_color: '#09090b',
