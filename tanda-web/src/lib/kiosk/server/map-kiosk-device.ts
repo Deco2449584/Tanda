@@ -1,9 +1,32 @@
 import type { Timestamp } from 'firebase-admin/firestore';
-import type { KioskDevice, KioskDeviceStatus } from '@/lib/types/kiosk-device';
+import type {
+  KioskDevice,
+  KioskDeviceDetails,
+  KioskDeviceStatus,
+  KioskDeviceType,
+} from '@/lib/types/kiosk-device';
 
 function timestampToIso(value: Timestamp | undefined): string | undefined {
   if (!value) return undefined;
   return value.toDate().toISOString();
+}
+
+function mapDetails(value: unknown): KioskDeviceDetails | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const data = value as Record<string, unknown>;
+
+  const details: KioskDeviceDetails = {};
+  if (typeof data.browser === 'string') details.browser = data.browser;
+  if (typeof data.os === 'string') details.os = data.os;
+  if (typeof data.model === 'string') details.model = data.model;
+  if (typeof data.platform === 'string') details.platform = data.platform;
+  if (typeof data.mobile === 'boolean') details.mobile = data.mobile;
+  if (typeof data.screen === 'string') details.screen = data.screen;
+  if (typeof data.language === 'string') details.language = data.language;
+  if (typeof data.timeZone === 'string') details.timeZone = data.timeZone;
+  if (typeof data.userAgent === 'string') details.userAgent = data.userAgent;
+
+  return Object.keys(details).length > 0 ? details : undefined;
 }
 
 export function mapKioskDeviceDoc(
@@ -12,14 +35,14 @@ export function mapKioskDeviceDoc(
 ): KioskDevice {
   return {
     id,
-    status: (data.status as KioskDeviceStatus) ?? 'pending',
-    label: typeof data.label === 'string' ? data.label : undefined,
-    locationId: typeof data.locationId === 'string' ? data.locationId : undefined,
-    requestedAt: timestampToIso(data.requestedAt as Timestamp) ?? new Date().toISOString(),
-    approvedAt: timestampToIso(data.approvedAt as Timestamp),
-    approvedBy: typeof data.approvedBy === 'string' ? data.approvedBy : undefined,
+    status: (data.status as KioskDeviceStatus) === 'revoked' ? 'revoked' : 'active',
+    type: (data.type as KioskDeviceType) === 'mobile' ? 'mobile' : 'tablet',
+    name: typeof data.name === 'string' ? data.name : '',
+    locationId: typeof data.locationId === 'string' ? data.locationId : '',
+    hasLockPin: typeof data.lockPinHash === 'string' && data.lockPinHash.length > 0,
+    details: mapDetails(data.details),
+    createdBy: typeof data.createdBy === 'string' ? data.createdBy : undefined,
+    createdAt: timestampToIso(data.createdAt as Timestamp) ?? new Date().toISOString(),
     lastSeenAt: timestampToIso(data.lastSeenAt as Timestamp),
-    userAgent: typeof data.userAgent === 'string' ? data.userAgent : undefined,
-    platform: typeof data.platform === 'string' ? data.platform : undefined,
   };
 }

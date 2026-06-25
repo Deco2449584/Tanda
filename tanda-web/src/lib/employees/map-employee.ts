@@ -27,6 +27,7 @@ export function mapEmployeeDoc(
         : undefined,
     hourlyRate: typeof employee.hourlyRate === 'number' ? employee.hourlyRate : 0,
     active: employee.active ?? false,
+    kioskEnabled: employee.kioskEnabled === true,
     lastAction: employee.lastAction ?? 'none',
     lastTimestampServer: employee.lastTimestampServer,
     photoUrl: typeof employee.photoUrl === 'string' ? employee.photoUrl : '',

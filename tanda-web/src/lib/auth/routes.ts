@@ -15,10 +15,16 @@ export function isRouteAllowedForEmployee(pathname: string): boolean {
   return isEmployeeOnlyRoute(pathname);
 }
 
+import type { UserRole } from '@/lib/auth/roles';
+
 export function getRedirectForRole(
-  role: 'admin' | 'empleado',
+  role: UserRole,
   pathname: string,
 ): string | null {
+  if (role === 'kiosk') {
+    return '/kiosk';
+  }
+
   if (role === 'empleado' && !isRouteAllowedForEmployee(pathname)) {
     return '/employee-dashboard';
   }

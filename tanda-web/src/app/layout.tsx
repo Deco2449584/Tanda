@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import { ClientProviders } from '@/components/providers/ClientProviders';
+import { workforcePwaMetadata } from '@/lib/pwa/workforce-metadata';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
   title: 'Continental Cargo | Workforce',
   description: 'Continental Cargo workforce operations platform',
   applicationName: 'Continental Cargo',
+  ...workforcePwaMetadata,
 };
 
 export default function RootLayout({

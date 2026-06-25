@@ -6,16 +6,17 @@ import {
   findKioskDeviceByToken,
 } from '@/lib/kiosk/server/kiosk-devices-service';
 
+/** Resumes the device session for a stored token (used on kiosk load). */
 export async function GET(request: Request) {
   try {
     const token = getKioskDeviceTokenFromRequest(request);
     if (!token) {
-      return NextResponse.json({ error: 'Device token is required.' }, { status: 401 });
+      return NextResponse.json({ session: null });
     }
 
     const device = await findKioskDeviceByToken(token);
-    if (!device) {
-      return NextResponse.json({ error: 'Device not registered.' }, { status: 404 });
+    if (!device || device.status !== 'active') {
+      return NextResponse.json({ session: null });
     }
 
     await device.ref.update({ lastSeenAt: FieldValue.serverTimestamp() });
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     const session = await buildKioskDeviceSession(device);
     return NextResponse.json({ session });
   } catch (error) {
-    console.error('GET /api/kiosk/devices/status', error);
-    return NextResponse.json({ error: 'Could not load device status.' }, { status: 500 });
+    console.error('GET /api/kiosk/devices/session', error);
+    return NextResponse.json({ error: 'Could not load device session.' }, { status: 500 });
   }
 }

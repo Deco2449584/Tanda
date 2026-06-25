@@ -1,5 +1,7 @@
-export type UserRole = 'admin' | 'empleado';
+export type UserRole = 'admin' | 'empleado' | 'kiosk';
 
 export function getHomeRouteForRole(role: UserRole): string {
-  return role === 'admin' ? '/dashboard' : '/employee-dashboard';
+  if (role === 'admin') return '/dashboard';
+  if (role === 'kiosk') return '/kiosk';
+  return '/employee-dashboard';
 }

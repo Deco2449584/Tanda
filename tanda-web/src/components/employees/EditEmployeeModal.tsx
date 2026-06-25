@@ -30,6 +30,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     hourlyRate: 0,
   });
   const [active, setActive] = useState(true);
+  const [kioskEnabled, setKioskEnabled] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +51,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       hourlyRate: employee.hourlyRate,
     });
     setActive(employee.active);
+    setKioskEnabled(employee.kioskEnabled === true);
     setPhotoFile(null);
     setError('');
   }, [employee]);
@@ -112,6 +114,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         department: form.department.trim(),
         hourlyRate: form.hourlyRate,
         active,
+        kioskEnabled,
       };
 
       if (photoUrl) {
@@ -294,6 +297,32 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               <span
                 className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
                   active ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Kiosk access</p>
+              <p className="mt-0.5 text-xs text-subtle">
+                Lets this employee open the /kiosk check-in module from their own device.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={kioskEnabled}
+              aria-label={kioskEnabled ? 'Kiosk access enabled' : 'Kiosk access disabled'}
+              disabled={isBusy}
+              onClick={() => setKioskEnabled((prev) => !prev)}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                kioskEnabled ? 'bg-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  kioskEnabled ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>

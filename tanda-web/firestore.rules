@@ -12,6 +12,7 @@ service cloud.firestore {
           'name',
           'email',
           'active',
+          'kioskEnabled',
           'lastAction',
           'lastTimestampServer',
           'department',
@@ -25,6 +26,10 @@ service cloud.firestore {
         request.resource.data.email is string &&
         request.resource.data.employeeId is string &&
         request.resource.data.active is bool &&
+        (
+          !('kioskEnabled' in request.resource.data) ||
+          request.resource.data.kioskEnabled is bool
+        ) &&
         (
           !('locationId' in request.resource.data) ||
           request.resource.data.locationId is string
@@ -58,6 +63,10 @@ service cloud.firestore {
         request.resource.data.email is string &&
         request.resource.data.employeeId is string &&
         request.resource.data.active is bool &&
+        (
+          !('kioskEnabled' in request.resource.data) ||
+          request.resource.data.kioskEnabled is bool
+        ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'employeeId',
           'name',
@@ -66,6 +75,7 @@ service cloud.firestore {
           'hourlyRate',
           'photoUrl',
           'active',
+          'kioskEnabled',
           'locationId',
           'locationGroupId',
         ]);

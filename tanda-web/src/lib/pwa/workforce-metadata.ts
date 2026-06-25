@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const WORKFORCE_MANIFEST_HREF = '/manifest.webmanifest';
 
-/** PWA metadata for the workforce app — do not add to root or kiosk layouts. */
+/** Single-app PWA metadata, applied at the root layout so every route shares one manifest. */
 export const workforcePwaMetadata: Metadata = {
   manifest: WORKFORCE_MANIFEST_HREF,
   appleWebApp: {

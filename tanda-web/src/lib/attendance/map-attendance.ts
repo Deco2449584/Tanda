@@ -32,9 +32,13 @@ export function mapAttendanceDoc(
         : undefined,
     kioskDeviceId:
       typeof record.kioskDeviceId === 'string' ? record.kioskDeviceId : undefined,
-    kioskDeviceLabelSnapshot:
-      typeof record.kioskDeviceLabelSnapshot === 'string'
-        ? record.kioskDeviceLabelSnapshot
+    kioskDeviceNameSnapshot:
+      typeof record.kioskDeviceNameSnapshot === 'string'
+        ? record.kioskDeviceNameSnapshot
+        : undefined,
+    kioskDeviceType:
+      record.kioskDeviceType === 'tablet' || record.kioskDeviceType === 'mobile'
+        ? record.kioskDeviceType
         : undefined,
     latitude: typeof record.latitude === 'number' ? record.latitude : undefined,
     longitude: typeof record.longitude === 'number' ? record.longitude : undefined,

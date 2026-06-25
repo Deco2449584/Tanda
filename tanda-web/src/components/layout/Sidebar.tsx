@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
@@ -8,6 +9,7 @@ import {
   ClipboardList,
   Clock,
   LayoutDashboard,
+  MonitorSmartphone,
   PackageSearch,
   Settings,
   ShieldCheck,
@@ -17,6 +19,8 @@ import {
 import type { UserRole } from '@/lib/auth/roles';
 import { cn } from '@/lib/cn';
 import { CompanyLogoSidebar } from '@/components/ui/CompanyLogo';
+import { useAuthRole } from '@/hooks/useAuthRole';
+import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 
 interface NavItem {
   label: string;
@@ -80,9 +84,23 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+const kioskNavGroup: NavGroup = {
+  title: 'Kiosk',
+  items: [{ label: 'Kiosk check-in', href: '/kiosk', icon: MonitorSmartphone }],
+};
+
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
-  const navGroups = role === 'admin' ? adminNavGroups : employeeNavGroups;
+  const { user } = useAuthRole();
+  const { employee } = useCurrentEmployee(role === 'empleado' ? user?.email : null);
+  const kioskEnabled = employee?.kioskEnabled === true;
+
+  const navGroups = useMemo(() => {
+    if (role === 'admin') return adminNavGroups;
+    if (!kioskEnabled) return employeeNavGroups;
+    return [...employeeNavGroups, kioskNavGroup];
+  }, [role, kioskEnabled]);
+
   const roleLabel = role === 'admin' ? 'Administrator' : 'Employee';
 
   return (

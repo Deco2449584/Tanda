@@ -103,7 +103,8 @@ export async function recordKioskPunch(input: {
     locationNameSnapshot: typeof locationData.name === 'string' ? locationData.name : '',
     locationCitySnapshot: typeof locationData.city === 'string' ? locationData.city : '',
     kioskDeviceId: device.id,
-    kioskDeviceLabelSnapshot: device.label ?? '',
+    kioskDeviceNameSnapshot: device.name ?? '',
+    kioskDeviceType: device.type,
     ...(actionType === 'check_out' ? { breakWaived: false } : {}),
     ...geoFields,
   });
@@ -129,7 +130,7 @@ async function requireActiveKioskDevice(token: string) {
     throw new KioskPunchError('Device not registered.', 404);
   }
   if (device.status !== 'active' || !device.locationId) {
-    throw new KioskPunchError('This kiosk is not approved yet.', 403);
+    throw new KioskPunchError('This kiosk is no longer active.', 403);
   }
   return device;
 }

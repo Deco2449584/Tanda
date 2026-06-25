@@ -24,6 +24,9 @@ export function resolveRoleFromEmployee(
   if (!source) return 'empleado';
 
   const role = source.role?.trim().toLowerCase() ?? '';
+  if (role === 'kiosk') {
+    return 'kiosk';
+  }
   if (role && ADMIN_ROLE_VALUES.has(role)) {
     return 'admin';
   }

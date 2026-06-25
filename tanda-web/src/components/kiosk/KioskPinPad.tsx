@@ -26,14 +26,14 @@ const iconClass = 'h-[clamp(1.1rem,2.6vh,1.6rem)] w-[clamp(1.1rem,2.6vh,1.6rem)]
 export function KioskPinPad({
   pin,
   loading,
-  maxLength = 8,
+  maxLength = 4,
   onDigit,
   onBackspace,
   onClear,
   onSubmit,
 }: KioskPinPadProps) {
-  const visibleSlots = Math.min(maxLength, Math.max(4, pin.length + 1));
-  const slots = Array.from({ length: visibleSlots });
+  const atMax = pin.length >= maxLength;
+  const slots = Array.from({ length: maxLength });
 
   return (
     <div className="flex h-full w-full flex-col rounded-[clamp(1.25rem,4vw,2rem)] border border-white/10 bg-white/[0.03] p-[clamp(1rem,3.5vw,1.75rem)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-md lg:landscape:justify-between">
@@ -80,7 +80,7 @@ export function KioskPinPad({
           <button
             key={key}
             type="button"
-            disabled={loading}
+            disabled={loading || atMax}
             onClick={() => onDigit(key)}
             className={keyClass}
           >
@@ -100,7 +100,7 @@ export function KioskPinPad({
 
         <button
           type="button"
-          disabled={loading}
+          disabled={loading || atMax}
           onClick={() => onDigit('0')}
           className={keyClass}
         >

@@ -11,6 +11,7 @@ export function getKioskDeviceTokenFromRequest(request: Request): string | null 
   return token || null;
 }
 
-export function getKioskDeviceShortCode(deviceId: string): string {
-  return deviceId.slice(-6).toUpperCase();
+/** Lock PINs are short, so hashing is just to avoid storing them in plaintext. */
+export function hashKioskLockPin(pin: string): string {
+  return createHash('sha256').update(`kiosk-lock:${pin.trim()}`).digest('hex');
 }

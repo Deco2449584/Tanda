@@ -21,7 +21,7 @@ import {
 } from '@/lib/dashboard/compute-metrics';
 import { COLLECTIONS } from '@/lib/constants';
 import { toInputDate } from '@/lib/dates/input-date';
-import { auth, db } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -55,22 +55,6 @@ interface AdminNotificationData {
   leaveRequests: LeaveRequest[];
   shifts: Shift[];
   attendanceRecords: AttendanceRecord[];
-  pendingKioskDevices: number;
-}
-
-async function fetchPendingKioskDeviceCount(): Promise<number> {
-  const user = auth?.currentUser;
-  if (!user) return 0;
-
-  const token = await user.getIdToken();
-  const response = await fetch('/api/kiosk/devices/pending-count', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (!response.ok) return 0;
-
-  const data = (await response.json()) as { pendingCount?: number };
-  return typeof data.pendingCount === 'number' ? data.pendingCount : 0;
 }
 
 async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
@@ -81,8 +65,7 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
   const today = toInputDate();
   const { start, end } = getRecentAttendanceRange();
 
-  const [leaveSnapshot, shiftsSnapshot, attendanceSnapshot, pendingKioskDevices] =
-    await Promise.all([
+  const [leaveSnapshot, shiftsSnapshot, attendanceSnapshot] = await Promise.all([
     getDocs(
       query(
         collection(db, COLLECTIONS.LEAVE_REQUESTS),
@@ -101,7 +84,6 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
         limit(ATTENDANCE_FETCH_LIMIT),
       ),
     ),
-    fetchPendingKioskDeviceCount(),
   ]);
 
   return {
@@ -114,7 +96,6 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     attendanceRecords: attendanceSnapshot.docs.map((document) =>
       mapAttendanceDoc(document.id, document.data()),
     ),
-    pendingKioskDevices,
   };
 }
 
@@ -186,16 +167,6 @@ function buildNotificationItems(
     });
   }
 
-  if (data.pendingKioskDevices > 0) {
-    list.push({
-      id: 'kiosk_pending',
-      title: 'Kiosk devices pending',
-      description: `${data.pendingKioskDevices} tablet${data.pendingKioskDevices === 1 ? '' : 's'} waiting for approval`,
-      href: '/settings',
-      count: data.pendingKioskDevices,
-    });
-  }
-
   return list;
 }
 
@@ -209,7 +180,6 @@ export function useAdminNotifications(enabled: boolean) {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
     [],
   );
-  const [pendingKioskDevices, setPendingKioskDevices] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -217,7 +187,6 @@ export function useAdminNotifications(enabled: boolean) {
       setLeaveRequests([]);
       setShifts([]);
       setAttendanceRecords([]);
-      setPendingKioskDevices(0);
       setLoading(false);
       return;
     }
@@ -231,7 +200,6 @@ export function useAdminNotifications(enabled: boolean) {
         setLeaveRequests(data.leaveRequests);
         setShifts(data.shifts);
         setAttendanceRecords(data.attendanceRecords);
-        setPendingKioskDevices(data.pendingKioskDevices);
       })
       .catch((error) => {
         console.error('useAdminNotifications', error);
@@ -239,7 +207,6 @@ export function useAdminNotifications(enabled: boolean) {
         setLeaveRequests([]);
         setShifts([]);
         setAttendanceRecords([]);
-        setPendingKioskDevices(0);
       })
       .finally(() => {
         if (!cancelled) {
@@ -259,9 +226,8 @@ export function useAdminNotifications(enabled: boolean) {
       leaveRequests,
       shifts,
       attendanceRecords,
-      pendingKioskDevices,
     });
-  }, [attendanceRecords, enabled, leaveRequests, pendingKioskDevices, shifts]);
+  }, [attendanceRecords, enabled, leaveRequests, shifts]);
 
   const totalCount = useMemo(
     () => items.reduce((sum, item) => sum + item.count, 0),

@@ -98,6 +98,7 @@ export function CreateEmployeeModal({ open, onClose }: CreateEmployeeModalProps)
         department: form.department.trim(),
         hourlyRate: form.hourlyRate,
         active: true,
+        kioskEnabled: false,
         lastAction: 'none',
         lastTimestampServer: serverTimestamp(),
       };

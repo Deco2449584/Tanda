@@ -6,28 +6,13 @@ export function isIosDevice(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-export function isKioskStandaloneDisplay(): boolean {
-  if (typeof window === 'undefined') {
+export function isFullscreenActive(): boolean {
+  if (typeof document === 'undefined') {
     return false;
   }
 
-  const iosStandalone =
-    'standalone' in window.navigator &&
-    (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-
-  return (
-    iosStandalone ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
-    window.matchMedia('(display-mode: standalone)').matches
-  );
-}
-
-export function isKioskBrowserDisplay(): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  return !isKioskStandaloneDisplay();
+  const doc = document as Document & { webkitFullscreenElement?: Element | null };
+  return Boolean(document.fullscreenElement || doc.webkitFullscreenElement);
 }
 
 export async function enterKioskFullscreen(): Promise<boolean> {
@@ -38,13 +23,13 @@ export async function enterKioskFullscreen(): Promise<boolean> {
   const element = document.documentElement;
 
   try {
-    if (document.fullscreenElement) {
+    if (isFullscreenActive()) {
       return true;
     }
 
     if (element.requestFullscreen) {
       await element.requestFullscreen();
-      return Boolean(document.fullscreenElement);
+      return isFullscreenActive();
     }
 
     const webkitElement = element as HTMLElement & {
@@ -62,15 +47,22 @@ export async function enterKioskFullscreen(): Promise<boolean> {
   return false;
 }
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-}
+export async function exitKioskFullscreen(): Promise<void> {
+  if (typeof document === 'undefined' || !isFullscreenActive()) {
+    return;
+  }
 
-export type KioskInstallPromptEvent = BeforeInstallPromptEvent;
+  try {
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+    };
 
-export function isKioskInstallPromptEvent(
-  event: Event,
-): event is KioskInstallPromptEvent {
-  return 'prompt' in event && typeof (event as KioskInstallPromptEvent).prompt === 'function';
+    if (document.exitFullscreen) {
+      await document.exitFullscreen();
+    } else if (doc.webkitExitFullscreen) {
+      await doc.webkitExitFullscreen();
+    }
+  } catch {
+    // ignore
+  }
 }

@@ -1,35 +1,46 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Lock,
+  MonitorSmartphone,
+  Save,
+  Smartphone,
+  Tablet,
+  Trash2,
+} from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
-
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { MonitorSmartphone, ShieldCheck, ShieldOff } from 'lucide-react';
 import { auth } from '@/lib/firebase';
+import { subscribeLocations } from '@/lib/locations/locations-service';
 import type { KioskDevice } from '@/lib/types/kiosk-device';
 import type { Location } from '@/lib/types/location';
-import { subscribeLocations } from '@/lib/locations/locations-service';
 
 interface KioskDevicesTabProps {
   onToast: (message: string, variant?: 'success' | 'error' | 'info') => void;
+}
+
+async function authHeaders(): Promise<HeadersInit> {
+  const user = auth?.currentUser;
+  if (!user) throw new Error('Not signed in.');
+  const token = await user.getIdToken();
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
   const [devices, setDevices] = useState<KioskDevice[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [approveForms, setApproveForms] = useState<
-    Record<string, { label: string; locationId: string }>
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [edits, setEdits] = useState<
+    Record<string, { name: string; locationId: string }>
   >({});
 
   const loadDevices = useCallback(async () => {
-    const user = auth?.currentUser;
-    if (!user) return;
-
-    const token = await user.getIdToken();
     const response = await fetch('/api/kiosk/devices', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: await authHeaders(),
     });
 
     if (!response.ok) {
@@ -38,6 +49,15 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
 
     const data = (await response.json()) as { devices: KioskDevice[] };
     setDevices(data.devices);
+    setEdits((current) => {
+      const next = { ...current };
+      data.devices.forEach((device) => {
+        if (!next[device.id]) {
+          next[device.id] = { name: device.name, locationId: device.locationId };
+        }
+      });
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -49,100 +69,81 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
     return () => unsubLocations();
   }, [loadDevices, onToast]);
 
-  const activeLocations = locations.filter((location) => location.active);
-  const pendingDevices = devices.filter((device) => device.status === 'pending');
+  const activeLocations = useMemo(
+    () => locations.filter((location) => location.active),
+    [locations],
+  );
+
   const activeDevices = devices.filter((device) => device.status === 'active');
+  const revokedDevices = devices.filter((device) => device.status === 'revoked');
 
-  async function handleApprove(deviceId: string) {
-    const form = approveForms[deviceId];
-    if (!form?.locationId) {
-      onToast('Select a warehouse for this device.', 'error');
-      return;
-    }
-
-    setApprovingId(deviceId);
-    try {
-      const user = auth?.currentUser;
-      if (!user) throw new Error('Not signed in.');
-
-      const token = await user.getIdToken();
-      const response = await fetch('/api/kiosk/devices/approve', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          deviceId,
-          locationId: form.locationId,
-          label: form.label,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? 'Approve failed.');
-      }
-
-      onToast('Kiosk device approved.');
-      await loadDevices();
-    } catch (error) {
-      onToast(error instanceof Error ? error.message : 'Approve failed.', 'error');
-    } finally {
-      setApprovingId(null);
-    }
-  }
-
-  async function handleRevoke(deviceId: string, options?: { pending?: boolean }) {
-    const isPending = options?.pending === true;
-    const confirmMessage = isPending
-      ? 'Reject this tablet request? It will not be able to clock in until it registers again.'
-      : 'Revoke access for this kiosk device?';
-
-    if (!window.confirm(confirmMessage)) return;
-
-    if (isPending) {
-      setRejectingId(deviceId);
-    }
-
-    try {
-      const user = auth?.currentUser;
-      if (!user) throw new Error('Not signed in.');
-
-      const token = await user.getIdToken();
-      const response = await fetch('/api/kiosk/devices/revoke', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ deviceId }),
-      });
-
-      if (!response.ok) throw new Error(isPending ? 'Reject failed.' : 'Revoke failed.');
-      onToast(isPending ? 'Kiosk request rejected.' : 'Kiosk device revoked.');
-      await loadDevices();
-    } catch (error) {
-      onToast(
-        error instanceof Error
-          ? error.message
-          : isPending
-            ? 'Reject failed.'
-            : 'Revoke failed.',
-        'error',
-      );
-    } finally {
-      if (isPending) {
-        setRejectingId(null);
-      }
-    }
-  }
-
-  function locationLabel(locationId?: string) {
-    if (!locationId) return '—';
+  function locationLabel(locationId: string) {
     const location = locations.find((item) => item.id === locationId);
     if (!location) return '—';
     return location.city ? `${location.name} (${location.city})` : location.name;
+  }
+
+  async function handleSave(device: KioskDevice) {
+    const form = edits[device.id];
+    if (!form?.name.trim() || !form.locationId) {
+      onToast('Name and warehouse are required.', 'error');
+      return;
+    }
+
+    setBusyId(device.id);
+    try {
+      const response = await fetch(`/api/kiosk/devices/${device.id}`, {
+        method: 'PATCH',
+        headers: await authHeaders(),
+        body: JSON.stringify({ name: form.name.trim(), locationId: form.locationId }),
+      });
+      if (!response.ok) throw new Error('Save failed.');
+      onToast('Device updated.');
+      await loadDevices();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Save failed.', 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleRevoke(device: KioskDevice) {
+    if (!window.confirm(`Revoke access for "${device.name || 'this device'}"?`)) return;
+
+    setBusyId(device.id);
+    try {
+      const response = await fetch('/api/kiosk/devices/revoke', {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify({ deviceId: device.id }),
+      });
+      if (!response.ok) throw new Error('Revoke failed.');
+      onToast('Device revoked.');
+      await loadDevices();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Revoke failed.', 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(device: KioskDevice) {
+    if (!window.confirm(`Permanently delete "${device.name || 'this device'}"?`)) return;
+
+    setBusyId(device.id);
+    try {
+      const response = await fetch(`/api/kiosk/devices/${device.id}`, {
+        method: 'DELETE',
+        headers: await authHeaders(),
+      });
+      if (!response.ok) throw new Error('Delete failed.');
+      onToast('Device deleted.');
+      await loadDevices();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Delete failed.', 'error');
+    } finally {
+      setBusyId(null);
+    }
   }
 
   return (
@@ -153,8 +154,9 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
           <div>
             <h2 className="text-sm font-semibold text-white">Kiosk devices</h2>
             <p className="mt-1 text-sm text-subtle">
-              Approve tablets that open <code className="text-muted">/kiosk</code> and assign
-              each terminal to one warehouse.
+              Devices appear here automatically when someone activates{' '}
+              <code className="text-muted">/kiosk</code> on a tablet or phone. Update the
+              name or warehouse, or revoke access.
             </p>
           </div>
         </div>
@@ -164,140 +166,152 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
         <LoadingIndicator />
       ) : (
         <>
-          <DeviceSection
-            title="Pending approval"
-            emptyText="No devices waiting for approval."
-            devices={pendingDevices}
-            renderActions={(device) => (
-              <div className="mt-3 space-y-2">
-                <p className="text-xs text-subtle">
-                  Device code: <span className="font-mono text-muted">{device.id.slice(-6).toUpperCase()}</span>
-                </p>
-                <input
-                  value={approveForms[device.id]?.label ?? ''}
-                  onChange={(event) =>
-                    setApproveForms((current) => ({
-                      ...current,
-                      [device.id]: {
-                        label: event.target.value,
-                        locationId: current[device.id]?.locationId ?? '',
-                      },
-                    }))
-                  }
-                  placeholder="Device label (optional)"
-                  className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
-                />
-                <select
-                  value={approveForms[device.id]?.locationId ?? ''}
-                  onChange={(event) =>
-                    setApproveForms((current) => ({
-                      ...current,
-                      [device.id]: {
-                        label: current[device.id]?.label ?? '',
-                        locationId: event.target.value,
-                      },
-                    }))
-                  }
-                  className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
-                >
-                  <option value="">Select warehouse…</option>
-                  {activeLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.city ? `${location.name} (${location.city})` : location.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={approvingId === device.id || rejectingId === device.id}
-                    onClick={() => void handleApprove(device.id)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+          <section className="rounded-2xl border border-border bg-surface-raised p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Active devices</h3>
+            {activeDevices.length === 0 ? (
+              <p className="text-sm text-subtle">No active kiosk devices.</p>
+            ) : (
+              <ul className="space-y-3">
+                {activeDevices.map((device) => (
+                  <li
+                    key={device.id}
+                    className="rounded-xl border border-border bg-surface-base/50 p-4"
                   >
-                    <ShieldCheck className="h-4 w-4" />
-                    {approvingId === device.id ? 'Approving…' : 'Approve device'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={approvingId === device.id || rejectingId === device.id}
-                    onClick={() => void handleRevoke(device.id, { pending: true })}
-                    className="inline-flex items-center gap-2 rounded-lg border border-red-900/50 px-3 py-2 text-xs text-red-300 hover:bg-red-950/30 disabled:opacity-60"
-                  >
-                    <ShieldOff className="h-4 w-4" />
-                    {rejectingId === device.id ? 'Rejecting…' : 'Reject request'}
-                  </button>
-                </div>
-              </div>
-            )}
-          />
+                    <DeviceHeader device={device} />
 
-          <DeviceSection
-            title="Active devices"
-            emptyText="No active kiosk devices."
-            devices={activeDevices}
-            renderMeta={(device) => (
-              <p className="mt-1 text-xs text-subtle">
-                Warehouse: {locationLabel(device.locationId)}
-                {device.label ? ` · ${device.label}` : ''}
-              </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <input
+                        value={edits[device.id]?.name ?? ''}
+                        onChange={(event) =>
+                          setEdits((current) => ({
+                            ...current,
+                            [device.id]: {
+                              name: event.target.value,
+                              locationId: current[device.id]?.locationId ?? device.locationId,
+                            },
+                          }))
+                        }
+                        placeholder="Device name"
+                        className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
+                      />
+                      <select
+                        value={edits[device.id]?.locationId ?? ''}
+                        onChange={(event) =>
+                          setEdits((current) => ({
+                            ...current,
+                            [device.id]: {
+                              name: current[device.id]?.name ?? device.name,
+                              locationId: event.target.value,
+                            },
+                          }))
+                        }
+                        className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
+                      >
+                        <option value="">Select warehouse…</option>
+                        {activeLocations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.city
+                              ? `${location.name} (${location.city})`
+                              : location.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busyId === device.id}
+                        onClick={() => void handleSave(device)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                      >
+                        <Save className="h-4 w-4" />
+                        Save changes
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === device.id}
+                        onClick={() => void handleRevoke(device)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-red-900/50 px-3 py-2 text-xs text-red-300 hover:bg-red-950/30 disabled:opacity-60"
+                      >
+                        <Lock className="h-4 w-4" />
+                        Revoke access
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
-            renderActions={(device) => (
-              <button
-                type="button"
-                onClick={() => void handleRevoke(device.id)}
-                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-900/50 px-3 py-2 text-xs text-red-300 hover:bg-red-950/30"
-              >
-                <ShieldOff className="h-4 w-4" />
-                Revoke access
-              </button>
-            )}
-          />
+          </section>
+
+          {revokedDevices.length > 0 ? (
+            <section className="rounded-2xl border border-border bg-surface-raised p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Revoked devices</h3>
+              <ul className="space-y-3">
+                {revokedDevices.map((device) => (
+                  <li
+                    key={device.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-base/50 p-4"
+                  >
+                    <div className="min-w-0">
+                      <DeviceHeader device={device} />
+                      <p className="mt-1 text-xs text-subtle">
+                        Warehouse: {locationLabel(device.locationId)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busyId === device.id}
+                      onClick={() => void handleDelete(device)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-red-900/50 px-3 py-2 text-xs text-red-300 hover:bg-red-950/30 disabled:opacity-60"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </>
       )}
     </div>
   );
 }
 
-function DeviceSection({
-  title,
-  emptyText,
-  devices,
-  renderMeta,
-  renderActions,
-}: {
-  title: string;
-  emptyText: string;
-  devices: KioskDevice[];
-  renderMeta?: (device: KioskDevice) => ReactNode;
-  renderActions: (device: KioskDevice) => ReactNode;
-}) {
+function DeviceHeader({ device }: { device: KioskDevice }) {
+  const TypeIcon = device.type === 'mobile' ? Smartphone : Tablet;
+  const detailParts = [
+    device.details?.model,
+    device.details?.os,
+    device.details?.browser,
+    device.details?.screen,
+  ].filter(Boolean);
+
   return (
-    <section className="rounded-2xl border border-border bg-surface-raised p-5">
-      <h3 className="mb-4 text-sm font-semibold text-white">{title}</h3>
-      {devices.length === 0 ? (
-        <p className="text-sm text-subtle">{emptyText}</p>
-      ) : (
-        <ul className="space-y-3">
-          {devices.map((device) => (
-            <li
-              key={device.id}
-              className="rounded-xl border border-border bg-surface-base/50 p-4"
-            >
-              <p className="text-sm font-medium text-white">
-                {device.label || `Device ${device.id.slice(-6).toUpperCase()}`}
-              </p>
-              <p className="mt-1 text-xs text-subtle">
-                Requested {new Date(device.requestedAt).toLocaleString()}
-              </p>
-              {device.userAgent ? (
-                <p className="mt-1 truncate text-xs text-subtle">{device.userAgent}</p>
-              ) : null}
-              {renderMeta?.(device)}
-              {renderActions(device)}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div>
+      <div className="flex items-center gap-2">
+        <TypeIcon className="h-4 w-4 shrink-0 text-primary" />
+        <p className="truncate text-sm font-medium text-white">
+          {device.name || `Device ${device.id.slice(-6).toUpperCase()}`}
+        </p>
+        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-subtle">
+          {device.type}
+        </span>
+        {device.hasLockPin ? (
+          <Lock className="h-3.5 w-3.5 text-subtle" aria-label="Lock PIN set" />
+        ) : null}
+      </div>
+      {detailParts.length > 0 ? (
+        <p className="mt-1 truncate text-xs text-subtle">{detailParts.join(' · ')}</p>
+      ) : null}
+      <p className="mt-1 text-xs text-subtle">
+        Added {new Date(device.createdAt).toLocaleDateString()}
+        {device.createdBy ? ` by ${device.createdBy}` : ''}
+        {device.lastSeenAt
+          ? ` · last seen ${new Date(device.lastSeenAt).toLocaleString()}`
+          : ''}
+      </p>
+    </div>
   );
 }

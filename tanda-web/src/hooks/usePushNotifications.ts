@@ -29,10 +29,6 @@ async function getExistingServiceWorkerRegistration(): Promise<ServiceWorkerRegi
 }
 
 async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/kiosk')) {
-    return null;
-  }
-
   const existing = await getExistingServiceWorkerRegistration();
   if (existing) {
     return existing;

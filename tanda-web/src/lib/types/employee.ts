@@ -11,6 +11,8 @@ export interface EmployeeFirestore {
   locationGroupId?: string;
   hourlyRate: number;
   active: boolean;
+  /** Grants access to the /kiosk check-in module from the employee's own device. */
+  kioskEnabled?: boolean;
   lastAction: string;
   lastTimestampServer?: Timestamp;
   photoUrl?: string;

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { LogOut, MapPin } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/images/storage-upload';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import { KioskClock } from '@/components/kiosk/KioskClock';
@@ -18,7 +18,8 @@ import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
 type KioskStep = 'pin' | 'camera' | 'success';
 
-const SUCCESS_AUTO_RESET_MS = 4000;
+const PIN_LENGTH = 4;
+const SUCCESS_AUTO_RESET_MS = 2600;
 
 interface KioskSession {
   employeeId: string;
@@ -35,9 +36,11 @@ function createToast(
 
 interface KioskScreenProps {
   deviceSession: KioskDeviceSession;
+  onExit?: () => void;
+  exitLabel?: string;
 }
 
-export function KioskScreen({ deviceSession }: KioskScreenProps) {
+export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: KioskScreenProps) {
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,130 +78,167 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
     return () => window.clearTimeout(timer);
   }, [step, successData, resetToPin]);
 
+  const validatePin = useCallback(
+    async (value: string) => {
+      if (value.length !== PIN_LENGTH) {
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await fetch('/api/kiosk/lookup', {
+          method: 'POST',
+          headers: kioskDeviceHeaders(),
+          body: JSON.stringify({ employeePin: value }),
+        });
+
+        const data = (await response.json().catch(() => null)) as
+          | {
+              employeeId: string;
+              employeeName: string;
+              actionType: 'check_in' | 'check_out';
+              error?: string;
+            }
+          | null;
+
+        if (!response.ok || !data) {
+          setToast(
+            createToast(data?.error ?? 'Could not validate ID. Please try again.', 'error'),
+          );
+          setPin('');
+          return;
+        }
+
+        setSession({
+          employeeId: data.employeeId,
+          employeeName: data.employeeName,
+          actionType: data.actionType,
+        });
+        setStep('camera');
+      } catch (error) {
+        console.error('Kiosk PIN validation failed:', error);
+        setToast(createToast('Could not validate PIN. Please try again.', 'error'));
+        setPin('');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
   const handleDigit = (digit: string) => {
-    if (pin.length >= 8) return;
-    setPin((prev) => prev + digit);
+    if (loading) return;
+    setPin((prev) => {
+      if (prev.length >= PIN_LENGTH) return prev;
+      const next = prev + digit;
+      if (next.length === PIN_LENGTH) {
+        window.setTimeout(() => void validatePin(next), 120);
+      }
+      return next;
+    });
   };
 
-  const handleValidatePin = async () => {
-    if (!pin.trim()) {
-      setToast(createToast('Please enter your ID.', 'error'));
-      return;
-    }
+  const submitPunchInBackground = useCallback(
+    (params: {
+      imageBlob: Blob;
+      employeeId: string;
+      employeePin: string;
+      actionType: 'check_in' | 'check_out';
+    }) => {
+      void (async () => {
+        try {
+          const now = new Date();
+          const year = String(now.getFullYear());
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const fileName = `${Date.now()}-${params.actionType}.webp`;
+          const photoPath = `attendance/${params.employeeId}/${year}/${month}/${fileName}`;
 
-    setLoading(true);
+          const [photoUrl, geo] = await Promise.all([
+            uploadImageToStorage(photoPath, params.imageBlob),
+            captureCurrentPosition(),
+          ]);
 
-    try {
-      const response = await fetch('/api/kiosk/lookup', {
-        method: 'POST',
-        headers: kioskDeviceHeaders(),
-        body: JSON.stringify({ employeePin: pin.trim() }),
-      });
+          const response = await fetch('/api/kiosk/punch', {
+            method: 'POST',
+            headers: kioskDeviceHeaders(),
+            body: JSON.stringify({
+              employeePin: params.employeePin,
+              photoPath,
+              photoUrl,
+              ...(geo
+                ? {
+                    latitude: geo.latitude,
+                    longitude: geo.longitude,
+                    geoAccuracy: geo.accuracy,
+                    geoCapturedAt: geo.geoCapturedAt,
+                  }
+                : {}),
+            }),
+          });
 
-      const data = (await response.json().catch(() => null)) as
-        | {
-            employeeId: string;
-            employeeName: string;
-            actionType: 'check_in' | 'check_out';
-            error?: string;
+          if (!response.ok) {
+            const data = (await response.json().catch(() => null)) as
+              | { error?: string }
+              | null;
+            throw new Error(data?.error ?? 'Could not save attendance.');
           }
-        | null;
+        } catch (error) {
+          console.error('Kiosk background punch failed:', error);
+          setToast(
+            createToast(
+              error instanceof Error
+                ? error.message
+                : 'Could not save the record. Please try again.',
+              'error',
+            ),
+          );
+        }
+      })();
+    },
+    [],
+  );
 
-      if (!response.ok) {
-        setToast(
-          createToast(data?.error ?? 'Could not validate ID. Please try again.', 'error'),
-        );
-        return;
-      }
-
-      if (!data) {
-        setToast(createToast('Could not validate ID. Please try again.', 'error'));
-        return;
-      }
-
-      setSession({
-        employeeId: data.employeeId,
-        employeeName: data.employeeName,
-        actionType: data.actionType,
-      });
-      setStep('camera');
-    } catch (error) {
-      console.error('Kiosk PIN validation failed:', error);
-      setToast(createToast('Could not validate PIN. Please try again.', 'error'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCapture = async (imageBlob: Blob, previewDataUrl: string) => {
+  const handleCapture = (imageBlob: Blob, previewDataUrl: string) => {
     if (!session) {
       setToast(createToast('Session expired. Enter your ID again.', 'error'));
       resetToPin();
       return;
     }
 
-    setProcessing(true);
-    const recordedAt = new Date();
+    // Optimistic: show success immediately, upload + record in the background.
+    setSuccessData({
+      employeeName: session.employeeName,
+      actionType: session.actionType,
+      recordedAt: new Date(),
+      photoPreviewUrl: previewDataUrl,
+      warehouseLabel,
+    });
+    setStep('success');
 
-    try {
-      const year = String(recordedAt.getFullYear());
-      const month = String(recordedAt.getMonth() + 1).padStart(2, '0');
-      const fileName = `${Date.now()}-${session.actionType}.webp`;
-      const photoPath = `attendance/${session.employeeId}/${year}/${month}/${fileName}`;
-
-      const photoUrl = await uploadImageToStorage(photoPath, imageBlob);
-
-      const geo = await captureCurrentPosition();
-
-      const response = await fetch('/api/kiosk/punch', {
-        method: 'POST',
-        headers: kioskDeviceHeaders(),
-        body: JSON.stringify({
-          employeePin: pin.trim(),
-          photoPath,
-          photoUrl,
-          ...(geo
-            ? {
-                latitude: geo.latitude,
-                longitude: geo.longitude,
-                geoAccuracy: geo.accuracy,
-                geoCapturedAt: geo.geoCapturedAt,
-              }
-            : {}),
-        }),
-      });
-
-      const data = (await response.json().catch(() => null)) as
-        | { employeeName: string; actionType: 'check_in' | 'check_out'; error?: string }
-        | null;
-
-      if (!response.ok) {
-        setToast(
-          createToast(data?.error ?? 'Could not save attendance. Please try again.', 'error'),
-        );
-        return;
-      }
-
-      setSuccessData({
-        employeeName: data?.employeeName ?? session.employeeName,
-        actionType: data?.actionType ?? session.actionType,
-        recordedAt,
-        photoPreviewUrl: previewDataUrl,
-        warehouseLabel,
-      });
-      setStep('success');
-    } catch (error) {
-      console.error('Kiosk capture save failed:', error);
-      setToast(createToast('Could not save attendance. Please try again.', 'error'));
-    } finally {
-      setProcessing(false);
-    }
+    submitPunchInBackground({
+      imageBlob,
+      employeeId: session.employeeId,
+      employeePin: pin,
+      actionType: session.actionType,
+    });
   };
 
   const showLogo = step !== 'success';
 
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col bg-[radial-gradient(125%_85%_at_50%_-10%,#13224a_0%,#0a1020_42%,#05070d_100%)] text-white">
+      {onExit ? (
+        <button
+          type="button"
+          onClick={onExit}
+          className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur transition hover:text-white"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          {exitLabel}
+        </button>
+      ) : null}
+
       <header className="z-20 flex shrink-0 flex-col items-center gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] lg:landscape:gap-4">
         {step === 'pin' && showLogo && (
           <CompanyLogo
@@ -227,10 +267,11 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
               <KioskPinPad
                 pin={pin}
                 loading={loading}
+                maxLength={PIN_LENGTH}
                 onDigit={handleDigit}
                 onBackspace={() => setPin((prev) => prev.slice(0, -1))}
                 onClear={() => setPin('')}
-                onSubmit={() => void handleValidatePin()}
+                onSubmit={() => void validatePin(pin)}
               />
             </div>
           </div>
@@ -249,7 +290,7 @@ export function KioskScreen({ deviceSession }: KioskScreenProps) {
                 actionType={session.actionType}
                 employeeName={session.employeeName}
                 processing={processing}
-                onCapture={(blob, previewUrl) => void handleCapture(blob, previewUrl)}
+                onCapture={(blob, previewUrl) => handleCapture(blob, previewUrl)}
                 onCancel={resetToPin}
               />
             )}

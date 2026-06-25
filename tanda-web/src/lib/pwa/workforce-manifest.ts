@@ -14,6 +14,6 @@ export function getWorkforceManifest(): MetadataRoute.Manifest {
     orientation: 'portrait',
     background_color: '#001A3F',
     theme_color: '#001A3F',
-    icons: buildPwaIconEntries(''),
+    icons: buildPwaIconEntries(),
   };
 }

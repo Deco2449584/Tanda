@@ -38,7 +38,7 @@ export function exportAttendanceRecordsToCsv(
     record.geoAccuracy ?? '',
     formatExportExactLocation(record),
     record.source,
-    record.kioskDeviceLabelSnapshot ?? '',
+    record.kioskDeviceNameSnapshot ?? '',
   ]);
 
   const csvContent = [headers, ...csvRows]

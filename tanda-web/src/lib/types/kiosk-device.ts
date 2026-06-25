@@ -1,39 +1,56 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type KioskDeviceStatus = 'pending' | 'active' | 'revoked';
+export type KioskDeviceStatus = 'active' | 'revoked';
+export type KioskDeviceType = 'tablet' | 'mobile';
+
+/** Best-effort hardware/software fingerprint captured on activation. */
+export interface KioskDeviceDetails {
+  browser?: string;
+  os?: string;
+  model?: string;
+  platform?: string;
+  mobile?: boolean;
+  screen?: string;
+  language?: string;
+  timeZone?: string;
+  userAgent?: string;
+}
 
 export interface KioskDeviceFirestore {
   status: KioskDeviceStatus;
+  type: KioskDeviceType;
+  name: string;
   deviceTokenHash: string;
-  label?: string;
-  locationId?: string;
-  requestedAt: Timestamp;
-  approvedAt?: Timestamp;
-  approvedBy?: string;
+  locationId: string;
+  lockPinHash?: string;
+  details?: KioskDeviceDetails;
+  createdBy?: string;
+  createdAt: Timestamp;
   lastSeenAt?: Timestamp;
-  userAgent?: string;
-  platform?: string;
 }
 
 export interface KioskDevice {
   id: string;
   status: KioskDeviceStatus;
-  label?: string;
-  locationId?: string;
-  requestedAt: string;
-  approvedAt?: string;
-  approvedBy?: string;
+  type: KioskDeviceType;
+  name: string;
+  locationId: string;
+  hasLockPin: boolean;
+  details?: KioskDeviceDetails;
+  createdBy?: string;
+  createdAt: string;
   lastSeenAt?: string;
-  userAgent?: string;
-  platform?: string;
 }
 
+/** Lightweight view returned to the kiosk client. */
 export interface KioskDeviceSession {
   deviceId: string;
   status: KioskDeviceStatus;
-  locationId?: string;
+  type: KioskDeviceType;
+  name: string;
+  locationId: string;
   locationName?: string;
   locationCity?: string;
-  label?: string;
-  shortCode: string;
+  /** Tablet devices run in locked fullscreen mode and require a PIN to exit. */
+  locked: boolean;
 }

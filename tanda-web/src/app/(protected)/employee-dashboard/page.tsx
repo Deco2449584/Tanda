@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
+import { MonitorSmartphone } from 'lucide-react';
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -82,6 +84,25 @@ export default function EmployeeDashboardPage() {
 
       {employee && (
         <>
+          {employee.kioskEnabled ? (
+            <Link
+              href="/kiosk"
+              className="flex items-center gap-4 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-4 transition hover:bg-primary/15"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+                <MonitorSmartphone className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-foreground">
+                  Open kiosk check-in
+                </span>
+                <span className="block text-xs text-subtle">
+                  Clock in and out from this device using your 4-digit ID.
+                </span>
+              </span>
+            </Link>
+          ) : null}
+
           <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
             <WeeklyHoursCard hours={weeklyHours} loading={recordsLoading} />
             <MonthlyHoursCard hours={monthlyHours} loading={recordsLoading} />

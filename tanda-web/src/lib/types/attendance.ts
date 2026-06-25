@@ -16,7 +16,8 @@ export interface AttendanceRecordFirestore {
   locationNameSnapshot?: string;
   locationCitySnapshot?: string;
   kioskDeviceId?: string;
-  kioskDeviceLabelSnapshot?: string;
+  kioskDeviceNameSnapshot?: string;
+  kioskDeviceType?: 'tablet' | 'mobile';
   latitude?: number;
   longitude?: number;
   geoAccuracy?: number;

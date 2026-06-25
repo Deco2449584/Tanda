@@ -338,8 +338,11 @@ export function EditAttendanceModal({
 
           <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-2 text-xs text-subtle">
             <p>Source: {record.source || '—'}</p>
-            {record.kioskDeviceLabelSnapshot ? (
-              <p>Kiosk: {record.kioskDeviceLabelSnapshot}</p>
+            {record.kioskDeviceNameSnapshot ? (
+              <p>
+                Device: {record.kioskDeviceNameSnapshot}
+                {record.kioskDeviceType ? ` (${record.kioskDeviceType})` : ''}
+              </p>
             ) : null}
             {record.photoCaptured ? <p>Photo captured: yes</p> : <p>Photo captured: no</p>}
           </div>

@@ -1,5 +1,5 @@
-import { KioskAuthGuard } from '@/components/kiosk/KioskAuthGuard';
+import { KioskApp } from '@/components/kiosk/KioskApp';
 
 export default function KioskPage() {
-  return <KioskAuthGuard />;
+  return <KioskApp />;
 }
