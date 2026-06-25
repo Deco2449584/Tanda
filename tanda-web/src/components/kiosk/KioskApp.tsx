@@ -6,6 +6,7 @@ import { Loader2, ShieldX } from 'lucide-react';
 import { KioskActivation } from '@/components/kiosk/KioskActivation';
 import { KioskIdleScreen } from '@/components/kiosk/KioskIdleScreen';
 import { KioskLockedShell } from '@/components/kiosk/KioskLockedShell';
+import { KioskPendingScreen } from '@/components/kiosk/KioskPendingScreen';
 import { KioskPinGate } from '@/components/kiosk/KioskPinGate';
 import { KioskScreen } from '@/components/kiosk/KioskScreen';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
@@ -14,7 +15,8 @@ import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 import {
-  ensureKioskDeviceToken,
+  clearKioskDeviceToken,
+  getKioskDeviceToken,
   kioskDeviceHeaders,
 } from '@/lib/kiosk/device-token';
 import {
@@ -25,7 +27,7 @@ import {
 import { enterKioskFullscreen, exitKioskFullscreen } from '@/lib/pwa/kiosk-display';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
-type Phase = 'loading' | 'denied' | 'setup' | 'ready';
+type Phase = 'loading' | 'denied' | 'setup' | 'pending' | 'ready';
 type LockedView = 'idle' | 'enter-pin' | 'active';
 
 function KioskMessage({ children }: { children: React.ReactNode }) {
@@ -67,8 +69,9 @@ export function KioskApp() {
       return;
     }
 
-    const token = ensureKioskDeviceToken();
+    const token = getKioskDeviceToken();
     if (!token) {
+      clearKioskModeActive();
       setSession(null);
       setPhase('setup');
       setLockedView('idle');
@@ -84,8 +87,21 @@ export function KioskApp() {
         },
       });
       const data = (await response.json().catch(() => null)) as
-        | { session: KioskDeviceSession | null }
+        | {
+            session: KioskDeviceSession | null;
+            pendingDevice: KioskDeviceSession | null;
+            resetToken?: boolean;
+          }
         | null;
+
+      if (data?.resetToken) {
+        clearKioskDeviceToken();
+        clearKioskModeActive();
+        setSession(null);
+        setPhase('setup');
+        setLockedView('idle');
+        return;
+      }
 
       if (data?.session) {
         setSession(data.session);
@@ -97,6 +113,14 @@ export function KioskApp() {
           clearKioskModeActive();
           setLockedView('idle');
         }
+        return;
+      }
+
+      if (data?.pendingDevice) {
+        setSession(data.pendingDevice);
+        setPhase('pending');
+        clearKioskModeActive();
+        setLockedView('idle');
         return;
       }
 
@@ -122,6 +146,16 @@ export function KioskApp() {
     void loadSession();
   }, [authLoading, user, employeeLoading, hasAccess, loadSession]);
 
+  useEffect(() => {
+    if (phase !== 'pending') return;
+
+    const interval = window.setInterval(() => {
+      void loadSession();
+    }, 8000);
+
+    return () => window.clearInterval(interval);
+  }, [phase, loadSession]);
+
   const enterKioskMode = useCallback(async () => {
     setKioskModeActive(true);
     setLockedView('active');
@@ -131,6 +165,14 @@ export function KioskApp() {
   const handleActivated = useCallback(
     async (next: KioskDeviceSession) => {
       setSession(next);
+
+      if (next.status === 'pending') {
+        setPhase('pending');
+        clearKioskModeActive();
+        setLockedView('idle');
+        return;
+      }
+
       setPhase('ready');
 
       if (next.locked) {
@@ -194,6 +236,15 @@ export function KioskApp() {
         defaultName={employee?.name ?? ''}
         onActivated={(next) => void handleActivated(next)}
         onCancel={canLeaveToDashboard ? handleExitUnlocked : undefined}
+      />
+    );
+  }
+
+  if (phase === 'pending' && session) {
+    return (
+      <KioskPendingScreen
+        session={session}
+        onGoToDashboard={canLeaveToDashboard ? handleExitUnlocked : undefined}
       />
     );
   }

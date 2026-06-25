@@ -40,20 +40,23 @@ export interface ActivateKioskDeviceInput {
   lockPin?: string;
   details?: KioskDeviceDetails;
   createdBy: string;
+  /** When true the device stays pending until an admin approves it. */
+  requiresApproval?: boolean;
 }
 
 /**
- * Creates (or refreshes) an ACTIVE kiosk device for the given token. Idempotent
- * per device token so multiple tabs / reloads do not create duplicate records.
+ * Registers a kiosk device for the given browser token. Active devices can be
+ * refreshed in place; revoked/pending records are fully reset on re-activation.
  */
 export async function activateKioskDevice(
   input: ActivateKioskDeviceInput,
 ): Promise<KioskDeviceSession> {
   const db = getAdminFirestore();
   const existing = await findKioskDeviceByToken(input.token);
+  const nextStatus = input.requiresApproval ? 'pending' : 'active';
 
   const base: Record<string, unknown> = {
-    status: 'active',
+    status: nextStatus,
     type: input.type,
     name: input.name.trim(),
     locationId: input.locationId.trim(),
@@ -69,19 +72,35 @@ export async function activateKioskDevice(
     ? hashKioskLockPin(input.lockPin)
     : null;
 
-  if (existing) {
+  if (existing?.status === 'active') {
     const updatePayload: Record<string, unknown> = {
       ...base,
+      status: 'active',
       ownerEmail: input.createdBy,
     };
     if (lockPinHash) {
       updatePayload.lockPinHash = lockPinHash;
     } else if (input.type === 'mobile') {
-      // Only valid on update(): clear a stale PIN if the device became mobile.
       updatePayload.lockPinHash = FieldValue.delete();
     }
 
     await existing.ref.update(updatePayload);
+    const updated = await existing.ref.get();
+    return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
+  }
+
+  if (existing) {
+    const resetPayload: Record<string, unknown> = {
+      ...base,
+      ownerEmail: input.createdBy,
+    };
+    if (lockPinHash) {
+      resetPayload.lockPinHash = lockPinHash;
+    } else {
+      resetPayload.lockPinHash = FieldValue.delete();
+    }
+
+    await existing.ref.update(resetPayload);
     const updated = await existing.ref.get();
     return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
   }
@@ -137,7 +156,7 @@ export async function verifyKioskLockPin(
   pin: string,
 ): Promise<boolean> {
   const device = await findKioskDeviceByToken(token);
-  if (!device) return false;
+  if (!device || device.status !== 'active') return false;
 
   const snapshot = await device.ref.get();
   const lockPinHash = snapshot.data()?.lockPinHash;
@@ -180,59 +199,11 @@ export async function findActiveKioskDevicesByOwner(
   });
 }
 
-/**
- * Resumes kiosk access for a browser that has no matching active token yet.
- * Reuses settings from the user's most recent active session (new browser tab/profile).
- */
-export async function resumeKioskDeviceSession(input: {
-  ownerEmail: string;
-  token: string;
-  createdBy: string;
-  details?: KioskDeviceDetails;
-}): Promise<KioskDeviceSession | null> {
-  const existing = await findKioskDeviceByToken(input.token);
-  if (existing?.status === 'active') {
-    const update: Record<string, unknown> = { lastSeenAt: FieldValue.serverTimestamp() };
-    if (input.details) update.details = input.details;
-    await existing.ref.update(update);
-    return buildKioskDeviceSession(existing);
-  }
-
-  const templates = await findActiveKioskDevicesByOwner(input.ownerEmail);
-  if (templates.length === 0) return null;
-
-  const template = templates[0];
-  const templateSnap = await getAdminFirestore()
-    .collection(COLLECTIONS.KIOSK_DEVICES)
-    .doc(template.id)
-    .get();
-  const templateData = templateSnap.data() ?? {};
-
-  const createPayload: Record<string, unknown> = {
+export async function approveKioskDevice(deviceId: string): Promise<void> {
+  await getAdminFirestore().collection(COLLECTIONS.KIOSK_DEVICES).doc(deviceId).update({
     status: 'active',
-    type: template.type,
-    name: template.name,
-    locationId: template.locationId,
-    deviceTokenHash: hashKioskDeviceToken(input.token),
-    ownerEmail: input.ownerEmail,
-    createdBy: input.createdBy,
-    createdAt: FieldValue.serverTimestamp(),
     lastSeenAt: FieldValue.serverTimestamp(),
-  };
-
-  if (input.details) {
-    createPayload.details = input.details;
-  }
-
-  if (typeof templateData.lockPinHash === 'string' && templateData.lockPinHash) {
-    createPayload.lockPinHash = templateData.lockPinHash;
-  }
-
-  const docRef = await getAdminFirestore()
-    .collection(COLLECTIONS.KIOSK_DEVICES)
-    .add(createPayload);
-  const created = await docRef.get();
-  return buildKioskDeviceSession(mapKioskDeviceDoc(created.id, created.data() ?? {}));
+  });
 }
 
 export async function revokeKioskDevice(deviceId: string): Promise<void> {

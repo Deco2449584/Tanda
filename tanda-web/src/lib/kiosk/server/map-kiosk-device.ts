@@ -11,6 +11,12 @@ function timestampToIso(value: Timestamp | undefined): string | undefined {
   return value.toDate().toISOString();
 }
 
+function mapStatus(value: unknown): KioskDeviceStatus {
+  if (value === 'revoked') return 'revoked';
+  if (value === 'pending') return 'pending';
+  return 'active';
+}
+
 function mapDetails(value: unknown): KioskDeviceDetails | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const data = value as Record<string, unknown>;
@@ -35,7 +41,7 @@ export function mapKioskDeviceDoc(
 ): KioskDevice {
   return {
     id,
-    status: (data.status as KioskDeviceStatus) === 'revoked' ? 'revoked' : 'active',
+    status: mapStatus(data.status),
     type: (data.type as KioskDeviceType) === 'mobile' ? 'mobile' : 'tablet',
     name: typeof data.name === 'string' ? data.name : '',
     locationId: typeof data.locationId === 'string' ? data.locationId : '',

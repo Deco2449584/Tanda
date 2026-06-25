@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       lockPin: type === 'tablet' ? lockPin : undefined,
       details: body.details,
       createdBy: auth.email,
+      requiresApproval: auth.role === 'empleado',
     });
 
     return NextResponse.json({ session });

@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type KioskDeviceStatus = 'active' | 'revoked';
+export type KioskDeviceStatus = 'pending' | 'active' | 'revoked';
 export type KioskDeviceType = 'tablet' | 'mobile';
 
 /** Best-effort hardware/software fingerprint captured on activation. */

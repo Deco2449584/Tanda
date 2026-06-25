@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Check,
   Lock,
   MonitorSmartphone,
   RotateCcw,
@@ -86,6 +87,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
     [locations],
   );
 
+  const pendingDevices = devices.filter((device) => device.status === 'pending');
   const activeDevices = devices.filter((device) => device.status === 'active');
   const revokedDevices = devices.filter((device) => device.status === 'revoked');
 
@@ -161,6 +163,27 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       await loadDevices();
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'Save failed.', 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleApprove(device: KioskDevice) {
+    setBusyId(device.id);
+    try {
+      const response = await fetch('/api/kiosk/devices/approve', {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify({ deviceId: device.id }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? 'Approve failed.');
+      }
+      onToast('Device approved.');
+      await loadDevices();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Approve failed.', 'error');
     } finally {
       setBusyId(null);
     }
@@ -265,8 +288,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
           <div>
             <h2 className="text-sm font-semibold text-white">Kiosk devices</h2>
             <p className="mt-1 text-sm text-subtle">
-              Devices appear here automatically when someone activates{' '}
-              <code className="text-muted">/kiosk</code> on a tablet or phone. Sessions are
+              New kiosk activations appear as pending until you approve them. Sessions are
               grouped by user; revoke one browser window or all sessions for a user.
             </p>
           </div>
@@ -277,6 +299,52 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
         <LoadingIndicator />
       ) : (
         <>
+          {pendingDevices.length > 0 ? (
+            <section className="rounded-2xl border border-amber-900/40 bg-amber-950/20 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-amber-200">
+                Pending approval ({pendingDevices.length})
+              </h3>
+              <ul className="space-y-3">
+                {pendingDevices.map((device) => (
+                  <li
+                    key={device.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-900/30 bg-surface-base/50 p-4"
+                  >
+                    <div className="min-w-0">
+                      <DeviceHeader device={device} />
+                      <p className="mt-1 text-xs text-subtle">
+                        Warehouse: {locationLabel(device.locationId)}
+                      </p>
+                      <p className="mt-1 text-xs text-amber-200/80">
+                        Requested by {device.ownerEmail ?? device.createdBy ?? 'unknown'}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busyId === device.id}
+                        onClick={() => void handleApprove(device)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                      >
+                        <Check className="h-4 w-4" />
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === device.id}
+                        onClick={() => void handleDelete(device)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-red-900/50 px-3 py-2 text-xs text-red-300 hover:bg-red-950/30 disabled:opacity-60"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Reject
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           <section className="rounded-2xl border border-border bg-surface-raised p-5">
             <h3 className="mb-4 text-sm font-semibold text-white">Active devices</h3>
             {activeDevices.length === 0 ? (
@@ -499,6 +567,11 @@ function DeviceHeader({
         <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-subtle">
           {device.type}
         </span>
+        {device.status === 'pending' ? (
+          <span className="rounded-full border border-amber-700/50 bg-amber-950/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+            pending
+          </span>
+        ) : null}
         {device.hasLockPin ? (
           <Lock className="h-3.5 w-3.5 text-subtle" aria-label="Lock PIN set" />
         ) : null}
