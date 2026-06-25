@@ -31,14 +31,6 @@ export async function POST(request: Request) {
 
     const type: KioskDeviceType = body.type === 'mobile' ? 'mobile' : 'tablet';
 
-    // Only dedicated kiosk accounts can create locked tablet terminals.
-    if (type === 'tablet' && !auth.isKioskAccount && auth.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only a kiosk account can set up a locked tablet.' },
-        { status: 403 },
-      );
-    }
-
     const name = body.name?.trim() ?? '';
     if (!name) {
       return NextResponse.json({ error: 'Device name is required.' }, { status: 400 });

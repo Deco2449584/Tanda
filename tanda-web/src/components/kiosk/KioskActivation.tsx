@@ -15,7 +15,7 @@ import type { KioskDeviceDetails, KioskDeviceSession } from '@/lib/types/kiosk-d
 import type { Location } from '@/lib/types/location';
 
 interface KioskActivationProps {
-  mode: 'tablet' | 'mobile';
+  defaultMode: 'tablet' | 'mobile';
   defaultLocationId: string;
   defaultName: string;
   onActivated: (session: KioskDeviceSession) => void;
@@ -23,12 +23,13 @@ interface KioskActivationProps {
 }
 
 export function KioskActivation({
-  mode,
+  defaultMode,
   defaultLocationId,
   defaultName,
   onActivated,
   onCancel,
 }: KioskActivationProps) {
+  const [mode, setMode] = useState<'tablet' | 'mobile'>(defaultMode);
   const isTablet = mode === 'tablet';
   const [locations, setLocations] = useState<Location[]>([]);
   const [details, setDetails] = useState<KioskDeviceDetails>({});
@@ -143,7 +144,7 @@ export function KioskActivation({
           <CompanyLogo variant="light" className="h-auto w-40 object-contain" />
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
             {isTablet ? <Lock className="h-3.5 w-3.5" /> : <MonitorSmartphone className="h-3.5 w-3.5" />}
-            {isTablet ? 'Set up kiosk tablet' : 'Set up kiosk on this device'}
+            {isTablet ? 'Set up shared kiosk tablet' : 'Set up kiosk on this device'}
           </div>
           <p className="mt-2 text-sm text-zinc-400">
             {isTablet
@@ -152,7 +153,38 @@ export function KioskActivation({
           </p>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => setMode('tablet')}
+            className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-center transition disabled:opacity-60 ${
+              isTablet
+                ? 'border-primary bg-primary/15 text-white'
+                : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Lock className="h-4 w-4" />
+            <span className="text-xs font-semibold">Shared tablet</span>
+            <span className="text-[10px] leading-tight opacity-80">Locked · PIN to exit</span>
+          </button>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => setMode('mobile')}
+            className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-center transition disabled:opacity-60 ${
+              !isTablet
+                ? 'border-primary bg-primary/15 text-white'
+                : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white'
+            }`}
+          >
+            <MonitorSmartphone className="h-4 w-4" />
+            <span className="text-xs font-semibold">This device</span>
+            <span className="text-[10px] leading-tight opacity-80">No lock · personal</span>
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-4">
           <div>
             <label htmlFor="kiosk-name" className="mb-1.5 block text-xs font-medium text-zinc-400">
               Device name

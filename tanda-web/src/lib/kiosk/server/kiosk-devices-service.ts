@@ -52,7 +52,7 @@ export async function activateKioskDevice(
   const db = getAdminFirestore();
   const existing = await findKioskDeviceByToken(input.token);
 
-  const payload: Record<string, unknown> = {
+  const base: Record<string, unknown> = {
     status: 'active',
     type: input.type,
     name: input.name.trim(),
@@ -62,27 +62,37 @@ export async function activateKioskDevice(
   };
 
   if (input.details) {
-    payload.details = input.details;
+    base.details = input.details;
   }
 
-  if (input.lockPin?.trim()) {
-    payload.lockPinHash = hashKioskLockPin(input.lockPin);
-  } else if (input.type === 'mobile') {
-    payload.lockPinHash = FieldValue.delete();
-  }
+  const lockPinHash = input.lockPin?.trim()
+    ? hashKioskLockPin(input.lockPin)
+    : null;
 
   if (existing) {
-    await existing.ref.update(payload);
+    const updatePayload: Record<string, unknown> = { ...base };
+    if (lockPinHash) {
+      updatePayload.lockPinHash = lockPinHash;
+    } else if (input.type === 'mobile') {
+      // Only valid on update(): clear a stale PIN if the device became mobile.
+      updatePayload.lockPinHash = FieldValue.delete();
+    }
+
+    await existing.ref.update(updatePayload);
     const updated = await existing.ref.get();
     return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
   }
 
-  const docRef = await db.collection(COLLECTIONS.KIOSK_DEVICES).add({
-    ...payload,
+  const createPayload: Record<string, unknown> = {
+    ...base,
     createdBy: input.createdBy,
     createdAt: FieldValue.serverTimestamp(),
-  });
+  };
+  if (lockPinHash) {
+    createPayload.lockPinHash = lockPinHash;
+  }
 
+  const docRef = await db.collection(COLLECTIONS.KIOSK_DEVICES).add(createPayload);
   const created = await docRef.get();
   return buildKioskDeviceSession(mapKioskDeviceDoc(created.id, created.data() ?? {}));
 }
@@ -154,10 +164,25 @@ export async function deleteKioskDevice(deviceId: string): Promise<void> {
   await getAdminFirestore().collection(COLLECTIONS.KIOSK_DEVICES).doc(deviceId).delete();
 }
 
+export async function getKioskDeviceById(
+  deviceId: string,
+): Promise<KioskDevice | null> {
+  const doc = await getAdminFirestore()
+    .collection(COLLECTIONS.KIOSK_DEVICES)
+    .doc(deviceId)
+    .get();
+
+  if (!doc.exists) return null;
+  return mapKioskDeviceDoc(doc.id, doc.data() ?? {});
+}
+
 export async function updateKioskDevice(input: {
   deviceId: string;
   locationId?: string;
   name?: string;
+  type?: KioskDeviceType;
+  lockPin?: string;
+  clearLockPin?: boolean;
 }): Promise<void> {
   const payload: Record<string, unknown> = {
     lastSeenAt: FieldValue.serverTimestamp(),
@@ -169,6 +194,16 @@ export async function updateKioskDevice(input: {
 
   if (typeof input.name === 'string' && input.name.trim()) {
     payload.name = input.name.trim();
+  }
+
+  if (input.type) {
+    payload.type = input.type;
+  }
+
+  if (input.lockPin?.trim()) {
+    payload.lockPinHash = hashKioskLockPin(input.lockPin);
+  } else if (input.clearLockPin) {
+    payload.lockPinHash = FieldValue.delete();
   }
 
   await getAdminFirestore()

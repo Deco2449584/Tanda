@@ -55,7 +55,10 @@ const adminNavGroups: NavGroup[] = [
   },
   {
     title: 'System',
-    items: [{ label: 'Settings', href: '/settings', icon: Settings }],
+    items: [
+      { label: 'Kiosk check-in', href: '/kiosk', icon: MonitorSmartphone },
+      { label: 'Settings', href: '/settings', icon: Settings },
+    ],
   },
 ];
 

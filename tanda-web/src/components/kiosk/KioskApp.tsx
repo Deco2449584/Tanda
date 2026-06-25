@@ -4,17 +4,25 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ShieldX } from 'lucide-react';
 import { KioskActivation } from '@/components/kiosk/KioskActivation';
+import { KioskIdleScreen } from '@/components/kiosk/KioskIdleScreen';
 import { KioskLockedShell } from '@/components/kiosk/KioskLockedShell';
+import { KioskPinGate } from '@/components/kiosk/KioskPinGate';
 import { KioskScreen } from '@/components/kiosk/KioskScreen';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
-import { clearKioskDeviceToken, kioskDeviceHeaders } from '@/lib/kiosk/device-token';
-import { exitKioskFullscreen } from '@/lib/pwa/kiosk-display';
+import { clearKioskDeviceToken, getKioskDeviceToken, kioskDeviceHeaders } from '@/lib/kiosk/device-token';
+import {
+  clearKioskModeActive,
+  isKioskModeActive,
+  setKioskModeActive,
+} from '@/lib/kiosk/kiosk-lock-state';
+import { enterKioskFullscreen, exitKioskFullscreen } from '@/lib/pwa/kiosk-display';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
 type Phase = 'loading' | 'denied' | 'setup' | 'ready';
+type LockedView = 'idle' | 'enter-pin' | 'active';
 
 function KioskMessage({ children }: { children: React.ReactNode }) {
   return (
@@ -27,11 +35,18 @@ function KioskMessage({ children }: { children: React.ReactNode }) {
 
 export function KioskApp() {
   const router = useRouter();
-  const { user, role, loading: authLoading, signOutUser } = useAuthRole();
+  const { user, role, loading: authLoading } = useAuthRole();
   const { employee, loading: employeeLoading } = useCurrentEmployee(user?.email);
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [session, setSession] = useState<KioskDeviceSession | null>(null);
+  const [lockedView, setLockedView] = useState<LockedView>('idle');
+
+  const dashboardRoute = getHomeRouteForRole(role ?? 'empleado');
+  const isKioskAccount = role === 'kiosk';
+  const hasAccess =
+    role === 'kiosk' || role === 'admin' || employee?.kioskEnabled === true;
+  const canLeaveToDashboard = !isKioskAccount;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -39,11 +54,15 @@ export function KioskApp() {
     }
   }, [authLoading, user, router]);
 
-  const isKioskAccount = role === 'kiosk';
-  const hasAccess =
-    role === 'kiosk' || role === 'admin' || employee?.kioskEnabled === true;
-
   const loadSession = useCallback(async () => {
+    const token = getKioskDeviceToken();
+    if (!token) {
+      setSession(null);
+      setPhase('setup');
+      setLockedView('idle');
+      return;
+    }
+
     try {
       const response = await fetch('/api/kiosk/devices/session', {
         headers: kioskDeviceHeaders(),
@@ -55,13 +74,25 @@ export function KioskApp() {
       if (data?.session) {
         setSession(data.session);
         setPhase('ready');
-      } else {
-        setSession(null);
-        setPhase('setup');
+
+        if (data.session.locked) {
+          setLockedView(isKioskModeActive() ? 'active' : 'idle');
+        } else {
+          clearKioskModeActive();
+          setLockedView('idle');
+        }
+        return;
       }
+
+      clearKioskDeviceToken();
+      clearKioskModeActive();
+      setSession(null);
+      setPhase('setup');
+      setLockedView('idle');
     } catch {
       setSession(null);
       setPhase('setup');
+      setLockedView('idle');
     }
   }, []);
 
@@ -76,21 +107,40 @@ export function KioskApp() {
     void loadSession();
   }, [authLoading, user, employeeLoading, hasAccess, loadSession]);
 
-  const handleActivated = useCallback((next: KioskDeviceSession) => {
-    setSession(next);
-    setPhase('ready');
+  const enterKioskMode = useCallback(async () => {
+    setKioskModeActive(true);
+    setLockedView('active');
+    await enterKioskFullscreen();
   }, []);
 
-  const handleExitLocked = useCallback(async () => {
+  const handleActivated = useCallback(
+    async (next: KioskDeviceSession) => {
+      setSession(next);
+      setPhase('ready');
+
+      if (next.locked) {
+        await enterKioskMode();
+      } else {
+        clearKioskModeActive();
+        setLockedView('idle');
+      }
+    },
+    [enterKioskMode],
+  );
+
+  const handleExitKiosk = useCallback(async () => {
+    clearKioskModeActive();
+    setLockedView('idle');
     await exitKioskFullscreen();
-    clearKioskDeviceToken();
-    setSession(null);
-    await signOutUser();
-  }, [signOutUser]);
+
+    if (canLeaveToDashboard) {
+      router.replace(dashboardRoute);
+    }
+  }, [canLeaveToDashboard, dashboardRoute, router]);
 
   const handleExitUnlocked = useCallback(() => {
-    router.push(getHomeRouteForRole(role ?? 'empleado'));
-  }, [role, router]);
+    router.push(dashboardRoute);
+  }, [dashboardRoute, router]);
 
   if (authLoading || !user || (hasAccess && employeeLoading) || phase === 'loading') {
     return (
@@ -112,7 +162,7 @@ export function KioskApp() {
         </p>
         <button
           type="button"
-          onClick={() => router.push(getHomeRouteForRole(role ?? 'empleado'))}
+          onClick={() => router.push(dashboardRoute)}
           className="mt-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
         >
           Go back
@@ -124,19 +174,42 @@ export function KioskApp() {
   if (phase === 'setup') {
     return (
       <KioskActivation
-        mode={isKioskAccount ? 'tablet' : 'mobile'}
+        defaultMode={isKioskAccount ? 'tablet' : 'mobile'}
         defaultLocationId={employee?.locationId ?? ''}
         defaultName={employee?.name ?? ''}
-        onActivated={handleActivated}
-        onCancel={isKioskAccount ? undefined : handleExitUnlocked}
+        onActivated={(next) => void handleActivated(next)}
+        onCancel={canLeaveToDashboard ? handleExitUnlocked : undefined}
       />
     );
   }
 
   if (phase === 'ready' && session) {
     if (session.locked) {
+      if (lockedView === 'enter-pin') {
+        return (
+          <KioskPinGate
+            title="Enter kiosk mode"
+            description={`Enter the lock PIN for ${session.name || 'this device'} to open the time clock.`}
+            submitLabel="Enter kiosk"
+            onSuccess={() => void enterKioskMode()}
+            onCancel={() => setLockedView('idle')}
+          />
+        );
+      }
+
+      if (lockedView === 'idle') {
+        return (
+          <KioskIdleScreen
+            session={session}
+            showDashboardLink={canLeaveToDashboard}
+            onEnterKiosk={() => setLockedView('enter-pin')}
+            onGoToDashboard={() => router.push(dashboardRoute)}
+          />
+        );
+      }
+
       return (
-        <KioskLockedShell session={session} onExit={handleExitLocked}>
+        <KioskLockedShell session={session} onExitKiosk={handleExitKiosk}>
           <KioskScreen deviceSession={session} />
         </KioskLockedShell>
       );

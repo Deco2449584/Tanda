@@ -35,7 +35,10 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [edits, setEdits] = useState<
-    Record<string, { name: string; locationId: string }>
+    Record<
+      string,
+      { name: string; locationId: string; lockedMode: boolean; lockPin: string }
+    >
   >({});
 
   const loadDevices = useCallback(async () => {
@@ -49,12 +52,19 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
 
     const data = (await response.json()) as { devices: KioskDevice[] };
     setDevices(data.devices);
-    setEdits((current) => {
-      const next = { ...current };
+    // Re-sync edit drafts with the latest server state.
+    setEdits(() => {
+      const next: Record<
+        string,
+        { name: string; locationId: string; lockedMode: boolean; lockPin: string }
+      > = {};
       data.devices.forEach((device) => {
-        if (!next[device.id]) {
-          next[device.id] = { name: device.name, locationId: device.locationId };
-        }
+        next[device.id] = {
+          name: device.name,
+          locationId: device.locationId,
+          lockedMode: device.type === 'tablet',
+          lockPin: '',
+        };
       });
       return next;
     });
@@ -83,10 +93,38 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
     return location.city ? `${location.name} (${location.city})` : location.name;
   }
 
+  function patchEdit(
+    deviceId: string,
+    device: KioskDevice,
+    patch: Partial<{ name: string; locationId: string; lockedMode: boolean; lockPin: string }>,
+  ) {
+    setEdits((current) => {
+      const base = current[deviceId] ?? {
+        name: device.name,
+        locationId: device.locationId,
+        lockedMode: device.type === 'tablet',
+        lockPin: '',
+      };
+      return { ...current, [deviceId]: { ...base, ...patch } };
+    });
+  }
+
   async function handleSave(device: KioskDevice) {
     const form = edits[device.id];
     if (!form?.name.trim() || !form.locationId) {
       onToast('Name and warehouse are required.', 'error');
+      return;
+    }
+
+    const pin = form.lockPin.trim();
+    if (pin && !/^\d{4,8}$/.test(pin)) {
+      onToast('The lock PIN must be 4 to 8 digits.', 'error');
+      return;
+    }
+
+    // Enabling locked mode requires a PIN if the device doesn't already have one.
+    if (form.lockedMode && !device.hasLockPin && !pin) {
+      onToast('Set a 4 to 8 digit PIN to enable locked kiosk mode.', 'error');
       return;
     }
 
@@ -95,9 +133,17 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       const response = await fetch(`/api/kiosk/devices/${device.id}`, {
         method: 'PATCH',
         headers: await authHeaders(),
-        body: JSON.stringify({ name: form.name.trim(), locationId: form.locationId }),
+        body: JSON.stringify({
+          name: form.name.trim(),
+          locationId: form.locationId,
+          type: form.lockedMode ? 'tablet' : 'mobile',
+          ...(pin ? { lockPin: pin } : {}),
+        }),
       });
-      if (!response.ok) throw new Error('Save failed.');
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? 'Save failed.');
+      }
       onToast('Device updated.');
       await loadDevices();
     } catch (error) {
@@ -183,13 +229,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
                       <input
                         value={edits[device.id]?.name ?? ''}
                         onChange={(event) =>
-                          setEdits((current) => ({
-                            ...current,
-                            [device.id]: {
-                              name: event.target.value,
-                              locationId: current[device.id]?.locationId ?? device.locationId,
-                            },
-                          }))
+                          patchEdit(device.id, device, { name: event.target.value })
                         }
                         placeholder="Device name"
                         className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
@@ -197,13 +237,7 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
                       <select
                         value={edits[device.id]?.locationId ?? ''}
                         onChange={(event) =>
-                          setEdits((current) => ({
-                            ...current,
-                            [device.id]: {
-                              name: current[device.id]?.name ?? device.name,
-                              locationId: event.target.value,
-                            },
-                          }))
+                          patchEdit(device.id, device, { locationId: event.target.value })
                         }
                         className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white"
                       >
@@ -217,6 +251,57 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
                         ))}
                       </select>
                     </div>
+
+                    <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-2.5">
+                      <div className="min-w-0 pr-3">
+                        <p className="text-sm font-medium text-foreground">
+                          Locked kiosk mode
+                        </p>
+                        <p className="mt-0.5 text-xs text-subtle">
+                          On: shared tablet, fullscreen, PIN required to exit. Off: personal
+                          device, no lock.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={edits[device.id]?.lockedMode ?? false}
+                        aria-label="Toggle locked kiosk mode"
+                        onClick={() =>
+                          patchEdit(device.id, device, {
+                            lockedMode: !(edits[device.id]?.lockedMode ?? false),
+                          })
+                        }
+                        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                          edits[device.id]?.lockedMode ? 'bg-primary' : 'bg-zinc-700'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                            edits[device.id]?.lockedMode ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {edits[device.id]?.lockedMode ? (
+                      <input
+                        value={edits[device.id]?.lockPin ?? ''}
+                        inputMode="numeric"
+                        maxLength={8}
+                        onChange={(event) =>
+                          patchEdit(device.id, device, {
+                            lockPin: event.target.value.replace(/\D/g, ''),
+                          })
+                        }
+                        placeholder={
+                          device.hasLockPin
+                            ? 'New lock PIN (leave blank to keep current)'
+                            : 'Set a 4 to 8 digit lock PIN'
+                        }
+                        className="mt-2 w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm tracking-widest text-white"
+                      />
+                    ) : null}
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button

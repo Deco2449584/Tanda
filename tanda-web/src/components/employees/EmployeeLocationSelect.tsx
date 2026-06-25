@@ -40,7 +40,11 @@ export function EmployeeLocationSelect({
       >
         {allowUnassigned || !required ? (
           <option value="">Unassigned</option>
-        ) : null}
+        ) : (
+          <option value="" disabled>
+            Select a location…
+          </option>
+        )}
         {options.length === 0 ? (
           <option value="" disabled>
             {loading ? 'Loading locations…' : 'No locations — create one in Settings'}
