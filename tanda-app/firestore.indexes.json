@@ -57,6 +57,34 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "ownerEmail",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "kiosk_devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "createdBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "kiosk_devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "requestedAt",
           "order": "DESCENDING"
         }

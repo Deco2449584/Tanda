@@ -41,6 +41,12 @@ export function mapKioskDeviceDoc(
     locationId: typeof data.locationId === 'string' ? data.locationId : '',
     hasLockPin: typeof data.lockPinHash === 'string' && data.lockPinHash.length > 0,
     details: mapDetails(data.details),
+    ownerEmail:
+      typeof data.ownerEmail === 'string'
+        ? data.ownerEmail
+        : typeof data.createdBy === 'string'
+          ? data.createdBy
+          : undefined,
     createdBy: typeof data.createdBy === 'string' ? data.createdBy : undefined,
     createdAt: timestampToIso(data.createdAt as Timestamp) ?? new Date().toISOString(),
     lastSeenAt: timestampToIso(data.lastSeenAt as Timestamp),

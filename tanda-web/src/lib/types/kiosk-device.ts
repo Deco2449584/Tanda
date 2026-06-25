@@ -24,6 +24,8 @@ export interface KioskDeviceFirestore {
   locationId: string;
   lockPinHash?: string;
   details?: KioskDeviceDetails;
+  /** Account that owns this browser session (used to group and revoke by user). */
+  ownerEmail?: string;
   createdBy?: string;
   createdAt: Timestamp;
   lastSeenAt?: Timestamp;
@@ -37,6 +39,7 @@ export interface KioskDevice {
   locationId: string;
   hasLockPin: boolean;
   details?: KioskDeviceDetails;
+  ownerEmail?: string;
   createdBy?: string;
   createdAt: string;
   lastSeenAt?: string;

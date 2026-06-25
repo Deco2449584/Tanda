@@ -12,7 +12,11 @@ import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
-import { clearKioskDeviceToken, getKioskDeviceToken, kioskDeviceHeaders } from '@/lib/kiosk/device-token';
+import { auth } from '@/lib/firebase';
+import {
+  ensureKioskDeviceToken,
+  kioskDeviceHeaders,
+} from '@/lib/kiosk/device-token';
 import {
   clearKioskModeActive,
   isKioskModeActive,
@@ -55,7 +59,15 @@ export function KioskApp() {
   }, [authLoading, user, router]);
 
   const loadSession = useCallback(async () => {
-    const token = getKioskDeviceToken();
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
+      setSession(null);
+      setPhase('setup');
+      setLockedView('idle');
+      return;
+    }
+
+    const token = ensureKioskDeviceToken();
     if (!token) {
       setSession(null);
       setPhase('setup');
@@ -64,8 +76,12 @@ export function KioskApp() {
     }
 
     try {
+      const idToken = await currentUser.getIdToken();
       const response = await fetch('/api/kiosk/devices/session', {
-        headers: kioskDeviceHeaders(),
+        headers: {
+          ...kioskDeviceHeaders(),
+          Authorization: `Bearer ${idToken}`,
+        },
       });
       const data = (await response.json().catch(() => null)) as
         | { session: KioskDeviceSession | null }
@@ -84,7 +100,6 @@ export function KioskApp() {
         return;
       }
 
-      clearKioskDeviceToken();
       clearKioskModeActive();
       setSession(null);
       setPhase('setup');

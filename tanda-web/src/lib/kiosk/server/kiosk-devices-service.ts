@@ -70,7 +70,10 @@ export async function activateKioskDevice(
     : null;
 
   if (existing) {
-    const updatePayload: Record<string, unknown> = { ...base };
+    const updatePayload: Record<string, unknown> = {
+      ...base,
+      ownerEmail: input.createdBy,
+    };
     if (lockPinHash) {
       updatePayload.lockPinHash = lockPinHash;
     } else if (input.type === 'mobile') {
@@ -85,6 +88,7 @@ export async function activateKioskDevice(
 
   const createPayload: Record<string, unknown> = {
     ...base,
+    ownerEmail: input.createdBy,
     createdBy: input.createdBy,
     createdAt: FieldValue.serverTimestamp(),
   };
@@ -153,9 +157,110 @@ export async function listKioskDevices(): Promise<KioskDevice[]> {
   return snapshot.docs.map((doc) => mapKioskDeviceDoc(doc.id, doc.data()));
 }
 
+export async function findActiveKioskDevicesByOwner(
+  ownerEmail: string,
+): Promise<KioskDevice[]> {
+  const db = getAdminFirestore();
+  const coll = db.collection(COLLECTIONS.KIOSK_DEVICES);
+
+  const [byOwner, byCreated] = await Promise.all([
+    coll.where('ownerEmail', '==', ownerEmail).where('status', '==', 'active').get(),
+    coll.where('createdBy', '==', ownerEmail).where('status', '==', 'active').get(),
+  ]);
+
+  const byId = new Map<string, KioskDevice>();
+  for (const doc of [...byOwner.docs, ...byCreated.docs]) {
+    byId.set(doc.id, mapKioskDeviceDoc(doc.id, doc.data()));
+  }
+
+  return [...byId.values()].sort((a, b) => {
+    const aTime = a.lastSeenAt ? Date.parse(a.lastSeenAt) : 0;
+    const bTime = b.lastSeenAt ? Date.parse(b.lastSeenAt) : 0;
+    return bTime - aTime;
+  });
+}
+
+/**
+ * Resumes kiosk access for a browser that has no matching active token yet.
+ * Reuses settings from the user's most recent active session (new browser tab/profile).
+ */
+export async function resumeKioskDeviceSession(input: {
+  ownerEmail: string;
+  token: string;
+  createdBy: string;
+  details?: KioskDeviceDetails;
+}): Promise<KioskDeviceSession | null> {
+  const existing = await findKioskDeviceByToken(input.token);
+  if (existing?.status === 'active') {
+    const update: Record<string, unknown> = { lastSeenAt: FieldValue.serverTimestamp() };
+    if (input.details) update.details = input.details;
+    await existing.ref.update(update);
+    return buildKioskDeviceSession(existing);
+  }
+
+  const templates = await findActiveKioskDevicesByOwner(input.ownerEmail);
+  if (templates.length === 0) return null;
+
+  const template = templates[0];
+  const templateSnap = await getAdminFirestore()
+    .collection(COLLECTIONS.KIOSK_DEVICES)
+    .doc(template.id)
+    .get();
+  const templateData = templateSnap.data() ?? {};
+
+  const createPayload: Record<string, unknown> = {
+    status: 'active',
+    type: template.type,
+    name: template.name,
+    locationId: template.locationId,
+    deviceTokenHash: hashKioskDeviceToken(input.token),
+    ownerEmail: input.ownerEmail,
+    createdBy: input.createdBy,
+    createdAt: FieldValue.serverTimestamp(),
+    lastSeenAt: FieldValue.serverTimestamp(),
+  };
+
+  if (input.details) {
+    createPayload.details = input.details;
+  }
+
+  if (typeof templateData.lockPinHash === 'string' && templateData.lockPinHash) {
+    createPayload.lockPinHash = templateData.lockPinHash;
+  }
+
+  const docRef = await getAdminFirestore()
+    .collection(COLLECTIONS.KIOSK_DEVICES)
+    .add(createPayload);
+  const created = await docRef.get();
+  return buildKioskDeviceSession(mapKioskDeviceDoc(created.id, created.data() ?? {}));
+}
+
 export async function revokeKioskDevice(deviceId: string): Promise<void> {
   await getAdminFirestore().collection(COLLECTIONS.KIOSK_DEVICES).doc(deviceId).update({
     status: 'revoked',
+    lastSeenAt: FieldValue.serverTimestamp(),
+  });
+}
+
+export async function revokeKioskDevicesByOwner(ownerEmail: string): Promise<number> {
+  const active = await findActiveKioskDevicesByOwner(ownerEmail);
+  if (active.length === 0) return 0;
+
+  const batch = getAdminFirestore().batch();
+  const now = FieldValue.serverTimestamp();
+  for (const device of active) {
+    batch.update(getAdminFirestore().collection(COLLECTIONS.KIOSK_DEVICES).doc(device.id), {
+      status: 'revoked',
+      lastSeenAt: now,
+    });
+  }
+  await batch.commit();
+  return active.length;
+}
+
+export async function restoreKioskDevice(deviceId: string): Promise<void> {
+  await getAdminFirestore().collection(COLLECTIONS.KIOSK_DEVICES).doc(deviceId).update({
+    status: 'active',
     lastSeenAt: FieldValue.serverTimestamp(),
   });
 }
