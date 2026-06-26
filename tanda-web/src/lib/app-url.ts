@@ -25,3 +25,7 @@ export function getAppBaseUrl(): string {
 export function getAppLoginUrl(): string {
   return `${getAppBaseUrl()}/login`;
 }
+
+export function getAppAuthActionUrl(): string {
+  return `${getAppBaseUrl()}/auth/action`;
+}

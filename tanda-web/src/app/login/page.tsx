@@ -1,7 +1,7 @@
 ﻿'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
   CalendarDays,
@@ -67,12 +67,22 @@ function getAuthErrorMessage(code: string): string {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingSplash message="Loading session…" />}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, role, loading: authLoading } = useAuthRole();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const passwordJustSet = searchParams.get('passwordSet') === '1';
 
   useEffect(() => {
     if (authLoading || !user || !role) return;
@@ -225,6 +235,15 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {passwordJustSet ? (
+                <div
+                  className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-300"
+                  role="status"
+                >
+                  Password saved. Sign in with your new credentials.
+                </div>
+              ) : null}
+
               <div>
                 <label htmlFor="email" className="mb-1.5 block text-sm text-muted">
                   Email
