@@ -2,14 +2,15 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
-import { X } from 'lucide-react';
-import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
+import type { Timestamp } from 'firebase/firestore';
+import { Mail, X } from 'lucide-react';import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
 import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
+import { requestEmployeeInvite } from '@/lib/employees/request-employee-invite';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
 import { useLocations } from '@/providers/LocationsProvider';
@@ -38,9 +39,11 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResendingInvite, setIsResendingInvite] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState('');
   const [error, setError] = useState('');
 
-  const isBusy = isUploading || isSubmitting;
+  const isBusy = isUploading || isSubmitting || isResendingInvite;
 
   useEffect(() => {
     if (!employee) return;
@@ -60,6 +63,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     setEndDate(employee.endDate ?? '');
     setPhotoFile(null);
     setError('');
+    setInviteMessage('');
   }, [employee]);
 
   if (!employee) return null;
@@ -68,7 +72,47 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     if (isBusy) return;
     setPhotoFile(null);
     setError('');
+    setInviteMessage('');
     onClose();
+  }
+
+  function formatInviteSentAt(timestamp?: Timestamp): string | null {
+    if (!timestamp || typeof timestamp.toDate !== 'function') {
+      return null;
+    }
+
+    return timestamp.toDate().toLocaleString();
+  }
+
+  async function handleResendInvite() {
+    if (!employee) return;
+
+    setError('');
+    setInviteMessage('');
+
+    if (!form.email.trim() || !form.name.trim()) {
+      setError('Email and name are required to send an invite.');
+      return;
+    }
+
+    setIsResendingInvite(true);
+
+    try {
+      await requestEmployeeInvite({
+        email: form.email.trim(),
+        name: form.name.trim(),
+        employeeDocId: employee.id,
+      });
+      setInviteMessage(`Invite sent to ${form.email.trim().toLowerCase()}.`);
+    } catch (inviteError) {
+      setError(
+        inviteError instanceof Error
+          ? inviteError.message
+          : 'Could not send the invite email.',
+      );
+    } finally {
+      setIsResendingInvite(false);
+    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -266,6 +310,40 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               disabled={isBusy}
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-muted text-primary">
+                <Mail className="h-4 w-4" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">Sign-in invite</p>
+                <p className="mt-0.5 text-xs text-subtle">
+                  Sends an email with a link to set a password and sign in.
+                </p>
+                {formatInviteSentAt(employee.inviteSentAt) ? (
+                  <p className="mt-1.5 text-xs text-muted">
+                    Last sent: {formatInviteSentAt(employee.inviteSentAt)}
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-xs text-muted">No invite sent yet.</p>
+                )}
+                {inviteMessage ? (
+                  <p className="mt-2 text-xs font-medium text-emerald-400" role="status">
+                    {inviteMessage}
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleResendInvite()}
+                  disabled={isBusy}
+                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-border-strong px-3 text-xs font-semibold text-foreground transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isResendingInvite ? 'Sending invite…' : 'Resend invitation'}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div>

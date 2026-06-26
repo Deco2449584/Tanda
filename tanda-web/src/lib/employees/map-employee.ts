@@ -47,5 +47,7 @@ export function mapEmployeeDoc(
     visaExpiry: optionalString(employee.visaExpiry),
     startDate: optionalString(employee.startDate),
     endDate: optionalString(employee.endDate),
+    authUid: optionalString(employee.authUid),
+    inviteSentAt: employee.inviteSentAt,
   };
 }

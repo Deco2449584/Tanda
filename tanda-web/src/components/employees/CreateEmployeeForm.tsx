@@ -14,7 +14,7 @@ import {
 } from '@/lib/employees/build-create-payload';
 import { uploadEmployeeDocument } from '@/lib/employees/upload-document';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
-import { auth } from '@/lib/firebase';
+import { requestEmployeeInvite } from '@/lib/employees/request-employee-invite';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
 import {
   isEmployeeIdTaken,
@@ -175,34 +175,18 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
 
       const docRef = await addDoc(collection(db, COLLECTIONS.EMPLOYEES), payload);
 
-      const currentUser = auth?.currentUser;
-      if (!currentUser) {
-        throw new Error('Employee saved, but your session expired before the invite could be sent.');
-      }
-
-      const idToken = await currentUser.getIdToken();
-      const inviteResponse = await fetch('/api/employees/invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
+      try {
+        await requestEmployeeInvite({
           email: form.email.trim(),
           name: form.name.trim(),
           employeeDocId: docRef.id,
-        }),
-      });
-
-      if (!inviteResponse.ok) {
-        const inviteData = (await inviteResponse.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        throw new Error(
-          inviteData?.error
-            ? `Employee saved, but the invite email failed: ${inviteData.error}`
-            : 'Employee saved, but the invite email could not be sent.',
-        );
+        });
+      } catch (inviteError) {
+        const message =
+          inviteError instanceof Error
+            ? inviteError.message
+            : 'Could not send the invite email.';
+        throw new Error(`Employee saved, but the invite email failed: ${message}`);
       }
 
       onSuccess();

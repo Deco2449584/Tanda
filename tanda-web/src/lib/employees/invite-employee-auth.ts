@@ -55,6 +55,19 @@ export async function inviteEmployeeAuth(input: {
   });
 
   if (input.employeeDocId) {
+    const employeeDoc = await getAdminFirestore()
+      .collection(COLLECTIONS.EMPLOYEES)
+      .doc(input.employeeDocId)
+      .get();
+
+    const employeeActive = employeeDoc.exists
+      ? employeeDoc.data()?.active !== false
+      : true;
+
+    if (employeeActive) {
+      await auth.updateUser(uid, { disabled: false });
+    }
+
     await getAdminFirestore()
       .collection(COLLECTIONS.EMPLOYEES)
       .doc(input.employeeDocId)
