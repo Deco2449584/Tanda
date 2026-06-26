@@ -1,7 +1,8 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { FirebaseAuthError } from 'firebase-admin/auth';
 import { COLLECTIONS } from '@/lib/constants';
-import { getAppAuthActionUrl, getAppBaseUrl } from '@/lib/app-url';
+import { getAppAuthActionUrl, getAppBaseUrl, getAppLoginUrl } from '@/lib/app-url';
+import { rewriteFirebaseAuthLinkToApp } from '@/lib/auth/rewrite-firebase-auth-link';
 import { sendEmployeeInviteEmail } from '@/lib/email/send-employee-invite-email';
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase-admin';
 
@@ -42,10 +43,12 @@ export async function inviteEmployeeAuth(input: {
     }
   }
 
-  const setupLink = await auth.generatePasswordResetLink(email, {
-    url: getAppAuthActionUrl(),
-    handleCodeInApp: true,
+  const firebaseLink = await auth.generatePasswordResetLink(email, {
+    url: getAppLoginUrl(),
+    handleCodeInApp: false,
   });
+
+  const setupLink = rewriteFirebaseAuthLinkToApp(firebaseLink, getAppAuthActionUrl());
 
   const emailDelivery = await sendEmployeeInviteEmail({
     email,
