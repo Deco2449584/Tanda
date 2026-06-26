@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
   CalendarDays,
   Clock,
@@ -13,7 +13,10 @@ import {
   Truck,
 } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
-import { fetchUserRoleForEmail } from '@/lib/auth/resolve-role';
+import {
+  fetchEmployeeSessionForEmail,
+  getEmployeeSessionBlockMessage,
+} from '@/lib/auth/employee-session';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +57,8 @@ function getAuthErrorMessage(code: string): string {
       return 'Incorrect email or password.';
     case 'auth/invalid-email':
       return 'The email address is not valid.';
+    case 'auth/user-disabled':
+      return 'Your account has been deactivated. Contact your administrator.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please try again later.';
     default:
@@ -85,8 +90,16 @@ export default function LoginPage() {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const resolvedRole = await fetchUserRoleForEmail(credential.user.email);
-      router.push(getHomeRouteForRole(resolvedRole));
+      const session = await fetchEmployeeSessionForEmail(credential.user.email);
+      const blockMessage = getEmployeeSessionBlockMessage(session);
+
+      if (blockMessage) {
+        await signOut(auth);
+        setError(blockMessage);
+        return;
+      }
+
+      router.push(getHomeRouteForRole(session.role));
     } catch (err) {
       const code =
         err && typeof err === 'object' && 'code' in err

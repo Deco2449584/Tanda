@@ -8,6 +8,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
+import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { db } from '@/lib/firebase';
@@ -83,9 +84,14 @@ export function EmployeeTable({
     setDeletingId(employee.id);
 
     try {
+      await requestSyncEmployeeAuth(employee.id, 'delete');
       await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id));
-    } catch {
-      window.alert('Could not delete the employee. Please try again.');
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : 'Could not delete the employee. Please try again.',
+      );
     } finally {
       setDeletingId(null);
     }

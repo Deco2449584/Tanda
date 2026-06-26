@@ -9,6 +9,7 @@ import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload'
 import { COLLECTIONS } from '@/lib/constants';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
+import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
 import { useLocations } from '@/providers/LocationsProvider';
@@ -157,6 +158,10 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       }
 
       await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), payload);
+
+      if (active !== employee.active) {
+        await requestSyncEmployeeAuth(employee.id, active ? 'enable' : 'disable');
+      }
 
       setPhotoFile(null);
       onClose();

@@ -11,7 +11,10 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
-import { fetchUserRoleForEmail } from '@/lib/auth/resolve-role';
+import {
+  fetchEmployeeSessionForEmail,
+  getEmployeeSessionBlockMessage,
+} from '@/lib/auth/employee-session';
 import type { UserRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 
@@ -52,10 +55,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const requestId = ++roleRequestId;
       setLoading(true);
 
-      void fetchUserRoleForEmail(firebaseUser.email)
-        .then((resolved) => {
+      void fetchEmployeeSessionForEmail(firebaseUser.email)
+        .then((session) => {
           if (requestId !== roleRequestId) return;
-          setRole(resolved);
+
+          const blockMessage = getEmployeeSessionBlockMessage(session);
+          if (blockMessage) {
+            if (!auth) {
+              setRole(null);
+              return;
+            }
+
+            void signOut(auth).finally(() => {
+              if (requestId !== roleRequestId) return;
+              setUser(null);
+              setRole(null);
+            });
+            return;
+          }
+
+          setRole(session.role);
         })
         .catch((error) => {
           console.error('AuthProvider role resolution', error);
