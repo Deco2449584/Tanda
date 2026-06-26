@@ -8,6 +8,7 @@ import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationS
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { COLLECTIONS } from '@/lib/constants';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
+import { validateEmploymentDates } from '@/lib/employees/employment-dates';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
 import { useLocations } from '@/providers/LocationsProvider';
@@ -31,6 +32,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
   });
   const [active, setActive] = useState(true);
   const [kioskEnabled, setKioskEnabled] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +55,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     });
     setActive(employee.active);
     setKioskEnabled(employee.kioskEnabled === true);
+    setStartDate(employee.startDate ?? '');
+    setEndDate(employee.endDate ?? '');
     setPhotoFile(null);
     setError('');
   }, [employee]);
@@ -96,6 +101,12 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       return;
     }
 
+    const dateError = validateEmploymentDates(startDate, endDate);
+    if (dateError) {
+      setError(dateError);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -131,6 +142,18 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         payload.locationGroupId = form.locationGroupId.trim();
       } else {
         payload.locationGroupId = deleteField();
+      }
+
+      if (startDate.trim()) {
+        payload.startDate = startDate.trim();
+      } else {
+        payload.startDate = deleteField();
+      }
+
+      if (endDate.trim()) {
+        payload.endDate = endDate.trim();
+      } else {
+        payload.endDate = deleteField();
       }
 
       await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), payload);
@@ -275,6 +298,38 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
             }
             disabled={isBusy}
           />
+
+          <div>
+            <label htmlFor="edit-emp-start-date" className="mb-1.5 block text-sm text-muted">
+              Start date
+            </label>
+            <input
+              id="edit-emp-start-date"
+              type="date"
+              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              disabled={isBusy}
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="edit-emp-end-date" className="mb-1.5 block text-sm text-muted">
+              End date
+            </label>
+            <input
+              id="edit-emp-end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              disabled={isBusy}
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+            />
+            <p className="mt-1.5 text-xs text-subtle">
+              Set when the employee resigns or leaves. Clear to mark as currently employed.
+            </p>
+          </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-3">
             <div>

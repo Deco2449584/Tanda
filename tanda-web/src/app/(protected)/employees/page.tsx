@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
-import { CreateEmployeeModal } from '@/components/employees/CreateEmployeeModal';
 import { EditEmployeeModal } from '@/components/employees/EditEmployeeModal';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { PageContent } from '@/components/ui/PageContent';
@@ -13,7 +13,6 @@ import type { Employee } from '@/lib/types/employee';
 export default function EmployeesPage() {
   const { employees, loading } = useEmployees();
   const [searchQuery, setSearchQuery] = useState('');
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   return (
@@ -21,14 +20,13 @@ export default function EmployeesPage() {
       <PageHeader title="Staff Management" />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => setCreateModalOpen(true)}
+        <Link
+          href="/employees/new"
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           CREATE NEW EMPLOYEE
-        </button>
+        </Link>
 
         <div className="relative w-full sm:max-w-xs">
           <Search
@@ -50,11 +48,6 @@ export default function EmployeesPage() {
         loading={loading}
         searchQuery={searchQuery}
         onEdit={setEditingEmployee}
-      />
-
-      <CreateEmployeeModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
       />
 
       <EditEmployeeModal
