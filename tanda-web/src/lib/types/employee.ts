@@ -40,9 +40,12 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   lastAction: string;
   lastTimestampServer?: Timestamp;
   photoUrl?: string;
+  /** Firebase Auth user id once an invite has been sent. */
+  authUid?: string;
   /** Server-managed via push notification API routes. */
   pushSubscription?: string;
   notificationsEnabledAt?: Timestamp;
+  inviteSentAt?: Timestamp;
 }
 
 export interface Employee extends EmployeeFirestore {

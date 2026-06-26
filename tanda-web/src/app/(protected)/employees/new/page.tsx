@@ -23,7 +23,8 @@ export default function NewEmployeePage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Create employee</h1>
           <p className="mt-1 text-sm text-subtle">
-            Add work details, personal information, and identity documents in one place.
+            Add work details, personal information, and identity documents. An invite email
+            will be sent so the employee can set a password and sign in.
           </p>
         </div>
       </div>
