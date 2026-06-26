@@ -1,37 +1,14 @@
+import { getAppLogoUrl } from '@/lib/app-url';
+import {
+  buildEmployeeInviteEmailHtml,
+  buildEmployeeInviteEmailText,
+} from '@/lib/email/employee-invite-email-html';
+
 interface SendEmployeeInviteEmailInput {
   email: string;
   name: string;
   setupLink: string;
   appUrl: string;
-}
-
-function buildInviteEmailHtml(input: SendEmployeeInviteEmailInput): string {
-  const firstName = input.name.split(/\s+/)[0] || input.name;
-
-  return `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827;max-width:560px">
-      <h1 style="font-size:20px;margin:0 0 16px">Welcome to Continental Cargo</h1>
-      <p>Hi ${firstName},</p>
-      <p>
-        An administrator created your employee account. Use the button below to set your
-        password and sign in to <strong>${input.appUrl.replace(/^https?:\/\//, '')}</strong>.
-      </p>
-      <p style="margin:28px 0">
-        <a href="${input.setupLink}"
-           style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">
-          Set my password
-        </a>
-      </p>
-      <p style="font-size:14px;color:#4b5563">
-        After setting your password, go to
-        <a href="${input.appUrl}/login">${input.appUrl}/login</a>
-        and sign in with this email address.
-      </p>
-      <p style="font-size:13px;color:#6b7280;margin-top:24px">
-        If you did not expect this email, contact your administrator.
-      </p>
-    </div>
-  `.trim();
 }
 
 async function sendViaResend(input: SendEmployeeInviteEmailInput): Promise<boolean> {
@@ -43,6 +20,15 @@ async function sendViaResend(input: SendEmployeeInviteEmailInput): Promise<boole
     throw new Error('RESEND_FROM_EMAIL is not set.');
   }
 
+  const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('light');
+  const emailContent = {
+    email: input.email,
+    name: input.name,
+    setupLink: input.setupLink,
+    appUrl: input.appUrl,
+    logoUrl,
+  };
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -52,8 +38,9 @@ async function sendViaResend(input: SendEmployeeInviteEmailInput): Promise<boole
     body: JSON.stringify({
       from,
       to: [input.email],
-      subject: 'Set up your Continental Cargo account',
-      html: buildInviteEmailHtml(input),
+      subject: 'Welcome to Continental Cargo — set your password',
+      text: buildEmployeeInviteEmailText(emailContent),
+      html: buildEmployeeInviteEmailHtml(emailContent),
     }),
   });
 

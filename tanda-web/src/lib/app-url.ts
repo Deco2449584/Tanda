@@ -29,3 +29,9 @@ export function getAppLoginUrl(): string {
 export function getAppAuthActionUrl(): string {
   return `${getAppBaseUrl()}/auth/action`;
 }
+
+/** Absolute URL for email images (logo-light.svg on the app origin). */
+export function getAppLogoUrl(variant: 'light' | 'mark-light' = 'light'): string {
+  const file = variant === 'light' ? 'logo-light.svg' : 'logo-mark-light.svg';
+  return `${getAppBaseUrl()}/${file}`;
+}
