@@ -24,6 +24,8 @@ export interface KioskDeviceFirestore {
   locationId: string;
   lockPinHash?: string;
   details?: KioskDeviceDetails;
+  /** Stable id for this browser tab (also used as the Firestore document id). */
+  clientSessionId?: string;
   /** Account that owns this browser session (used to group and revoke by user). */
   ownerEmail?: string;
   createdBy?: string;
@@ -39,6 +41,7 @@ export interface KioskDevice {
   locationId: string;
   hasLockPin: boolean;
   details?: KioskDeviceDetails;
+  clientSessionId?: string;
   ownerEmail?: string;
   createdBy?: string;
   createdAt: string;

@@ -561,7 +561,7 @@ function DeviceHeader({
         </p>
         {showSessionLabel ? (
           <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-subtle">
-            Session {device.id.slice(-6).toUpperCase()}
+            Tab {(device.clientSessionId ?? device.id).slice(-6).toUpperCase()}
           </span>
         ) : null}
         <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-subtle">

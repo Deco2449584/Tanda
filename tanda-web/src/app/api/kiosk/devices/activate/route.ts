@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyKioskRequest } from '@/lib/auth/verify-kiosk-request';
-import { getKioskDeviceTokenFromRequest } from '@/lib/kiosk/server/device-token';
+import { getKioskClientSessionIdFromRequest, getKioskDeviceTokenFromRequest } from '@/lib/kiosk/server/device-token';
 import { activateKioskDevice } from '@/lib/kiosk/server/kiosk-devices-service';
 import type { KioskDeviceDetails, KioskDeviceType } from '@/lib/types/kiosk-device';
 
@@ -16,12 +16,19 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       deviceToken?: string;
+      clientSessionId?: string;
       type?: KioskDeviceType;
       name?: string;
       locationId?: string;
       lockPin?: string;
       details?: KioskDeviceDetails;
     };
+
+    const clientSessionId =
+      body.clientSessionId?.trim() || getKioskClientSessionIdFromRequest(request) || '';
+    if (!clientSessionId) {
+      return NextResponse.json({ error: 'Client session id is required.' }, { status: 400 });
+    }
 
     const token =
       body.deviceToken?.trim() || getKioskDeviceTokenFromRequest(request) || '';
@@ -52,6 +59,7 @@ export async function POST(request: Request) {
     }
 
     const session = await activateKioskDevice({
+      clientSessionId,
       token,
       type,
       name,

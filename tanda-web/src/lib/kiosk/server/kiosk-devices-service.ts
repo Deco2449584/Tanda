@@ -32,7 +32,58 @@ export async function findKioskDeviceByToken(
   };
 }
 
+export async function findKioskDeviceByClientSessionId(
+  clientSessionId: string,
+): Promise<(KioskDevice & { ref: FirebaseFirestore.DocumentReference }) | null> {
+  const trimmed = clientSessionId.trim();
+  if (!trimmed) return null;
+
+  const doc = await getAdminFirestore()
+    .collection(COLLECTIONS.KIOSK_DEVICES)
+    .doc(trimmed)
+    .get();
+
+  if (doc.exists) {
+    return {
+      ...mapKioskDeviceDoc(doc.id, doc.data() ?? {}),
+      ref: doc.ref,
+    };
+  }
+
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.KIOSK_DEVICES)
+    .where('clientSessionId', '==', trimmed)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+
+  const legacyDoc = snapshot.docs[0];
+  return {
+    ...mapKioskDeviceDoc(legacyDoc.id, legacyDoc.data()),
+    ref: legacyDoc.ref,
+  };
+}
+
+/** Resolves the kiosk record for this browser tab (client session id first, then token). */
+export async function resolveKioskDeviceForClient(input: {
+  clientSessionId?: string | null;
+  token?: string | null;
+}): Promise<(KioskDevice & { ref: FirebaseFirestore.DocumentReference }) | null> {
+  if (input.clientSessionId) {
+    const bySession = await findKioskDeviceByClientSessionId(input.clientSessionId);
+    if (bySession) return bySession;
+  }
+
+  if (input.token) {
+    return findKioskDeviceByToken(input.token);
+  }
+
+  return null;
+}
+
 export interface ActivateKioskDeviceInput {
+  clientSessionId: string;
   token: string;
   type: KioskDeviceType;
   name: string;
@@ -45,14 +96,20 @@ export interface ActivateKioskDeviceInput {
 }
 
 /**
- * Registers a kiosk device for the given browser token. Active devices can be
- * refreshed in place; revoked/pending records are fully reset on re-activation.
+ * Registers a kiosk device for this browser tab. Uses clientSessionId as the
+ * Firestore document id so the same tab cannot create duplicate connections.
  */
 export async function activateKioskDevice(
   input: ActivateKioskDeviceInput,
 ): Promise<KioskDeviceSession> {
   const db = getAdminFirestore();
-  const existing = await findKioskDeviceByToken(input.token);
+  const clientSessionId = input.clientSessionId.trim();
+  if (!clientSessionId) {
+    throw new Error('Client session id is required.');
+  }
+
+  const docRef = db.collection(COLLECTIONS.KIOSK_DEVICES).doc(clientSessionId);
+  const existingSnap = await docRef.get();
   const nextStatus = input.requiresApproval ? 'pending' : 'active';
 
   const base: Record<string, unknown> = {
@@ -60,6 +117,7 @@ export async function activateKioskDevice(
     type: input.type,
     name: input.name.trim(),
     locationId: input.locationId.trim(),
+    clientSessionId,
     deviceTokenHash: hashKioskDeviceToken(input.token),
     lastSeenAt: FieldValue.serverTimestamp(),
   };
@@ -72,24 +130,26 @@ export async function activateKioskDevice(
     ? hashKioskLockPin(input.lockPin)
     : null;
 
-  if (existing?.status === 'active') {
-    const updatePayload: Record<string, unknown> = {
-      ...base,
-      status: 'active',
-      ownerEmail: input.createdBy,
-    };
-    if (lockPinHash) {
-      updatePayload.lockPinHash = lockPinHash;
-    } else if (input.type === 'mobile') {
-      updatePayload.lockPinHash = FieldValue.delete();
+  if (existingSnap.exists) {
+    const existing = mapKioskDeviceDoc(existingSnap.id, existingSnap.data() ?? {});
+
+    if (existing.status === 'active') {
+      const updatePayload: Record<string, unknown> = {
+        ...base,
+        status: 'active',
+        ownerEmail: input.createdBy,
+      };
+      if (lockPinHash) {
+        updatePayload.lockPinHash = lockPinHash;
+      } else if (input.type === 'mobile') {
+        updatePayload.lockPinHash = FieldValue.delete();
+      }
+
+      await docRef.update(updatePayload);
+      const updated = await docRef.get();
+      return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
     }
 
-    await existing.ref.update(updatePayload);
-    const updated = await existing.ref.get();
-    return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
-  }
-
-  if (existing) {
     const resetPayload: Record<string, unknown> = {
       ...base,
       ownerEmail: input.createdBy,
@@ -100,8 +160,26 @@ export async function activateKioskDevice(
       resetPayload.lockPinHash = FieldValue.delete();
     }
 
-    await existing.ref.update(resetPayload);
-    const updated = await existing.ref.get();
+    await docRef.update(resetPayload);
+    const updated = await docRef.get();
+    return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
+  }
+
+  const legacy = await findKioskDeviceByToken(input.token);
+  if (legacy && legacy.id !== clientSessionId) {
+    const resetPayload: Record<string, unknown> = {
+      ...base,
+      clientSessionId,
+      ownerEmail: input.createdBy,
+    };
+    if (lockPinHash) {
+      resetPayload.lockPinHash = lockPinHash;
+    } else {
+      resetPayload.lockPinHash = FieldValue.delete();
+    }
+
+    await legacy.ref.update(resetPayload);
+    const updated = await legacy.ref.get();
     return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
   }
 
@@ -115,7 +193,7 @@ export async function activateKioskDevice(
     createPayload.lockPinHash = lockPinHash;
   }
 
-  const docRef = await db.collection(COLLECTIONS.KIOSK_DEVICES).add(createPayload);
+  await docRef.set(createPayload);
   const created = await docRef.get();
   return buildKioskDeviceSession(mapKioskDeviceDoc(created.id, created.data() ?? {}));
 }
@@ -204,6 +282,30 @@ export async function approveKioskDevice(deviceId: string): Promise<void> {
     status: 'active',
     lastSeenAt: FieldValue.serverTimestamp(),
   });
+}
+
+export async function rerequestKioskDevice(
+  deviceId: string,
+  requiresApproval: boolean,
+): Promise<KioskDeviceSession> {
+  const docRef = getAdminFirestore().collection(COLLECTIONS.KIOSK_DEVICES).doc(deviceId);
+  const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    throw new Error('Device not found.');
+  }
+
+  const device = mapKioskDeviceDoc(snapshot.id, snapshot.data() ?? {});
+  if (device.status !== 'revoked') {
+    throw new Error('Device is not revoked.');
+  }
+
+  await docRef.update({
+    status: requiresApproval ? 'pending' : 'active',
+    lastSeenAt: FieldValue.serverTimestamp(),
+  });
+
+  const updated = await docRef.get();
+  return buildKioskDeviceSession(mapKioskDeviceDoc(updated.id, updated.data() ?? {}));
 }
 
 export async function revokeKioskDevice(deviceId: string): Promise<void> {

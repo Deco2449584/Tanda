@@ -47,6 +47,10 @@ export function mapKioskDeviceDoc(
     locationId: typeof data.locationId === 'string' ? data.locationId : '',
     hasLockPin: typeof data.lockPinHash === 'string' && data.lockPinHash.length > 0,
     details: mapDetails(data.details),
+    clientSessionId:
+      typeof data.clientSessionId === 'string'
+        ? data.clientSessionId
+        : id,
     ownerEmail:
       typeof data.ownerEmail === 'string'
         ? data.ownerEmail

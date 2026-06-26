@@ -8,7 +8,7 @@ import {
   collectKioskDeviceDetails,
   suggestKioskDeviceName,
 } from '@/lib/kiosk/device-details';
-import { ensureKioskDeviceToken, getKioskDeviceToken } from '@/lib/kiosk/device-token';
+import { ensureKioskClientSessionId, ensureKioskDeviceToken, getKioskDeviceToken } from '@/lib/kiosk/device-token';
 import { enterKioskFullscreen } from '@/lib/pwa/kiosk-display';
 import { subscribeLocations } from '@/lib/locations/locations-service';
 import type { KioskDeviceDetails, KioskDeviceSession } from '@/lib/types/kiosk-device';
@@ -99,6 +99,7 @@ export function KioskActivation({
 
     try {
       const deviceToken = ensureKioskDeviceToken();
+      const clientSessionId = ensureKioskClientSessionId();
       const idToken = await currentUser.getIdToken();
 
       const response = await fetch('/api/kiosk/devices/activate', {
@@ -107,9 +108,11 @@ export function KioskActivation({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${idToken}`,
           'X-Kiosk-Device-Token': getKioskDeviceToken(),
+          'X-Kiosk-Client-Session': clientSessionId,
         },
         body: JSON.stringify({
           deviceToken,
+          clientSessionId,
           type: mode,
           name: name.trim(),
           locationId,
