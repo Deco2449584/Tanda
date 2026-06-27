@@ -1,5 +1,15 @@
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
+export function formatKioskLabel(record: AttendanceRecord): string {
+  const name = record.kioskDeviceNameSnapshot?.trim();
+  if (!name) return '—';
+  return name;
+}
+
+export function hasAttendanceMapLocation(record: AttendanceRecord): boolean {
+  return buildGoogleMapsUrl(record) !== null;
+}
+
 export function formatWarehouseLabel(record: AttendanceRecord): string {
   if (record.locationNameSnapshot) {
     return record.locationCitySnapshot

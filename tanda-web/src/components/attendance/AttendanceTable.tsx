@@ -15,9 +15,7 @@ import {
   formatRecordTime,
 } from '@/lib/attendance/format';
 import {
-  buildGoogleMapsUrl,
-  formatExactLocation,
-  formatShortLocation,
+  formatKioskLabel,
   formatWarehouseLabel,
 } from '@/lib/attendance/location-display';
 import { COLLECTIONS } from '@/lib/constants';
@@ -101,8 +99,8 @@ export function AttendanceTable({
                 <th className="px-4 py-3.5 font-semibold text-white">
                   Warehouse
                 </th>
-                <th className="max-w-[11rem] px-4 py-3.5 font-semibold text-white">
-                  Location
+                <th className="px-4 py-3.5 font-semibold text-white">
+                  Kiosk
                 </th>
                 <th className="px-4 py-3.5 font-semibold text-white">
                   Date
@@ -149,7 +147,7 @@ export function AttendanceTable({
                       {formatWarehouseLabel(record)}
                     </td>
                     <td className="px-4 py-3.5 text-muted">
-                      <LocationCell record={record} />
+                      {formatKioskLabel(record)}
                     </td>
                     <td className="px-4 py-3.5 text-muted">
                       {formatRecordDate(record.timestampServer)}
@@ -253,8 +251,13 @@ export function AttendanceTable({
 
                       <div className="mt-1 text-[11px] text-subtle">
                         {formatWarehouseLabel(record)}
+                        {record.kioskDeviceNameSnapshot ? (
+                          <>
+                            {' · '}
+                            <span className="text-muted">{formatKioskLabel(record)}</span>
+                          </>
+                        ) : null}
                       </div>
-                      <LocationCell record={record} compact />
 
                       <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted">
                         <span className="tabular-nums">
@@ -305,57 +308,6 @@ export function AttendanceTable({
         onCancel={() => setPendingDelete(null)}
       />
     </>
-  );
-}
-
-function LocationCell({
-  record,
-  compact = false,
-}: {
-  record: AttendanceRecord;
-  compact?: boolean;
-}) {
-  const mapsUrl = buildGoogleMapsUrl(record);
-  const fullLabel = formatExactLocation(record);
-  const shortLabel = formatShortLocation(record);
-
-  if (shortLabel === '—') {
-    return <span className={compact ? 'mt-1 block text-[11px] text-subtle' : ''}>—</span>;
-  }
-
-  const content = (
-    <span className="line-clamp-2 break-words">{shortLabel}</span>
-  );
-
-  const className = compact
-    ? 'mt-1 block max-w-full text-[11px] text-primary hover:underline'
-    : 'block max-w-[11rem] text-xs leading-snug text-primary hover:underline';
-
-  if (mapsUrl) {
-    return (
-      <a
-        href={mapsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={className}
-        title={fullLabel !== shortLabel ? fullLabel : undefined}
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <span
-      className={
-        compact
-          ? 'mt-1 block max-w-full text-[11px] text-subtle'
-          : 'block max-w-[11rem] text-xs leading-snug text-muted'
-      }
-      title={fullLabel !== shortLabel ? fullLabel : undefined}
-    >
-      {content}
-    </span>
   );
 }
 

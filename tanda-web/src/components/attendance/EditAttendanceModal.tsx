@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import { Coffee, X } from 'lucide-react';
+import { AttendanceMapLink } from '@/components/attendance/AttendanceMapLink';
 import {
   formatAttendanceType,
   formatRecordDate,
@@ -10,6 +11,7 @@ import {
   formValuesToTimestamp,
   timestampToFormValues,
 } from '@/lib/attendance/format';
+import { formatKioskLabel } from '@/lib/attendance/location-display';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
@@ -33,10 +35,6 @@ export function EditAttendanceModal({
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [locationId, setLocationId] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [geoAccuracy, setGeoAccuracy] = useState('');
-  const [geoAddress, setGeoAddress] = useState('');
   const [breakWaived, setBreakWaived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -51,10 +49,6 @@ export function EditAttendanceModal({
     setDate(formValues.date);
     setTime(formValues.time);
     setLocationId(record.locationId ?? '');
-    setLatitude(record.latitude != null ? String(record.latitude) : '');
-    setLongitude(record.longitude != null ? String(record.longitude) : '');
-    setGeoAccuracy(record.geoAccuracy != null ? String(record.geoAccuracy) : '');
-    setGeoAddress(record.geoAddress ?? '');
     setBreakWaived(record.breakWaived === true);
     setError('');
   }, [record]);
@@ -64,13 +58,6 @@ export function EditAttendanceModal({
   function handleClose() {
     if (saving) return;
     onClose();
-  }
-
-  function parseOptionalNumber(value: string): number | undefined {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : undefined;
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -87,25 +74,6 @@ export function EditAttendanceModal({
       return;
     }
 
-    const parsedLatitude = parseOptionalNumber(latitude);
-    const parsedLongitude = parseOptionalNumber(longitude);
-    const parsedAccuracy = parseOptionalNumber(geoAccuracy);
-
-    if (latitude.trim() && parsedLatitude == null) {
-      setError('Latitude must be a valid number.');
-      return;
-    }
-
-    if (longitude.trim() && parsedLongitude == null) {
-      setError('Longitude must be a valid number.');
-      return;
-    }
-
-    if (geoAccuracy.trim() && parsedAccuracy == null) {
-      setError('GPS accuracy must be a valid number.');
-      return;
-    }
-
     const selectedLocation = activeLocations.find((item) => item.id === locationId);
 
     const payload: Record<string, unknown> = {
@@ -114,10 +82,6 @@ export function EditAttendanceModal({
       locationId: selectedLocation ? selectedLocation.id : deleteField(),
       locationNameSnapshot: selectedLocation ? selectedLocation.name : deleteField(),
       locationCitySnapshot: selectedLocation?.city ? selectedLocation.city : deleteField(),
-      latitude: parsedLatitude ?? deleteField(),
-      longitude: parsedLongitude ?? deleteField(),
-      geoAccuracy: parsedAccuracy ?? deleteField(),
-      geoAddress: geoAddress.trim() ? geoAddress.trim() : deleteField(),
     };
 
     if (type === 'check_out') {
@@ -137,6 +101,8 @@ export function EditAttendanceModal({
       setSaving(false);
     }
   }
+
+  const kioskLabel = formatKioskLabel(record);
 
   return (
     <div
@@ -237,62 +203,6 @@ export function EditAttendanceModal({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="record-latitude" className="mb-1.5 block text-sm text-muted">
-                Latitude
-              </label>
-              <input
-                id="record-latitude"
-                type="text"
-                inputMode="decimal"
-                value={latitude}
-                onChange={(e) => setLatitude(e.target.value)}
-                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label htmlFor="record-longitude" className="mb-1.5 block text-sm text-muted">
-                Longitude
-              </label>
-              <input
-                id="record-longitude"
-                type="text"
-                inputMode="decimal"
-                value={longitude}
-                onChange={(e) => setLongitude(e.target.value)}
-                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="record-geo-accuracy" className="mb-1.5 block text-sm text-muted">
-              GPS accuracy (m)
-            </label>
-            <input
-              id="record-geo-accuracy"
-              type="text"
-              inputMode="decimal"
-              value={geoAccuracy}
-              onChange={(e) => setGeoAccuracy(e.target.value)}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="record-geo-address" className="mb-1.5 block text-sm text-muted">
-              Exact location
-            </label>
-            <textarea
-              id="record-geo-address"
-              rows={2}
-              value={geoAddress}
-              onChange={(e) => setGeoAddress(e.target.value)}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
           {type === 'check_out' && attendanceBreak.enabled ? (
             <button
               type="button"
@@ -336,15 +246,31 @@ export function EditAttendanceModal({
             </button>
           ) : null}
 
-          <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-2 text-xs text-subtle">
-            <p>Source: {record.source || '—'}</p>
-            {record.kioskDeviceNameSnapshot ? (
+          <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-3 text-xs text-subtle">
+            <div className="grid gap-2 sm:grid-cols-2">
               <p>
-                Device: {record.kioskDeviceNameSnapshot}
-                {record.kioskDeviceType ? ` (${record.kioskDeviceType})` : ''}
+                <span className="font-medium text-muted">Kiosk</span>
+                <br />
+                <span className="text-foreground">{kioskLabel}</span>
               </p>
-            ) : null}
-            {record.photoCaptured ? <p>Photo captured: yes</p> : <p>Photo captured: no</p>}
+              <p>
+                <span className="font-medium text-muted">Source</span>
+                <br />
+                <span className="text-foreground">{record.source || '—'}</span>
+              </p>
+              <p>
+                <span className="font-medium text-muted">Photo</span>
+                <br />
+                <span className="text-foreground">
+                  {record.photoCaptured ? 'Captured' : 'Not captured'}
+                </span>
+              </p>
+              <p>
+                <span className="font-medium text-muted">Map</span>
+                <br />
+                <AttendanceMapLink record={record} />
+              </p>
+            </div>
           </div>
 
           {error ? (
