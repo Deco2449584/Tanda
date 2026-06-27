@@ -1,6 +1,6 @@
 'use client';
 
-import { Coffee, Timer } from 'lucide-react';
+import { Coffee, ShieldAlert, Timer } from 'lucide-react';
 import type { CompanySettings } from '@/lib/types/company-settings';
 
 interface AttendanceSettingsTabProps {
@@ -16,9 +16,84 @@ export function AttendanceSettingsTab({
   onChange,
   onSave,
 }: AttendanceSettingsTabProps) {
-  const { attendanceBreak } = draft;
+  const { attendanceBreak, attendancePolicy } = draft;
 
   return (
+    <div className="space-y-6">
+    <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+      <div className="flex items-start gap-3">
+        <div className="rounded-xl bg-amber-500/15 p-2.5">
+          <ShieldAlert className="h-5 w-5 text-amber-400" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-white">Late arrivals & no-shows</h2>
+          <p className="mt-1 text-xs text-subtle">
+            Grace period before a check-in counts as late. No-show alerts fire when an
+            employee still has not checked in after the configured threshold.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+          <label htmlFor="grace-period" className="text-xs font-medium uppercase tracking-wide text-muted">
+            Grace period
+          </label>
+          <div className="mt-2 flex items-baseline gap-2">
+            <input
+              id="grace-period"
+              type="number"
+              min={0}
+              step={1}
+              value={attendancePolicy.gracePeriodMinutes}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  attendancePolicy: {
+                    ...attendancePolicy,
+                    gracePeriodMinutes: Math.max(0, Number(e.target.value) || 0),
+                  },
+                })
+              }
+              className="w-20 rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-lg font-semibold text-white outline-none focus:border-primary/50"
+            />
+            <span className="text-sm text-subtle">minutes after shift start</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+          <label htmlFor="no-show-after" className="text-xs font-medium uppercase tracking-wide text-muted">
+            No-show threshold
+          </label>
+          <div className="mt-2 flex items-baseline gap-2">
+            <input
+              id="no-show-after"
+              type="number"
+              min={1}
+              step={5}
+              value={attendancePolicy.noShowAfterMinutes}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  attendancePolicy: {
+                    ...attendancePolicy,
+                    noShowAfterMinutes: Math.max(1, Number(e.target.value) || 60),
+                  },
+                })
+              }
+              className="w-20 rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-lg font-semibold text-white outline-none focus:border-primary/50"
+            />
+            <span className="text-sm text-subtle">minutes after shift start</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 rounded-lg border border-border/80 bg-surface-base/40 px-3 py-2 text-xs text-subtle">
+        Example: with a 10-minute grace and 60-minute no-show, a 09:00 shift is late after
+        09:10 and flagged as no-show at 10:00 if there is still no check-in.
+      </p>
+    </section>
+
     <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
       <div className="flex items-start gap-3">
         <div className="rounded-xl bg-primary/15 p-2.5">
@@ -153,5 +228,6 @@ export function AttendanceSettingsTab({
         {saving ? 'Saving…' : 'Save attendance rules'}
       </button>
     </section>
+    </div>
   );
 }

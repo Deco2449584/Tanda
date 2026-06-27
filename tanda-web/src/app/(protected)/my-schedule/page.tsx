@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
+import { SubmitJustificationModal } from '@/components/attendance/SubmitJustificationModal';
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -11,6 +14,8 @@ import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
 
 export default function MySchedulePage() {
+  const searchParams = useSearchParams();
+  const [justifyId, setJustifyId] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuthRole();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
@@ -27,9 +32,20 @@ export default function MySchedulePage() {
 
   const loading = authLoading || employeeLoading || shiftsLoading;
 
+  useEffect(() => {
+    const requestedId = searchParams.get('justify');
+    if (requestedId) {
+      setJustifyId(requestedId);
+    }
+  }, [searchParams]);
+
   return (
     <PageContent className="space-y-5">
       <PageHeader title="My schedule" />
+      <SubmitJustificationModal
+        justificationId={justifyId}
+        onClose={() => setJustifyId(null)}
+      />
 
       {employeeError && !employeeLoading && (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">

@@ -24,7 +24,9 @@ export function mapNotificationDoc(
               ? 'missing_checkin'
               : record.type === 'late_arrival'
                 ? 'late_arrival'
-                : 'shift_assigned',
+                : record.type === 'no_show'
+                  ? 'no_show'
+                  : 'shift_assigned',
     title: typeof record.title === 'string' ? record.title : 'Notification',
     body: typeof record.body === 'string' ? record.body : '',
     href: typeof record.href === 'string' ? record.href : '/',

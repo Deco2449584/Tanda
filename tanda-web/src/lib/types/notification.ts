@@ -8,7 +8,8 @@ export type NotificationType =
   | 'announcement'
   | 'justification_required'
   | 'missing_checkin'
-  | 'late_arrival';
+  | 'late_arrival'
+  | 'no_show';
 
 export interface NotificationFirestore {
   recipientEmail: string;

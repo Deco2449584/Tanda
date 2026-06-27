@@ -271,6 +271,11 @@ service cloud.firestore {
         && request.resource.data.recipientEmail == request.auth.token.email;
     }
 
+    // 13. Justificaciones de asistencia — solo Admin SDK (API routes)
+    match /attendance_justifications/{justificationId} {
+      allow read, write: if false;
+    }
+
     // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;

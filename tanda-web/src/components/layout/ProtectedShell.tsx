@@ -9,6 +9,7 @@ import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
+import { useAttendanceAlertSync } from '@/hooks/useAttendanceAlertSync';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
 import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
 import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
@@ -113,11 +114,13 @@ function ProtectedLayoutContent({
 
   if (role === 'admin') {
     return (
-      <EmployeesProvider>
-        <LocationsProvider>
-          <LocationGroupsProvider>{layout}</LocationGroupsProvider>
-        </LocationsProvider>
-      </EmployeesProvider>
+      <AdminAttendanceSync>
+        <EmployeesProvider>
+          <LocationsProvider>
+            <LocationGroupsProvider>{layout}</LocationGroupsProvider>
+          </LocationsProvider>
+        </EmployeesProvider>
+      </AdminAttendanceSync>
     );
   }
 
@@ -126,6 +129,11 @@ function ProtectedLayoutContent({
       {layout}
     </EmployeeNotificationsShell>
   );
+}
+
+function AdminAttendanceSync({ children }: { children: React.ReactNode }) {
+  useAttendanceAlertSync(true);
+  return <>{children}</>;
 }
 
 function EmployeeNotificationsShell({

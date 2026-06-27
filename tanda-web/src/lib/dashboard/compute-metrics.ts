@@ -1,22 +1,34 @@
 import type { Timestamp } from 'firebase/firestore';
+import { getMinutesInTimeZone, timestampToMinutesInTimeZone } from '@/lib/dates/timezone';
 import { normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
+import {
+  isCheckInLate,
+  isMissingCheckIn,
+  isNoShow,
+  timeToMinutes,
+} from '@/lib/attendance/evaluate-shift-attendance';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { AttendanceRecord } from '@/lib/types/attendance';
+import {
+  DEFAULT_ATTENDANCE_POLICY,
+  type AttendancePolicySettings,
+} from '@/lib/types/company-settings';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
 import type { ShiftLoadDatum, WeeklyHoursDatum } from './types';
 
-function timeToMinutes(time: string): number {
-  const [hoursRaw, minutesRaw] = time.split(':');
-  const hours = Number(hoursRaw);
-  const minutes = Number(minutesRaw);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
-  return hours * 60 + minutes;
+export interface AttendanceMetricsOptions {
+  policy?: AttendancePolicySettings;
+  timeZone?: string;
+  now?: Date;
 }
 
-function timestampToMinutes(timestamp: Timestamp): number {
-  const date = timestamp.toDate();
-  return date.getHours() * 60 + date.getMinutes();
+function resolveMetricsOptions(options?: AttendanceMetricsOptions) {
+  return {
+    policy: options?.policy ?? DEFAULT_ATTENDANCE_POLICY,
+    timeZone: options?.timeZone ?? 'Australia/Sydney',
+    now: options?.now ?? new Date(),
+  };
 }
 
 export function shiftDurationHours(startTime: string, endTime: string): number {
@@ -28,10 +40,12 @@ export function shiftDurationHours(startTime: string, endTime: string): number {
   return (end - start) / 60;
 }
 
-export function filterTodayShifts(shifts: Shift[]): Shift[] {
-  const today = toInputDate();
+export function filterTodayShifts(
+  shifts: Shift[],
+  todayKey: string = toInputDate(),
+): Shift[] {
   return shifts.filter(
-    (shift) => normalizeInputDate(shift.date) === today,
+    (shift) => normalizeInputDate(shift.date) === todayKey,
   );
 }
 
@@ -50,10 +64,9 @@ export function countPendingLeaveRequests(requests: LeaveRequest[]): number {
   return requests.filter((request) => request.status === 'Pending').length;
 }
 
-export function computeLateAlerts(
-  todayShifts: Shift[],
+function buildEarliestCheckInMap(
   todayCheckIns: AttendanceRecord[],
-): number {
+): Map<string, AttendanceRecord> {
   const checkInByEmployee = new Map<string, AttendanceRecord>();
 
   todayCheckIns.forEach((record) => {
@@ -73,6 +86,17 @@ export function computeLateAlerts(
     }
   });
 
+  return checkInByEmployee;
+}
+
+export function computeLateAlerts(
+  todayShifts: Shift[],
+  todayCheckIns: AttendanceRecord[],
+  options?: AttendanceMetricsOptions,
+): number {
+  const { policy, timeZone } = resolveMetricsOptions(options);
+  const checkInByEmployee = buildEarliestCheckInMap(todayCheckIns);
+
   let lateCount = 0;
 
   todayShifts.forEach((shift) => {
@@ -80,9 +104,9 @@ export function computeLateAlerts(
     if (!checkIn?.timestampServer) return;
 
     const shiftStart = timeToMinutes(shift.startTime);
-    const checkInTime = timestampToMinutes(checkIn.timestampServer);
+    const checkInTime = timestampToMinutesInTimeZone(checkIn.timestampServer, timeZone);
 
-    if (checkInTime > shiftStart) {
+    if (isCheckInLate(checkInTime, shiftStart, policy)) {
       lateCount += 1;
     }
   });
@@ -93,9 +117,10 @@ export function computeLateAlerts(
 export function computeMissingCheckInsToday(
   todayShifts: Shift[],
   todayRecords: AttendanceRecord[],
+  options?: AttendanceMetricsOptions,
 ): number {
-  const nowMinutes =
-    new Date().getHours() * 60 + new Date().getMinutes();
+  const { policy, timeZone, now } = resolveMetricsOptions(options);
+  const nowMinutes = getMinutesInTimeZone(timeZone, now);
 
   const checkedInToday = new Set(
     todayRecords
@@ -104,8 +129,38 @@ export function computeMissingCheckInsToday(
   );
 
   return todayShifts.filter((shift) => {
-    if (checkedInToday.has(shift.employeeId)) return false;
-    return timeToMinutes(shift.startTime) < nowMinutes;
+    const hasCheckIn = checkedInToday.has(shift.employeeId);
+    return isMissingCheckIn(
+      timeToMinutes(shift.startTime),
+      nowMinutes,
+      hasCheckIn,
+      policy,
+    );
+  }).length;
+}
+
+export function computeNoShowsToday(
+  todayShifts: Shift[],
+  todayRecords: AttendanceRecord[],
+  options?: AttendanceMetricsOptions,
+): number {
+  const { policy, timeZone, now } = resolveMetricsOptions(options);
+  const nowMinutes = getMinutesInTimeZone(timeZone, now);
+
+  const checkedInToday = new Set(
+    todayRecords
+      .filter((record) => record.type === 'check_in')
+      .map((record) => record.employeeId),
+  );
+
+  return todayShifts.filter((shift) => {
+    const hasCheckIn = checkedInToday.has(shift.employeeId);
+    return isNoShow(
+      timeToMinutes(shift.startTime),
+      nowMinutes,
+      hasCheckIn,
+      policy,
+    );
   }).length;
 }
 
@@ -140,4 +195,10 @@ export function buildWeeklyHoursData(
       horas: Math.round(horas * 10) / 10,
     };
   });
+}
+
+/** @deprecated internal helper export for tests */
+export function timestampToMinutes(timestamp: Timestamp): number {
+  const date = timestamp.toDate();
+  return date.getHours() * 60 + date.getMinutes();
 }

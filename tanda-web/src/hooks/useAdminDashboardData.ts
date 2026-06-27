@@ -22,6 +22,7 @@ import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildWeekRange } from '@/lib/schedule/week';
 import { db } from '@/lib/firebase';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
@@ -40,6 +41,7 @@ function getTodayTimestampBounds() {
 }
 
 export function useAdminDashboardData() {
+  const { settings } = useCompanySettings();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord[]>([]);
@@ -155,8 +157,12 @@ export function useAdminDashboardData() {
   );
 
   const lateAlerts = useMemo(
-    () => computeLateAlerts(todayShifts, todayAttendance),
-    [todayAttendance, todayShifts],
+    () =>
+      computeLateAlerts(todayShifts, todayAttendance, {
+        policy: settings.attendancePolicy,
+        timeZone: settings.timeZone,
+      }),
+    [settings.attendancePolicy, settings.timeZone, todayAttendance, todayShifts],
   );
 
   const shiftLoadData = useMemo<ShiftLoadDatum[]>(

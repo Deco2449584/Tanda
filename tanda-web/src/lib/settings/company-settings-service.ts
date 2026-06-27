@@ -2,13 +2,34 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   DEFAULT_ATTENDANCE_BREAK,
+  DEFAULT_ATTENDANCE_POLICY,
   DEFAULT_COMPANY_SETTINGS,
   type AttendanceBreakSettings,
+  type AttendancePolicySettings,
   type CompanySettings,
 } from '@/lib/types/company-settings';
 import { db } from '@/lib/firebase';
 
 const SETTINGS_DOC_ID = 'general';
+
+function mapAttendancePolicy(data: Record<string, unknown>): AttendancePolicySettings {
+  const raw = data.attendancePolicy;
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_ATTENDANCE_POLICY;
+  }
+
+  const policy = raw as Record<string, unknown>;
+  return {
+    gracePeriodMinutes:
+      typeof policy.gracePeriodMinutes === 'number' && policy.gracePeriodMinutes >= 0
+        ? policy.gracePeriodMinutes
+        : DEFAULT_ATTENDANCE_POLICY.gracePeriodMinutes,
+    noShowAfterMinutes:
+      typeof policy.noShowAfterMinutes === 'number' && policy.noShowAfterMinutes > 0
+        ? policy.noShowAfterMinutes
+        : DEFAULT_ATTENDANCE_POLICY.noShowAfterMinutes,
+  };
+}
 
 function mapAttendanceBreak(data: Record<string, unknown>): AttendanceBreakSettings {
   const raw = data.attendanceBreak;
@@ -44,6 +65,7 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
         ? data.currency
         : DEFAULT_COMPANY_SETTINGS.currency,
     attendanceBreak: mapAttendanceBreak(data),
+    attendancePolicy: mapAttendancePolicy(data),
   };
 }
 
@@ -74,6 +96,7 @@ export async function saveCompanySettings(
       timeZone: settings.timeZone,
       currency: settings.currency,
       attendanceBreak: settings.attendanceBreak,
+      attendancePolicy: settings.attendancePolicy,
     },
     { merge: true },
   );

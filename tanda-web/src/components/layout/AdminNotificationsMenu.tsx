@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, CalendarClock, Clock, LogOut, Palmtree, X } from 'lucide-react';
+import { Bell, CalendarClock, Clock, FileWarning, LogOut, Palmtree, UserX, X } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import {
   useAdminNotificationBadge,
@@ -17,8 +17,10 @@ import {
 const ICON_BY_ID: Record<string, typeof Palmtree> = {
   leave_pending: Palmtree,
   missing_checkin: Clock,
+  no_show_today: UserX,
   late_today: CalendarClock,
   forgotten_checkout: LogOut,
+  justification_pending: FileWarning,
 };
 
 interface AdminNotificationsMenuProps {
