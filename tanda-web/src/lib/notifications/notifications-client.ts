@@ -23,6 +23,10 @@ import {
   type EmployeeShiftAlertType,
 } from '@/lib/notifications/build-shift-notification';
 import {
+  isNotificationChannelEnabled,
+  type NotificationChannelPreferences,
+} from '@/lib/notifications/notification-channels';
+import {
   clearEmployeeShiftAlerts,
   loadEmployeeShiftAlerts,
 } from '@/lib/notifications/employee-shift-alerts';
@@ -39,6 +43,7 @@ export async function createShiftNotification(input: {
   date: string;
   startTime: string;
   endTime: string;
+  channels?: NotificationChannelPreferences;
 }): Promise<AppNotification | null> {
   if (!db) return null;
 
@@ -46,6 +51,13 @@ export async function createShiftNotification(input: {
   if (!recipientEmail) return null;
 
   const content = buildShiftNotificationContent(input);
+
+  if (
+    input.channels &&
+    !isNotificationChannelEnabled(input.channels, content.type)
+  ) {
+    return null;
+  }
   const docId = buildShiftNotificationDocId(recipientEmail, input.type, input.shiftId);
   const ref = doc(db, COLLECTIONS.NOTIFICATIONS, docId);
 

@@ -1,4 +1,5 @@
 import type { Timestamp } from 'firebase/firestore';
+import type { NotificationChannelPreferences } from '@/lib/notifications/notification-channels';
 
 export type NotificationAudience = 'employee' | 'admin';
 
@@ -40,6 +41,7 @@ export interface AppNotification {
 
 export interface NotificationPreferencesFirestore {
   recipientEmail: string;
-  dismissedAdminAlertKeys: string[];
+  dismissedAdminAlertKeys?: string[];
+  channels?: Partial<NotificationChannelPreferences>;
   updatedAt: Timestamp;
 }

@@ -26,6 +26,12 @@ import {
   migrateLocalShiftAlertsToFirestore,
   subscribeToEmployeeNotifications,
 } from '@/lib/notifications/notifications-client';
+import {
+  saveNotificationChannels,
+  subscribeToNotificationChannels,
+} from '@/lib/notifications/employee-notification-preferences';
+import type { NotificationChannelPreferences } from '@/lib/notifications/notification-channels';
+import { mapNotificationChannels } from '@/lib/notifications/notification-channels';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import type { AppNotification } from '@/lib/types/notification';
 import type { Shift } from '@/lib/types/shift';
@@ -37,10 +43,13 @@ interface EmployeeShiftNotificationsContextValue {
   notifications: AppNotification[];
   unreadCount: number;
   toastNotification: AppNotification | null;
+  notificationChannels: NotificationChannelPreferences;
+  savingChannels: boolean;
   dismissToast: () => void;
   markAllRead: () => void;
   markRead: (notificationId: string) => void;
   clearAll: () => void;
+  updateNotificationChannels: (channels: NotificationChannelPreferences) => void;
 }
 
 const EmployeeShiftNotificationsContext =
@@ -60,9 +69,14 @@ export function EmployeeShiftNotificationsProvider({
   const email = userEmail.trim().toLowerCase();
   const code = employeeCode.trim();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notificationChannels, setNotificationChannels] = useState(
+    mapNotificationChannels(null),
+  );
+  const [savingChannels, setSavingChannels] = useState(false);
   const [toastNotification, setToastNotification] = useState<AppNotification | null>(
     null,
   );
+  const channelsRef = useRef(notificationChannels);
   const initialLoadRef = useRef(true);
   const migrationDoneRef = useRef(false);
 
@@ -80,6 +94,19 @@ export function EmployeeShiftNotificationsProvider({
       employeeCode: code,
     });
   }, [code, email]);
+
+  useEffect(() => {
+    channelsRef.current = notificationChannels;
+  }, [notificationChannels]);
+
+  useEffect(() => {
+    if (!email) {
+      setNotificationChannels(mapNotificationChannels(null));
+      return;
+    }
+
+    return subscribeToNotificationChannels(email, setNotificationChannels);
+  }, [email]);
 
   useEffect(() => {
     if (!email) {
@@ -126,6 +153,7 @@ export function EmployeeShiftNotificationsProvider({
             date: shift.date,
             startTime: shift.startTime,
             endTime: shift.endTime,
+            channels: channelsRef.current,
           }).then((notification) => {
             if (notification) showToast(notification);
           });
@@ -141,6 +169,7 @@ export function EmployeeShiftNotificationsProvider({
             date: typeof data.date === 'string' ? data.date : '',
             startTime: typeof data.startTime === 'string' ? data.startTime : '',
             endTime: typeof data.endTime === 'string' ? data.endTime : '',
+            channels: channelsRef.current,
           }).then((notification) => {
             if (notification) showToast(notification);
           });
@@ -170,6 +199,24 @@ export function EmployeeShiftNotificationsProvider({
     setToastNotification(null);
   }, [email]);
 
+  const updateNotificationChannels = useCallback(
+    (channels: NotificationChannelPreferences) => {
+      if (!email) return;
+
+      setNotificationChannels(channels);
+      setSavingChannels(true);
+
+      void saveNotificationChannels(email, channels)
+        .catch((error) => {
+          console.error('saveNotificationChannels', error);
+        })
+        .finally(() => {
+          setSavingChannels(false);
+        });
+    },
+    [email],
+  );
+
   useEffect(() => {
     if (!toastNotification) return;
 
@@ -190,19 +237,25 @@ export function EmployeeShiftNotificationsProvider({
       notifications,
       unreadCount,
       toastNotification,
+      notificationChannels,
+      savingChannels,
       dismissToast,
       markAllRead,
       markRead,
       clearAll,
+      updateNotificationChannels,
     }),
     [
       notifications,
+      notificationChannels,
+      savingChannels,
       clearAll,
       dismissToast,
       markAllRead,
       markRead,
       toastNotification,
       unreadCount,
+      updateNotificationChannels,
     ],
   );
 

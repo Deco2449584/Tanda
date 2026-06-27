@@ -15,6 +15,10 @@ import {
   buildJustificationDocId,
 } from '@/lib/notifications/build-attendance-notification';
 import { sendPushNotification } from '@/lib/notifications/send-push';
+import {
+  isNotificationChannelEnabled,
+} from '@/lib/notifications/notification-channels';
+import { getNotificationChannelsForEmail } from '@/lib/notifications/server/notification-preferences';
 import { isPushConfigured } from '@/lib/notifications/vapid';
 import {
   DEFAULT_ATTENDANCE_POLICY,
@@ -158,6 +162,11 @@ async function upsertEmployeeNotification(input: {
     lateMinutes: input.lateMinutes,
     justificationId: input.justificationId,
   });
+
+  const channels = await getNotificationChannelsForEmail(email);
+  if (!isNotificationChannelEnabled(channels, content.type)) {
+    return;
+  }
 
   const docId = buildAttendanceNotificationDocId(email, content.type, input.shiftId);
   const ref = getAdminFirestore().collection(COLLECTIONS.NOTIFICATIONS).doc(docId);

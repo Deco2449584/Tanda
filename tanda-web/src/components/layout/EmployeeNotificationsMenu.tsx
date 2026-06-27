@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CalendarClock, CalendarX, FileWarning, Megaphone } from 'lucide-react';
+import { NotificationChannelPreferencesPanel } from '@/components/notifications/NotificationChannelPreferencesPanel';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotificationsProvider';
 import type { AppNotification } from '@/lib/types/notification';
@@ -10,8 +11,16 @@ import type { AppNotification } from '@/lib/types/notification';
 export function EmployeeNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAllRead, markRead, clearAll } =
-    useEmployeeShiftNotifications();
+  const {
+    notifications,
+    unreadCount,
+    markAllRead,
+    markRead,
+    clearAll,
+    notificationChannels,
+    savingChannels,
+    updateNotificationChannels,
+  } = useEmployeeShiftNotifications();
   const {
     supported: pushSupported,
     subscribed: pushSubscribed,
@@ -70,7 +79,7 @@ export function EmployeeNotificationsMenu() {
                 <p className="text-sm font-semibold text-white">Notifications</p>
                 <p className="mt-0.5 text-xs text-subtle">
                   {notifications.length === 0
-                    ? 'No schedule updates yet'
+                    ? 'No updates yet'
                     : `${notifications.length} update${notifications.length === 1 ? '' : 's'}`}
                 </p>
               </div>
@@ -84,6 +93,14 @@ export function EmployeeNotificationsMenu() {
                 </button>
               ) : null}
             </div>
+          </div>
+
+          <div className="border-b border-border px-4 py-3">
+            <NotificationChannelPreferencesPanel
+              channels={notificationChannels}
+              saving={savingChannels}
+              onChange={updateNotificationChannels}
+            />
           </div>
 
           {pushSupported ? (

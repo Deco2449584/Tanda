@@ -79,6 +79,7 @@ export function ScheduleGrid({
       void notifyShiftChange({
         type: 'cancelled',
         employeeId: shift.employeeId,
+        shiftId: shift.id,
         date: normalizeInputDate(shift.date),
         startTime: shift.startTime,
         endTime: shift.endTime,

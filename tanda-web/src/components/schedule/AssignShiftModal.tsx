@@ -116,7 +116,7 @@ export function AssignShiftModal({
     setIsSubmitting(true);
 
     try {
-      await addDoc(collection(db, COLLECTIONS.SHIFTS), {
+      const shiftRef = await addDoc(collection(db, COLLECTIONS.SHIFTS), {
         employeeId: employeeId.trim(),
         date: shiftDate,
         startTime,
@@ -131,6 +131,7 @@ export function AssignShiftModal({
       void notifyShiftChange({
         type: 'assigned',
         employeeId: employeeId.trim(),
+        shiftId: shiftRef.id,
         date: shiftDate,
         startTime,
         endTime,

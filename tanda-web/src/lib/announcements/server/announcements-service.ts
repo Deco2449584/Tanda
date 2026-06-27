@@ -9,6 +9,8 @@ import {
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { buildAttendanceNotificationDocId } from '@/lib/notifications/build-attendance-notification';
 import { sendPushNotification } from '@/lib/notifications/send-push';
+import { isNotificationChannelEnabled } from '@/lib/notifications/notification-channels';
+import { getNotificationChannelsForEmail } from '@/lib/notifications/server/notification-preferences';
 import { isPushConfigured } from '@/lib/notifications/vapid';
 import type {
   Announcement,
@@ -136,28 +138,33 @@ export async function broadcastAnnouncement(input: {
   let pushSentCount = 0;
 
   for (const recipient of recipients) {
-    const notificationRef = db
-      .collection(COLLECTIONS.NOTIFICATIONS)
-      .doc(buildAnnouncementNotificationDocId(recipient.email, announcementId));
+    const channels = await getNotificationChannelsForEmail(recipient.email);
+    const inAppEnabled = isNotificationChannelEnabled(channels, 'announcement');
 
-    await notificationRef.set(
-      {
-        recipientEmail: recipient.email,
-        audience: 'employee',
-        type: 'announcement',
-        title,
-        body: preview,
-        href,
-        read: false,
-        dismissed: false,
-        createdAt: FieldValue.serverTimestamp(),
-        metadata: {
-          announcementId,
+    if (inAppEnabled) {
+      const notificationRef = db
+        .collection(COLLECTIONS.NOTIFICATIONS)
+        .doc(buildAnnouncementNotificationDocId(recipient.email, announcementId));
+
+      await notificationRef.set(
+        {
+          recipientEmail: recipient.email,
+          audience: 'employee',
+          type: 'announcement',
+          title,
+          body: preview,
+          href,
+          read: false,
+          dismissed: false,
+          createdAt: FieldValue.serverTimestamp(),
+          metadata: {
+            announcementId,
+          },
         },
-      },
-      { merge: true },
-    );
-    notificationCount += 1;
+        { merge: true },
+      );
+      notificationCount += 1;
+    }
 
     if (resendEnabled) {
       try {
@@ -174,7 +181,7 @@ export async function broadcastAnnouncement(input: {
       }
     }
 
-    if (pushEnabled && recipient.pushSubscription?.trim()) {
+    if (inAppEnabled && pushEnabled && recipient.pushSubscription?.trim()) {
       try {
         const result = await sendPushNotification(recipient.pushSubscription, {
           title,
