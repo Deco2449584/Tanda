@@ -276,6 +276,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // 14. Anuncios broadcast — solo Admin SDK (API routes)
+    match /announcements/{announcementId} {
+      allow read, write: if false;
+    }
+
     // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;

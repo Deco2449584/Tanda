@@ -12,6 +12,10 @@ export function isEmployeeOnlyRoute(pathname: string): boolean {
 }
 
 export function isRouteAllowedForEmployee(pathname: string): boolean {
+  if (/^\/announcements\/[^/]+$/.test(pathname)) {
+    return true;
+  }
+
   return isEmployeeOnlyRoute(pathname);
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, CalendarClock, CalendarX, FileWarning } from 'lucide-react';
+import { Bell, CalendarClock, CalendarX, FileWarning, Megaphone } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotificationsProvider';
 import type { AppNotification } from '@/lib/types/notification';
@@ -157,12 +157,14 @@ function NotificationRow({
   onNavigate: () => void;
 }) {
   const Icon =
-    notification.type === 'shift_cancelled'
-      ? CalendarX
-      : notification.type === 'justification_required' ||
-          notification.type === 'no_show'
-        ? FileWarning
-        : CalendarClock;
+    notification.type === 'announcement'
+      ? Megaphone
+      : notification.type === 'shift_cancelled'
+        ? CalendarX
+        : notification.type === 'justification_required' ||
+            notification.type === 'no_show'
+          ? FileWarning
+          : CalendarClock;
 
   return (
     <li>
