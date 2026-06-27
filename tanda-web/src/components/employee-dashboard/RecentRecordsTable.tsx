@@ -3,6 +3,10 @@
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
+import {
+  AttendanceProvenanceBadge,
+  AttendanceProvenanceNote,
+} from '@/components/attendance/ManualAttendanceBadge';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import type { EmployeeRecordsRange } from '@/hooks/useEmployeeAttendance';
@@ -102,10 +106,16 @@ export function RecentRecordsTable({
                       {formatRecordDate(record.timestampServer)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <AttendanceTypeBadge type={record.type} />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <AttendanceTypeBadge type={record.type} />
+                        <AttendanceProvenanceBadge record={record} />
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-muted">
-                      {formatRecordTime(record.timestampServer)}
+                      <div>
+                        {formatRecordTime(record.timestampServer)}
+                        <AttendanceProvenanceNote record={record} compact employeeView />
+                      </div>
                     </td>
                     <td className="px-5 py-3.5">
                       <RecordPhoto photoUrl={record.photoUrl} />
@@ -144,8 +154,12 @@ export function RecentRecordsTable({
                       <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
                         Type
                       </p>
-                      <AttendanceTypeBadge type={record.type} />
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <AttendanceTypeBadge type={record.type} />
+                        <AttendanceProvenanceBadge record={record} />
+                      </div>
                     </div>
+                    <AttendanceProvenanceNote record={record} employeeView />
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-subtle">

@@ -8,7 +8,10 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
 import { ForgottenCheckoutBadge } from '@/components/attendance/ForgottenCheckoutBadge';
-import { ManualAttendanceBadge } from '@/components/attendance/ManualAttendanceBadge';
+import {
+  AttendanceProvenanceBadge,
+  AttendanceProvenanceNote,
+} from '@/components/attendance/ManualAttendanceBadge';
 import { isForgottenCheckIn } from '@/lib/attendance/work-sessions';
 import {
   formatRecordDate,
@@ -152,7 +155,7 @@ export function AttendanceTable({
                     <td className="px-4 py-3.5">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <AttendanceTypeBadge type={record.type} />
-                        <ManualAttendanceBadge record={record} />
+                        <AttendanceProvenanceBadge record={record} />
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-muted">
@@ -169,7 +172,10 @@ export function AttendanceTable({
                           </button>
                         </div>
                       ) : (
-                        formatRecordTime(record.timestampServer)
+                        <div>
+                          <span>{formatRecordTime(record.timestampServer)}</span>
+                          <AttendanceProvenanceNote record={record} compact />
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3.5">
@@ -274,8 +280,9 @@ export function AttendanceTable({
                           </span>
                         )}
                         <AttendanceTypeBadge type={record.type} compact />
-                        <ManualAttendanceBadge record={record} />
+                        <AttendanceProvenanceBadge record={record} compact />
                       </div>
+                      <AttendanceProvenanceNote record={record} compact />
 
                       {forgotten ? (
                         <button

@@ -50,6 +50,7 @@ export function mapAttendanceDoc(
       typeof record.geoAddress === 'string' ? record.geoAddress : undefined,
     breakWaived:
       typeof record.breakWaived === 'boolean' ? record.breakWaived : undefined,
+    createdAt: record.createdAt ?? undefined,
     createdByEmail:
       typeof record.createdByEmail === 'string' ? record.createdByEmail : undefined,
     createdByUid:

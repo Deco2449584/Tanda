@@ -1,4 +1,5 @@
 import { formatAttendanceType, formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
+import { formatAttendanceProvenanceForExport } from '@/lib/attendance/attendance-provenance';
 import {
   formatExportExactLocation,
   formatExportWarehouse,
@@ -24,22 +25,36 @@ export function exportAttendanceRecordsToCsv(
     'Exact location',
     'Source',
     'Kiosk device',
+    'Manual or adjusted',
+    'Added by',
+    'Added at',
+    'Last edited by',
+    'Last edited at',
   ];
 
-  const csvRows = records.map((record) => [
-    employeeCodes[record.employeeId] ?? record.employeeId,
-    record.employeeNameSnapshot,
-    formatRecordDate(record.timestampServer),
-    formatAttendanceType(record.type),
-    formatRecordTime(record.timestampServer),
-    formatExportWarehouse(record),
-    record.latitude ?? '',
-    record.longitude ?? '',
-    record.geoAccuracy ?? '',
-    formatExportExactLocation(record),
-    record.source,
-    record.kioskDeviceNameSnapshot ?? '',
-  ]);
+  const csvRows = records.map((record) => {
+    const provenance = formatAttendanceProvenanceForExport(record);
+
+    return [
+      employeeCodes[record.employeeId] ?? record.employeeId,
+      record.employeeNameSnapshot,
+      formatRecordDate(record.timestampServer),
+      formatAttendanceType(record.type),
+      formatRecordTime(record.timestampServer),
+      formatExportWarehouse(record),
+      record.latitude ?? '',
+      record.longitude ?? '',
+      record.geoAccuracy ?? '',
+      formatExportExactLocation(record),
+      record.source,
+      record.kioskDeviceNameSnapshot ?? '',
+      provenance.manualFlag,
+      provenance.addedBy,
+      provenance.addedAt,
+      provenance.editedBy,
+      provenance.editedAt,
+    ];
+  });
 
   const csvContent = [headers, ...csvRows]
     .map((row) =>
