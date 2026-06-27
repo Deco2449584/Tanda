@@ -8,6 +8,7 @@ import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { LocationsTab } from '@/components/settings/LocationsTab';
 import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
 import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
+import { NotificationsSettingsTab } from '@/components/settings/NotificationsSettingsTab';
 import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
@@ -26,6 +27,7 @@ type SettingsTab =
   | 'localization'
   | 'attendance'
   | 'profile'
+  | 'notifications'
   | 'data'
   | 'portal'
   | 'locations'
@@ -35,6 +37,7 @@ type SettingsTab =
 const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
   { id: 'attendance', label: 'Time & attendance' },
+  { id: 'notifications', label: 'Notifications' },
   { id: 'profile', label: 'Administrator' },
   { id: 'locations', label: 'Locations' },
   { id: 'locationGroups', label: 'Location groups' },
@@ -67,7 +70,9 @@ export default function SettingsPage() {
     () =>
       ADMIN_TABS.filter((tab) => {
         if (tab.id === 'data') return isMaster;
-        if (tab.id === 'profile' || tab.id === 'localization') return true;
+        if (tab.id === 'profile' || tab.id === 'localization' || tab.id === 'notifications') {
+          return true;
+        }
         return canManageSettings;
       }),
     [canManageSettings, isMaster],
@@ -167,6 +172,7 @@ export default function SettingsPage() {
               }
             />
           )}
+          {activeTab === 'notifications' && <NotificationsSettingsTab />}
           {activeTab === 'profile' && (
             <AdminProfileTab
               name={adminName}

@@ -12,6 +12,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const status = url.searchParams.get('status') ?? undefined;
+    const type = url.searchParams.get('type') ?? undefined;
     const id = url.searchParams.get('id') ?? undefined;
 
     const admin = await verifyAdminRequest(request);
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
         });
       }
 
-      const rows = await listJustifications({ status });
+      const rows = await listJustifications({ status, type });
       return NextResponse.json({
         justifications: rows.map((row) => mapJustificationDoc(row.id, row.data)),
       });

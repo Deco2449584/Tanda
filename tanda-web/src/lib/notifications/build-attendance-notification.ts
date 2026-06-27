@@ -63,10 +63,10 @@ export function buildAttendanceNotificationContent(input: {
 
   return {
     type: 'justification_required',
-    title: 'Late arrival — justification required',
+    title: 'Late arrival — share a note',
     body: detail
-      ? `Your check-in for ${detail} was after the grace period${lateDetail}. Please explain.`
-      : `Your check-in was after the grace period${lateDetail}. Please explain.`,
+      ? `Your check-in for ${detail} was after the grace period${lateDetail}. Add a brief note for your manager.`
+      : `Your check-in was after the grace period${lateDetail}. Add a brief note for your manager.`,
     href,
       metadata: {
         shiftId: input.shiftId,

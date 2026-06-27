@@ -424,13 +424,19 @@ export async function countPendingJustifications(): Promise<number> {
     .get();
 
   return snapshot.docs.filter((doc) => {
-    const reason = doc.data().reason;
-    return typeof reason === 'string' && reason.trim().length > 0;
+    const data = doc.data();
+    const reason = data.reason;
+    return (
+      data.type === 'no_show' &&
+      typeof reason === 'string' &&
+      reason.trim().length > 0
+    );
   }).length;
 }
 
 export async function listJustifications(input: {
   status?: string;
+  type?: string;
   employeeEmail?: string;
 }): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
   const collectionRef = getAdminFirestore().collection(
@@ -441,16 +447,22 @@ export async function listJustifications(input: {
     const snapshot = await collectionRef
       .where('employeeEmail', '==', input.employeeEmail.trim().toLowerCase())
       .get();
-    return snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    return snapshot.docs
+      .map((doc) => ({ id: doc.id, data: doc.data() }))
+      .filter((row) => !input.type || row.data.type === input.type);
   }
 
   if (input.status) {
     const snapshot = await collectionRef.where('status', '==', input.status).get();
-    return snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    return snapshot.docs
+      .map((doc) => ({ id: doc.id, data: doc.data() }))
+      .filter((row) => !input.type || row.data.type === input.type);
   }
 
   const snapshot = await collectionRef.get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, data: doc.data() }))
+    .filter((row) => !input.type || row.data.type === input.type);
 }
 
 export async function submitJustification(input: {
@@ -481,9 +493,15 @@ export async function submitJustification(input: {
     throw new Error('This justification was already reviewed.');
   }
 
+  if (data.status === 'submitted') {
+    throw new Error('This explanation was already submitted.');
+  }
+
+  const type = data.type === 'no_show' ? 'no_show' : 'late';
+
   await ref.update({
     reason,
-    status: 'pending',
+    status: type === 'late' ? 'submitted' : 'pending',
     submittedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
@@ -505,8 +523,8 @@ export async function reviewJustification(input: {
   }
 
   const data = snapshot.data() ?? {};
-  if (data.status !== 'pending') {
-    throw new Error('Only pending justifications can be reviewed.');
+  if (data.status !== 'pending' || data.type !== 'no_show') {
+    throw new Error('Only pending no-show explanations can be reviewed.');
   }
 
   await ref.update({

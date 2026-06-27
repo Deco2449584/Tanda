@@ -50,8 +50,27 @@ export async function submitJustificationReason(input: {
 }
 
 export async function fetchPendingJustifications(): Promise<AttendanceJustification[]> {
+  return fetchJustificationsByQuery({ status: 'pending', type: 'no_show' });
+}
+
+export async function fetchPendingNoShowJustifications(): Promise<AttendanceJustification[]> {
+  return fetchJustificationsByQuery({ status: 'pending', type: 'no_show' });
+}
+
+export async function fetchLateArrivalFeedback(): Promise<AttendanceJustification[]> {
+  return fetchJustificationsByQuery({ status: 'submitted', type: 'late' });
+}
+
+async function fetchJustificationsByQuery(input: {
+  status: string;
+  type: string;
+}): Promise<AttendanceJustification[]> {
   const headers = await getAuthHeaders();
-  const response = await fetch('/api/attendance/justifications?status=pending', {
+  const params = new URLSearchParams({
+    status: input.status,
+    type: input.type,
+  });
+  const response = await fetch(`/api/attendance/justifications?${params.toString()}`, {
     headers,
   });
 

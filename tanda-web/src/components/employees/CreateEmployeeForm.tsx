@@ -4,6 +4,11 @@ import { FormEvent, useEffect, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { RefreshCw } from 'lucide-react';
 import { EmployeeDocumentUpload } from '@/components/employees/EmployeeDocumentUpload';
+import {
+  createDefaultModulePermissions,
+  EmployeeAccessRoleSection,
+  isKioskAccessRole,
+} from '@/components/employees/EmployeeAccessRoleSection';
 import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
@@ -15,6 +20,10 @@ import {
 import { uploadEmployeeDocument } from '@/lib/employees/upload-document';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { requestEmployeeInvite } from '@/lib/employees/request-employee-invite';
+import { requestEmployeeAdminAccess } from '@/lib/employees/request-admin-access';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
+import type { EmployeeAccessRole } from '@/lib/employees/request-admin-access';
+import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
 import {
   isEmployeeIdTaken,
@@ -58,7 +67,12 @@ function FormSection({
 export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormProps) {
   const { activeLocations } = useLocations();
   const { employees, loading: employeesLoading } = useEmployees();
+  const { isMaster } = useAdminAccess();
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
+  const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
+  const [modulePermissions, setModulePermissions] = useState<AdminModulePermissionsFirestore>(
+    createDefaultModulePermissions(),
+  );
   const [employeeIdEdited, setEmployeeIdEdited] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
@@ -68,6 +82,7 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
   const [error, setError] = useState('');
 
   const isBusy = isUploading || isSubmitting;
+  const isKiosk = isKioskAccessRole(accessRole);
 
   function patchForm(patch: Partial<CreateEmployeeFormValues>) {
     setForm((current) => ({ ...current, ...patch }));
@@ -111,18 +126,18 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
       !form.employeeId.trim() ||
       !form.name.trim() ||
       !form.email.trim() ||
-      !form.department.trim()
+      (!isKiosk && !form.department.trim())
     ) {
       setError('Complete all required work details.');
       return;
     }
 
-    if (form.hourlyRate <= 0) {
+    if (!isKiosk && form.hourlyRate <= 0) {
       setError('Hourly rate must be greater than zero.');
       return;
     }
 
-    if (activeLocations.length > 0 && !form.locationId?.trim()) {
+    if (!isKiosk && activeLocations.length > 0 && !form.locationId?.trim()) {
       setError('Select a primary location for this employee.');
       return;
     }
@@ -134,7 +149,7 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
     }
 
     const dateError = validateEmploymentDates(form.startDate ?? '', form.endDate ?? '');
-    if (dateError) {
+    if (!isKiosk && dateError) {
       setError(dateError);
       return;
     }
@@ -165,15 +180,29 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
       setIsUploading(false);
 
       const payload = buildEmployeeCreatePayload({
-        form,
+        form: {
+          ...form,
+          department: isKiosk ? 'Kiosk' : form.department.trim(),
+          hourlyRate: isKiosk ? 0 : form.hourlyRate,
+          startDate: isKiosk ? undefined : form.startDate,
+          endDate: isKiosk ? undefined : form.endDate,
+        },
         photoUrl: photoUrl || undefined,
-        passport,
-        visa,
+        passport: isKiosk ? undefined : passport,
+        visa: isKiosk ? undefined : visa,
       });
 
       payload.lastTimestampServer = serverTimestamp();
 
       const docRef = await addDoc(collection(db, COLLECTIONS.EMPLOYEES), payload);
+
+      if (isMaster && accessRole !== 'empleado') {
+        await requestEmployeeAdminAccess({
+          employeeDocId: docRef.id,
+          accessRole,
+          modulePermissions: accessRole === 'admin' ? modulePermissions : undefined,
+        });
+      }
 
       try {
         await requestEmployeeInvite({
@@ -214,7 +243,11 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
       <FormSection
         title="Work details"
-        description="Core information used for scheduling, payroll, and kiosk access."
+        description={
+          isKiosk
+            ? 'Kiosk device account for check-in terminals.'
+            : 'Core information used for scheduling, payroll, and kiosk access.'
+        }
       >
         <EmployeePhotoUpload
           selectedFile={photoFile}
@@ -294,89 +327,112 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
 
           <div>
             <label htmlFor="emp-dept" className={labelClass}>
-              Department <span className="text-red-400">*</span>
+              Department {!isKiosk ? <span className="text-red-400">*</span> : null}
             </label>
             <input
               id="emp-dept"
               type="text"
-              required
-              value={form.department}
+              required={!isKiosk}
+              value={isKiosk ? 'Kiosk' : form.department}
               onChange={(event) => patchForm({ department: event.target.value })}
-              disabled={isBusy}
+              disabled={isBusy || isKiosk}
               className={inputClass}
               placeholder="Logistics, Operations…"
             />
           </div>
 
-          <EmployeeLocationSelect
-            id="emp-location"
-            value={form.locationId ?? ''}
-            onChange={(locationId) => patchForm({ locationId })}
-            disabled={isBusy}
-            required={activeLocations.length > 0}
-          />
-
-          <EmployeeLocationGroupSelect
-            id="emp-location-group"
-            value={form.locationGroupId ?? ''}
-            onChange={(locationGroupId) => patchForm({ locationGroupId })}
-            disabled={isBusy}
-          />
-
-          <div>
-            <label htmlFor="emp-rate" className={labelClass}>
-              Hourly rate ($) <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="emp-rate"
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              value={form.hourlyRate || ''}
-              onChange={(event) =>
-                patchForm({ hourlyRate: parseFloat(event.target.value) || 0 })
-              }
+          {isMaster ? (
+            <EmployeeAccessRoleSection
+              accessRole={accessRole}
+              modulePermissions={modulePermissions}
+              onAccessRoleChange={setAccessRole}
+              onModulePermissionsChange={setModulePermissions}
               disabled={isBusy}
-              className={inputClass}
-              placeholder="18.50"
             />
-          </div>
+          ) : null}
 
-          <div>
-            <label htmlFor="emp-start-date" className={labelClass}>
-              Start date <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="emp-start-date"
-              type="date"
-              required
-              value={form.startDate ?? ''}
-              onChange={(event) => patchForm({ startDate: event.target.value })}
-              disabled={isBusy}
-              className={inputClass}
-            />
-          </div>
+          {!isKiosk ? (
+            <>
+              <EmployeeLocationSelect
+                id="emp-location"
+                value={form.locationId ?? ''}
+                onChange={(locationId) => patchForm({ locationId })}
+                disabled={isBusy}
+                required={activeLocations.length > 0}
+              />
 
-          <div>
-            <label htmlFor="emp-end-date" className={labelClass}>
-              End date
-            </label>
-            <input
-              id="emp-end-date"
-              type="date"
-              value={form.endDate ?? ''}
-              onChange={(event) => patchForm({ endDate: event.target.value })}
+              <EmployeeLocationGroupSelect
+                id="emp-location-group"
+                value={form.locationGroupId ?? ''}
+                onChange={(locationGroupId) => patchForm({ locationGroupId })}
+                disabled={isBusy}
+              />
+
+              <div>
+                <label htmlFor="emp-rate" className={labelClass}>
+                  Hourly rate ($) <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="emp-rate"
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={form.hourlyRate || ''}
+                  onChange={(event) =>
+                    patchForm({ hourlyRate: parseFloat(event.target.value) || 0 })
+                  }
+                  disabled={isBusy}
+                  className={inputClass}
+                  placeholder="18.50"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="emp-start-date" className={labelClass}>
+                  Start date <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="emp-start-date"
+                  type="date"
+                  required
+                  value={form.startDate ?? ''}
+                  onChange={(event) => patchForm({ startDate: event.target.value })}
+                  disabled={isBusy}
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="emp-end-date" className={labelClass}>
+                  End date
+                </label>
+                <input
+                  id="emp-end-date"
+                  type="date"
+                  value={form.endDate ?? ''}
+                  onChange={(event) => patchForm({ endDate: event.target.value })}
+                  disabled={isBusy}
+                  className={inputClass}
+                />
+                <p className="mt-1.5 text-xs text-subtle">
+                  Leave blank while employed. Set when the employee resigns or leaves.
+                </p>
+              </div>
+            </>
+          ) : (
+            <EmployeeLocationSelect
+              id="emp-location"
+              value={form.locationId ?? ''}
+              onChange={(locationId) => patchForm({ locationId })}
               disabled={isBusy}
-              className={inputClass}
             />
-            <p className="mt-1.5 text-xs text-subtle">
-              Leave blank while employed. Set when the employee resigns or leaves.
-            </p>
-          </div>
+          )}
         </div>
       </FormSection>
 
+      {!isKiosk ? (
+        <>
       <FormSection
         title="Personal details"
         description="Contact information and home address for the employee file."
@@ -579,6 +635,8 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
           />
         </div>
       </FormSection>
+        </>
+      ) : null}
 
       {error ? (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400" role="alert">

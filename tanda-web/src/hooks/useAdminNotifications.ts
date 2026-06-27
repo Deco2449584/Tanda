@@ -239,9 +239,9 @@ function buildNotificationItems(
   if (data.pendingJustifications > 0) {
     list.push({
       id: 'justification_pending',
-      title: 'Justifications to review',
-      description: `${data.pendingJustifications} late/no-show explanation${data.pendingJustifications === 1 ? '' : 's'} awaiting approval`,
-      href: '/attendance',
+      title: 'No-show explanations to review',
+      description: `${data.pendingJustifications} no-show explanation${data.pendingJustifications === 1 ? '' : 's'} awaiting approval`,
+      href: '/dashboard',
       count: data.pendingJustifications,
     });
   }

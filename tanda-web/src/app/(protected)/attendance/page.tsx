@@ -17,7 +17,6 @@ import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/atten
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
 import { AddManualRecordModal } from '@/components/attendance/AddManualRecordModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
-import { PendingJustificationsPanel } from '@/components/attendance/PendingJustificationsPanel';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import {
   buildPayrollReport,
@@ -198,8 +197,6 @@ export default function AttendancePage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader title="Time tracking and attendance (Audit)" />
-
-      <PendingJustificationsPanel />
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <AttendanceDateFilterBar

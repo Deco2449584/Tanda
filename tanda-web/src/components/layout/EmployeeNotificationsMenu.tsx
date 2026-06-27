@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CalendarClock, CalendarX, FileWarning, Megaphone } from 'lucide-react';
-import { NotificationChannelPreferencesPanel } from '@/components/notifications/NotificationChannelPreferencesPanel';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotificationsProvider';
 import type { AppNotification } from '@/lib/types/notification';
@@ -17,9 +16,6 @@ export function EmployeeNotificationsMenu() {
     markAllRead,
     markRead,
     clearAll,
-    notificationChannels,
-    savingChannels,
-    updateNotificationChannels,
   } = useEmployeeShiftNotifications();
   const {
     supported: pushSupported,
@@ -95,20 +91,13 @@ export function EmployeeNotificationsMenu() {
             </div>
           </div>
 
-          <div className="border-b border-border px-4 py-3">
-            <NotificationChannelPreferencesPanel
-              channels={notificationChannels}
-              saving={savingChannels}
-              onChange={updateNotificationChannels}
-            />
-          </div>
-
           {pushSupported ? (
             <div className="border-b border-border px-4 py-3">
               {pushSubscribed ? (
                 <>
                   <p className="text-xs text-muted">
-                    Phone alerts are enabled for schedule changes on this device.
+                    Phone alerts are enabled on this device. Manage activity types in
+                    Settings → Notifications or My overview.
                   </p>
                   <button
                     type="button"
@@ -122,7 +111,8 @@ export function EmployeeNotificationsMenu() {
               ) : (
                 <>
                   <p className="text-xs text-muted">
-                    Enable phone alerts to get notified when your schedule changes.
+                    Enable phone alerts on this device. Activity preferences are in
+                    Settings → Notifications or My overview.
                   </p>
                   <button
                     type="button"

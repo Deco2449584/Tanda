@@ -4,6 +4,7 @@ export type AttendanceJustificationType = 'late' | 'no_show';
 
 export type AttendanceJustificationStatus =
   | 'awaiting_employee'
+  | 'submitted'
   | 'pending'
   | 'approved'
   | 'rejected';

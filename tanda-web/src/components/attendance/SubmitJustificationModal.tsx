@@ -63,6 +63,7 @@ export function SubmitJustificationModal({
   if (!justificationId) return null;
 
   const alreadySubmitted =
+    justification?.status === 'submitted' ||
     justification?.status === 'pending' ||
     justification?.status === 'approved' ||
     justification?.status === 'rejected';
@@ -126,11 +127,13 @@ export function SubmitJustificationModal({
         ) : alreadySubmitted ? (
           <div className="mt-5 space-y-3">
             <p className="text-sm text-muted">
-              {justification?.status === 'pending'
-                ? 'Your explanation was submitted and is awaiting admin review.'
-                : justification?.status === 'approved'
-                  ? 'This justification was approved.'
-                  : 'This justification was rejected.'}
+              {justification?.status === 'submitted'
+                ? 'Your note was shared with your manager. No approval is required.'
+                : justification?.status === 'pending'
+                  ? 'Your explanation was submitted and is awaiting admin review.'
+                  : justification?.status === 'approved'
+                    ? 'This explanation was approved.'
+                    : 'This explanation was rejected.'}
             </p>
             {justification?.reason ? (
               <p className="rounded-lg border border-border bg-surface-base/50 px-3 py-2 text-sm text-foreground">

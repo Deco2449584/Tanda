@@ -4,7 +4,10 @@ import { FormEvent, useEffect, useState } from 'react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 import { Mail, X } from 'lucide-react';
-import { AdminPermissionsEditor } from '@/components/employees/AdminPermissionsEditor';
+import {
+  EmployeeAccessRoleSection,
+  isKioskAccessRole,
+} from '@/components/employees/EmployeeAccessRoleSection';
 import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
@@ -93,6 +96,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
   if (!employee) return null;
 
+  const isKiosk = isKioskAccessRole(accessRole);
+
   function handleClose() {
     if (isBusy) return;
     setPhotoFile(null);
@@ -155,24 +160,24 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       !form.employeeId.trim() ||
       !form.name.trim() ||
       !form.email.trim() ||
-      !form.department.trim()
+      (!isKiosk && !form.department.trim())
     ) {
       setError('Complete all required fields.');
       return;
     }
 
-    if (form.hourlyRate <= 0) {
+    if (!isKiosk && form.hourlyRate <= 0) {
       setError('Hourly rate must be greater than zero.');
       return;
     }
 
-    if (activeLocations.length > 0 && !form.locationId?.trim()) {
+    if (!isKiosk && activeLocations.length > 0 && !form.locationId?.trim()) {
       setError('Select a primary location for this employee.');
       return;
     }
 
     const dateError = validateEmploymentDates(startDate, endDate);
-    if (dateError) {
+    if (!isKiosk && dateError) {
       setError(dateError);
       return;
     }
@@ -192,10 +197,10 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
         employeeId: form.employeeId.trim(),
         name: form.name.trim(),
         email: form.email.trim().toLowerCase(),
-        department: form.department.trim(),
-        hourlyRate: form.hourlyRate,
+        department: isKiosk ? 'Kiosk' : form.department.trim(),
+        hourlyRate: isKiosk ? 0 : form.hourlyRate,
         active,
-        kioskEnabled,
+        kioskEnabled: isKiosk ? false : kioskEnabled,
       };
 
       if (photoUrl) {
@@ -394,54 +399,28 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
             <input
               id="edit-emp-dept"
               type="text"
-              required
-              value={form.department}
+              required={!isKiosk}
+              value={isKiosk ? 'Kiosk' : form.department}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, department: e.target.value }))
               }
-              disabled={isBusy}
+              disabled={isBusy || isKiosk}
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
           {isMaster ? (
-            <div className="space-y-3">
-              <div>
-                <label
-                  htmlFor="edit-emp-access-role"
-                  className="mb-1.5 block text-sm text-muted"
-                >
-                  Access role
-                </label>
-                <select
-                  id="edit-emp-access-role"
-                  value={accessRole}
-                  onChange={(event) =>
-                    setAccessRole(event.target.value as EmployeeAccessRole)
-                  }
-                  disabled={isBusy}
-                  className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
-                >
-                  <option value="empleado">Employee</option>
-                  <option value="admin">Administrator</option>
-                  <option value="master">Master</option>
-                  <option value="kiosk">Kiosk device</option>
-                </select>
-                <p className="mt-1.5 text-xs text-subtle">
-                  Only master users can assign roles and module permissions.
-                </p>
-              </div>
-
-              {accessRole === 'admin' ? (
-                <AdminPermissionsEditor
-                  value={modulePermissions}
-                  onChange={setModulePermissions}
-                  disabled={isBusy}
-                />
-              ) : null}
-            </div>
+            <EmployeeAccessRoleSection
+              accessRole={accessRole}
+              modulePermissions={modulePermissions}
+              onAccessRoleChange={setAccessRole}
+              onModulePermissionsChange={setModulePermissions}
+              disabled={isBusy}
+            />
           ) : null}
 
+          {!isKiosk ? (
+            <>
           <EmployeeLocationSelect
             id="edit-emp-location"
             value={form.locationId ?? ''}
@@ -492,6 +471,17 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               Set when the employee resigns or leaves. Clear to mark as currently employed.
             </p>
           </div>
+            </>
+          ) : (
+            <EmployeeLocationSelect
+              id="edit-emp-location"
+              value={form.locationId ?? ''}
+              onChange={(locationId) =>
+                setForm((prev) => ({ ...prev, locationId }))
+              }
+              disabled={isBusy}
+            />
+          )}
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-3">
             <div>
@@ -519,6 +509,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
             </button>
           </div>
 
+          {!isKiosk ? (
+            <>
           <div className="flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-3">
             <div>
               <p className="text-sm font-medium text-foreground">Kiosk access</p>
@@ -566,6 +558,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
+            </>
+          ) : null}
 
           {error && (
             <p className="text-center text-xs text-red-500" role="alert">
