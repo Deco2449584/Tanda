@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { CreateEmployeeForm } from '@/components/employees/CreateEmployeeForm';
+import { EmployeeForm } from '@/components/employees/EmployeeForm';
 import { PageContent } from '@/components/ui/PageContent';
 
 export default function NewEmployeePage() {
@@ -29,7 +29,7 @@ export default function NewEmployeePage() {
         </div>
       </div>
 
-      <CreateEmployeeForm
+      <EmployeeForm
         onCancel={() => router.push('/employees')}
         onSuccess={() => router.push('/employees')}
       />

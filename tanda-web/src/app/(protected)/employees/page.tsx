@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
-import { EditEmployeeModal } from '@/components/employees/EditEmployeeModal';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -12,11 +12,15 @@ import { useEmployees } from '@/providers/EmployeesProvider';
 import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const { employees, loading } = useEmployees();
   const { canEditModule } = useAdminAccess();
   const canEditEmployees = canEditModule('employees');
   const [searchQuery, setSearchQuery] = useState('');
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  function handleEdit(employee: Employee) {
+    router.push(`/employees/${employee.id}/edit`);
+  }
 
   return (
     <PageContent className="space-y-6">
@@ -54,12 +58,7 @@ export default function EmployeesPage() {
         employees={employees}
         loading={loading}
         searchQuery={searchQuery}
-        onEdit={canEditEmployees ? setEditingEmployee : undefined}
-      />
-
-      <EditEmployeeModal
-        employee={editingEmployee}
-        onClose={() => setEditingEmployee(null)}
+        onEdit={canEditEmployees ? handleEdit : undefined}
       />
     </PageContent>
   );

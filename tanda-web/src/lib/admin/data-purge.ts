@@ -21,28 +21,38 @@ const BATCH_SIZE = 400;
 export interface DataPurgeOptions {
   attendanceRecords: boolean;
   attendanceStorage: boolean;
+  attendanceJustifications: boolean;
   shifts: boolean;
   leaveRequests: boolean;
+  notifications: boolean;
+  notificationPreferences: boolean;
+  announcements: boolean;
   cargoInspections: boolean;
   cargoInspectionsStorage: boolean;
   portalClients: boolean;
   locations: boolean;
   locationGroups: boolean;
   kioskDevices: boolean;
+  employeeDocumentsStorage: boolean;
   resetEmployeePresence: boolean;
 }
 
 export interface DataPurgeResult {
   attendanceRecordsDeleted: number;
   storageFilesDeleted: number;
+  attendanceJustificationsDeleted: number;
   shiftsDeleted: number;
   leaveRequestsDeleted: number;
+  notificationsDeleted: number;
+  notificationPreferencesDeleted: number;
+  announcementsDeleted: number;
   cargoInspectionsDeleted: number;
   cargoInspectionsStorageDeleted: number;
   portalClientsDeleted: number;
   locationsDeleted: number;
   locationGroupsDeleted: number;
   kioskDevicesDeleted: number;
+  employeeDocumentsStorageDeleted: number;
   employeesReset: number;
   errors: string[];
 }
@@ -199,14 +209,19 @@ export async function purgeOperationalData(
   const result: DataPurgeResult = {
     attendanceRecordsDeleted: 0,
     storageFilesDeleted: 0,
+    attendanceJustificationsDeleted: 0,
     shiftsDeleted: 0,
     leaveRequestsDeleted: 0,
+    notificationsDeleted: 0,
+    notificationPreferencesDeleted: 0,
+    announcementsDeleted: 0,
     cargoInspectionsDeleted: 0,
     cargoInspectionsStorageDeleted: 0,
     portalClientsDeleted: 0,
     locationsDeleted: 0,
     locationGroupsDeleted: 0,
     kioskDevicesDeleted: 0,
+    employeeDocumentsStorageDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -214,14 +229,19 @@ export async function purgeOperationalData(
   const hasWork =
     options.attendanceRecords ||
     options.attendanceStorage ||
+    options.attendanceJustifications ||
     options.shifts ||
     options.leaveRequests ||
+    options.notifications ||
+    options.notificationPreferences ||
+    options.announcements ||
     options.cargoInspections ||
     options.cargoInspectionsStorage ||
     options.portalClients ||
     options.locations ||
     options.locationGroups ||
     options.kioskDevices ||
+    options.employeeDocumentsStorage ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -234,6 +254,21 @@ export async function purgeOperationalData(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Could not delete attendance photos.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.employeeDocumentsStorage) {
+    try {
+      result.employeeDocumentsStorageDeleted = await deleteStorageTree(
+        'employee_documents',
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete employee identity documents.';
       result.errors.push(message);
     }
   }
@@ -277,6 +312,62 @@ export async function purgeOperationalData(
         error instanceof Error
           ? error.message
           : 'Could not delete leave requests.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.attendanceJustifications) {
+    try {
+      result.attendanceJustificationsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.ATTENDANCE_JUSTIFICATIONS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete attendance justifications.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.notifications) {
+    try {
+      result.notificationsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.NOTIFICATIONS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not delete notifications.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.notificationPreferences) {
+    try {
+      result.notificationPreferencesDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.NOTIFICATION_PREFERENCES,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not delete notification preferences.';
+      result.errors.push(message);
+    }
+  }
+
+  if (options.announcements) {
+    try {
+      result.announcementsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.ANNOUNCEMENTS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not delete announcements.';
       result.errors.push(message);
     }
   }
@@ -386,14 +477,19 @@ export async function purgeOperationalData(
     result.errors.length > 0 &&
     result.attendanceRecordsDeleted === 0 &&
     result.storageFilesDeleted === 0 &&
+    result.attendanceJustificationsDeleted === 0 &&
     result.shiftsDeleted === 0 &&
     result.leaveRequestsDeleted === 0 &&
+    result.notificationsDeleted === 0 &&
+    result.notificationPreferencesDeleted === 0 &&
+    result.announcementsDeleted === 0 &&
     result.cargoInspectionsDeleted === 0 &&
     result.cargoInspectionsStorageDeleted === 0 &&
     result.portalClientsDeleted === 0 &&
     result.locationsDeleted === 0 &&
     result.locationGroupsDeleted === 0 &&
     result.kioskDevicesDeleted === 0 &&
+    result.employeeDocumentsStorageDeleted === 0 &&
     result.employeesReset === 0
   ) {
     throw new Error(result.errors.join(' '));

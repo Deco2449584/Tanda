@@ -131,14 +131,19 @@ export async function purgeOperationalDataAdmin(
   const result: DataPurgeResult = {
     attendanceRecordsDeleted: 0,
     storageFilesDeleted: 0,
+    attendanceJustificationsDeleted: 0,
     shiftsDeleted: 0,
     leaveRequestsDeleted: 0,
+    notificationsDeleted: 0,
+    notificationPreferencesDeleted: 0,
+    announcementsDeleted: 0,
     cargoInspectionsDeleted: 0,
     cargoInspectionsStorageDeleted: 0,
     portalClientsDeleted: 0,
     locationsDeleted: 0,
     locationGroupsDeleted: 0,
     kioskDevicesDeleted: 0,
+    employeeDocumentsStorageDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -146,14 +151,19 @@ export async function purgeOperationalDataAdmin(
   const hasWork =
     options.attendanceRecords ||
     options.attendanceStorage ||
+    options.attendanceJustifications ||
     options.shifts ||
     options.leaveRequests ||
+    options.notifications ||
+    options.notificationPreferences ||
+    options.announcements ||
     options.cargoInspections ||
     options.cargoInspectionsStorage ||
     options.portalClients ||
     options.locations ||
     options.locationGroups ||
     options.kioskDevices ||
+    options.employeeDocumentsStorage ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -166,6 +176,21 @@ export async function purgeOperationalDataAdmin(
     } catch (error) {
       result.errors.push(
         error instanceof Error ? error.message : 'Could not delete attendance photos.',
+      );
+    }
+  }
+
+  if (options.employeeDocumentsStorage) {
+    try {
+      result.employeeDocumentsStorageDeleted = await deleteStoragePrefix(
+        'employee_documents',
+        onProgress,
+      );
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error
+          ? error.message
+          : 'Could not delete employee identity documents.',
       );
     }
   }
@@ -202,6 +227,62 @@ export async function purgeOperationalDataAdmin(
     } catch (error) {
       result.errors.push(
         error instanceof Error ? error.message : 'Could not delete leave requests.',
+      );
+    }
+  }
+
+  if (options.attendanceJustifications) {
+    try {
+      result.attendanceJustificationsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.ATTENDANCE_JUSTIFICATIONS,
+        onProgress,
+      );
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error
+          ? error.message
+          : 'Could not delete attendance justifications.',
+      );
+    }
+  }
+
+  if (options.notifications) {
+    try {
+      result.notificationsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.NOTIFICATIONS,
+        onProgress,
+      );
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error ? error.message : 'Could not delete notifications.',
+      );
+    }
+  }
+
+  if (options.notificationPreferences) {
+    try {
+      result.notificationPreferencesDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.NOTIFICATION_PREFERENCES,
+        onProgress,
+      );
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error
+          ? error.message
+          : 'Could not delete notification preferences.',
+      );
+    }
+  }
+
+  if (options.announcements) {
+    try {
+      result.announcementsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.ANNOUNCEMENTS,
+        onProgress,
+      );
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error ? error.message : 'Could not delete announcements.',
       );
     }
   }
@@ -304,14 +385,19 @@ export async function purgeOperationalDataAdmin(
   const anySuccess =
     result.attendanceRecordsDeleted > 0 ||
     result.storageFilesDeleted > 0 ||
+    result.attendanceJustificationsDeleted > 0 ||
     result.shiftsDeleted > 0 ||
     result.leaveRequestsDeleted > 0 ||
+    result.notificationsDeleted > 0 ||
+    result.notificationPreferencesDeleted > 0 ||
+    result.announcementsDeleted > 0 ||
     result.cargoInspectionsDeleted > 0 ||
     result.cargoInspectionsStorageDeleted > 0 ||
     result.portalClientsDeleted > 0 ||
     result.locationsDeleted > 0 ||
     result.locationGroupsDeleted > 0 ||
     result.kioskDevicesDeleted > 0 ||
+    result.employeeDocumentsStorageDeleted > 0 ||
     result.employeesReset > 0;
 
   if (result.errors.length > 0 && !anySuccess) {

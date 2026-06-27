@@ -14,14 +14,19 @@ interface DataPurgeTabProps {
 const DEFAULT_OPTIONS: DataPurgeOptions = {
   attendanceRecords: true,
   attendanceStorage: true,
+  attendanceJustifications: false,
   shifts: false,
   leaveRequests: false,
+  notifications: false,
+  notificationPreferences: false,
+  announcements: false,
   cargoInspections: false,
   cargoInspectionsStorage: false,
   portalClients: false,
   locations: false,
   locationGroups: false,
   kioskDevices: false,
+  employeeDocumentsStorage: false,
   resetEmployeePresence: true,
 };
 
@@ -99,14 +104,19 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
       setResult({
         attendanceRecordsDeleted: 0,
         storageFilesDeleted: 0,
+        attendanceJustificationsDeleted: 0,
         shiftsDeleted: 0,
         leaveRequestsDeleted: 0,
+        notificationsDeleted: 0,
+        notificationPreferencesDeleted: 0,
+        announcementsDeleted: 0,
         cargoInspectionsDeleted: 0,
         cargoInspectionsStorageDeleted: 0,
         portalClientsDeleted: 0,
         locationsDeleted: 0,
         locationGroupsDeleted: 0,
         kioskDevicesDeleted: 0,
+        employeeDocumentsStorageDeleted: 0,
         employeesReset: 0,
         errors: [
           error instanceof Error ? error.message : 'Cleanup failed.',
@@ -126,8 +136,8 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         <div>
           <h2 className="text-sm font-semibold text-white">Data cleanup</h2>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Manual purge for testing or freeing space. Employees, avatars, and
-            localization settings are kept. This cannot be undone.
+            Manual purge for testing or freeing space. Employee records, profile avatars,
+            access roles, and localization settings are kept. This cannot be undone.
           </p>
         </div>
       </div>
@@ -144,6 +154,12 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           onChange={() => toggleOption('attendanceRecords')}
           label="Attendance records (Firestore)"
           hint="All check-in / check-out history"
+        />
+        <OptionRow
+          checked={options.attendanceJustifications}
+          onChange={() => toggleOption('attendanceJustifications')}
+          label="Attendance justifications (Firestore)"
+          hint="Late arrival notes and no-show explanations"
         />
         <OptionRow
           checked={options.resetEmployeePresence}
@@ -163,6 +179,30 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           onChange={() => toggleOption('leaveRequests')}
           label="Leave requests"
           hint="All pending, approved, and rejected requests"
+        />
+        <OptionRow
+          checked={options.notifications}
+          onChange={() => toggleOption('notifications')}
+          label="In-app notifications (Firestore)"
+          hint="Employee tray items and admin alert dismiss state"
+        />
+        <OptionRow
+          checked={options.notificationPreferences}
+          onChange={() => toggleOption('notificationPreferences')}
+          label="Notification preferences (Firestore)"
+          hint="Per-user channel toggles and dismissed admin alerts"
+        />
+        <OptionRow
+          checked={options.announcements}
+          onChange={() => toggleOption('announcements')}
+          label="Announcements (Firestore)"
+          hint="Broadcast messages sent to staff"
+        />
+        <OptionRow
+          checked={options.employeeDocumentsStorage}
+          onChange={() => toggleOption('employeeDocumentsStorage')}
+          label="Employee identity documents (Storage)"
+          hint="Passport and visa uploads under employee_documents/"
         />
         <OptionRow
           checked={options.kioskDevices}
@@ -233,11 +273,32 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
               {result.attendanceRecordsDeleted > 0 ? (
                 <p>Attendance records removed: {result.attendanceRecordsDeleted}</p>
               ) : null}
+              {result.attendanceJustificationsDeleted > 0 ? (
+                <p>
+                  Attendance justifications removed: {result.attendanceJustificationsDeleted}
+                </p>
+              ) : null}
               {result.shiftsDeleted > 0 ? (
                 <p>Shifts removed: {result.shiftsDeleted}</p>
               ) : null}
               {result.leaveRequestsDeleted > 0 ? (
                 <p>Leave requests removed: {result.leaveRequestsDeleted}</p>
+              ) : null}
+              {result.notificationsDeleted > 0 ? (
+                <p>Notifications removed: {result.notificationsDeleted}</p>
+              ) : null}
+              {result.notificationPreferencesDeleted > 0 ? (
+                <p>
+                  Notification preferences removed: {result.notificationPreferencesDeleted}
+                </p>
+              ) : null}
+              {result.announcementsDeleted > 0 ? (
+                <p>Announcements removed: {result.announcementsDeleted}</p>
+              ) : null}
+              {result.employeeDocumentsStorageDeleted > 0 ? (
+                <p>
+                  Employee documents removed: {result.employeeDocumentsStorageDeleted}
+                </p>
               ) : null}
               {result.cargoInspectionsStorageDeleted > 0 ? (
                 <p>
