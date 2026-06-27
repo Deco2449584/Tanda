@@ -4,6 +4,7 @@ export const NOTIFICATION_CHANNEL_KEYS = [
   'shifts',
   'announcements',
   'attendance',
+  'leaveRequests',
 ] as const;
 
 export type NotificationChannelKey = (typeof NOTIFICATION_CHANNEL_KEYS)[number];
@@ -12,12 +13,14 @@ export interface NotificationChannelPreferences {
   shifts: boolean;
   announcements: boolean;
   attendance: boolean;
+  leaveRequests: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_CHANNELS: NotificationChannelPreferences = {
   shifts: true,
   announcements: true,
   attendance: true,
+  leaveRequests: true,
 };
 
 export function mapNotificationChannels(
@@ -27,6 +30,7 @@ export function mapNotificationChannels(
     shifts: raw?.shifts !== false,
     announcements: raw?.announcements !== false,
     attendance: raw?.attendance !== false,
+    leaveRequests: raw?.leaveRequests !== false,
   };
 }
 
@@ -72,6 +76,11 @@ export const NOTIFICATION_CHANNEL_LABELS: Record<
   },
   attendance: {
     title: 'Attendance alerts',
-    description: 'Late arrivals, no-shows, and justification requests.',
+    description:
+      'Late arrivals, no-shows, missing check-ins, and justification requests.',
+  },
+  leaveRequests: {
+    title: 'Leave requests',
+    description: 'Pending leave requests and related admin alerts.',
   },
 };

@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   collection,
   onSnapshot,
@@ -8,6 +9,10 @@ import {
   query,
 } from 'firebase/firestore';
 import { ChevronDown, Filter, Search } from 'lucide-react';
+import {
+  AttendanceJustificationsList,
+  type JustificationView,
+} from '@/components/leave-requests/AttendanceJustificationsList';
 import {
   LeaveDateFilterBar,
   type LeaveDatePreset,
@@ -29,7 +34,16 @@ import { useEmployees } from '@/providers/EmployeesProvider';
 import type { Employee } from '@/lib/types/employee';
 import type { LeaveRequest, LeaveRequestStatus } from '@/lib/types/leave-request';
 
+type LeaveCenterView = 'requests' | JustificationView;
+
+function parseViewParam(value: string | null): LeaveCenterView {
+  if (value === 'lateJustifications' || value === 'late') return 'late';
+  if (value === 'noShowJustifications' || value === 'no_show') return 'no_show';
+  return 'requests';
+}
+
 export default function LeaveRequestsPage() {
+  const searchParams = useSearchParams();
   const { employees, loading: employeesLoading } = useEmployees();
   const [dateRange, setDateRange] = useState<DateRange>(() => getCurrentMonthRange());
   const [datePreset, setDatePreset] = useState<LeaveDatePreset>('month');
@@ -37,6 +51,9 @@ export default function LeaveRequestsPage() {
     'all',
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [centerView, setCenterView] = useState<LeaveCenterView>(() =>
+    parseViewParam(searchParams.get('view')),
+  );
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,6 +89,10 @@ export default function LeaveRequestsPage() {
       unsubscribeRequests();
     };
   }, []);
+
+  useEffect(() => {
+    setCenterView(parseViewParam(searchParams.get('view')));
+  }, [searchParams]);
 
   const pageLoading = loading || employeesLoading;
 
@@ -120,7 +141,16 @@ export default function LeaveRequestsPage() {
 
   return (
     <PageContent className="space-y-6">
-      <PageHeader title="Leave requests center" />
+      <PageHeader
+        title="Leave requests center"
+        description={
+          centerView === 'requests'
+            ? 'Review and approve staff leave requests.'
+            : centerView === 'late'
+              ? 'Read-only list of late arrival justifications.'
+              : 'Read-only list of no-show explanations.'
+        }
+      />
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <LeaveDateFilterBar
@@ -131,33 +161,62 @@ export default function LeaveRequestsPage() {
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative min-w-[180px]">
+          <div className="relative min-w-[200px]">
             <Filter
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
               aria-hidden
             />
             <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as LeaveRequestStatus | 'all')
-              }
+              value={centerView}
+              onChange={(e) => setCenterView(e.target.value as LeaveCenterView)}
               className="w-full appearance-none rounded-lg border border-primary/30 bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
-              aria-label="Filter by status"
+              aria-label="Filter record type"
             >
-              <option value="all" className="bg-surface-raised">
-                All statuses
+              <option value="requests" className="bg-surface-raised">
+                Leave requests
               </option>
-              {LEAVE_REQUEST_STATUSES.map((status) => (
-                <option key={status} value={status} className="bg-surface-raised">
-                  {status}
-                </option>
-              ))}
+              <option value="late" className="bg-surface-raised">
+                Late justifications
+              </option>
+              <option value="no_show" className="bg-surface-raised">
+                No-show justifications
+              </option>
             </select>
             <ChevronDown
               className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
           </div>
+
+          {centerView === 'requests' ? (
+            <div className="relative min-w-[180px]">
+              <Filter
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+                aria-hidden
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as LeaveRequestStatus | 'all')
+                }
+                className="w-full appearance-none rounded-lg border border-primary/30 bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                aria-label="Filter by status"
+              >
+                <option value="all" className="bg-surface-raised">
+                  All statuses
+                </option>
+                {LEAVE_REQUEST_STATUSES.map((status) => (
+                  <option key={status} value={status} className="bg-surface-raised">
+                    {status}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                aria-hidden
+              />
+            </div>
+          ) : null}
 
           <div className="relative w-full sm:min-w-[280px]">
             <Search
@@ -175,12 +234,21 @@ export default function LeaveRequestsPage() {
         </div>
       </div>
 
-      <LeaveRequestsAdminTable
-        requests={filteredRequests}
-        employeesByCode={employeesByCode}
-        loading={pageLoading}
-        searchQuery={searchQuery}
-      />
+      {centerView === 'requests' ? (
+        <LeaveRequestsAdminTable
+          requests={filteredRequests}
+          employeesByCode={employeesByCode}
+          loading={pageLoading}
+          searchQuery={searchQuery}
+        />
+      ) : (
+        <AttendanceJustificationsList
+          view={centerView}
+          dateRange={dateRange}
+          employeesByCode={employeesByCode}
+          searchQuery={searchQuery}
+        />
+      )}
     </PageContent>
   );
 }

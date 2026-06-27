@@ -54,8 +54,8 @@ export function NotificationsSettingsTab() {
       <div>
         <h2 className="text-sm font-semibold text-white">Notifications</h2>
         <p className="mt-1 text-xs text-subtle">
-          Choose which activities appear in your in-app notification tray and on this
-          device.
+          These preferences apply across the app: your notification tray, admin
+          operational alerts, in-app messages, and push on this device.
         </p>
       </div>
 

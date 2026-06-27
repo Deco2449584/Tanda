@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AttendanceInsightsPanel } from '@/components/dashboard/AttendanceInsightsPanel';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { ShiftLoadChart } from '@/components/dashboard/ShiftLoadChart';
 import { WeeklyHoursChart } from '@/components/dashboard/WeeklyHoursChart';
@@ -102,8 +101,6 @@ export default function DashboardPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader title="General control panel" />
-
-      <AttendanceInsightsPanel />
 
       <KpiGrid metrics={metrics} loadingIds={loadingIds} />
 

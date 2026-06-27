@@ -61,15 +61,24 @@ export async function fetchLateArrivalFeedback(): Promise<AttendanceJustificatio
   return fetchJustificationsByQuery({ status: 'submitted', type: 'late' });
 }
 
+export async function fetchNoShowJustifications(): Promise<AttendanceJustification[]> {
+  const rows = await fetchJustificationsByQuery({ type: 'no_show' });
+  return rows.filter(
+    (item) =>
+      item.reason.trim().length > 0 &&
+      item.status !== 'awaiting_employee',
+  );
+}
+
 async function fetchJustificationsByQuery(input: {
-  status: string;
+  status?: string;
   type: string;
 }): Promise<AttendanceJustification[]> {
   const headers = await getAuthHeaders();
-  const params = new URLSearchParams({
-    status: input.status,
-    type: input.type,
-  });
+  const params = new URLSearchParams({ type: input.type });
+  if (input.status) {
+    params.set('status', input.status);
+  }
   const response = await fetch(`/api/attendance/justifications?${params.toString()}`, {
     headers,
   });

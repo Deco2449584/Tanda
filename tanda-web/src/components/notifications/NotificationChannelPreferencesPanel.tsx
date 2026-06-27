@@ -27,7 +27,7 @@ export function NotificationChannelPreferencesPanel({
       <div>
         <p className="text-sm font-semibold text-white">Activity alerts</p>
         <p className="mt-0.5 text-xs text-subtle">
-          Choose which updates appear in your notification tray.
+          Enable or disable activity types across your tray, admin alerts, and push.
         </p>
       </div>
 

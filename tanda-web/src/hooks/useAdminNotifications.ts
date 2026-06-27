@@ -36,6 +36,11 @@ import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
+import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
+import {
+  mapNotificationChannels,
+  type NotificationChannelPreferences,
+} from '@/lib/notifications/notification-channels';
 
 export interface AdminNotificationItem {
   id: string;
@@ -66,7 +71,6 @@ interface AdminNotificationData {
   attendanceRecords: AttendanceRecord[];
   attendancePolicy: AttendancePolicySettings;
   timeZone: string;
-  pendingJustifications: number;
 }
 
 async function loadAttendancePolicy(): Promise<{
@@ -155,7 +159,6 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     ),
     attendancePolicy,
     timeZone,
-    pendingJustifications: 0,
   };
 }
 
@@ -236,16 +239,6 @@ function buildNotificationItems(
     });
   }
 
-  if (data.pendingJustifications > 0) {
-    list.push({
-      id: 'justification_pending',
-      title: 'No-show explanations to review',
-      description: `${data.pendingJustifications} no-show explanation${data.pendingJustifications === 1 ? '' : 's'} awaiting approval`,
-      href: '/dashboard',
-      count: data.pendingJustifications,
-    });
-  }
-
   if (forgottenCheckouts > 0) {
     list.push({
       id: 'forgotten_checkout',
@@ -269,7 +262,6 @@ export function useAdminNotifications(enabled: boolean) {
     DEFAULT_ATTENDANCE_POLICY,
   );
   const [timeZone, setTimeZone] = useState(DEFAULT_COMPANY_SETTINGS.timeZone);
-  const [pendingJustifications, setPendingJustifications] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -277,7 +269,6 @@ export function useAdminNotifications(enabled: boolean) {
       setLeaveRequests([]);
       setShifts([]);
       setAttendanceRecords([]);
-      setPendingJustifications(0);
       setLoading(false);
       return;
     }
@@ -288,17 +279,6 @@ export function useAdminNotifications(enabled: boolean) {
     void (async () => {
       try {
         const data = await fetchAdminNotificationData();
-        let pendingCount = 0;
-
-        try {
-          const { fetchPendingJustifications } = await import(
-            '@/lib/attendance/justification-api'
-          );
-          const pending = await fetchPendingJustifications();
-          pendingCount = pending.length;
-        } catch {
-          pendingCount = 0;
-        }
 
         if (cancelled) return;
         setLeaveRequests(data.leaveRequests);
@@ -306,14 +286,12 @@ export function useAdminNotifications(enabled: boolean) {
         setAttendanceRecords(data.attendanceRecords);
         setAttendancePolicy(data.attendancePolicy);
         setTimeZone(data.timeZone);
-        setPendingJustifications(pendingCount);
       } catch (error) {
         console.error('useAdminNotifications', error);
         if (cancelled) return;
         setLeaveRequests([]);
         setShifts([]);
         setAttendanceRecords([]);
-        setPendingJustifications(0);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -335,14 +313,12 @@ export function useAdminNotifications(enabled: boolean) {
       attendanceRecords,
       attendancePolicy,
       timeZone,
-      pendingJustifications,
     });
   }, [
     attendancePolicy,
     attendanceRecords,
     enabled,
     leaveRequests,
-    pendingJustifications,
     shifts,
     timeZone,
   ]);
@@ -358,9 +334,11 @@ export function useAdminNotifications(enabled: boolean) {
 export function useAdminNotificationBadge(
   enabled: boolean,
   dismissedAlertKeys: string[] = [],
+  channels: NotificationChannelPreferences = mapNotificationChannels(null),
 ) {
   const [totalCount, setTotalCount] = useState(0);
   const dismissedSerialized = JSON.stringify(dismissedAlertKeys);
+  const channelsSerialized = JSON.stringify(channels);
 
   useEffect(() => {
     if (!enabled || !db) {
@@ -370,12 +348,16 @@ export function useAdminNotificationBadge(
 
     let cancelled = false;
     const dismissed = new Set(JSON.parse(dismissedSerialized) as string[]);
+    const channelPrefs = JSON.parse(channelsSerialized) as NotificationChannelPreferences;
 
     async function pollBadge() {
       try {
         const data = await fetchAdminNotificationData();
         if (!cancelled) {
-          const count = buildNotificationItems(data)
+          const count = filterAdminNotificationsByChannels(
+            buildNotificationItems(data),
+            channelPrefs,
+          )
             .filter((item) => !dismissed.has(item.id))
             .reduce((sum, item) => sum + item.count, 0);
           setTotalCount(count);
@@ -394,7 +376,7 @@ export function useAdminNotificationBadge(
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [dismissedSerialized, enabled]);
+  }, [channelsSerialized, dismissedSerialized, enabled]);
 
   return totalCount;
 }

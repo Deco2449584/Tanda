@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, CalendarClock, Clock, FileWarning, LogOut, Palmtree, UserX, X } from 'lucide-react';
+import { Bell, CalendarClock, Clock, LogOut, Palmtree, UserX, X } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import {
   useAdminNotificationBadge,
@@ -13,6 +13,12 @@ import {
   dismissAdminAlertKeys,
   subscribeToDismissedAdminAlertKeys,
 } from '@/lib/notifications/admin-notification-preferences';
+import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
+import {
+  mapNotificationChannels,
+  type NotificationChannelPreferences,
+} from '@/lib/notifications/notification-channels';
+import { subscribeToNotificationChannels } from '@/lib/notifications/employee-notification-preferences';
 
 const ICON_BY_ID: Record<string, typeof Palmtree> = {
   leave_pending: Palmtree,
@@ -20,7 +26,6 @@ const ICON_BY_ID: Record<string, typeof Palmtree> = {
   no_show_today: UserX,
   late_today: CalendarClock,
   forgotten_checkout: LogOut,
-  justification_pending: FileWarning,
 };
 
 interface AdminNotificationsMenuProps {
@@ -30,6 +35,9 @@ interface AdminNotificationsMenuProps {
 export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps) {
   const [open, setOpen] = useState(false);
   const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
+  const [channels, setChannels] = useState<NotificationChannelPreferences>(
+    mapNotificationChannels(null),
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthRole();
   const userEmail = user?.email ?? '';
@@ -38,19 +46,32 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
     enabled && open,
   );
 
-  const visibleItems = allItems.filter((item) => !dismissedKeys.includes(item.id));
+  const channelFilteredItems = filterAdminNotificationsByChannels(allItems, channels);
+  const visibleItems = channelFilteredItems.filter(
+    (item) => !dismissedKeys.includes(item.id),
+  );
   const visibleCount = visibleItems.reduce((sum, item) => sum + item.count, 0);
 
-  const badgeCount = useAdminNotificationBadge(enabled && !open, dismissedKeys);
+  const badgeCount = useAdminNotificationBadge(enabled && !open, dismissedKeys, channels);
   const displayCount = open ? visibleCount : badgeCount;
 
   useEffect(() => {
     if (!enabled || !userEmail) {
       setDismissedKeys([]);
+      setChannels(mapNotificationChannels(null));
       return;
     }
 
-    return subscribeToDismissedAdminAlertKeys(userEmail, setDismissedKeys);
+    const unsubscribeDismissed = subscribeToDismissedAdminAlertKeys(
+      userEmail,
+      setDismissedKeys,
+    );
+    const unsubscribeChannels = subscribeToNotificationChannels(userEmail, setChannels);
+
+    return () => {
+      unsubscribeDismissed();
+      unsubscribeChannels();
+    };
   }, [enabled, userEmail]);
 
   useEffect(() => {

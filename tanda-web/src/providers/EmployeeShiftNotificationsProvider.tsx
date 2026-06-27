@@ -31,7 +31,10 @@ import {
   subscribeToNotificationChannels,
 } from '@/lib/notifications/employee-notification-preferences';
 import type { NotificationChannelPreferences } from '@/lib/notifications/notification-channels';
-import { mapNotificationChannels } from '@/lib/notifications/notification-channels';
+import {
+  isNotificationChannelEnabled,
+  mapNotificationChannels,
+} from '@/lib/notifications/notification-channels';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import type { AppNotification } from '@/lib/types/notification';
 import type { Shift } from '@/lib/types/shift';
@@ -228,13 +231,24 @@ export function EmployeeShiftNotificationsProvider({
   }, [toastNotification]);
 
   const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.read).length,
-    [notifications],
+    () =>
+      notifications.filter((notification) =>
+        isNotificationChannelEnabled(notificationChannels, notification.type),
+      ).filter((notification) => !notification.read).length,
+    [notificationChannels, notifications],
+  );
+
+  const visibleNotifications = useMemo(
+    () =>
+      notifications.filter((notification) =>
+        isNotificationChannelEnabled(notificationChannels, notification.type),
+      ),
+    [notificationChannels, notifications],
   );
 
   const value = useMemo(
     () => ({
-      notifications,
+      notifications: visibleNotifications,
       unreadCount,
       toastNotification,
       notificationChannels,
@@ -246,7 +260,7 @@ export function EmployeeShiftNotificationsProvider({
       updateNotificationChannels,
     }),
     [
-      notifications,
+      visibleNotifications,
       notificationChannels,
       savingChannels,
       clearAll,
