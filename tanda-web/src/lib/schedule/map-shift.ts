@@ -14,6 +14,15 @@ export function mapShiftDoc(id: string, data: Record<string, unknown>): Shift {
     startTime: typeof shift.startTime === 'string' ? shift.startTime : '',
     endTime: typeof shift.endTime === 'string' ? shift.endTime : '',
     department: typeof shift.department === 'string' ? shift.department : '',
+    locationId: typeof shift.locationId === 'string' ? shift.locationId : undefined,
+    locationNameSnapshot:
+      typeof shift.locationNameSnapshot === 'string'
+        ? shift.locationNameSnapshot
+        : undefined,
+    locationCitySnapshot:
+      typeof shift.locationCitySnapshot === 'string'
+        ? shift.locationCitySnapshot
+        : undefined,
     status,
     note: typeof shift.note === 'string' ? shift.note : undefined,
   };

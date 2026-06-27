@@ -1,63 +1,78 @@
 const CLIENT_SESSION_KEY = 'kiosk_client_session_id';
 const DEVICE_TOKEN_KEY = 'kiosk_device_token';
-const LEGACY_DEVICE_TOKEN_KEY = 'kiosk_device_token';
 
 let migrated = false;
 
-function migrateLegacyTokenFromLocalStorage(): void {
+function getStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage;
+}
+
+/** Copies kiosk ids from sessionStorage after older builds stored them per-tab only. */
+function migrateKioskStorage(): void {
   if (migrated || typeof window === 'undefined') return;
   migrated = true;
 
-  const legacy = window.localStorage.getItem(LEGACY_DEVICE_TOKEN_KEY)?.trim();
-  if (legacy && !window.sessionStorage.getItem(DEVICE_TOKEN_KEY)) {
-    window.sessionStorage.setItem(DEVICE_TOKEN_KEY, legacy);
+  const storage = getStorage();
+  if (!storage) return;
+
+  for (const key of [CLIENT_SESSION_KEY, DEVICE_TOKEN_KEY]) {
+    const sessionValue = window.sessionStorage.getItem(key)?.trim();
+    const localValue = storage.getItem(key)?.trim();
+    if (sessionValue && !localValue) {
+      storage.setItem(key, sessionValue);
+    }
+    window.sessionStorage.removeItem(key);
   }
-  window.localStorage.removeItem(LEGACY_DEVICE_TOKEN_KEY);
 }
 
-/** Stable per browser tab — survives reloads, not shared across tabs. */
+/** Stable per browser profile — survives browser restarts on the same device. */
 export function getKioskClientSessionId(): string {
-  if (typeof window === 'undefined') return '';
-  migrateLegacyTokenFromLocalStorage();
-  return window.sessionStorage.getItem(CLIENT_SESSION_KEY)?.trim() ?? '';
+  migrateKioskStorage();
+  return getStorage()?.getItem(CLIENT_SESSION_KEY)?.trim() ?? '';
 }
 
 export function ensureKioskClientSessionId(): string {
   if (typeof window === 'undefined') return '';
 
-  migrateLegacyTokenFromLocalStorage();
+  migrateKioskStorage();
+
+  const storage = getStorage();
+  if (!storage) return '';
 
   const existing = getKioskClientSessionId();
   if (existing) return existing;
 
   const id = crypto.randomUUID();
-  window.sessionStorage.setItem(CLIENT_SESSION_KEY, id);
+  storage.setItem(CLIENT_SESSION_KEY, id);
   return id;
 }
 
 export function getKioskDeviceToken(): string {
-  if (typeof window === 'undefined') return '';
-  migrateLegacyTokenFromLocalStorage();
-  return window.sessionStorage.getItem(DEVICE_TOKEN_KEY)?.trim() ?? '';
+  migrateKioskStorage();
+  return getStorage()?.getItem(DEVICE_TOKEN_KEY)?.trim() ?? '';
 }
 
-/** Mints and persists a device token for this tab. Called at activation. */
+/** Mints and persists a device token for this browser profile. Called at activation. */
 export function ensureKioskDeviceToken(): string {
   if (typeof window === 'undefined') return '';
 
-  migrateLegacyTokenFromLocalStorage();
+  migrateKioskStorage();
+
+  const storage = getStorage();
+  if (!storage) return '';
 
   const existing = getKioskDeviceToken();
   if (existing) return existing;
 
   const token = crypto.randomUUID();
-  window.sessionStorage.setItem(DEVICE_TOKEN_KEY, token);
+  storage.setItem(DEVICE_TOKEN_KEY, token);
   return token;
 }
 
 export function clearKioskDeviceToken(): void {
-  if (typeof window === 'undefined') return;
-  window.sessionStorage.removeItem(DEVICE_TOKEN_KEY);
+  const storage = getStorage();
+  storage?.removeItem(DEVICE_TOKEN_KEY);
 }
 
 export function kioskDeviceHeaders(): HeadersInit {

@@ -1,5 +1,6 @@
 ﻿import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
+import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShiftTimeRangeShort, formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
@@ -48,6 +49,7 @@ export function ShiftCard({
   const styles = statusStyles[shift.status];
   const Icon = styles.icon;
   const timeRange = `${formatTimeLabel(shift.startTime)} - ${formatTimeLabel(shift.endTime)}`;
+  const locationLabel = formatShiftLocationLabel(shift);
 
   if (compact) {
     return (
@@ -86,6 +88,9 @@ export function ShiftCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className={`text-xs font-semibold ${styles.text}`}>{timeRange}</p>
+          {locationLabel ? (
+            <p className={`mt-0.5 text-[10px] ${styles.subtext}`}>{locationLabel}</p>
+          ) : null}
           {shift.status === 'scheduled' && (
             <p className={`mt-1 text-[10px] ${styles.subtext}`}>
               Scheduled clock-in {formatTimeLabel(shift.startTime)}

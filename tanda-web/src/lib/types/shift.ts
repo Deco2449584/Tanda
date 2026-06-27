@@ -6,6 +6,9 @@ export interface ShiftFirestore {
   startTime: string;
   endTime: string;
   department: string;
+  locationId?: string;
+  locationNameSnapshot?: string;
+  locationCitySnapshot?: string;
   status: ShiftStatus;
   note?: string;
 }
@@ -21,4 +24,5 @@ export interface AssignShiftInput {
   startTime: string;
   endTime: string;
   department: string;
+  locationId?: string;
 }

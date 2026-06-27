@@ -28,6 +28,7 @@ import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-loca
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
 import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
+import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { buildWeekRange } from '@/lib/schedule/week';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
@@ -203,6 +204,8 @@ export default function SchedulePage() {
   }, [employees]);
 
   function handleCellClick(employee: Employee, date: string) {
+    if (!isOnOrAfterToday(date)) return;
+
     setAssignData({
       employeeId: employee.employeeId,
       employeeName: employee.name,
@@ -210,11 +213,14 @@ export default function SchedulePage() {
       startTime: '09:00',
       endTime: '17:00',
       department: employee.department,
+      locationId: employee.locationId ?? '',
     });
     setAssignModalOpen(true);
   }
 
   function handleMonthDayClick(date: string) {
+    if (!isOnOrAfterToday(date)) return;
+
     const first = filteredEmployees[0];
     setAssignData({
       employeeId: first?.employeeId ?? '',
@@ -223,6 +229,7 @@ export default function SchedulePage() {
       startTime: '09:00',
       endTime: '17:00',
       department: first?.department ?? '',
+      locationId: first?.locationId ?? '',
     });
     setAssignModalOpen(true);
   }

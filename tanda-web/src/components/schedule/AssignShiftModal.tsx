@@ -3,9 +3,12 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { X } from 'lucide-react';
+import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { COLLECTIONS } from '@/lib/constants';
+import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
+import { useLocations } from '@/providers/LocationsProvider';
 import type { Employee } from '@/lib/types/employee';
 import type { AssignShiftInput } from '@/lib/types/shift';
 
@@ -20,6 +23,7 @@ const emptyForm: Omit<AssignShiftInput, 'employeeId' | 'employeeName' | 'date'> 
   startTime: '09:00',
   endTime: '17:00',
   department: '',
+  locationId: '',
 };
 
 export function AssignShiftModal({
@@ -28,10 +32,12 @@ export function AssignShiftModal({
   employees,
   onClose,
 }: AssignShiftModalProps) {
+  const { locations } = useLocations();
   const [employeeId, setEmployeeId] = useState('');
   const [startTime, setStartTime] = useState(emptyForm.startTime);
   const [endTime, setEndTime] = useState(emptyForm.endTime);
   const [department, setDepartment] = useState(emptyForm.department);
+  const [locationId, setLocationId] = useState(emptyForm.locationId ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -42,6 +48,7 @@ export function AssignShiftModal({
     setStartTime(initialData.startTime || emptyForm.startTime);
     setEndTime(initialData.endTime || emptyForm.endTime);
     setDepartment(initialData.department || emptyForm.department);
+    setLocationId(initialData.locationId ?? emptyForm.locationId ?? '');
     setError('');
   }, [open, initialData]);
 
@@ -49,6 +56,7 @@ export function AssignShiftModal({
 
   const selectedEmployee = employees.find((e) => e.employeeId === employeeId);
   const employeeName = selectedEmployee?.name ?? initialData.employeeName;
+  const isPastDate = !isOnOrAfterToday(initialData.date);
 
   function handleClose() {
     if (isSubmitting) return;
@@ -61,6 +69,9 @@ export function AssignShiftModal({
     if (employee?.department) {
       setDepartment(employee.department);
     }
+    if (employee?.locationId) {
+      setLocationId(employee.locationId);
+    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -69,6 +80,11 @@ export function AssignShiftModal({
 
     const shiftDate = initialData?.date;
     if (!shiftDate) return;
+
+    if (!isOnOrAfterToday(shiftDate)) {
+      setError('Shifts cannot be scheduled on past dates.');
+      return;
+    }
 
     if (!db) {
       setError('Firebase is not available.');
@@ -85,10 +101,17 @@ export function AssignShiftModal({
       return;
     }
 
+    if (!locationId.trim()) {
+      setError('Select a location.');
+      return;
+    }
+
     if (startTime >= endTime) {
       setError('End time must be after start time.');
       return;
     }
+
+    const selectedLocation = locations.find((location) => location.id === locationId);
 
     setIsSubmitting(true);
 
@@ -99,6 +122,9 @@ export function AssignShiftModal({
         startTime,
         endTime,
         department: department.trim(),
+        locationId: locationId.trim(),
+        locationNameSnapshot: selectedLocation?.name ?? '',
+        locationCitySnapshot: selectedLocation?.city ?? '',
         status: 'scheduled',
       });
 
@@ -151,6 +177,13 @@ export function AssignShiftModal({
           </p>
         </div>
 
+        {isPastDate ? (
+          <p className="mb-4 rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2.5 text-sm text-amber-300">
+            This date is in the past. Shifts can only be scheduled for today or
+            future dates.
+          </p>
+        ) : null}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="shift-employee" className="mb-1.5 block text-sm text-muted">
@@ -161,7 +194,7 @@ export function AssignShiftModal({
               required
               value={employeeId}
               onChange={(e) => handleEmployeeChange(e.target.value)}
-              disabled={isSubmitting || employees.length === 0}
+              disabled={isSubmitting || employees.length === 0 || isPastDate}
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
             >
               <option value="">Select employee…</option>
@@ -187,7 +220,7 @@ export function AssignShiftModal({
                 required
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPastDate}
                 className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
             </div>
@@ -201,7 +234,7 @@ export function AssignShiftModal({
                 required
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPastDate}
                 className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
             </div>
@@ -217,11 +250,19 @@ export function AssignShiftModal({
               required
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPastDate}
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               placeholder="Logistics"
             />
           </div>
+
+          <EmployeeLocationSelect
+            id="shift-location"
+            value={locationId}
+            onChange={setLocationId}
+            disabled={isSubmitting || isPastDate}
+            required
+          />
 
           {error && (
             <p className="text-center text-xs text-red-500" role="alert">
@@ -240,7 +281,7 @@ export function AssignShiftModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPastDate}
               className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white hover:opacity-90 disabled:opacity-70"
             >
               {isSubmitting ? 'Saving...' : 'Assign shift'}

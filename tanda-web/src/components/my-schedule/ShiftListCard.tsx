@@ -1,4 +1,5 @@
 ﻿import { formatShortDate } from '@/lib/employee-dashboard/format';
+import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
@@ -21,6 +22,7 @@ interface ShiftListCardProps {
 export function ShiftListCard({ shift }: ShiftListCardProps) {
   const style = statusStyles[shift.status] ?? statusStyles.scheduled;
   const label = statusLabels[shift.status] ?? shift.status;
+  const locationLabel = formatShiftLocationLabel(shift);
 
   return (
     <article className={`rounded-2xl border border-border p-4 ${style}`}>
@@ -32,9 +34,13 @@ export function ShiftListCard({ shift }: ShiftListCardProps) {
           <p className="mt-1 text-sm text-muted">{label}</p>
         </div>
         <span className="rounded-full bg-surface-raised px-2.5 py-1 text-xs font-medium text-muted">
-          {shift.department}
+          {locationLabel || shift.department}
         </span>
       </div>
+
+      {locationLabel && shift.department ? (
+        <p className="mt-2 text-xs text-subtle">{shift.department}</p>
+      ) : null}
 
       <p className="mt-4 text-base font-semibold text-foreground">
         {formatTimeLabel(shift.startTime)} – {formatTimeLabel(shift.endTime)}

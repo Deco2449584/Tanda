@@ -5,7 +5,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { useMemo } from 'react';
 import { isToday, parseISO } from 'date-fns';
 import { AlertCircle, Check, Clock } from 'lucide-react';
-import { normalizeInputDate } from '@/lib/dates/input-date';
+import { normalizeInputDate, isOnOrAfterToday } from '@/lib/dates/input-date';
 import { formatShiftTimeRangeShort } from '@/lib/schedule/week';
 import type { CalendarDayCell } from '@/lib/schedule/month';
 import type { Shift, ShiftStatus } from '@/lib/types/shift';
@@ -120,7 +120,7 @@ export function ScheduleMonthCalendar({
         <h2 className="text-sm font-semibold capitalize text-white">{monthLabel}</h2>
         {onDayClick ? (
           <p className="mt-0.5 text-xs text-subtle">
-            Tap a day to assign a shift
+            Tap today or a future day to assign a shift
           </p>
         ) : null}
       </div>
@@ -140,6 +140,8 @@ export function ScheduleMonthCalendar({
         {days.map((day) => {
           const dayShifts = shiftsByDate.get(normalizeInputDate(day.date)) ?? [];
           const today = isToday(parseISO(`${day.date}T12:00:00`));
+          const canSchedule =
+            Boolean(onDayClick) && day.isCurrentMonth && isOnOrAfterToday(day.date);
           const counts = countByStatus(dayShifts);
           const visibleShifts = dayShifts.slice(0, 3);
           const hiddenCount = dayShifts.length - visibleShifts.length;
@@ -147,25 +149,25 @@ export function ScheduleMonthCalendar({
           return (
             <div
               key={day.date}
-              role={onDayClick && day.isCurrentMonth ? 'button' : undefined}
-              tabIndex={onDayClick && day.isCurrentMonth ? 0 : undefined}
+              role={canSchedule ? 'button' : undefined}
+              tabIndex={canSchedule ? 0 : undefined}
               onClick={() => {
-                if (onDayClick && day.isCurrentMonth) {
-                  onDayClick(normalizeInputDate(day.date));
+                if (canSchedule) {
+                  onDayClick!(normalizeInputDate(day.date));
                 }
               }}
               onKeyDown={(event) => {
-                if (!onDayClick || !day.isCurrentMonth) return;
+                if (!canSchedule) return;
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  onDayClick(normalizeInputDate(day.date));
+                  onDayClick!(normalizeInputDate(day.date));
                 }
               }}
               className={`flex min-h-[4.5rem] flex-col border-b border-r border-border/60 p-1 last:border-r-0 sm:min-h-[5.5rem] sm:p-1.5 ${
                 day.isCurrentMonth
-                  ? onDayClick
+                  ? canSchedule
                     ? 'cursor-pointer bg-surface-base/20 transition-colors hover:bg-surface-hover/35 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-primary/40'
-                    : 'bg-surface-base/20'
+                    : 'bg-surface-base/20 opacity-70'
                   : 'bg-surface-base/5 opacity-45'
               } ${today && day.isCurrentMonth ? 'bg-primary/5' : ''}`}
             >

@@ -4,6 +4,7 @@ import { useMemo, type KeyboardEvent } from 'react';
 import { isToday, parseISO } from 'date-fns';
 import { Plus, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
+import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import {
   formatShiftTimeRangeShort,
   type WeekDay,
@@ -58,8 +59,10 @@ function MobileDayCell({
   const today = isToday(parseISO(`${date}T12:00:00`));
   const hasShift = shifts.length > 0;
   const primaryShift = shifts[0];
+  const canSchedule = isOnOrAfterToday(date);
 
   function handleCellKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!canSchedule) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       onCellClick(employee, date);
@@ -70,11 +73,15 @@ function MobileDayCell({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onCellClick(employee, date)}
+      role={canSchedule ? 'button' : undefined}
+      tabIndex={canSchedule ? 0 : undefined}
+      onClick={() => {
+        if (canSchedule) onCellClick(employee, date);
+      }}
       onKeyDown={handleCellKeyDown}
-      className={`relative flex ${cellSizeClass} flex-col items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+      className={`relative flex ${cellSizeClass} flex-col items-center justify-center rounded-lg border transition-colors ${
+        !canSchedule ? 'cursor-default opacity-60' : 'focus:outline-none focus:ring-2 focus:ring-primary/40'
+      } ${
         today && !hasShift ? 'ring-1 ring-primary/45 bg-primary/5' : ''
       } ${
         today && hasShift ? 'ring-1 ring-primary/45' : ''

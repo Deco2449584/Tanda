@@ -12,7 +12,7 @@ import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfir
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
-import { normalizeInputDate } from '@/lib/dates/input-date';
+import { normalizeInputDate, isOnOrAfterToday } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
@@ -161,8 +161,10 @@ export function ScheduleGrid({
                       shiftsByCell.get(shiftKey(employee.employeeId, day.date)) ??
                       [];
                     const hasShift = cellShifts.length > 0;
+                    const canSchedule = isOnOrAfterToday(day.date);
 
                     function handleCellKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+                      if (!canSchedule) return;
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         onCellClick(employee, day.date);
@@ -172,11 +174,17 @@ export function ScheduleGrid({
                     return (
                       <div
                         key={`${employee.id}-${day.date}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onCellClick(employee, day.date)}
+                        role={canSchedule ? 'button' : undefined}
+                        tabIndex={canSchedule ? 0 : undefined}
+                        onClick={() => {
+                          if (canSchedule) onCellClick(employee, day.date);
+                        }}
                         onKeyDown={handleCellKeyDown}
-                        className="group min-h-[88px] cursor-pointer border-l border-border/60 bg-surface-base/20 p-1.5 text-left transition-colors hover:bg-surface-hover/40 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        className={`group min-h-[88px] border-l border-border/60 bg-surface-base/20 p-1.5 text-left transition-colors ${
+                          canSchedule
+                            ? 'cursor-pointer hover:bg-surface-hover/40 focus:outline-none focus:ring-1 focus:ring-primary/50'
+                            : 'cursor-default opacity-70'
+                        }`}
                       >
                         {hasShift ? (
                           <div
@@ -199,12 +207,16 @@ export function ScheduleGrid({
                               />
                             ))}
                           </div>
-                        ) : (
+                        ) : canSchedule ? (
                           <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-border-strong/80 text-subtle group-hover:border-zinc-500 group-hover:text-muted">
                             <Plus className="h-4 w-4" />
                           </div>
+                        ) : (
+                          <div className="flex h-full min-h-[72px] items-center justify-center rounded-md border border-dashed border-border/40 text-subtle/50">
+                            <span className="text-[10px]">Past</span>
+                          </div>
                         )}
-                        {hasShift ? (
+                        {hasShift && canSchedule ? (
                           <p className="pointer-events-none mt-1 text-center text-[9px] font-medium uppercase tracking-wide text-subtle opacity-0 transition-opacity group-hover:opacity-100">
                             + Add shift
                           </p>
