@@ -24,13 +24,7 @@ export interface DualPayrollKpi {
   actual: PayrollKpi;
 }
 
-function formatCurrency(total: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(total);
-}
+import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 
 export function computeActiveStaffKpi(employees: Employee[]): ActiveStaffKpi {
   const activeEmployees = employees.filter((employee) => employee.active);
@@ -49,6 +43,7 @@ export function computeActiveStaffKpi(employees: Employee[]): ActiveStaffKpi {
 export function computeScheduledPayrollKpi(
   employees: Employee[],
   todayShifts: Shift[],
+  currency = 'AUD',
 ): PayrollKpi {
   const employeesByCode = new Map(
     employees.map((employee) => [employee.employeeId, employee]),
@@ -62,7 +57,7 @@ export function computeScheduledPayrollKpi(
     return sum + employee.hourlyRate * hours;
   }, 0);
 
-  return { total, formatted: formatCurrency(total) };
+  return { total, formatted: formatDashboardCurrency(total, currency) };
 }
 
 /** Costo real: horas trabajadas hoy (check-in/out emparejados) × tarifa. */
@@ -70,6 +65,7 @@ export function computeActualPayrollKpi(
   employees: Employee[],
   todayAttendance: AttendanceRecord[],
   attendanceBreak: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+  currency = 'AUD',
 ): PayrollKpi {
   const employeesByCode = new Map(
     employees.map((employee) => [employee.employeeId, employee]),
@@ -97,7 +93,7 @@ export function computeActualPayrollKpi(
     total += hoursWorked * employee.hourlyRate;
   });
 
-  return { total, formatted: formatCurrency(total) };
+  return { total, formatted: formatDashboardCurrency(total, currency) };
 }
 
 export function computeDualPayrollKpi(
@@ -105,9 +101,15 @@ export function computeDualPayrollKpi(
   todayShifts: Shift[],
   todayAttendance: AttendanceRecord[],
   attendanceBreak: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+  currency = 'AUD',
 ): DualPayrollKpi {
   return {
-    projected: computeScheduledPayrollKpi(employees, todayShifts),
-    actual: computeActualPayrollKpi(employees, todayAttendance, attendanceBreak),
+    projected: computeScheduledPayrollKpi(employees, todayShifts, currency),
+    actual: computeActualPayrollKpi(
+      employees,
+      todayAttendance,
+      attendanceBreak,
+      currency,
+    ),
   };
 }

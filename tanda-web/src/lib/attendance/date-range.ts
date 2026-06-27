@@ -43,6 +43,28 @@ export function getLastWeekRange(reference: Date = new Date()): DateRange {
   return { start: week.start, end: week.end };
 }
 
+export function getLast7DaysRange(reference: Date = new Date()): DateRange {
+  const end = toInputDate(reference);
+  const startDate = new Date(reference);
+  startDate.setDate(startDate.getDate() - 6);
+
+  return {
+    start: toInputDate(startDate),
+    end,
+  };
+}
+
+export function getLast30DaysRange(reference: Date = new Date()): DateRange {
+  const end = toInputDate(reference);
+  const startDate = new Date(reference);
+  startDate.setDate(startDate.getDate() - 29);
+
+  return {
+    start: toInputDate(startDate),
+    end,
+  };
+}
+
 export function getCurrentMonthRange(reference: Date = new Date()): DateRange {
   const year = reference.getFullYear();
   const month = reference.getMonth();
