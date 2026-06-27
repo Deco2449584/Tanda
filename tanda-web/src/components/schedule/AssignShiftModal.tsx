@@ -8,6 +8,7 @@ import { COLLECTIONS } from '@/lib/constants';
 import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
+import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
 import { useLocations } from '@/providers/LocationsProvider';
 import type { Employee } from '@/lib/types/employee';
 import type { AssignShiftInput } from '@/lib/types/shift';
@@ -136,6 +137,20 @@ export function AssignShiftModal({
         startTime,
         endTime,
         department: department.trim(),
+      });
+
+      void recordShiftAuditEvent({
+        action: 'shift.created',
+        shiftId: shiftRef.id,
+        summary: `Assigned shift for ${employeeName} on ${shiftDate} (${startTime}–${endTime})`,
+        after: {
+          employeeId: employeeId.trim(),
+          date: shiftDate,
+          startTime,
+          endTime,
+          department: department.trim(),
+          locationId: locationId.trim(),
+        },
       });
 
       onClose();

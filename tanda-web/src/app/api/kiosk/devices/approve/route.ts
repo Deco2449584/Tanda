@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
+import { pickKioskDeviceAuditSnapshot } from '@/lib/kiosk/kiosk-audit-helpers';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 import {
   approveKioskDevice,
@@ -28,6 +30,18 @@ export async function POST(request: Request) {
     }
 
     await approveKioskDevice(deviceId);
+
+    const after = await getKioskDeviceById(deviceId);
+
+    await recordAuditFromRequest(request, admin, {
+      action: 'kiosk_device.approved',
+      entityType: 'system',
+      entityId: deviceId,
+      summary: `Approved kiosk device "${device.name}"`,
+      before: pickKioskDeviceAuditSnapshot(device),
+      after: after ? pickKioskDeviceAuditSnapshot(after) : null,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('POST /api/kiosk/devices/approve', error);

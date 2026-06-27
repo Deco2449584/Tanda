@@ -71,6 +71,40 @@ export async function recordEmployeeAuditEvent(input: {
   summary: string;
   metadata?: Record<string, unknown>;
 }): Promise<void> {
+  await recordClientAuditEvent({
+    action: input.action,
+    entityId: input.employeeDocId,
+    summary: input.summary,
+    metadata: input.metadata,
+  });
+}
+
+export async function recordShiftAuditEvent(input: {
+  action: 'shift.created' | 'shift.deleted';
+  shiftId: string;
+  summary: string;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  await recordClientAuditEvent({
+    action: input.action,
+    entityId: input.shiftId,
+    summary: input.summary,
+    before: input.before,
+    after: input.after,
+    metadata: input.metadata,
+  });
+}
+
+async function recordClientAuditEvent(input: {
+  action: string;
+  entityId: string;
+  summary: string;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
   const user = auth?.currentUser;
   if (!user) return;
 

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Coffee, X } from 'lucide-react';
 import { updateAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { AttendanceMapLink } from '@/components/attendance/AttendanceMapLink';
+import { manualAttendanceLabel, isManualAttendanceRecord } from '@/components/attendance/ManualAttendanceBadge';
 import {
   formatAttendanceType,
   formatRecordDate,
@@ -241,6 +242,11 @@ export function EditAttendanceModal({
           ) : null}
 
           <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-3 text-xs text-subtle">
+            {isManualAttendanceRecord(record) ? (
+              <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-amber-200">
+                {manualAttendanceLabel(record)}
+              </p>
+            ) : null}
             <div className="grid gap-2 sm:grid-cols-2">
               <p>
                 <span className="font-medium text-muted">Kiosk</span>

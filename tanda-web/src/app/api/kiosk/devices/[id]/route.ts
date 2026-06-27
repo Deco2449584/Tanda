@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
+import { pickKioskDeviceAuditSnapshot } from '@/lib/kiosk/kiosk-audit-helpers';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 import {
   deleteKioskDevice,
@@ -62,6 +64,17 @@ export async function PATCH(
       clearLockPin: finalType === 'mobile',
     });
 
+    const after = await getKioskDeviceById(id);
+
+    await recordAuditFromRequest(request, admin, {
+      action: 'kiosk_device.updated',
+      entityType: 'system',
+      entityId: id,
+      summary: `Updated kiosk device "${after?.name ?? device.name}"`,
+      before: pickKioskDeviceAuditSnapshot(device),
+      after: after ? pickKioskDeviceAuditSnapshot(after) : null,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('PATCH /api/kiosk/devices/[id]', error);
@@ -80,7 +93,21 @@ export async function DELETE(
     }
 
     const { id } = await context.params;
+    const device = await getKioskDeviceById(id);
+    if (!device) {
+      return NextResponse.json({ error: 'Device not found.' }, { status: 404 });
+    }
+
     await deleteKioskDevice(id);
+
+    await recordAuditFromRequest(request, admin, {
+      action: 'kiosk_device.deleted',
+      entityType: 'system',
+      entityId: id,
+      summary: `Deleted kiosk device "${device.name}"`,
+      before: pickKioskDeviceAuditSnapshot(device),
+      after: null,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

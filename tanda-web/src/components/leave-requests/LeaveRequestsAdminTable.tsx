@@ -1,17 +1,15 @@
 ﻿'use client';
 
 import { useMemo, useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { LeaveRequestStatusBadge } from '@/components/leave-requests/LeaveRequestStatusBadge';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
-import { COLLECTIONS } from '@/lib/constants';
+import { updateLeaveRequestStatusRequest } from '@/lib/leave-requests/leave-requests-api';
 import {
   formatLeaveDateRange,
   truncateText,
 } from '@/lib/leave-requests/format';
-import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
 import type { LeaveRequest, LeaveRequestStatus } from '@/lib/types/leave-request';
 
@@ -50,14 +48,10 @@ export function LeaveRequestsAdminTable({
     requestId: string,
     status: Exclude<LeaveRequestStatus, 'Pending'>,
   ) {
-    if (!db) return;
-
     setUpdatingId(requestId);
 
     try {
-      await updateDoc(doc(db, COLLECTIONS.LEAVE_REQUESTS, requestId), {
-        status,
-      });
+      await updateLeaveRequestStatusRequest(requestId, status);
     } catch {
       window.alert('Could not update the request status.');
     } finally {

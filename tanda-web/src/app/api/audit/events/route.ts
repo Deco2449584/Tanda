@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
+import type { AuditEntityType } from '@/lib/types/audit-log';
 import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 
-const ALLOWED_ACTIONS = new Set([
-  'employee.created',
-  'employee.updated',
-  'employee.deleted',
-]);
+const ALLOWED_EVENTS: Record<string, AuditEntityType> = {
+  'employee.created': 'employee',
+  'employee.updated': 'employee',
+  'employee.deleted': 'employee',
+  'shift.created': 'shift',
+  'shift.deleted': 'shift',
+};
 
 export async function POST(request: Request) {
   try {
@@ -17,24 +20,29 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       action?: string;
-      employeeDocId?: string;
+      entityId?: string;
       summary?: string;
+      before?: Record<string, unknown> | null;
+      after?: Record<string, unknown> | null;
       metadata?: Record<string, unknown>;
     };
 
     const action = body.action?.trim() ?? '';
-    const employeeDocId = body.employeeDocId?.trim() ?? '';
+    const entityId = body.entityId?.trim() ?? '';
     const summary = body.summary?.trim() ?? '';
+    const entityType = ALLOWED_EVENTS[action];
 
-    if (!ALLOWED_ACTIONS.has(action) || !employeeDocId || !summary) {
+    if (!entityType || !entityId || !summary) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
     }
 
     await recordAuditFromRequest(request, admin, {
       action,
-      entityType: 'employee',
-      entityId: employeeDocId,
+      entityType,
+      entityId,
       summary,
+      before: body.before,
+      after: body.after,
       metadata: body.metadata,
     });
 

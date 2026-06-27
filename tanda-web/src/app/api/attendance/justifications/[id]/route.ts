@@ -1,12 +1,25 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import {
   acknowledgeJustification,
+  getJustificationById,
   reviewJustification,
 } from '@/lib/attendance/server/attendance-alerts-service';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+function pickJustificationAuditSnapshot(data: Record<string, unknown>) {
+  return {
+    employeeId: data.employeeId,
+    employeeName: data.employeeName,
+    date: data.date,
+    type: data.type,
+    status: data.status,
+    reason: data.reason,
+  };
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -17,6 +30,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const { id } = await context.params;
+    const beforeRecord = await getJustificationById(id);
+    if (!beforeRecord) {
+      return NextResponse.json({ error: 'Justification not found.' }, { status: 404 });
+    }
+
     const body = (await request.json()) as {
       status?: 'approved' | 'rejected';
       reviewerNote?: string;
@@ -28,6 +46,19 @@ export async function PATCH(request: Request, context: RouteContext) {
         justificationId: id,
         adminEmail: admin.email,
       });
+
+      await recordAuditFromRequest(request, admin, {
+        action: 'justification.acknowledged',
+        entityType: 'system',
+        entityId: id,
+        summary: `Marked ${beforeRecord.type === 'no_show' ? 'no-show' : 'late'} justification as reviewed for ${String(beforeRecord.employeeName ?? beforeRecord.employeeId)}`,
+        before: pickJustificationAuditSnapshot(beforeRecord),
+        after: pickJustificationAuditSnapshot({
+          ...beforeRecord,
+          adminAcknowledgedByEmail: admin.email,
+        }),
+      });
+
       return NextResponse.json({ ok: true });
     }
 
@@ -40,6 +71,19 @@ export async function PATCH(request: Request, context: RouteContext) {
       status: body.status,
       reviewerEmail: admin.email,
       reviewerNote: body.reviewerNote,
+    });
+
+    await recordAuditFromRequest(request, admin, {
+      action: `justification.${body.status}`,
+      entityType: 'system',
+      entityId: id,
+      summary: `${body.status === 'approved' ? 'Approved' : 'Rejected'} no-show justification for ${String(beforeRecord.employeeName ?? beforeRecord.employeeId)}`,
+      before: pickJustificationAuditSnapshot(beforeRecord),
+      after: pickJustificationAuditSnapshot({
+        ...beforeRecord,
+        status: body.status,
+        reviewedByEmail: admin.email,
+      }),
     });
 
     return NextResponse.json({ ok: true });

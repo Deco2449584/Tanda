@@ -12,6 +12,7 @@ import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfir
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
+import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
 import { normalizeInputDate, isOnOrAfterToday } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
@@ -84,6 +85,19 @@ export function ScheduleGrid({
         startTime: shift.startTime,
         endTime: shift.endTime,
         department: shift.department,
+      });
+
+      void recordShiftAuditEvent({
+        action: 'shift.deleted',
+        shiftId: shift.id,
+        summary: `Deleted shift for ${pendingDelete.employeeName} on ${normalizeInputDate(shift.date)} (${shift.startTime}–${shift.endTime})`,
+        before: {
+          employeeId: shift.employeeId,
+          date: normalizeInputDate(shift.date),
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+          department: shift.department,
+        },
       });
 
       setPendingDelete(null);
