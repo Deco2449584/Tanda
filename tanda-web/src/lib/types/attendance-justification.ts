@@ -25,6 +25,8 @@ export interface AttendanceJustificationFirestore {
   reviewedAt?: Timestamp;
   reviewedByEmail?: string;
   reviewerNote?: string;
+  adminAcknowledgedAt?: Timestamp;
+  adminAcknowledgedByEmail?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -46,6 +48,8 @@ export interface AttendanceJustification {
   reviewedAt?: number;
   reviewedByEmail?: string;
   reviewerNote?: string;
+  adminAcknowledgedAt?: number;
+  adminAcknowledgedByEmail?: string;
   createdAt: number;
   updatedAt: number;
 }

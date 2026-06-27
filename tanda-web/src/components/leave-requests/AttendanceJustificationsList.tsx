@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Clock, MessageSquare } from 'lucide-react';
+import { Check, Clock, MessageSquare } from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
+  acknowledgeJustificationRequest,
   fetchLateArrivalFeedback,
   fetchNoShowJustifications,
 } from '@/lib/attendance/justification-api';
@@ -70,6 +71,7 @@ export function AttendanceJustificationsList({
   const [items, setItems] = useState<AttendanceJustification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -108,6 +110,26 @@ export function AttendanceJustificationsList({
       return matchesDate && matchesSearch(item, employeesByCode, searchQuery);
     });
   }, [dateRange.end, dateRange.start, employeesByCode, items, searchQuery]);
+
+  async function handleAcknowledge(item: AttendanceJustification) {
+    if (item.adminAcknowledgedAt) return;
+
+    setAcknowledgingId(item.id);
+    setError(null);
+
+    try {
+      await acknowledgeJustificationRequest(item.id);
+      await loadItems();
+    } catch (ackError) {
+      setError(
+        ackError instanceof Error
+          ? ackError.message
+          : 'Could not mark as reviewed.',
+      );
+    } finally {
+      setAcknowledgingId(null);
+    }
+  }
 
   const Icon = view === 'late' ? MessageSquare : Clock;
   const title =
@@ -157,14 +179,17 @@ export function AttendanceJustificationsList({
             const employee = employeesByCode[item.employeeId];
             const displayName =
               item.employeeName || employee?.name || item.employeeId || 'Employee';
+            const reviewed = Boolean(item.adminAcknowledgedAt);
 
             return (
               <li
                 key={item.id}
-                className="rounded-xl border border-border bg-surface-raised p-4"
+                className={`rounded-xl border bg-surface-raised p-4 ${
+                  reviewed ? 'border-emerald-900/40' : 'border-border'
+                }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground">{displayName}</p>
                     <p className="mt-0.5 text-xs text-subtle">
                       {item.date} · {item.shiftStartTime}–{item.shiftEndTime}
@@ -175,10 +200,37 @@ export function AttendanceJustificationsList({
                         : ''}
                     </p>
                   </div>
-                  <span className="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
-                    {statusLabel(item.status)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                      {statusLabel(item.status)}
+                    </span>
+                    <button
+                      type="button"
+                      title={
+                        reviewed
+                          ? `Reviewed${item.adminAcknowledgedByEmail ? ` by ${item.adminAcknowledgedByEmail}` : ''}`
+                          : 'Mark as reviewed'
+                      }
+                      disabled={reviewed || acknowledgingId === item.id}
+                      onClick={() => void handleAcknowledge(item)}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                        reviewed
+                          ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
+                          : 'border-border-strong bg-surface-base text-muted hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60'
+                      }`}
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
+                {reviewed ? (
+                  <p className="mt-2 text-[11px] text-emerald-400/90">
+                    Reviewed
+                    {item.adminAcknowledgedByEmail
+                      ? ` · ${item.adminAcknowledgedByEmail}`
+                      : ''}
+                  </p>
+                ) : null}
                 <p className="mt-3 text-sm leading-relaxed text-foreground">{item.reason}</p>
               </li>
             );

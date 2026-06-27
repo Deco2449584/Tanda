@@ -91,6 +91,25 @@ async function fetchJustificationsByQuery(input: {
   return data.justifications.filter((item) => item.reason.trim().length > 0);
 }
 
+export async function acknowledgeJustificationRequest(
+  justificationId: string,
+): Promise<void> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `/api/attendance/justifications/${encodeURIComponent(justificationId)}`,
+    {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ acknowledge: true }),
+    },
+  );
+
+  if (!response.ok) {
+    const data = (await response.json()) as { error?: string };
+    throw new Error(data.error ?? 'Could not mark justification as reviewed.');
+  }
+}
+
 export async function reviewJustificationRequest(input: {
   justificationId: string;
   status: 'approved' | 'rejected';

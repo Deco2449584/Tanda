@@ -8,6 +8,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
 import { ForgottenCheckoutBadge } from '@/components/attendance/ForgottenCheckoutBadge';
+import { ManualAttendanceBadge } from '@/components/attendance/ManualAttendanceBadge';
 import { isForgottenCheckIn } from '@/lib/attendance/work-sessions';
 import {
   formatRecordDate,
@@ -149,7 +150,10 @@ export function AttendanceTable({
                       {formatRecordDate(record.timestampServer)}
                     </td>
                     <td className="px-4 py-3.5">
-                      <AttendanceTypeBadge type={record.type} />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <AttendanceTypeBadge type={record.type} />
+                        <ManualAttendanceBadge record={record} />
+                      </div>
                     </td>
                     <td className="px-4 py-3.5 text-muted">
                       {isForgottenCheckIn(record, records) ? (
@@ -270,6 +274,7 @@ export function AttendanceTable({
                           </span>
                         )}
                         <AttendanceTypeBadge type={record.type} compact />
+                        <ManualAttendanceBadge record={record} />
                       </div>
 
                       {forgotten ? (

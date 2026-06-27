@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import {
+  buildAttendanceDeleteAuditSummary,
+  buildAttendanceEditAuditSummary,
+  pickAttendanceAuditSnapshot,
+} from '@/lib/audit/attendance-audit-helpers';
 import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import {
   deleteAttendanceRecordAdmin,
@@ -7,18 +12,6 @@ import {
   updateAttendanceRecordAdmin,
 } from '@/lib/attendance/server/attendance-records-admin';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
-
-function pickAuditSnapshot(data: Record<string, unknown>) {
-  return {
-    type: data.type,
-    employeeId: data.employeeId,
-    employeeNameSnapshot: data.employeeNameSnapshot,
-    timestampServer: data.timestampServer,
-    locationId: data.locationId,
-    locationNameSnapshot: data.locationNameSnapshot,
-    breakWaived: data.breakWaived,
-  };
-}
 
 export async function PATCH(
   request: Request,
@@ -78,17 +71,31 @@ export async function PATCH(
       return NextResponse.json({ error: 'No changes provided.' }, { status: 400 });
     }
 
-    await updateAttendanceRecordAdmin(id, update);
+    await updateAttendanceRecordAdmin(id, update, admin);
 
     const after = await getAttendanceRecordSnapshot(id);
+    const employeeName =
+      typeof existing.data.employeeNameSnapshot === 'string'
+        ? existing.data.employeeNameSnapshot
+        : String(existing.data.employeeId ?? 'employee');
+
+    const auditDetails = buildAttendanceEditAuditSummary({
+      employeeName,
+      before: existing.data,
+      after: after?.data ?? existing.data,
+    });
 
     await recordAuditFromRequest(request, admin, {
-      action: 'attendance.updated',
+      action: auditDetails.action,
       entityType: 'attendance_record',
       entityId: id,
-      summary: `Updated attendance record for ${existing.data.employeeNameSnapshot ?? existing.data.employeeId ?? 'employee'}`,
-      before: pickAuditSnapshot(existing.data),
-      after: after ? pickAuditSnapshot(after.data) : null,
+      summary: auditDetails.summary,
+      before: pickAttendanceAuditSnapshot(existing.data),
+      after: after ? pickAttendanceAuditSnapshot(after.data) : null,
+      metadata: {
+        manual: true,
+        timestampChanged: auditDetails.timestampChanged,
+      },
     });
 
     return NextResponse.json({ ok: true });
@@ -114,15 +121,24 @@ export async function DELETE(
       return NextResponse.json({ error: 'Record not found.' }, { status: 404 });
     }
 
+    const employeeName =
+      typeof existing.data.employeeNameSnapshot === 'string'
+        ? existing.data.employeeNameSnapshot
+        : String(existing.data.employeeId ?? 'employee');
+
     await deleteAttendanceRecordAdmin(id);
 
     await recordAuditFromRequest(request, admin, {
       action: 'attendance.deleted',
       entityType: 'attendance_record',
       entityId: id,
-      summary: `Deleted attendance record for ${existing.data.employeeNameSnapshot ?? existing.data.employeeId ?? 'employee'}`,
-      before: pickAuditSnapshot(existing.data),
+      summary: buildAttendanceDeleteAuditSummary({
+        employeeName,
+        data: existing.data,
+      }),
+      before: pickAttendanceAuditSnapshot(existing.data),
       after: null,
+      metadata: { manual: true },
     });
 
     return NextResponse.json({ ok: true });

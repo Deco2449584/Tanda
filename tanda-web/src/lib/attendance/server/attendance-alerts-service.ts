@@ -531,9 +531,36 @@ export async function reviewJustification(input: {
     status: input.status,
     reviewedAt: FieldValue.serverTimestamp(),
     reviewedByEmail: input.reviewerEmail,
+    adminAcknowledgedAt: FieldValue.serverTimestamp(),
+    adminAcknowledgedByEmail: input.reviewerEmail,
     ...(input.reviewerNote?.trim()
       ? { reviewerNote: input.reviewerNote.trim() }
       : {}),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
+
+export async function acknowledgeJustification(input: {
+  justificationId: string;
+  adminEmail: string;
+}): Promise<void> {
+  const ref = getAdminFirestore()
+    .collection(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS)
+    .doc(input.justificationId.trim());
+
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new Error('Justification not found.');
+  }
+
+  const data = snapshot.data() ?? {};
+  if (typeof data.reason !== 'string' || data.reason.trim().length === 0) {
+    throw new Error('This justification has no submitted reason yet.');
+  }
+
+  await ref.update({
+    adminAcknowledgedAt: FieldValue.serverTimestamp(),
+    adminAcknowledgedByEmail: input.adminEmail.trim().toLowerCase(),
     updatedAt: FieldValue.serverTimestamp(),
   });
 }

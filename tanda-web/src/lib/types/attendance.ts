@@ -24,6 +24,11 @@ export interface AttendanceRecordFirestore {
   geoCapturedAt?: string;
   geoAddress?: string;
   breakWaived?: boolean;
+  createdByEmail?: string;
+  createdByUid?: string;
+  lastEditedByEmail?: string;
+  lastEditedByUid?: string;
+  lastEditedAt?: Timestamp;
 }
 
 export interface AttendanceRecord extends AttendanceRecordFirestore {

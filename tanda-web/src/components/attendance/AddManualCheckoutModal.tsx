@@ -1,16 +1,14 @@
 ﻿'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
+import { createAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import {
   formatRecordDate,
   formatRecordTime,
   formValuesToTimestamp,
   timestampToFormValues,
 } from '@/lib/attendance/format';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
@@ -64,11 +62,6 @@ export function AddManualCheckoutModal({
     e.preventDefault();
     setError('');
 
-    if (!db) {
-      setError('Firebase is not available.');
-      return;
-    }
-
     if (!date || !time) {
       setError('Enter a valid date and time.');
       return;
@@ -82,55 +75,37 @@ export function AddManualCheckoutModal({
       return;
     }
 
-    if (!checkInRecord) {
-      setError('No check-in record selected.');
+    if (!checkInRecord || !employee) {
+      setError('Employee record not found.');
       return;
     }
+
+    const employeeRecords = allRecords.filter(
+      (item) => item.employeeId === checkInRecord.employeeId,
+    );
+    const latestMs = Math.max(
+      ...employeeRecords.map((item) => item.timestampServer?.toMillis() ?? 0),
+      0,
+    );
 
     setSaving(true);
 
     try {
-      await addDoc(collection(db, COLLECTIONS.ATTENDANCE_RECORDS), {
-        employeeId: checkInRecord.employeeId,
-        employeeNameSnapshot: checkInRecord.employeeNameSnapshot,
-        employeeEmailSnapshot: employee?.email ?? '',
+      await createAttendanceRecordRequest({
+        employeeDocId: employee.id,
         type: 'check_out',
-        timestampServer: checkoutTimestamp,
+        timestampMs: checkoutMs,
         source: 'web-admin-manual-checkout',
-        photoCaptured: false,
-        photoPath: '',
-        photoUrl: '',
         breakWaived: false,
+        syncEmployeePresence: employee != null && checkoutMs >= latestMs,
       });
 
-      const employeeRecords = allRecords.filter(
-        (item) => item.employeeId === checkInRecord.employeeId,
-      );
-      const latestMs = Math.max(
-        ...employeeRecords.map((item) => item.timestampServer?.toMillis() ?? 0),
-      );
-
-      if (employee && checkoutMs >= latestMs) {
-        try {
-          await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), {
-            lastAction: 'check_out',
-            lastTimestampServer: checkoutTimestamp,
-          });
-        } catch (employeeUpdateError) {
-          console.warn('Check-out saved; employee status not updated:', employeeUpdateError);
-        }
-      }
-
       onClose();
-    } catch (error) {
-      console.error('Manual check-out failed:', error);
-      const code =
-        error && typeof error === 'object' && 'code' in error
-          ? String((error as { code: string }).code)
-          : '';
+    } catch (submitError) {
+      console.error('Manual check-out failed:', submitError);
       setError(
-        code === 'permission-denied'
-          ? 'Permission denied. Deploy updated Firestore rules (see firestore.rules).'
+        submitError instanceof Error
+          ? submitError.message
           : 'Could not save the check-out. Please try again.',
       );
     } finally {

@@ -13,6 +13,25 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
+export async function createAttendanceRecordRequest(
+  payload: Record<string, unknown>,
+): Promise<{ id: string }> {
+  const headers = await getAuthHeaders();
+  const response = await fetch('/api/attendance/records', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? 'Could not create attendance record.');
+  }
+
+  const data = (await response.json()) as { id: string };
+  return { id: data.id };
+}
+
 export async function updateAttendanceRecordRequest(
   recordId: string,
   payload: Record<string, unknown>,

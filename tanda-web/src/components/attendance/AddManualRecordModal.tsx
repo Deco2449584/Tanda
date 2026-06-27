@@ -1,12 +1,10 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { MapPin, X } from 'lucide-react';
+import { createAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { formValuesToTimestamp } from '@/lib/attendance/format';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
@@ -94,11 +92,6 @@ export function AddManualRecordModal({
     e.preventDefault();
     setError('');
 
-    if (!db) {
-      setError('Firebase is not available.');
-      return;
-    }
-
     const employee = activeEmployees.find((item) => item.id === employeeDocId);
     if (!employee) {
       setError('Select an employee.');
@@ -117,65 +110,39 @@ export function AddManualRecordModal({
     const parsedLongitude = parseOptionalNumber(longitude);
     const parsedAccuracy = parseOptionalNumber(geoAccuracy);
 
+    const employeeRecords = allRecords.filter(
+      (item) => item.employeeId === employee.employeeId,
+    );
+    const latestMs = Math.max(
+      ...employeeRecords.map((item) => item.timestampServer?.toMillis() ?? 0),
+      0,
+    );
+
     setSaving(true);
 
     try {
-      const payload: Record<string, unknown> = {
-        employeeId: employee.employeeId,
-        employeeNameSnapshot: employee.name,
-        employeeEmailSnapshot: employee.email,
+      await createAttendanceRecordRequest({
+        employeeDocId: employee.id,
         type,
-        timestampServer,
+        timestampMs,
         source: 'web-admin-manual',
-        photoCaptured: false,
-        photoPath: '',
-        photoUrl: '',
-      };
-
-      if (selectedLocation) {
-        payload.locationId = selectedLocation.id;
-        payload.locationNameSnapshot = selectedLocation.name;
-        if (selectedLocation.city) {
-          payload.locationCitySnapshot = selectedLocation.city;
-        }
-      }
-
-      if (parsedLatitude != null) payload.latitude = parsedLatitude;
-      if (parsedLongitude != null) payload.longitude = parsedLongitude;
-      if (parsedAccuracy != null) payload.geoAccuracy = parsedAccuracy;
-      if (geoAddress.trim()) payload.geoAddress = geoAddress.trim();
-      if (type === 'check_out') payload.breakWaived = false;
-
-      await addDoc(collection(db, COLLECTIONS.ATTENDANCE_RECORDS), payload);
-
-      const employeeRecords = allRecords.filter(
-        (item) => item.employeeId === employee.employeeId,
-      );
-      const latestMs = Math.max(
-        ...employeeRecords.map((item) => item.timestampServer?.toMillis() ?? 0),
-      );
-
-      if (timestampMs >= latestMs) {
-        try {
-          await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), {
-            lastAction: type,
-            lastTimestampServer: timestampServer,
-          });
-        } catch (employeeUpdateError) {
-          console.warn('Record saved; employee status not updated:', employeeUpdateError);
-        }
-      }
+        locationId: selectedLocation?.id ?? null,
+        locationNameSnapshot: selectedLocation?.name ?? null,
+        locationCitySnapshot: selectedLocation?.city ?? null,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+        geoAccuracy: parsedAccuracy,
+        geoAddress: geoAddress.trim() || undefined,
+        breakWaived: type === 'check_out' ? false : undefined,
+        syncEmployeePresence: timestampMs >= latestMs,
+      });
 
       onClose();
     } catch (submitError) {
       console.error('Manual record failed:', submitError);
-      const code =
-        submitError && typeof submitError === 'object' && 'code' in submitError
-          ? String((submitError as { code: string }).code)
-          : '';
       setError(
-        code === 'permission-denied'
-          ? 'Permission denied. Deploy updated Firestore rules.'
+        submitError instanceof Error
+          ? submitError.message
           : 'Could not save the record.',
       );
     } finally {

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { reviewJustification } from '@/lib/attendance/server/attendance-alerts-service';
+import {
+  acknowledgeJustification,
+  reviewJustification,
+} from '@/lib/attendance/server/attendance-alerts-service';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 
 interface RouteContext {
@@ -17,7 +20,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     const body = (await request.json()) as {
       status?: 'approved' | 'rejected';
       reviewerNote?: string;
+      acknowledge?: boolean;
     };
+
+    if (body.acknowledge === true) {
+      await acknowledgeJustification({
+        justificationId: id,
+        adminEmail: admin.email,
+      });
+      return NextResponse.json({ ok: true });
+    }
 
     if (body.status !== 'approved' && body.status !== 'rejected') {
       return NextResponse.json({ error: 'Invalid status.' }, { status: 400 });

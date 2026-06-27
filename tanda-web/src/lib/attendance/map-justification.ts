@@ -28,13 +28,15 @@ export function mapJustificationDoc(
     type: data.type === 'no_show' ? 'no_show' : 'late',
     reason: typeof data.reason === 'string' ? data.reason : '',
     status:
-      data.status === 'pending'
-        ? 'pending'
-        : data.status === 'approved'
-          ? 'approved'
-          : data.status === 'rejected'
-            ? 'rejected'
-            : 'awaiting_employee',
+      data.status === 'submitted'
+        ? 'submitted'
+        : data.status === 'pending'
+          ? 'pending'
+          : data.status === 'approved'
+            ? 'approved'
+            : data.status === 'rejected'
+              ? 'rejected'
+              : 'awaiting_employee',
     lateMinutes:
       typeof data.lateMinutes === 'number' && Number.isFinite(data.lateMinutes)
         ? data.lateMinutes
@@ -44,6 +46,11 @@ export function mapJustificationDoc(
     reviewedByEmail:
       typeof data.reviewedByEmail === 'string' ? data.reviewedByEmail : undefined,
     reviewerNote: typeof data.reviewerNote === 'string' ? data.reviewerNote : undefined,
+    adminAcknowledgedAt: toMillis(data.adminAcknowledgedAt),
+    adminAcknowledgedByEmail:
+      typeof data.adminAcknowledgedByEmail === 'string'
+        ? data.adminAcknowledgedByEmail
+        : undefined,
     createdAt: toMillis(data.createdAt) ?? 0,
     updatedAt: toMillis(data.updatedAt) ?? 0,
   };

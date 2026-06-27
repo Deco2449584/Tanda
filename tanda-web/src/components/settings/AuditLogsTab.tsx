@@ -13,7 +13,9 @@ import type { AuditEntityType, AuditLog } from '@/lib/types/audit-log';
 
 const ACTION_PREFIX_OPTIONS = [
   { value: '', label: 'All actions' },
-  { value: 'attendance', label: 'Attendance' },
+  { value: 'attendance.time', label: 'Time changes' },
+  { value: 'attendance.manual', label: 'Manual entries' },
+  { value: 'attendance', label: 'All attendance' },
   { value: 'employee', label: 'Employees' },
   { value: 'settings', label: 'Settings' },
   { value: 'role', label: 'Roles & permissions' },

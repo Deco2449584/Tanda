@@ -50,5 +50,14 @@ export function mapAttendanceDoc(
       typeof record.geoAddress === 'string' ? record.geoAddress : undefined,
     breakWaived:
       typeof record.breakWaived === 'boolean' ? record.breakWaived : undefined,
+    createdByEmail:
+      typeof record.createdByEmail === 'string' ? record.createdByEmail : undefined,
+    createdByUid:
+      typeof record.createdByUid === 'string' ? record.createdByUid : undefined,
+    lastEditedByEmail:
+      typeof record.lastEditedByEmail === 'string' ? record.lastEditedByEmail : undefined,
+    lastEditedByUid:
+      typeof record.lastEditedByUid === 'string' ? record.lastEditedByUid : undefined,
+    lastEditedAt: record.lastEditedAt ?? undefined,
   };
 }
