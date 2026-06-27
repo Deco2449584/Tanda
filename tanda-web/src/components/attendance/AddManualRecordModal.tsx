@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { MapPin, X } from 'lucide-react';
-import { createAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
+import { createAttendanceRecordRequest, AttendanceRestrictionError } from '@/lib/attendance/attendance-records-api';
 import { formValuesToTimestamp } from '@/lib/attendance/format';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
@@ -103,6 +103,29 @@ export function AddManualRecordModal({
       return;
     }
 
+    setSaving(true);
+
+    try {
+      await saveManualRecord(false);
+      onClose();
+    } catch (submitError) {
+      console.error('Manual record failed:', submitError);
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Could not save the record.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveManualRecord(overrideRestrictions: boolean) {
+    const employee = activeEmployees.find((item) => item.id === employeeDocId);
+    if (!employee || !date || !time) {
+      throw new Error('Missing employee or time.');
+    }
+
     const timestampServer = formValuesToTimestamp(date, time);
     const timestampMs = timestampServer.toMillis();
     const selectedLocation = activeLocations.find((item) => item.id === locationId);
@@ -117,8 +140,6 @@ export function AddManualRecordModal({
       ...employeeRecords.map((item) => item.timestampServer?.toMillis() ?? 0),
       0,
     );
-
-    setSaving(true);
 
     try {
       await createAttendanceRecordRequest({
@@ -135,18 +156,24 @@ export function AddManualRecordModal({
         geoAddress: geoAddress.trim() || undefined,
         breakWaived: type === 'check_out' ? false : undefined,
         syncEmployeePresence: timestampMs >= latestMs,
+        overrideRestrictions,
       });
+    } catch (error) {
+      if (
+        !overrideRestrictions &&
+        type === 'check_in' &&
+        error instanceof AttendanceRestrictionError
+      ) {
+        const confirmed = window.confirm(
+          `${error.message}\n\nSave this manual check-in anyway? This override will be logged.`,
+        );
+        if (confirmed) {
+          await saveManualRecord(true);
+          return;
+        }
+      }
 
-      onClose();
-    } catch (submitError) {
-      console.error('Manual record failed:', submitError);
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Could not save the record.',
-      );
-    } finally {
-      setSaving(false);
+      throw error;
     }
   }
 

@@ -3,9 +3,11 @@ import { COLLECTIONS } from '@/lib/constants';
 import {
   DEFAULT_ATTENDANCE_BREAK,
   DEFAULT_ATTENDANCE_POLICY,
+  DEFAULT_ATTENDANCE_RESTRICTIONS,
   DEFAULT_COMPANY_SETTINGS,
   type AttendanceBreakSettings,
   type AttendancePolicySettings,
+  type AttendanceRestrictionsSettings,
   type CompanySettings,
 } from '@/lib/types/company-settings';
 import { db } from '@/lib/firebase';
@@ -54,6 +56,32 @@ function mapAttendanceBreak(data: Record<string, unknown>): AttendanceBreakSetti
   };
 }
 
+function mapAttendanceRestrictions(
+  data: Record<string, unknown>,
+): AttendanceRestrictionsSettings {
+  const raw = data.attendanceRestrictions;
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_ATTENDANCE_RESTRICTIONS;
+  }
+
+  const value = raw as Record<string, unknown>;
+  return {
+    blockEarlyClockIn:
+      typeof value.blockEarlyClockIn === 'boolean'
+        ? value.blockEarlyClockIn
+        : DEFAULT_ATTENDANCE_RESTRICTIONS.blockEarlyClockIn,
+    blockEarlyClockInMinutes:
+      typeof value.blockEarlyClockInMinutes === 'number' &&
+      value.blockEarlyClockInMinutes >= 0
+        ? value.blockEarlyClockInMinutes
+        : DEFAULT_ATTENDANCE_RESTRICTIONS.blockEarlyClockInMinutes,
+    blockUnscheduledShift:
+      typeof value.blockUnscheduledShift === 'boolean'
+        ? value.blockUnscheduledShift
+        : DEFAULT_ATTENDANCE_RESTRICTIONS.blockUnscheduledShift,
+  };
+}
+
 function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
   return {
     timeZone:
@@ -66,6 +94,7 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
         : DEFAULT_COMPANY_SETTINGS.currency,
     attendanceBreak: mapAttendanceBreak(data),
     attendancePolicy: mapAttendancePolicy(data),
+    attendanceRestrictions: mapAttendanceRestrictions(data),
   };
 }
 
@@ -97,6 +126,7 @@ export async function saveCompanySettings(
       currency: settings.currency,
       attendanceBreak: settings.attendanceBreak,
       attendancePolicy: settings.attendancePolicy,
+      attendanceRestrictions: settings.attendanceRestrictions,
     },
     { merge: true },
   );

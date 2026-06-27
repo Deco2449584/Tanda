@@ -26,6 +26,7 @@ export async function PUT(request: Request) {
       currency: body.currency,
       attendanceBreak: body.attendanceBreak,
       attendancePolicy: body.attendancePolicy,
+      attendanceRestrictions: body.attendanceRestrictions,
     };
 
     await docRef.set(payload, { merge: true });

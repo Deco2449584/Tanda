@@ -15,6 +15,7 @@ const ACTION_PREFIX_OPTIONS = [
   { value: '', label: 'All actions' },
   { value: 'attendance.time', label: 'Time changes' },
   { value: 'attendance.manual', label: 'Manual entries' },
+  { value: 'attendance.restriction', label: 'Blocked check-ins' },
   { value: 'attendance', label: 'All attendance' },
   { value: 'employee', label: 'Employees' },
   { value: 'leave_request', label: 'Leave requests' },

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getRequestIp } from '@/lib/audit/server/audit-log-service';
 import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import {
   buildManualCreateAuditSummary,
@@ -9,6 +10,10 @@ import {
   getEmployeeSnapshot,
   syncEmployeePresence,
 } from '@/lib/attendance/server/attendance-records-admin';
+import {
+  logAttendanceRestrictionBlocked,
+  validateEmployeeCheckInRestrictions,
+} from '@/lib/attendance/server/validate-attendance-restrictions';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 import type { AttendanceType } from '@/lib/types/attendance';
 
@@ -33,6 +38,7 @@ export async function POST(request: Request) {
       geoAddress?: string;
       breakWaived?: boolean;
       syncEmployeePresence?: boolean;
+      overrideRestrictions?: boolean;
     };
 
     const employeeDocId = body.employeeDocId?.trim();
@@ -67,6 +73,38 @@ export async function POST(request: Request) {
 
     if (!employeeCode) {
       return NextResponse.json({ error: 'Employee code missing.' }, { status: 400 });
+    }
+
+    if (body.type === 'check_in') {
+      const punchAt = new Date(body.timestampMs);
+      const violation = await validateEmployeeCheckInRestrictions({
+        employeeId: employeeCode,
+        punchAt,
+        overrideRestrictions: body.overrideRestrictions === true,
+      });
+
+      if (violation) {
+        await logAttendanceRestrictionBlocked({
+          actorEmail: admin.email,
+          actorUid: admin.uid,
+          employeeId: employeeCode,
+          employeeName,
+          channel: 'admin_manual',
+          violation,
+          punchAt,
+          ipAddress: getRequestIp(request),
+          metadata: { attemptedOverride: false },
+        });
+
+        return NextResponse.json(
+          {
+            error: violation.message,
+            restrictionViolation: true,
+            code: violation.code,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const recordId = await createAttendanceRecordAdmin({
@@ -123,6 +161,7 @@ export async function POST(request: Request) {
         manual: true,
         source,
         employeeDocId,
+        restrictionsOverridden: body.overrideRestrictions === true,
       },
     });
 

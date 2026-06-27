@@ -13,6 +13,16 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
+export class AttendanceRestrictionError extends Error {
+  readonly code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'AttendanceRestrictionError';
+    this.code = code;
+  }
+}
+
 export async function createAttendanceRecordRequest(
   payload: Record<string, unknown>,
 ): Promise<{ id: string }> {
@@ -23,13 +33,25 @@ export async function createAttendanceRecordRequest(
     body: JSON.stringify(payload),
   });
 
+  const data = (await response.json().catch(() => null)) as {
+    error?: string;
+    restrictionViolation?: boolean;
+    code?: string;
+    id?: string;
+  } | null;
+
   if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    if (response.status === 409 && data?.restrictionViolation) {
+      throw new AttendanceRestrictionError(
+        data.error ?? 'This check-in violates attendance restrictions.',
+        data.code ?? 'restriction',
+      );
+    }
+
     throw new Error(data?.error ?? 'Could not create attendance record.');
   }
 
-  const data = (await response.json()) as { id: string };
-  return { id: data.id };
+  return { id: data?.id ?? '' };
 }
 
 export async function updateAttendanceRecordRequest(

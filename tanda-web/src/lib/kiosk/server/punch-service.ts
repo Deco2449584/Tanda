@@ -1,6 +1,10 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { evaluateLateCheckIn } from '@/lib/attendance/server/attendance-alerts-service';
+import {
+  logAttendanceRestrictionBlocked,
+  validateEmployeeCheckInRestrictions,
+} from '@/lib/attendance/server/validate-attendance-restrictions';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import {
   isValidLatitude,
@@ -64,6 +68,30 @@ export async function recordKioskPunch(input: {
     employee.data.lastAction as string | undefined,
     employee.data.lastTimestampServer as { toDate(): Date } | undefined,
   );
+
+  if (actionType === 'check_in') {
+    const punchAt = new Date();
+    const violation = await validateEmployeeCheckInRestrictions({
+      employeeId: employee.data.employeeId as string,
+      punchAt,
+    });
+
+    if (violation) {
+      await logAttendanceRestrictionBlocked({
+        actorEmail: device.createdBy ?? device.ownerEmail ?? 'kiosk@device',
+        employeeId: employee.data.employeeId as string,
+        employeeName: employee.data.name as string,
+        channel: 'kiosk',
+        violation,
+        punchAt,
+        metadata: {
+          kioskDeviceId: device.id,
+          kioskDeviceName: device.name,
+        },
+      });
+      throw new KioskPunchError(violation.message, 403);
+    }
+  }
 
   const locationDoc = await getAdminFirestore()
     .collection(COLLECTIONS.LOCATIONS)

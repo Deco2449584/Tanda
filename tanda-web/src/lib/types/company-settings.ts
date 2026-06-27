@@ -13,11 +13,20 @@ export interface AttendancePolicySettings {
   noShowAfterMinutes: number;
 }
 
+export interface AttendanceRestrictionsSettings {
+  /** Reject check-ins earlier than X minutes before the scheduled shift start. */
+  blockEarlyClockIn: boolean;
+  blockEarlyClockInMinutes: number;
+  /** Reject check-ins when the employee has no shift on that date. */
+  blockUnscheduledShift: boolean;
+}
+
 export interface CompanySettings {
   timeZone: string;
   currency: string;
   attendanceBreak: AttendanceBreakSettings;
   attendancePolicy: AttendancePolicySettings;
+  attendanceRestrictions: AttendanceRestrictionsSettings;
 }
 
 export const DEFAULT_ATTENDANCE_POLICY: AttendancePolicySettings = {
@@ -31,9 +40,16 @@ export const DEFAULT_ATTENDANCE_BREAK: AttendanceBreakSettings = {
   minShiftHours: 6,
 };
 
+export const DEFAULT_ATTENDANCE_RESTRICTIONS: AttendanceRestrictionsSettings = {
+  blockEarlyClockIn: false,
+  blockEarlyClockInMinutes: 15,
+  blockUnscheduledShift: false,
+};
+
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   timeZone: 'Australia/Sydney',
   currency: 'AUD',
   attendanceBreak: DEFAULT_ATTENDANCE_BREAK,
   attendancePolicy: DEFAULT_ATTENDANCE_POLICY,
+  attendanceRestrictions: DEFAULT_ATTENDANCE_RESTRICTIONS,
 };
