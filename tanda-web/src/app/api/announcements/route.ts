@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import {
   broadcastAnnouncement,
   listAnnouncements,
@@ -52,6 +53,18 @@ export async function POST(request: Request) {
       },
       createdByEmail: admin.email,
       createdByName: body.createdByName,
+    });
+
+    await recordAuditFromRequest(request, admin, {
+      action: 'announcement.sent',
+      entityType: 'announcement',
+      entityId: announcement.id,
+      summary: `Sent announcement "${announcement.title}"`,
+      after: {
+        title: announcement.title,
+        audience: announcement.audience,
+        recipientCount: announcement.recipientCount,
+      },
     });
 
     return NextResponse.json({ ok: true, announcement });

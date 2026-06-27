@@ -13,6 +13,7 @@ export const COLLECTIONS = {
   ATTENDANCE_JUSTIFICATIONS: 'attendance_justifications',
   ANNOUNCEMENTS: 'announcements',
   ADMIN_ROLES: 'admin_roles',
+  AUDIT_LOGS: 'audit_logs',
   SETTINGS: 'settings',
 } as const;
 

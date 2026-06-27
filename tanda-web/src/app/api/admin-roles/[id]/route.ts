@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
 import {
   deleteAdminRole,
+  getAdminRoleById,
   updateAdminRole,
 } from '@/lib/admin-roles/server/admin-roles-service';
 import type { UpdateAdminRoleInput } from '@/lib/types/admin-role';
@@ -18,8 +20,18 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const { id } = await context.params;
+    const before = await getAdminRoleById(id);
     const body = (await request.json()) as UpdateAdminRoleInput;
     const role = await updateAdminRole(id, body);
+
+    await recordAuditFromRequest(request, master, {
+      action: 'role.updated',
+      entityType: 'admin_role',
+      entityId: id,
+      summary: `Updated access role "${role.name}"`,
+      before: before ? { name: before.name, active: before.active } : null,
+      after: { name: role.name, active: role.active },
+    });
 
     return NextResponse.json({ role });
   } catch (error) {
@@ -38,7 +50,17 @@ export async function DELETE(request: Request, context: RouteContext) {
     }
 
     const { id } = await context.params;
+    const before = await getAdminRoleById(id);
     await deleteAdminRole(id);
+
+    await recordAuditFromRequest(request, master, {
+      action: 'role.deleted',
+      entityType: 'admin_role',
+      entityId: id,
+      summary: `Deleted access role "${before?.name ?? id}"`,
+      before: before ? { name: before.name, active: before.active } : null,
+      after: null,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

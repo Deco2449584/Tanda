@@ -144,6 +144,7 @@ export async function purgeOperationalDataAdmin(
     locationGroupsDeleted: 0,
     kioskDevicesDeleted: 0,
     employeeDocumentsStorageDeleted: 0,
+    auditLogsDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -164,6 +165,7 @@ export async function purgeOperationalDataAdmin(
     options.locationGroups ||
     options.kioskDevices ||
     options.employeeDocumentsStorage ||
+    options.auditLogs ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -331,6 +333,19 @@ export async function purgeOperationalDataAdmin(
     }
   }
 
+  if (options.auditLogs) {
+    try {
+      result.auditLogsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.AUDIT_LOGS,
+        onProgress,
+      );
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error ? error.message : 'Could not delete audit logs.',
+      );
+    }
+  }
+
   if (options.resetEmployeePresence) {
     try {
       result.employeesReset = await resetAllEmployeePresence(onProgress);
@@ -398,6 +413,7 @@ export async function purgeOperationalDataAdmin(
     result.locationGroupsDeleted > 0 ||
     result.kioskDevicesDeleted > 0 ||
     result.employeeDocumentsStorageDeleted > 0 ||
+    result.auditLogsDeleted > 0 ||
     result.employeesReset > 0;
 
   if (result.errors.length > 0 && !anySuccess) {

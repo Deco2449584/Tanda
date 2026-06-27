@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import { useMemo, useState } from 'react';
-import { deleteDoc, doc } from 'firebase/firestore';
 import { LogOut, Pencil, Trash2 } from 'lucide-react';
+import { deleteAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
@@ -18,8 +18,6 @@ import {
   formatKioskLabel,
   formatWarehouseLabel,
 } from '@/lib/attendance/location-display';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
 interface AttendanceTableProps {
@@ -52,14 +50,12 @@ export function AttendanceTable({
   }, [records, searchQuery]);
 
   async function handleConfirmDelete() {
-    if (!db || !pendingDelete) return;
+    if (!pendingDelete) return;
 
     setDeletingId(pendingDelete.id);
 
     try {
-      await deleteDoc(
-        doc(db, COLLECTIONS.ATTENDANCE_RECORDS, pendingDelete.id),
-      );
+      await deleteAttendanceRecordRequest(pendingDelete.id);
       setPendingDelete(null);
     } catch {
       window.alert('Could not delete the record.');

@@ -40,6 +40,7 @@ import { uploadEmployeeDocument } from '@/lib/employees/upload-document';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { requestEmployeeInvite } from '@/lib/employees/request-employee-invite';
 import { requestEmployeeAdminAccess } from '@/lib/employees/request-admin-access';
+import { recordEmployeeAuditEvent } from '@/lib/audit/audit-logs-client';
 import type { EmployeeAccessRole } from '@/lib/employees/request-admin-access';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
 import {
@@ -360,6 +361,12 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         if (active !== employee.active) {
           await requestSyncEmployeeAuth(employee.id, active ? 'enable' : 'disable');
         }
+
+        void recordEmployeeAuditEvent({
+          action: 'employee.updated',
+          employeeDocId: employee.id,
+          summary: `Updated employee ${form.name.trim()} (${employeeCode})`,
+        });
       } else {
         const payload = buildEmployeeCreatePayload({
           form: normalizedForm,
@@ -393,6 +400,12 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
               : 'Could not send the invite email.';
           throw new Error(`Employee saved, but the invite email failed: ${message}`);
         }
+
+        void recordEmployeeAuditEvent({
+          action: 'employee.created',
+          employeeDocId: docRef.id,
+          summary: `Created employee ${form.name.trim()} (${employeeCode})`,
+        });
       }
 
       onSuccess();

@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import { COLLECTIONS } from '@/lib/constants';
 import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
 import { getAdminRoleById } from '@/lib/admin-roles/server/admin-roles-service';
@@ -57,6 +58,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
     }
 
+    const before = snapshot.data() as Record<string, unknown>;
+
     const update: Record<string, unknown> = {};
 
     if (accessRole === 'empleado') {
@@ -76,6 +79,21 @@ export async function POST(request: Request) {
     }
 
     await docRef.update(update);
+
+    await recordAuditFromRequest(request, master, {
+      action: 'role.permissions_changed',
+      entityType: 'employee',
+      entityId: employeeDocId,
+      summary: `Changed sign-in access to ${accessRole} for ${before.name ?? before.email ?? employeeDocId}`,
+      before: {
+        role: before.role,
+        adminRoleId: before.adminRoleId,
+      },
+      after: {
+        accessRole,
+        adminRoleId: accessRole === 'admin' ? adminRoleId : null,
+      },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

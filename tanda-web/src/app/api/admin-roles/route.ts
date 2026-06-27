@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
 import {
@@ -34,6 +35,14 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as CreateAdminRoleInput;
     const role = await createAdminRole(body);
+
+    await recordAuditFromRequest(request, master, {
+      action: 'role.created',
+      entityType: 'admin_role',
+      entityId: role.id,
+      summary: `Created access role "${role.name}"`,
+      after: { name: role.name, active: role.active },
+    });
 
     return NextResponse.json({ role });
   } catch (error) {

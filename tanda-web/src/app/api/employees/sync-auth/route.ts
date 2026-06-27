@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 import {
   deleteEmployeeAuth,
@@ -34,6 +35,19 @@ export async function POST(request: Request) {
     } else {
       await deleteEmployeeAuth(employeeDocId);
     }
+
+    await recordAuditFromRequest(request, admin, {
+      action:
+        action === 'delete'
+          ? 'employee.auth_deleted'
+          : action === 'disable'
+            ? 'employee.auth_disabled'
+            : 'employee.auth_enabled',
+      entityType: 'employee',
+      entityId: employeeDocId,
+      summary: `Employee authentication ${action}d`,
+      metadata: { action },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

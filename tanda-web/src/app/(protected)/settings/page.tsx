@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
 import { AdminRolesTab } from '@/components/settings/AdminRolesTab';
 import { AttendanceSettingsTab } from '@/components/settings/AttendanceSettingsTab';
+import { AuditLogsTab } from '@/components/settings/AuditLogsTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { LocationsTab } from '@/components/settings/LocationsTab';
@@ -31,6 +32,7 @@ type SettingsTab =
   | 'profile'
   | 'notifications'
   | 'accessRoles'
+  | 'auditLogs'
   | 'data'
   | 'portal'
   | 'locations'
@@ -42,6 +44,7 @@ const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'attendance', label: 'Time & attendance' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'accessRoles', label: 'Access roles' },
+  { id: 'auditLogs', label: 'Audit logs' },
   { id: 'profile', label: 'Administrator' },
   { id: 'locations', label: 'Locations' },
   { id: 'locationGroups', label: 'Location groups' },
@@ -74,7 +77,9 @@ export default function SettingsPage() {
   const tabs = useMemo(
     () =>
       ADMIN_TABS.filter((tab) => {
-        if (tab.id === 'data' || tab.id === 'accessRoles') return isMaster;
+        if (tab.id === 'data' || tab.id === 'accessRoles' || tab.id === 'auditLogs') {
+          return isMaster;
+        }
         if (tab.id === 'profile' || tab.id === 'localization' || tab.id === 'notifications') {
           return true;
         }
@@ -163,7 +168,7 @@ export default function SettingsPage() {
       {pageLoading ? (
         <LoadingIndicator message="Loading settings…" className="h-96" />
       ) : (
-        <div className="max-w-2xl">
+        <div className={activeTab === 'auditLogs' ? 'max-w-5xl' : 'max-w-2xl'}>
           {activeTab === 'localization' && (
             <LocalizationTab
               draft={draft}
@@ -186,6 +191,7 @@ export default function SettingsPage() {
           )}
           {activeTab === 'notifications' && <NotificationsSettingsTab />}
           {activeTab === 'accessRoles' && isMaster && <AdminRolesTab />}
+          {activeTab === 'auditLogs' && isMaster && <AuditLogsTab />}
           {activeTab === 'profile' && (
             <AdminProfileTab
               name={adminName}

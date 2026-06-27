@@ -9,6 +9,7 @@ import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
 import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
+import { recordEmployeeAuditEvent } from '@/lib/audit/audit-logs-client';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { db } from '@/lib/firebase';
@@ -86,6 +87,11 @@ export function EmployeeTable({
     try {
       await requestSyncEmployeeAuth(employee.id, 'delete');
       await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id));
+      void recordEmployeeAuditEvent({
+        action: 'employee.deleted',
+        employeeDocId: employee.id,
+        summary: `Deleted employee ${employee.name} (${employee.employeeId})`,
+      });
     } catch (error) {
       window.alert(
         error instanceof Error

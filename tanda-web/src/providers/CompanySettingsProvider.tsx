@@ -13,6 +13,7 @@ import {
   fetchCompanySettings,
   saveCompanySettings as persistCompanySettings,
 } from '@/lib/settings/company-settings-service';
+import { saveCompanySettingsViaApi } from '@/lib/settings/settings-api';
 import {
   DEFAULT_COMPANY_SETTINGS,
   type CompanySettings,
@@ -70,7 +71,11 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
     async (next: CompanySettings) => {
       setSaving(true);
       try {
-        await persistCompanySettings(next);
+        try {
+          await saveCompanySettingsViaApi(next);
+        } catch {
+          await persistCompanySettings(next);
+        }
         applySettings(next);
       } finally {
         setSaving(false);

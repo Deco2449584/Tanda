@@ -34,6 +34,7 @@ export interface DataPurgeOptions {
   locationGroups: boolean;
   kioskDevices: boolean;
   employeeDocumentsStorage: boolean;
+  auditLogs: boolean;
   resetEmployeePresence: boolean;
 }
 
@@ -53,6 +54,7 @@ export interface DataPurgeResult {
   locationGroupsDeleted: number;
   kioskDevicesDeleted: number;
   employeeDocumentsStorageDeleted: number;
+  auditLogsDeleted: number;
   employeesReset: number;
   errors: string[];
 }
@@ -222,6 +224,7 @@ export async function purgeOperationalData(
     locationGroupsDeleted: 0,
     kioskDevicesDeleted: 0,
     employeeDocumentsStorageDeleted: 0,
+    auditLogsDeleted: 0,
     employeesReset: 0,
     errors: [],
   };
@@ -242,6 +245,7 @@ export async function purgeOperationalData(
     options.locationGroups ||
     options.kioskDevices ||
     options.employeeDocumentsStorage ||
+    options.auditLogs ||
     options.resetEmployeePresence;
 
   if (!hasWork) {
@@ -420,6 +424,19 @@ export async function purgeOperationalData(
     }
   }
 
+  if (options.auditLogs) {
+    try {
+      result.auditLogsDeleted = await deleteCollectionDocuments(
+        COLLECTIONS.AUDIT_LOGS,
+        onProgress,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not delete audit logs.';
+      result.errors.push(message);
+    }
+  }
+
   if (options.resetEmployeePresence) {
     try {
       result.employeesReset = await resetAllEmployeePresence(onProgress);
@@ -490,6 +507,7 @@ export async function purgeOperationalData(
     result.locationGroupsDeleted === 0 &&
     result.kioskDevicesDeleted === 0 &&
     result.employeeDocumentsStorageDeleted === 0 &&
+    result.auditLogsDeleted === 0 &&
     result.employeesReset === 0
   ) {
     throw new Error(result.errors.join(' '));

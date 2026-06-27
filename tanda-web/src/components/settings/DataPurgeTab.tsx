@@ -27,6 +27,7 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
   locationGroups: false,
   kioskDevices: false,
   employeeDocumentsStorage: false,
+  auditLogs: false,
   resetEmployeePresence: true,
 };
 
@@ -117,6 +118,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         locationGroupsDeleted: 0,
         kioskDevicesDeleted: 0,
         employeeDocumentsStorageDeleted: 0,
+        auditLogsDeleted: 0,
         employeesReset: 0,
         errors: [
           error instanceof Error ? error.message : 'Cleanup failed.',
@@ -223,6 +225,12 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           hint="Site master data — also clears references on employees and kiosks"
         />
         <OptionRow
+          checked={options.auditLogs}
+          onChange={() => toggleOption('auditLogs')}
+          label="Audit logs (Firestore)"
+          hint="Master-only change history — use only for test resets"
+        />
+        <OptionRow
           checked={options.portalClients}
           onChange={() => toggleOption('portalClients')}
           label="Portal clients (Firestore)"
@@ -319,6 +327,9 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
               ) : null}
               {result.locationsDeleted > 0 ? (
                 <p>Locations removed: {result.locationsDeleted}</p>
+              ) : null}
+              {result.auditLogsDeleted > 0 ? (
+                <p>Audit logs removed: {result.auditLogsDeleted}</p>
               ) : null}
               {result.employeesReset > 0 ? (
                 <p>Employees reset: {result.employeesReset}</p>

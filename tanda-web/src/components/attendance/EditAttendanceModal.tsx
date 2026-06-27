@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import { Coffee, X } from 'lucide-react';
+import { updateAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { AttendanceMapLink } from '@/components/attendance/AttendanceMapLink';
 import {
   formatAttendanceType,
@@ -12,8 +12,6 @@ import {
   timestampToFormValues,
 } from '@/lib/attendance/format';
 import { formatKioskLabel } from '@/lib/attendance/location-display';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
 import type { Location } from '@/lib/types/location';
@@ -64,8 +62,8 @@ export function EditAttendanceModal({
     e.preventDefault();
     setError('');
 
-    if (!record || !db) {
-      setError('Firebase is not available.');
+    if (!record) {
+      setError('Record not found.');
       return;
     }
 
@@ -75,25 +73,21 @@ export function EditAttendanceModal({
     }
 
     const selectedLocation = activeLocations.find((item) => item.id === locationId);
+    const timestampMs = formValuesToTimestamp(date, time).toMillis();
 
     const payload: Record<string, unknown> = {
       type,
-      timestampServer: formValuesToTimestamp(date, time),
-      locationId: selectedLocation ? selectedLocation.id : deleteField(),
-      locationNameSnapshot: selectedLocation ? selectedLocation.name : deleteField(),
-      locationCitySnapshot: selectedLocation?.city ? selectedLocation.city : deleteField(),
+      timestampMs,
+      locationId: selectedLocation ? selectedLocation.id : null,
+      locationNameSnapshot: selectedLocation ? selectedLocation.name : null,
+      locationCitySnapshot: selectedLocation?.city ?? null,
+      breakWaived: type === 'check_out' ? breakWaived : null,
     };
-
-    if (type === 'check_out') {
-      payload.breakWaived = breakWaived;
-    } else {
-      payload.breakWaived = deleteField();
-    }
 
     setSaving(true);
 
     try {
-      await updateDoc(doc(db, COLLECTIONS.ATTENDANCE_RECORDS, record.id), payload);
+      await updateAttendanceRecordRequest(record.id, payload);
       onClose();
     } catch {
       setError('Could not update the record.');

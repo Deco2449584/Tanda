@@ -287,6 +287,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // 16. Auditoría — solo Admin SDK (API routes); lectura bloqueada en cliente
+    match /audit_logs/{logId} {
+      allow read, write: if false;
+    }
+
     // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;
