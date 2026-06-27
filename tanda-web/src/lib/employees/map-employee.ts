@@ -21,6 +21,7 @@ export function mapEmployeeDoc(
         ? employee.email.trim().toLowerCase()
         : '',
     role: typeof employee.role === 'string' ? employee.role.trim() : undefined,
+    adminRoleId: optionalString(employee.adminRoleId),
     modulePermissions: employee.modulePermissions
       ? mapModulePermissions(employee.modulePermissions)
       : undefined,

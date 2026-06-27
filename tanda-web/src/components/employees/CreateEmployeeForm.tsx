@@ -5,7 +5,6 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { RefreshCw } from 'lucide-react';
 import { EmployeeDocumentUpload } from '@/components/employees/EmployeeDocumentUpload';
 import {
-  createDefaultModulePermissions,
   EmployeeAccessRoleSection,
   isKioskAccessRole,
 } from '@/components/employees/EmployeeAccessRoleSection';
@@ -22,8 +21,8 @@ import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { requestEmployeeInvite } from '@/lib/employees/request-employee-invite';
 import { requestEmployeeAdminAccess } from '@/lib/employees/request-admin-access';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { useAdminRoleTemplates } from '@/hooks/useAdminRoleTemplates';
 import type { EmployeeAccessRole } from '@/lib/employees/request-admin-access';
-import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
 import {
   isEmployeeIdTaken,
@@ -70,8 +69,9 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
   const { isMaster } = useAdminAccess();
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
   const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
-  const [modulePermissions, setModulePermissions] = useState<AdminModulePermissionsFirestore>(
-    createDefaultModulePermissions(),
+  const [adminRoleId, setAdminRoleId] = useState('');
+  const { roles: adminRoleTemplates } = useAdminRoleTemplates(
+    isMaster && accessRole === 'admin',
   );
   const [employeeIdEdited, setEmployeeIdEdited] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -113,6 +113,14 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
     });
   }, [employees, employeesLoading, employeeIdEdited]);
 
+  useEffect(() => {
+    if (accessRole !== 'admin' || adminRoleId || adminRoleTemplates.length === 0) {
+      return;
+    }
+
+    setAdminRoleId(adminRoleTemplates[0]!.id);
+  }, [accessRole, adminRoleId, adminRoleTemplates]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
@@ -139,6 +147,11 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
 
     if (!isKiosk && activeLocations.length > 0 && !form.locationId?.trim()) {
       setError('Select a primary location for this employee.');
+      return;
+    }
+
+    if (isMaster && accessRole === 'admin' && !adminRoleId.trim()) {
+      setError('Select an access role template for administrators.');
       return;
     }
 
@@ -200,7 +213,7 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
         await requestEmployeeAdminAccess({
           employeeDocId: docRef.id,
           accessRole,
-          modulePermissions: accessRole === 'admin' ? modulePermissions : undefined,
+          adminRoleId: accessRole === 'admin' ? adminRoleId : undefined,
         });
       }
 
@@ -344,9 +357,9 @@ export function CreateEmployeeForm({ onCancel, onSuccess }: CreateEmployeeFormPr
           {isMaster ? (
             <EmployeeAccessRoleSection
               accessRole={accessRole}
-              modulePermissions={modulePermissions}
+              adminRoleId={adminRoleId}
               onAccessRoleChange={setAccessRole}
-              onModulePermissionsChange={setModulePermissions}
+              onAdminRoleIdChange={setAdminRoleId}
               disabled={isBusy}
             />
           ) : null}

@@ -27,7 +27,9 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   email: string;
   /** Optional access role, e.g. "admin" or "master". */
   role?: string;
-  /** Module visibility and edit rights for admin-area users. */
+  /** Reference to a template in `admin_roles` when `role` is admin. */
+  adminRoleId?: string;
+  /** Legacy inline permissions; superseded by `adminRoleId` when set. */
   modulePermissions?: AdminModulePermissionsFirestore;
   department: string;
   locationId?: string;

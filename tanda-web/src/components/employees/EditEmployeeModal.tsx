@@ -11,7 +11,6 @@ import {
 import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
-import { mapModulePermissions } from '@/lib/auth/admin-permissions';
 import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
 import {
   requestEmployeeAdminAccess,
@@ -27,7 +26,6 @@ import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
 import { useLocations } from '@/providers/LocationsProvider';
 import type { CreateEmployeeInput, Employee } from '@/lib/types/employee';
-import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 
 interface EditEmployeeModalProps {
   employee: Employee | null;
@@ -66,8 +64,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
   const [inviteMessage, setInviteMessage] = useState('');
   const [error, setError] = useState('');
   const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
-  const [modulePermissions, setModulePermissions] =
-    useState<AdminModulePermissionsFirestore>(mapModulePermissions(null));
+  const [adminRoleId, setAdminRoleId] = useState('');
 
   const isBusy = isUploading || isSubmitting || isResendingInvite;
 
@@ -91,7 +88,7 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     setError('');
     setInviteMessage('');
     setAccessRole(deriveAccessRole(employee));
-    setModulePermissions(mapModulePermissions(employee.modulePermissions));
+    setAdminRoleId(employee.adminRoleId ?? '');
   }, [employee]);
 
   if (!employee) return null;
@@ -182,6 +179,11 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       return;
     }
 
+    if (isMaster && accessRole === 'admin' && !adminRoleId.trim()) {
+      setError('Select an access role template for administrators.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -235,16 +237,15 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
 
       if (isMaster) {
         const initialAccessRole = deriveAccessRole(employee);
-        const initialPermissions = mapModulePermissions(employee.modulePermissions);
         const accessChanged =
           accessRole !== initialAccessRole ||
-          JSON.stringify(modulePermissions) !== JSON.stringify(initialPermissions);
+          (accessRole === 'admin' && adminRoleId !== (employee.adminRoleId ?? ''));
 
         if (accessChanged) {
           await requestEmployeeAdminAccess({
             employeeDocId: employee.id,
             accessRole,
-            modulePermissions: accessRole === 'admin' ? modulePermissions : undefined,
+            adminRoleId: accessRole === 'admin' ? adminRoleId : undefined,
           });
         }
       }
@@ -412,9 +413,9 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
           {isMaster ? (
             <EmployeeAccessRoleSection
               accessRole={accessRole}
-              modulePermissions={modulePermissions}
+              adminRoleId={adminRoleId}
               onAccessRoleChange={setAccessRole}
-              onModulePermissionsChange={setModulePermissions}
+              onAdminRoleIdChange={setAdminRoleId}
               disabled={isBusy}
             />
           ) : null}

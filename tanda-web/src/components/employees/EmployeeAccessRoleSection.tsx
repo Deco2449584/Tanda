@@ -1,8 +1,7 @@
 'use client';
 
-import { AdminPermissionsEditor } from '@/components/employees/AdminPermissionsEditor';
-import { mapModulePermissions } from '@/lib/auth/admin-permissions';
-import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
+import Link from 'next/link';
+import { useAdminRoleTemplates } from '@/hooks/useAdminRoleTemplates';
 import type { EmployeeAccessRole } from '@/lib/employees/request-admin-access';
 
 export function isKioskAccessRole(role: EmployeeAccessRole): boolean {
@@ -11,21 +10,25 @@ export function isKioskAccessRole(role: EmployeeAccessRole): boolean {
 
 interface EmployeeAccessRoleSectionProps {
   accessRole: EmployeeAccessRole;
-  modulePermissions: AdminModulePermissionsFirestore;
+  adminRoleId: string;
   onAccessRoleChange: (role: EmployeeAccessRole) => void;
-  onModulePermissionsChange: (value: AdminModulePermissionsFirestore) => void;
+  onAdminRoleIdChange: (roleId: string) => void;
   disabled?: boolean;
   showPermissions?: boolean;
 }
 
 export function EmployeeAccessRoleSection({
   accessRole,
-  modulePermissions,
+  adminRoleId,
   onAccessRoleChange,
-  onModulePermissionsChange,
+  onAdminRoleIdChange,
   disabled = false,
   showPermissions = true,
 }: EmployeeAccessRoleSectionProps) {
+  const { roles, loading, error } = useAdminRoleTemplates(
+    showPermissions && accessRole === 'admin',
+  );
+
   if (!showPermissions) {
     return null;
   }
@@ -34,7 +37,7 @@ export function EmployeeAccessRoleSection({
     <div className="space-y-3 rounded-lg border border-border bg-surface-base/60 px-3 py-3">
       <div>
         <label htmlFor="emp-access-role" className="mb-1.5 block text-sm text-muted">
-          Access role
+          Sign-in type
         </label>
         <select
           id="emp-access-role"
@@ -51,17 +54,46 @@ export function EmployeeAccessRoleSection({
           <option value="kiosk">Kiosk device</option>
         </select>
         <p className="mt-1.5 text-xs text-subtle">
-          Controls sign-in area and permissions. Kiosk accounts only use the check-in
-          module.
+          Master has full access. Administrators use a role template from Settings.
         </p>
       </div>
 
       {accessRole === 'admin' ? (
-        <AdminPermissionsEditor
-          value={modulePermissions}
-          onChange={onModulePermissionsChange}
-          disabled={disabled}
-        />
+        <div>
+          <label htmlFor="emp-admin-role-id" className="mb-1.5 block text-sm text-muted">
+            Access role template
+          </label>
+          <select
+            id="emp-admin-role-id"
+            required
+            value={adminRoleId}
+            onChange={(event) => onAdminRoleIdChange(event.target.value)}
+            disabled={disabled || loading}
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+          >
+            <option value="">
+              {loading ? 'Loading roles…' : 'Select a role…'}
+            </option>
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          {error ? (
+            <p className="mt-1.5 text-xs text-red-400" role="alert">
+              {error}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-xs text-subtle">
+              Manage templates in{' '}
+              <Link href="/settings?tab=accessRoles" className="text-primary hover:underline">
+                Settings → Access roles
+              </Link>
+              .
+            </p>
+          )}
+        </div>
       ) : null}
 
       {isKioskAccessRole(accessRole) ? (
@@ -72,8 +104,4 @@ export function EmployeeAccessRoleSection({
       ) : null}
     </div>
   );
-}
-
-export function createDefaultModulePermissions(): AdminModulePermissionsFirestore {
-  return mapModulePermissions(null);
 }

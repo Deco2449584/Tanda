@@ -12,6 +12,7 @@ export const COLLECTIONS = {
   NOTIFICATION_PREFERENCES: 'notification_preferences',
   ATTENDANCE_JUSTIFICATIONS: 'attendance_justifications',
   ANNOUNCEMENTS: 'announcements',
+  ADMIN_ROLES: 'admin_roles',
   SETTINGS: 'settings',
 } as const;
 

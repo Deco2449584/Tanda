@@ -2,9 +2,8 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { NextResponse } from 'next/server';
 import { COLLECTIONS } from '@/lib/constants';
 import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
-import { mapModulePermissions } from '@/lib/auth/admin-permissions';
+import { getAdminRoleById } from '@/lib/admin-roles/server/admin-roles-service';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 import type { EmployeeAccessRole } from '@/lib/employees/request-admin-access';
 
 const ACCESS_ROLES = new Set<EmployeeAccessRole>([
@@ -24,14 +23,29 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       employeeDocId?: string;
       accessRole?: EmployeeAccessRole;
-      modulePermissions?: AdminModulePermissionsFirestore;
+      adminRoleId?: string;
     };
 
     const employeeDocId = body.employeeDocId?.trim() ?? '';
     const accessRole = body.accessRole;
+    const adminRoleId = body.adminRoleId?.trim() ?? '';
 
     if (!employeeDocId || !accessRole || !ACCESS_ROLES.has(accessRole)) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
+    }
+
+    if (accessRole === 'admin' && !adminRoleId) {
+      return NextResponse.json(
+        { error: 'Select an access role template for administrators.' },
+        { status: 400 },
+      );
+    }
+
+    if (accessRole === 'admin') {
+      const template = await getAdminRoleById(adminRoleId);
+      if (!template || !template.active) {
+        return NextResponse.json({ error: 'Access role not found.' }, { status: 400 });
+      }
     }
 
     const docRef = getAdminFirestore()
@@ -47,13 +61,16 @@ export async function POST(request: Request) {
 
     if (accessRole === 'empleado') {
       update.role = FieldValue.delete();
+      update.adminRoleId = FieldValue.delete();
       update.modulePermissions = FieldValue.delete();
     } else {
       update.role = accessRole;
 
       if (accessRole === 'admin') {
-        update.modulePermissions = mapModulePermissions(body.modulePermissions);
+        update.adminRoleId = adminRoleId;
+        update.modulePermissions = FieldValue.delete();
       } else {
+        update.adminRoleId = FieldValue.delete();
         update.modulePermissions = FieldValue.delete();
       }
     }

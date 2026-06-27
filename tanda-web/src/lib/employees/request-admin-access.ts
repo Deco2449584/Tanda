@@ -1,12 +1,11 @@
 import { auth } from '@/lib/firebase';
-import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 
 export type EmployeeAccessRole = 'master' | 'admin' | 'kiosk' | 'empleado';
 
 export async function requestEmployeeAdminAccess(input: {
   employeeDocId: string;
   accessRole: EmployeeAccessRole;
-  modulePermissions?: AdminModulePermissionsFirestore;
+  adminRoleId?: string;
 }): Promise<void> {
   const currentUser = auth?.currentUser;
   if (!currentUser) {

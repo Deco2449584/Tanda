@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
+import { AdminRolesTab } from '@/components/settings/AdminRolesTab';
 import { AttendanceSettingsTab } from '@/components/settings/AttendanceSettingsTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
@@ -28,6 +30,7 @@ type SettingsTab =
   | 'attendance'
   | 'profile'
   | 'notifications'
+  | 'accessRoles'
   | 'data'
   | 'portal'
   | 'locations'
@@ -38,6 +41,7 @@ const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'localization', label: 'Localization' },
   { id: 'attendance', label: 'Time & attendance' },
   { id: 'notifications', label: 'Notifications' },
+  { id: 'accessRoles', label: 'Access roles' },
   { id: 'profile', label: 'Administrator' },
   { id: 'locations', label: 'Locations' },
   { id: 'locationGroups', label: 'Location groups' },
@@ -61,6 +65,7 @@ function deriveDisplayName(
 }
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuthRole();
   const { isMaster, canAccessModule, canEditModule } = useAdminAccess();
   const canManageSettings = canAccessModule('settings');
@@ -69,7 +74,7 @@ export default function SettingsPage() {
   const tabs = useMemo(
     () =>
       ADMIN_TABS.filter((tab) => {
-        if (tab.id === 'data') return isMaster;
+        if (tab.id === 'data' || tab.id === 'accessRoles') return isMaster;
         if (tab.id === 'profile' || tab.id === 'localization' || tab.id === 'notifications') {
           return true;
         }
@@ -94,6 +99,13 @@ export default function SettingsPage() {
     if (!user) return;
     setAdminName(deriveDisplayName(user.displayName, user.email));
   }, [user?.displayName, user?.email, user]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabs.some((tab) => tab.id === tabParam)) {
+      setActiveTab(tabParam as SettingsTab);
+    }
+  }, [searchParams, tabs]);
 
   useEffect(() => {
     if (!tabs.some((tab) => tab.id === activeTab)) {
@@ -173,6 +185,7 @@ export default function SettingsPage() {
             />
           )}
           {activeTab === 'notifications' && <NotificationsSettingsTab />}
+          {activeTab === 'accessRoles' && isMaster && <AdminRolesTab />}
           {activeTab === 'profile' && (
             <AdminProfileTab
               name={adminName}
