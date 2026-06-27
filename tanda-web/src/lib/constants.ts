@@ -8,6 +8,8 @@ export const COLLECTIONS = {
   LOCATIONS: 'locations',
   LOCATION_GROUPS: 'location_groups',
   KIOSK_DEVICES: 'kiosk_devices',
+  NOTIFICATIONS: 'notifications',
+  NOTIFICATION_PREFERENCES: 'notification_preferences',
   SETTINGS: 'settings',
 } as const;
 

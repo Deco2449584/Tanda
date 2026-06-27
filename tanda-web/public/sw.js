@@ -44,13 +44,22 @@ self.addEventListener('notificationclick', (event) => {
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
         for (const client of windowClients) {
-          if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-            return client.focus();
+          if (!client.url.startsWith(self.location.origin) || !('focus' in client)) {
+            continue;
           }
+
+          return client.focus().then((focusedClient) => {
+            if (focusedClient && 'navigate' in focusedClient) {
+              return focusedClient.navigate(targetUrl);
+            }
+            return focusedClient;
+          });
         }
+
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
+
         return undefined;
       }),
   );

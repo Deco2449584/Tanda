@@ -142,7 +142,10 @@ function EmployeeNotificationsShell({
   }
 
   return (
-    <EmployeeShiftNotificationsProvider employeeCode={employee?.employeeId ?? ''}>
+    <EmployeeShiftNotificationsProvider
+      userEmail={userEmail ?? ''}
+      employeeCode={employee?.employeeId ?? ''}
+    >
       <PushNotificationSetup />
       {children}
     </EmployeeShiftNotificationsProvider>

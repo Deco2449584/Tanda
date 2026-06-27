@@ -19,26 +19,27 @@ import {
 } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import {
-  buildShiftAlert,
-  clearEmployeeShiftAlerts,
-  loadEmployeeShiftAlerts,
-  saveEmployeeShiftAlerts,
-  type EmployeeShiftAlert,
-} from '@/lib/notifications/employee-shift-alerts';
+  createShiftNotification,
+  dismissAllEmployeeNotifications,
+  markAllEmployeeNotificationsRead,
+  markEmployeeNotificationRead,
+  migrateLocalShiftAlertsToFirestore,
+  subscribeToEmployeeNotifications,
+} from '@/lib/notifications/notifications-client';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
+import type { AppNotification } from '@/lib/types/notification';
 import type { Shift } from '@/lib/types/shift';
 
 const SHIFT_LOOKBACK_DAYS = 28;
 const SHIFT_LOOKAHEAD_DAYS = 90;
-const MAX_ALERTS = 30;
 
 interface EmployeeShiftNotificationsContextValue {
-  alerts: EmployeeShiftAlert[];
+  notifications: AppNotification[];
   unreadCount: number;
-  toastAlert: EmployeeShiftAlert | null;
+  toastNotification: AppNotification | null;
   dismissToast: () => void;
   markAllRead: () => void;
-  markRead: (alertId: string) => void;
+  markRead: (notificationId: string) => void;
   clearAll: () => void;
 }
 
@@ -46,46 +47,55 @@ const EmployeeShiftNotificationsContext =
   createContext<EmployeeShiftNotificationsContextValue | null>(null);
 
 interface EmployeeShiftNotificationsProviderProps {
+  userEmail: string;
   employeeCode: string;
   children: ReactNode;
 }
 
 export function EmployeeShiftNotificationsProvider({
+  userEmail,
   employeeCode,
   children,
 }: EmployeeShiftNotificationsProviderProps) {
+  const email = userEmail.trim().toLowerCase();
   const code = employeeCode.trim();
-  const [alerts, setAlerts] = useState<EmployeeShiftAlert[]>([]);
-  const [toastAlert, setToastAlert] = useState<EmployeeShiftAlert | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [toastNotification, setToastNotification] = useState<AppNotification | null>(
+    null,
+  );
   const initialLoadRef = useRef(true);
+  const migrationDoneRef = useRef(false);
 
   useEffect(() => {
-    if (!code) {
-      setAlerts([]);
+    if (!email || !code) {
+      setNotifications([]);
       return;
     }
 
-    setAlerts(loadEmployeeShiftAlerts(code));
-    initialLoadRef.current = true;
-  }, [code]);
+    if (migrationDoneRef.current) return;
+    migrationDoneRef.current = true;
 
-  const pushAlert = useCallback(
-    (alert: EmployeeShiftAlert) => {
-      setAlerts((current) => {
-        const next = [alert, ...current.filter((item) => item.id !== alert.id)].slice(
-          0,
-          MAX_ALERTS,
-        );
-        saveEmployeeShiftAlerts(code, next);
-        return next;
-      });
-      setToastAlert(alert);
-    },
-    [code],
-  );
+    void migrateLocalShiftAlertsToFirestore({
+      recipientEmail: email,
+      employeeCode: code,
+    });
+  }, [code, email]);
 
   useEffect(() => {
-    if (!db || !code) {
+    if (!email) {
+      setNotifications([]);
+      return;
+    }
+
+    return subscribeToEmployeeNotifications(email, setNotifications);
+  }, [email]);
+
+  const showToast = useCallback((notification: AppNotification) => {
+    setToastNotification(notification);
+  }, []);
+
+  useEffect(() => {
+    if (!db || !code || !email) {
       return;
     }
 
@@ -109,99 +119,97 @@ export function EmployeeShiftNotificationsProvider({
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const shift = mapShiftDoc(change.doc.id, change.doc.data());
-          pushAlert(
-            buildShiftAlert({
-              type: 'assigned',
-              shiftId: shift.id,
-              date: shift.date,
-              startTime: shift.startTime,
-              endTime: shift.endTime,
-            }),
-          );
+          void createShiftNotification({
+            recipientEmail: email,
+            type: 'assigned',
+            shiftId: shift.id,
+            date: shift.date,
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+          }).then((notification) => {
+            if (notification) showToast(notification);
+          });
           return;
         }
 
         if (change.type === 'removed') {
           const data = change.doc.data() as Partial<Shift>;
-          pushAlert(
-            buildShiftAlert({
-              type: 'cancelled',
-              shiftId: change.doc.id,
-              date: typeof data.date === 'string' ? data.date : '',
-              startTime: typeof data.startTime === 'string' ? data.startTime : '',
-              endTime: typeof data.endTime === 'string' ? data.endTime : '',
-            }),
-          );
+          void createShiftNotification({
+            recipientEmail: email,
+            type: 'cancelled',
+            shiftId: change.doc.id,
+            date: typeof data.date === 'string' ? data.date : '',
+            startTime: typeof data.startTime === 'string' ? data.startTime : '',
+            endTime: typeof data.endTime === 'string' ? data.endTime : '',
+          }).then((notification) => {
+            if (notification) showToast(notification);
+          });
         }
       });
     });
 
     return () => unsubscribe();
-  }, [code, pushAlert]);
+  }, [code, email, showToast]);
 
   const markAllRead = useCallback(() => {
-    setAlerts((current) => {
-      const next = current.map((alert) => ({ ...alert, read: true }));
-      saveEmployeeShiftAlerts(code, next);
-      return next;
-    });
-  }, [code]);
+    if (!email) return;
+    void markAllEmployeeNotificationsRead(email);
+  }, [email]);
 
-  const markRead = useCallback(
-    (alertId: string) => {
-      setAlerts((current) => {
-        const next = current.map((alert) =>
-          alert.id === alertId ? { ...alert, read: true } : alert,
-        );
-        saveEmployeeShiftAlerts(code, next);
-        return next;
-      });
-    },
-    [code],
-  );
+  const markRead = useCallback((notificationId: string) => {
+    void markEmployeeNotificationRead(notificationId);
+  }, []);
 
   const dismissToast = useCallback(() => {
-    setToastAlert(null);
+    setToastNotification(null);
   }, []);
 
   const clearAll = useCallback(() => {
-    clearEmployeeShiftAlerts(code);
-    setAlerts([]);
-    setToastAlert(null);
-  }, [code]);
+    if (!email) return;
+    void dismissAllEmployeeNotifications(email);
+    setToastNotification(null);
+  }, [email]);
 
   useEffect(() => {
-    if (!toastAlert) return;
+    if (!toastNotification) return;
 
     const timeoutId = window.setTimeout(() => {
-      setToastAlert(null);
+      setToastNotification(null);
     }, 8000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [toastAlert]);
+  }, [toastNotification]);
 
   const unreadCount = useMemo(
-    () => alerts.filter((alert) => !alert.read).length,
-    [alerts],
+    () => notifications.filter((notification) => !notification.read).length,
+    [notifications],
   );
 
   const value = useMemo(
     () => ({
-      alerts,
+      notifications,
       unreadCount,
-      toastAlert,
+      toastNotification,
       dismissToast,
       markAllRead,
       markRead,
       clearAll,
     }),
-    [alerts, clearAll, dismissToast, markAllRead, markRead, toastAlert, unreadCount],
+    [
+      notifications,
+      clearAll,
+      dismissToast,
+      markAllRead,
+      markRead,
+      toastNotification,
+      unreadCount,
+    ],
   );
 
   return (
     <EmployeeShiftNotificationsContext.Provider value={value}>
       {children}
-      <ShiftAlertToast alert={toastAlert} onDismiss={dismissToast} />
+      <ShiftAlertToast notification={toastNotification} onDismiss={dismissToast} />
     </EmployeeShiftNotificationsContext.Provider>
   );
 }

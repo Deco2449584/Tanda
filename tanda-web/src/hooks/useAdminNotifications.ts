@@ -170,10 +170,6 @@ function buildNotificationItems(
   return list;
 }
 
-function countNotificationItems(data: AdminNotificationData): number {
-  return buildNotificationItems(data).reduce((sum, item) => sum + item.count, 0);
-}
-
 export function useAdminNotifications(enabled: boolean) {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -237,8 +233,12 @@ export function useAdminNotifications(enabled: boolean) {
   return { items, totalCount, loading };
 }
 
-export function useAdminNotificationBadge(enabled: boolean) {
+export function useAdminNotificationBadge(
+  enabled: boolean,
+  dismissedAlertKeys: string[] = [],
+) {
   const [totalCount, setTotalCount] = useState(0);
+  const dismissedSerialized = JSON.stringify(dismissedAlertKeys);
 
   useEffect(() => {
     if (!enabled || !db) {
@@ -247,12 +247,16 @@ export function useAdminNotificationBadge(enabled: boolean) {
     }
 
     let cancelled = false;
+    const dismissed = new Set(JSON.parse(dismissedSerialized) as string[]);
 
     async function pollBadge() {
       try {
         const data = await fetchAdminNotificationData();
         if (!cancelled) {
-          setTotalCount(countNotificationItems(data));
+          const count = buildNotificationItems(data)
+            .filter((item) => !dismissed.has(item.id))
+            .reduce((sum, item) => sum + item.count, 0);
+          setTotalCount(count);
         }
       } catch (error) {
         console.error('useAdminNotificationBadge', error);
@@ -268,7 +272,7 @@ export function useAdminNotificationBadge(enabled: boolean) {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [enabled]);
+  }, [dismissedSerialized, enabled]);
 
   return totalCount;
 }

@@ -2,17 +2,17 @@
 
 import Link from 'next/link';
 import { CalendarClock, CalendarX, X } from 'lucide-react';
-import type { EmployeeShiftAlert } from '@/lib/notifications/employee-shift-alerts';
+import type { AppNotification } from '@/lib/types/notification';
 
 interface ShiftAlertToastProps {
-  alert: EmployeeShiftAlert | null;
+  notification: AppNotification | null;
   onDismiss: () => void;
 }
 
-export function ShiftAlertToast({ alert, onDismiss }: ShiftAlertToastProps) {
-  if (!alert) return null;
+export function ShiftAlertToast({ notification, onDismiss }: ShiftAlertToastProps) {
+  if (!notification) return null;
 
-  const Icon = alert.type === 'cancelled' ? CalendarX : CalendarClock;
+  const Icon = notification.type === 'shift_cancelled' ? CalendarX : CalendarClock;
 
   return (
     <div
@@ -25,10 +25,10 @@ export function ShiftAlertToast({ alert, onDismiss }: ShiftAlertToastProps) {
             <Icon className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">{alert.title}</p>
-            <p className="mt-0.5 text-xs leading-snug text-zinc-400">{alert.description}</p>
+            <p className="text-sm font-semibold text-white">{notification.title}</p>
+            <p className="mt-0.5 text-xs leading-snug text-zinc-400">{notification.body}</p>
             <Link
-              href={alert.href}
+              href={notification.href}
               onClick={onDismiss}
               className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
             >
