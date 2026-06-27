@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
+import { evaluateLateCheckIn } from '@/lib/attendance/server/attendance-alerts-service';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import {
   isValidLatitude,
@@ -113,6 +114,13 @@ export async function recordKioskPunch(input: {
     lastAction: actionType,
     lastTimestampServer: FieldValue.serverTimestamp(),
   });
+
+  if (actionType === 'check_in') {
+    await evaluateLateCheckIn({
+      employeeId: employee.data.employeeId as string,
+      checkInAt: new Date(),
+    });
+  }
 
   return {
     employeeDocId: employee.id,

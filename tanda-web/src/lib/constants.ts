@@ -10,6 +10,7 @@ export const COLLECTIONS = {
   KIOSK_DEVICES: 'kiosk_devices',
   NOTIFICATIONS: 'notifications',
   NOTIFICATION_PREFERENCES: 'notification_preferences',
+  ATTENDANCE_JUSTIFICATIONS: 'attendance_justifications',
   SETTINGS: 'settings',
 } as const;
 

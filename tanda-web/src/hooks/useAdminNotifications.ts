@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Timestamp,
   collection,
+  doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -16,12 +18,19 @@ import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import {
   computeLateAlerts,
   computeMissingCheckInsToday,
+  computeNoShowsToday,
   countPendingLeaveRequests,
   filterTodayShifts,
 } from '@/lib/dashboard/compute-metrics';
 import { COLLECTIONS } from '@/lib/constants';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
 import { toInputDate } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
+import {
+  DEFAULT_ATTENDANCE_POLICY,
+  DEFAULT_COMPANY_SETTINGS,
+  type AttendancePolicySettings,
+} from '@/lib/types/company-settings';
 import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -55,6 +64,53 @@ interface AdminNotificationData {
   leaveRequests: LeaveRequest[];
   shifts: Shift[];
   attendanceRecords: AttendanceRecord[];
+  attendancePolicy: AttendancePolicySettings;
+  timeZone: string;
+  pendingJustifications: number;
+}
+
+async function loadAttendancePolicy(): Promise<{
+  attendancePolicy: AttendancePolicySettings;
+  timeZone: string;
+}> {
+  if (!db) {
+    return {
+      attendancePolicy: DEFAULT_ATTENDANCE_POLICY,
+      timeZone: DEFAULT_COMPANY_SETTINGS.timeZone,
+    };
+  }
+
+  const snapshot = await getDoc(doc(db, COLLECTIONS.SETTINGS, 'general'));
+  if (!snapshot.exists()) {
+    return {
+      attendancePolicy: DEFAULT_ATTENDANCE_POLICY,
+      timeZone: DEFAULT_COMPANY_SETTINGS.timeZone,
+    };
+  }
+
+  const data = snapshot.data() as Record<string, unknown>;
+  const policyRaw = data.attendancePolicy;
+  const attendancePolicy: AttendancePolicySettings =
+    policyRaw && typeof policyRaw === 'object'
+      ? {
+          gracePeriodMinutes:
+            typeof (policyRaw as Record<string, unknown>).gracePeriodMinutes === 'number'
+              ? ((policyRaw as Record<string, unknown>).gracePeriodMinutes as number)
+              : DEFAULT_ATTENDANCE_POLICY.gracePeriodMinutes,
+          noShowAfterMinutes:
+            typeof (policyRaw as Record<string, unknown>).noShowAfterMinutes === 'number'
+              ? ((policyRaw as Record<string, unknown>).noShowAfterMinutes as number)
+              : DEFAULT_ATTENDANCE_POLICY.noShowAfterMinutes,
+        }
+      : DEFAULT_ATTENDANCE_POLICY;
+
+  return {
+    attendancePolicy,
+    timeZone:
+      typeof data.timeZone === 'string'
+        ? data.timeZone
+        : DEFAULT_COMPANY_SETTINGS.timeZone,
+  };
 }
 
 async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
@@ -62,7 +118,8 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     throw new Error('Firestore is not available.');
   }
 
-  const today = toInputDate();
+  const { attendancePolicy, timeZone } = await loadAttendancePolicy();
+  const today = toInputDateInTimeZone(timeZone);
   const { start, end } = getRecentAttendanceRange();
 
   const [leaveSnapshot, shiftsSnapshot, attendanceSnapshot] = await Promise.all([
@@ -96,17 +153,23 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     attendanceRecords: attendanceSnapshot.docs.map((document) =>
       mapAttendanceDoc(document.id, document.data()),
     ),
+    attendancePolicy,
+    timeZone,
+    pendingJustifications: 0,
   };
 }
 
 function buildNotificationItems(
   data: AdminNotificationData,
 ): AdminNotificationItem[] {
-  const todayShifts = filterTodayShifts(data.shifts);
-  const today = new Date();
-  const todayKey = toInputDate(today);
+  const todayKey = toInputDateInTimeZone(data.timeZone);
+  const todayShifts = filterTodayShifts(data.shifts, todayKey);
   const todayStart = Timestamp.fromDate(new Date(`${todayKey}T00:00:00`));
   const todayEnd = Timestamp.fromDate(new Date(`${todayKey}T23:59:59.999`));
+  const metricsOptions = {
+    policy: data.attendancePolicy,
+    timeZone: data.timeZone,
+  };
 
   const todayAttendance = data.attendanceRecords.filter((record) => {
     const ts = record.timestampServer;
@@ -118,10 +181,16 @@ function buildNotificationItems(
   });
 
   const pendingLeaves = countPendingLeaveRequests(data.leaveRequests);
-  const lateToday = computeLateAlerts(todayShifts, todayAttendance);
+  const lateToday = computeLateAlerts(todayShifts, todayAttendance, metricsOptions);
   const missingCheckIns = computeMissingCheckInsToday(
     todayShifts,
     todayAttendance,
+    metricsOptions,
+  );
+  const noShowsToday = computeNoShowsToday(
+    todayShifts,
+    todayAttendance,
+    metricsOptions,
   );
   const forgottenCheckouts = countForgottenCheckIns(data.attendanceRecords);
 
@@ -141,9 +210,19 @@ function buildNotificationItems(
     list.push({
       id: 'missing_checkin',
       title: 'Missing check-ins today',
-      description: `${missingCheckIns} scheduled shift${missingCheckIns === 1 ? '' : 's'} without check-in`,
+      description: `${missingCheckIns} scheduled shift${missingCheckIns === 1 ? '' : 's'} past grace without check-in`,
       href: '/attendance',
       count: missingCheckIns,
+    });
+  }
+
+  if (noShowsToday > 0) {
+    list.push({
+      id: 'no_show_today',
+      title: 'No-shows today',
+      description: `${noShowsToday} employee${noShowsToday === 1 ? '' : 's'} did not check in within the no-show window`,
+      href: '/attendance',
+      count: noShowsToday,
     });
   }
 
@@ -151,9 +230,19 @@ function buildNotificationItems(
     list.push({
       id: 'late_today',
       title: 'Late arrivals today',
-      description: `${lateToday} employee${lateToday === 1 ? '' : 's'} checked in after start time`,
+      description: `${lateToday} employee${lateToday === 1 ? '' : 's'} checked in after the grace period`,
       href: '/attendance',
       count: lateToday,
+    });
+  }
+
+  if (data.pendingJustifications > 0) {
+    list.push({
+      id: 'justification_pending',
+      title: 'Justifications to review',
+      description: `${data.pendingJustifications} late/no-show explanation${data.pendingJustifications === 1 ? '' : 's'} awaiting approval`,
+      href: '/attendance',
+      count: data.pendingJustifications,
     });
   }
 
@@ -176,6 +265,11 @@ export function useAdminNotifications(enabled: boolean) {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
     [],
   );
+  const [attendancePolicy, setAttendancePolicy] = useState<AttendancePolicySettings>(
+    DEFAULT_ATTENDANCE_POLICY,
+  );
+  const [timeZone, setTimeZone] = useState(DEFAULT_COMPANY_SETTINGS.timeZone);
+  const [pendingJustifications, setPendingJustifications] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -183,6 +277,7 @@ export function useAdminNotifications(enabled: boolean) {
       setLeaveRequests([]);
       setShifts([]);
       setAttendanceRecords([]);
+      setPendingJustifications(0);
       setLoading(false);
       return;
     }
@@ -190,25 +285,41 @@ export function useAdminNotifications(enabled: boolean) {
     let cancelled = false;
     setLoading(true);
 
-    void fetchAdminNotificationData()
-      .then((data) => {
+    void (async () => {
+      try {
+        const data = await fetchAdminNotificationData();
+        let pendingCount = 0;
+
+        try {
+          const { fetchPendingJustifications } = await import(
+            '@/lib/attendance/justification-api'
+          );
+          const pending = await fetchPendingJustifications();
+          pendingCount = pending.length;
+        } catch {
+          pendingCount = 0;
+        }
+
         if (cancelled) return;
         setLeaveRequests(data.leaveRequests);
         setShifts(data.shifts);
         setAttendanceRecords(data.attendanceRecords);
-      })
-      .catch((error) => {
+        setAttendancePolicy(data.attendancePolicy);
+        setTimeZone(data.timeZone);
+        setPendingJustifications(pendingCount);
+      } catch (error) {
         console.error('useAdminNotifications', error);
         if (cancelled) return;
         setLeaveRequests([]);
         setShifts([]);
         setAttendanceRecords([]);
-      })
-      .finally(() => {
+        setPendingJustifications(0);
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -222,8 +333,19 @@ export function useAdminNotifications(enabled: boolean) {
       leaveRequests,
       shifts,
       attendanceRecords,
+      attendancePolicy,
+      timeZone,
+      pendingJustifications,
     });
-  }, [attendanceRecords, enabled, leaveRequests, shifts]);
+  }, [
+    attendancePolicy,
+    attendanceRecords,
+    enabled,
+    leaveRequests,
+    pendingJustifications,
+    shifts,
+    timeZone,
+  ]);
 
   const totalCount = useMemo(
     () => items.reduce((sum, item) => sum + item.count, 0),
