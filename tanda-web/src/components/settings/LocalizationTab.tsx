@@ -7,7 +7,7 @@ interface LocalizationTabProps {
   draft: CompanySettings;
   saving: boolean;
   onChange: (next: CompanySettings) => void;
-  onSave: () => void;
+  onSave?: () => void;
 }
 
 export function LocalizationTab({
@@ -60,14 +60,16 @@ export function LocalizationTab({
           </select>
         </div>
 
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save localization'}
-        </button>
+        {onSave ? (
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save localization'}
+          </button>
+        ) : null}
       </div>
     </section>
   );

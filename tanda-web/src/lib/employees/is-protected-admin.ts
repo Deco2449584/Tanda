@@ -1,8 +1,9 @@
 import { resolveRoleFromEmployee, type EmployeeRoleSource } from '@/lib/auth/resolve-role';
 
-/** Admin accounts tied to web access cannot be deleted from staff management. */
+/** Admin and master accounts cannot be deleted from staff management. */
 export function isProtectedAdminEmployee(
   employee: EmployeeRoleSource | null | undefined,
 ): boolean {
-  return resolveRoleFromEmployee(employee) === 'admin';
+  const role = resolveRoleFromEmployee(employee);
+  return role === 'admin' || role === 'master';
 }

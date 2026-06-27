@@ -3,9 +3,18 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
-import { Mail, X } from 'lucide-react';import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
+import { Mail, X } from 'lucide-react';
+import { AdminPermissionsEditor } from '@/components/employees/AdminPermissionsEditor';
+import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
+import { mapModulePermissions } from '@/lib/auth/admin-permissions';
+import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
+import {
+  requestEmployeeAdminAccess,
+  type EmployeeAccessRole,
+} from '@/lib/employees/request-admin-access';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { COLLECTIONS } from '@/lib/constants';
 import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
 import { validateEmploymentDates } from '@/lib/employees/employment-dates';
@@ -15,13 +24,24 @@ import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { db } from '@/lib/firebase';
 import { useLocations } from '@/providers/LocationsProvider';
 import type { CreateEmployeeInput, Employee } from '@/lib/types/employee';
+import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 
 interface EditEmployeeModalProps {
   employee: Employee | null;
   onClose: () => void;
 }
 
+function deriveAccessRole(employee: Employee): EmployeeAccessRole {
+  const raw = employee.role?.trim().toLowerCase();
+  if (raw === 'master') return 'master';
+  if (raw === 'admin') return 'admin';
+  if (raw === 'kiosk') return 'kiosk';
+  if (resolveRoleFromEmployee(employee) === 'admin') return 'admin';
+  return 'empleado';
+}
+
 export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps) {
+  const { isMaster } = useAdminAccess();
   const { activeLocations } = useLocations();
   const [form, setForm] = useState<CreateEmployeeInput>({
     employeeId: '',
@@ -42,6 +62,9 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
   const [isResendingInvite, setIsResendingInvite] = useState(false);
   const [inviteMessage, setInviteMessage] = useState('');
   const [error, setError] = useState('');
+  const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
+  const [modulePermissions, setModulePermissions] =
+    useState<AdminModulePermissionsFirestore>(mapModulePermissions(null));
 
   const isBusy = isUploading || isSubmitting || isResendingInvite;
 
@@ -64,6 +87,8 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
     setPhotoFile(null);
     setError('');
     setInviteMessage('');
+    setAccessRole(deriveAccessRole(employee));
+    setModulePermissions(mapModulePermissions(employee.modulePermissions));
   }, [employee]);
 
   if (!employee) return null;
@@ -202,6 +227,22 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
       }
 
       await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), payload);
+
+      if (isMaster) {
+        const initialAccessRole = deriveAccessRole(employee);
+        const initialPermissions = mapModulePermissions(employee.modulePermissions);
+        const accessChanged =
+          accessRole !== initialAccessRole ||
+          JSON.stringify(modulePermissions) !== JSON.stringify(initialPermissions);
+
+        if (accessChanged) {
+          await requestEmployeeAdminAccess({
+            employeeDocId: employee.id,
+            accessRole,
+            modulePermissions: accessRole === 'admin' ? modulePermissions : undefined,
+          });
+        }
+      }
 
       if (active !== employee.active) {
         await requestSyncEmployeeAuth(employee.id, active ? 'enable' : 'disable');
@@ -362,6 +403,44 @@ export function EditEmployeeModal({ employee, onClose }: EditEmployeeModalProps)
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
             />
           </div>
+
+          {isMaster ? (
+            <div className="space-y-3">
+              <div>
+                <label
+                  htmlFor="edit-emp-access-role"
+                  className="mb-1.5 block text-sm text-muted"
+                >
+                  Access role
+                </label>
+                <select
+                  id="edit-emp-access-role"
+                  value={accessRole}
+                  onChange={(event) =>
+                    setAccessRole(event.target.value as EmployeeAccessRole)
+                  }
+                  disabled={isBusy}
+                  className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
+                >
+                  <option value="empleado">Employee</option>
+                  <option value="admin">Administrator</option>
+                  <option value="master">Master</option>
+                  <option value="kiosk">Kiosk device</option>
+                </select>
+                <p className="mt-1.5 text-xs text-subtle">
+                  Only master users can assign roles and module permissions.
+                </p>
+              </div>
+
+              {accessRole === 'admin' ? (
+                <AdminPermissionsEditor
+                  value={modulePermissions}
+                  onChange={setModulePermissions}
+                  disabled={isBusy}
+                />
+              ) : null}
+            </div>
+          ) : null}
 
           <EmployeeLocationSelect
             id="edit-emp-location"

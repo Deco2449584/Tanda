@@ -7,11 +7,14 @@ import { EditEmployeeModal } from '@/components/employees/EditEmployeeModal';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
   const { employees, loading } = useEmployees();
+  const { canEditModule } = useAdminAccess();
+  const canEditEmployees = canEditModule('employees');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
@@ -20,13 +23,17 @@ export default function EmployeesPage() {
       <PageHeader title="Staff Management" />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Link
-          href="/employees/new"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
-          CREATE NEW EMPLOYEE
-        </Link>
+        {canEditEmployees ? (
+          <Link
+            href="/employees/new"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            CREATE NEW EMPLOYEE
+          </Link>
+        ) : (
+          <div />
+        )}
 
         <div className="relative w-full sm:max-w-xs">
           <Search
@@ -47,7 +54,7 @@ export default function EmployeesPage() {
         employees={employees}
         loading={loading}
         searchQuery={searchQuery}
-        onEdit={setEditingEmployee}
+        onEdit={canEditEmployees ? setEditingEmployee : undefined}
       />
 
       <EditEmployeeModal

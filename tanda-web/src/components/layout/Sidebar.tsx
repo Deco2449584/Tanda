@@ -18,6 +18,9 @@ import {
   X,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
+import { getRoleLabel, isAdminAreaRole } from '@/lib/auth/roles';
+import { getModuleKeyForPath } from '@/lib/auth/admin-permissions';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { cn } from '@/lib/cn';
 import { CompanyLogoSidebar } from '@/components/ui/CompanyLogo';
 import { useAuthRole } from '@/hooks/useAuthRole';
@@ -97,16 +100,27 @@ const kioskNavGroup: NavGroup = {
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
   const { user } = useAuthRole();
+  const { canAccessModule } = useAdminAccess();
   const { employee } = useCurrentEmployee(role === 'empleado' ? user?.email : null);
   const kioskEnabled = employee?.kioskEnabled === true;
 
   const navGroups = useMemo(() => {
-    if (role === 'admin') return adminNavGroups;
+    if (isAdminAreaRole(role)) {
+      return adminNavGroups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            const moduleKey = getModuleKeyForPath(item.href);
+            return !moduleKey || canAccessModule(moduleKey);
+          }),
+        }))
+        .filter((group) => group.items.length > 0);
+    }
     if (!kioskEnabled) return employeeNavGroups;
     return [...employeeNavGroups, kioskNavGroup];
-  }, [role, kioskEnabled]);
+  }, [role, kioskEnabled, canAccessModule]);
 
-  const roleLabel = role === 'admin' ? 'Administrator' : 'Employee';
+  const roleLabel = getRoleLabel(role);
 
   return (
     <>

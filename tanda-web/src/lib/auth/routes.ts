@@ -1,3 +1,8 @@
+import type { UserRole } from '@/lib/auth/roles';
+import { isAdminAreaRole } from '@/lib/auth/roles';
+import type { ResolvedAdminAccess } from '@/lib/types/admin-permissions';
+import { canAccessPath, getDefaultAdminHref } from '@/lib/auth/admin-permissions';
+
 export const EMPLOYEE_ROUTES = [
   '/employee-dashboard',
   '/my-records',
@@ -19,11 +24,10 @@ export function isRouteAllowedForEmployee(pathname: string): boolean {
   return isEmployeeOnlyRoute(pathname);
 }
 
-import type { UserRole } from '@/lib/auth/roles';
-
 export function getRedirectForRole(
   role: UserRole,
   pathname: string,
+  access?: ResolvedAdminAccess | null,
 ): string | null {
   if (role === 'kiosk') {
     return '/kiosk';
@@ -33,8 +37,12 @@ export function getRedirectForRole(
     return '/employee-dashboard';
   }
 
-  if (role === 'admin' && isEmployeeOnlyRoute(pathname)) {
-    return '/dashboard';
+  if (isAdminAreaRole(role) && isEmployeeOnlyRoute(pathname)) {
+    return access ? getDefaultAdminHref(access) : '/dashboard';
+  }
+
+  if (role === 'admin' && access && !canAccessPath(access, pathname)) {
+    return getDefaultAdminHref(access);
   }
 
   return null;

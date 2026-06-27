@@ -22,7 +22,7 @@ interface EmployeeTableProps {
   employees: Employee[];
   loading: boolean;
   searchQuery: string;
-  onEdit: (employee: Employee) => void;
+  onEdit?: (employee: Employee) => void;
 }
 
 function StatusBadge({ active }: { active: boolean }) {
@@ -108,6 +108,7 @@ export function EmployeeTable({
   const emptyMessage = searchQuery
     ? 'No employees match that search.'
     : 'No employees registered. Create the first one.';
+  const showActions = Boolean(onEdit);
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
@@ -125,13 +126,15 @@ export function EmployeeTable({
               <th className="px-4 py-3.5 font-semibold text-white">Area/Dept</th>
               <th className="px-4 py-3.5 font-semibold text-white">Location</th>
               <th className="px-4 py-3.5 font-semibold text-white">Status</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Actions</th>
+              {showActions ? (
+                <th className="px-4 py-3.5 font-semibold text-white">Actions</th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
             {filteredEmployees.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-subtle">
+                <td colSpan={showActions ? 9 : 8} className="px-4 py-12 text-center text-subtle">
                   {emptyMessage}
                 </td>
               </tr>
@@ -169,32 +172,34 @@ export function EmployeeTable({
                   <td className="px-4 py-3.5">
                     <StatusBadge active={employee.active} />
                   </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(employee)}
-                        className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
-                        aria-label={`Edit ${employee.name}`}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(employee)}
-                        disabled={deletingId === employee.id || isAdminAccount}
-                        title={
-                          isAdminAccount
-                            ? 'Administrator accounts cannot be deleted'
-                            : `Delete ${employee.name}`
-                        }
-                        className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label={`Delete ${employee.name}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {showActions ? (
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit?.(employee)}
+                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
+                          aria-label={`Edit ${employee.name}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(employee)}
+                          disabled={deletingId === employee.id || isAdminAccount}
+                          title={
+                            isAdminAccount
+                              ? 'Administrator accounts cannot be deleted'
+                              : `Delete ${employee.name}`
+                          }
+                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Delete ${employee.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               );
               })
@@ -259,28 +264,32 @@ export function EmployeeTable({
               </dl>
 
               <div className="mt-4 flex justify-end gap-2 border-t border-border/60 pt-3">
-                <button
-                  type="button"
-                  onClick={() => onEdit(employee)}
-                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
-                  aria-label={`Edit ${employee.name}`}
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(employee)}
-                  disabled={deletingId === employee.id || isAdminAccount}
-                  title={
-                    isAdminAccount
-                      ? 'Administrator accounts cannot be deleted'
-                      : `Delete ${employee.name}`
-                  }
-                  className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={`Delete ${employee.name}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {showActions ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(employee)}
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
+                      aria-label={`Edit ${employee.name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(employee)}
+                      disabled={deletingId === employee.id || isAdminAccount}
+                      title={
+                        isAdminAccount
+                          ? 'Administrator accounts cannot be deleted'
+                          : `Delete ${employee.name}`
+                      }
+                      className="inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-border-strong px-3 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={`Delete ${employee.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : null}
               </div>
             </article>
           );

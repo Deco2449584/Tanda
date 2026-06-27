@@ -1,4 +1,5 @@
 import type { Employee, EmployeeFirestore } from '@/lib/types/employee';
+import { mapModulePermissions } from '@/lib/auth/admin-permissions';
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -20,6 +21,9 @@ export function mapEmployeeDoc(
         ? employee.email.trim().toLowerCase()
         : '',
     role: typeof employee.role === 'string' ? employee.role.trim() : undefined,
+    modulePermissions: employee.modulePermissions
+      ? mapModulePermissions(employee.modulePermissions)
+      : undefined,
     department: employee.department ?? '',
     locationId: optionalString(employee.locationId),
     locationGroupId: optionalString(employee.locationGroupId),

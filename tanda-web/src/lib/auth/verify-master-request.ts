@@ -1,10 +1,10 @@
 import { COLLECTIONS } from '@/lib/constants';
 import { verifyFirebaseToken } from '@/lib/auth/verify-firebase-token';
 import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
-import { isAdminAreaRole } from '@/lib/auth/roles';
+import { isMasterRole } from '@/lib/auth/roles';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 
-export async function verifyAdminRequest(
+export async function verifyMasterRequest(
   request: Request,
 ): Promise<{ email: string; uid: string } | null> {
   const user = await verifyFirebaseToken(request.headers.get('authorization'));
@@ -28,7 +28,7 @@ export async function verifyAdminRequest(
     department: typeof data.department === 'string' ? data.department : undefined,
   });
 
-  if (!isAdminAreaRole(role)) {
+  if (!isMasterRole(role)) {
     return null;
   }
 

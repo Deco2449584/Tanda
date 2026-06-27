@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Megaphone } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { isAdminAreaRole } from '@/lib/auth/roles';
 import { fetchAnnouncement } from '@/lib/announcements/announcement-api';
 import type { Announcement } from '@/lib/types/announcement';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
@@ -64,7 +65,7 @@ export default function AnnouncementDetailPage() {
   return (
     <PageContent className="mx-auto max-w-2xl space-y-5">
       <Link
-        href={role === 'admin' ? '/announcements' : '/employee-dashboard'}
+        href={isAdminAreaRole(role ?? 'empleado') ? '/announcements' : '/employee-dashboard'}
         className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

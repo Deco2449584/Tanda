@@ -9,6 +9,9 @@ import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { getRedirectForRole } from '@/lib/auth/routes';
 import type { UserRole } from '@/lib/auth/roles';
+import { isAdminAreaRole } from '@/lib/auth/roles';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { AdminAccessProvider } from '@/providers/AdminAccessProvider';
 import { useAttendanceAlertSync } from '@/hooks/useAttendanceAlertSync';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
 import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
@@ -53,10 +56,43 @@ function AuthenticatedShell({
   role: UserRole;
 }) {
   return (
-    <RouteGuard role={role}>
-      <ProtectedLayoutContent role={role}>{children}</ProtectedLayoutContent>
-    </RouteGuard>
+    <AdminAccessProvider>
+      {isAdminAreaRole(role) ? (
+        <AdminRouteGuard role={role}>
+          <ProtectedLayoutContent role={role}>{children}</ProtectedLayoutContent>
+        </AdminRouteGuard>
+      ) : (
+        <RouteGuard role={role}>
+          <ProtectedLayoutContent role={role}>{children}</ProtectedLayoutContent>
+        </RouteGuard>
+      )}
+    </AdminAccessProvider>
   );
+}
+
+function AdminRouteGuard({
+  role,
+  children,
+}: {
+  role: UserRole;
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { access, loading } = useAdminAccess();
+  const redirectTo = loading ? null : getRedirectForRole(role, pathname, access);
+
+  useEffect(() => {
+    if (redirectTo) {
+      router.replace(redirectTo);
+    }
+  }, [redirectTo, router]);
+
+  if (loading || redirectTo) {
+    return <LoadingScreen message={loading ? 'Loading access…' : 'Redirecting…'} />;
+  }
+
+  return <>{children}</>;
 }
 
 function RouteGuard({
@@ -112,7 +148,7 @@ function ProtectedLayoutContent({
     </div>
   );
 
-  if (role === 'admin') {
+  if (isAdminAreaRole(role)) {
     return (
       <AdminAttendanceSync>
         <EmployeesProvider>

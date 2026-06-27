@@ -6,7 +6,7 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 export interface KioskAuthorizedUser {
   email: string;
   uid: string;
-  role: 'admin' | 'kiosk' | 'empleado';
+  role: 'admin' | 'master' | 'kiosk' | 'empleado';
   /** Set when the requester is a dedicated kiosk (tablet) account. */
   isKioskAccount: boolean;
 }
@@ -41,7 +41,7 @@ export async function verifyKioskRequest(
 
   const kioskEnabled = data.kioskEnabled === true;
 
-  if (role !== 'admin' && role !== 'kiosk' && !kioskEnabled) {
+  if (role !== 'admin' && role !== 'master' && role !== 'kiosk' && !kioskEnabled) {
     return null;
   }
 

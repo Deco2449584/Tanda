@@ -13,7 +13,7 @@ import { KioskScreen } from '@/components/kiosk/KioskScreen';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
-import { getHomeRouteForRole } from '@/lib/auth/roles';
+import { getHomeRouteForRole, isAdminAreaRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 import {
   clearKioskDeviceToken,
@@ -53,7 +53,9 @@ export function KioskApp() {
   const dashboardRoute = getHomeRouteForRole(role ?? 'empleado');
   const isKioskAccount = role === 'kiosk';
   const hasAccess =
-    role === 'kiosk' || role === 'admin' || employee?.kioskEnabled === true;
+    role === 'kiosk' ||
+    isAdminAreaRole(role ?? 'empleado') ||
+    employee?.kioskEnabled === true;
   const canLeaveToDashboard = !isKioskAccount;
 
   useEffect(() => {

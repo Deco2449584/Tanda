@@ -7,13 +7,14 @@ import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
 import { PageContent } from '@/components/ui/PageContent';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { isAdminAreaRole } from '@/lib/auth/roles';
 import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
 export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
   const { user, role } = useAuthRole();
-  const isAdmin = role === 'admin';
+  const isAdmin = isAdminAreaRole(role ?? 'empleado');
   const { inspectionsById, loading, error, refresh } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);

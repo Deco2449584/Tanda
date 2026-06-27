@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
 import { AttendanceSettingsTab } from '@/components/settings/AttendanceSettingsTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
@@ -13,6 +13,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import {
@@ -57,19 +58,21 @@ function deriveDisplayName(
 }
 
 export default function SettingsPage() {
-  const { user, loading: authLoading, role } = useAuthRole();
-  const tabs =
-    role === 'admin'
-      ? ADMIN_TABS
-      : ADMIN_TABS.filter(
-          (tab) =>
-            tab.id !== 'data' &&
-            tab.id !== 'portal' &&
-            tab.id !== 'locations' &&
-            tab.id !== 'locationGroups' &&
-            tab.id !== 'kioskDevices' &&
-            tab.id !== 'attendance',
-        );
+  const { user, loading: authLoading } = useAuthRole();
+  const { isMaster, canAccessModule, canEditModule } = useAdminAccess();
+  const canManageSettings = canAccessModule('settings');
+  const canEditSettings = canEditModule('settings');
+
+  const tabs = useMemo(
+    () =>
+      ADMIN_TABS.filter((tab) => {
+        if (tab.id === 'data') return isMaster;
+        if (tab.id === 'profile' || tab.id === 'localization') return true;
+        return canManageSettings;
+      }),
+    [canManageSettings, isMaster],
+  );
+
   const { settings, loading: settingsLoading, saving, saveSettings } =
     useCompanySettings();
 
@@ -87,6 +90,12 @@ export default function SettingsPage() {
     setAdminName(deriveDisplayName(user.displayName, user.email));
   }, [user?.displayName, user?.email, user]);
 
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0]?.id ?? 'profile');
+    }
+  }, [activeTab, tabs]);
+
   const showToast = useCallback(
     (text: string, variant: ToastMessage['variant'] = 'success') => {
       setToast({ id: crypto.randomUUID(), text, variant });
@@ -95,6 +104,8 @@ export default function SettingsPage() {
   );
 
   async function handleSaveSettings(next: CompanySettings) {
+    if (!canEditSettings) return;
+
     showToast('Saving settings…', 'info');
     try {
       await saveSettings(next);
@@ -106,6 +117,7 @@ export default function SettingsPage() {
   }
 
   const pageLoading = authLoading || settingsLoading;
+  const settingsSaving = saving && canEditSettings;
 
   return (
     <PageContent className="relative min-h-full space-y-6">
@@ -138,17 +150,21 @@ export default function SettingsPage() {
           {activeTab === 'localization' && (
             <LocalizationTab
               draft={draft}
-              saving={saving}
+              saving={settingsSaving}
               onChange={setDraft}
-              onSave={() => void handleSaveSettings(draft)}
+              onSave={
+                canEditSettings ? () => void handleSaveSettings(draft) : undefined
+              }
             />
           )}
-          {activeTab === 'attendance' && role === 'admin' && (
+          {activeTab === 'attendance' && canManageSettings && (
             <AttendanceSettingsTab
               draft={draft}
-              saving={saving}
+              saving={settingsSaving}
               onChange={setDraft}
-              onSave={() => void handleSaveSettings(draft)}
+              onSave={
+                canEditSettings ? () => void handleSaveSettings(draft) : undefined
+              }
             />
           )}
           {activeTab === 'profile' && (
@@ -159,19 +175,19 @@ export default function SettingsPage() {
               onNameChange={setAdminName}
             />
           )}
-          {activeTab === 'data' && role === 'admin' && (
+          {activeTab === 'data' && isMaster && (
             <DataPurgeTab adminEmail={user?.email ?? ''} />
           )}
-          {activeTab === 'locations' && role === 'admin' && (
+          {activeTab === 'locations' && canManageSettings && (
             <LocationsTab onToast={showToast} />
           )}
-          {activeTab === 'locationGroups' && role === 'admin' && (
+          {activeTab === 'locationGroups' && canManageSettings && (
             <LocationGroupsTab onToast={showToast} />
           )}
-          {activeTab === 'kioskDevices' && role === 'admin' && (
+          {activeTab === 'kioskDevices' && canManageSettings && (
             <KioskDevicesTab onToast={showToast} />
           )}
-          {activeTab === 'portal' && role === 'admin' && (
+          {activeTab === 'portal' && canManageSettings && (
             <PortalClientsTab onToast={showToast} />
           )}
         </div>

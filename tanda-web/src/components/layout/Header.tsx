@@ -9,6 +9,7 @@ import { useSignOut } from '@/hooks/useSignOut';
 import { auth } from '@/lib/firebase';
 import { cn } from '@/lib/cn';
 import type { UserRole } from '@/lib/auth/roles';
+import { isAdminAreaRole } from '@/lib/auth/roles';
 
 const DEFAULT_PROFILE_NAME = 'Admin';
 
@@ -91,7 +92,7 @@ export function Header({ onMenuClick, role }: HeaderProps) {
       <div className="hidden min-w-0 flex-1 md:block" />
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
-        {role === 'admin' ? <AdminNotificationsMenu enabled /> : null}
+        {isAdminAreaRole(role ?? 'empleado') ? <AdminNotificationsMenu enabled /> : null}
         {role === 'empleado' ? <EmployeeNotificationsMenu /> : null}
 
         <div className="relative z-[100]" ref={menuRef}>

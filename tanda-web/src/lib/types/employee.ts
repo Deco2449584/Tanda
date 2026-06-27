@@ -1,4 +1,5 @@
 import type { Timestamp } from 'firebase/firestore';
+import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 
 /** Optional personal and immigration details stored on the employee record. */
 export interface EmployeePersonalDetails {
@@ -24,8 +25,10 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   employeeId: string;
   name: string;
   email: string;
-  /** Optional access role, e.g. "Admin". */
+  /** Optional access role, e.g. "admin" or "master". */
   role?: string;
+  /** Module visibility and edit rights for admin-area users. */
+  modulePermissions?: AdminModulePermissionsFirestore;
   department: string;
   locationId?: string;
   locationGroupId?: string;
