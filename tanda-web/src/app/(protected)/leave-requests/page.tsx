@@ -15,6 +15,7 @@ import {
 } from '@/components/leave-requests/AttendanceJustificationsList';
 import {
   LeaveDateFilterBar,
+  shiftLeaveDateRange,
   type LeaveDatePreset,
 } from '@/components/leave-requests/LeaveDateFilterBar';
 import { LeaveRequestsAdminTable } from '@/components/leave-requests/LeaveRequestsAdminTable';
@@ -139,6 +140,10 @@ export default function LeaveRequestsPage() {
     setDatePreset('custom');
   }
 
+  function handleStepDateRange(direction: -1 | 1) {
+    setDateRange(shiftLeaveDateRange(dateRange, datePreset, direction));
+  }
+
   return (
     <PageContent className="space-y-6">
       <PageHeader
@@ -158,6 +163,7 @@ export default function LeaveRequestsPage() {
           activePreset={datePreset}
           onPresetChange={handlePresetChange}
           onRangeChange={handleRangeChange}
+          onStepRange={handleStepDateRange}
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

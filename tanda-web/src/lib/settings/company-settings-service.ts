@@ -100,6 +100,10 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
       data.defaultDepartmentName.trim()
         ? data.defaultDepartmentName.trim()
         : undefined,
+    pushNotificationsEnabled:
+      typeof data.pushNotificationsEnabled === 'boolean'
+        ? data.pushNotificationsEnabled
+        : DEFAULT_COMPANY_SETTINGS.pushNotificationsEnabled,
   };
 }
 
@@ -135,6 +139,8 @@ export async function saveCompanySettings(
       ...(settings.defaultDepartmentName
         ? { defaultDepartmentName: settings.defaultDepartmentName }
         : {}),
+      pushNotificationsEnabled:
+        settings.pushNotificationsEnabled !== false,
     },
     { merge: true },
   );

@@ -15,6 +15,7 @@ import {
   buildJustificationDocId,
 } from '@/lib/notifications/build-attendance-notification';
 import { sendPushNotification } from '@/lib/notifications/send-push';
+import { isSystemPushEnabled } from '@/lib/notifications/server/system-push';
 import {
   isNotificationChannelEnabled,
 } from '@/lib/notifications/notification-channels';
@@ -195,7 +196,11 @@ async function upsertEmployeeNotification(input: {
     { merge: true },
   );
 
-  if (!isPushConfigured() || !input.pushSubscription?.trim()) {
+  if (
+    !(await isSystemPushEnabled()) ||
+    !isPushConfigured() ||
+    !input.pushSubscription?.trim()
+  ) {
     return;
   }
 

@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
+import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
+import { isMasterRole } from '@/lib/auth/roles';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import type { CompanySettings } from '@/lib/types/company-settings';
+import {
+  clearAllEmployeePushSubscriptions,
+} from '@/lib/notifications/server/system-push';
 
 const SETTINGS_DOC_ID = 'general';
 
@@ -21,6 +26,23 @@ export async function PUT(request: Request) {
       ? (beforeSnapshot.data() as Record<string, unknown>)
       : null;
 
+    const adminSnapshot = await getAdminFirestore()
+      .collection(COLLECTIONS.EMPLOYEES)
+      .where('email', '==', admin.email)
+      .limit(1)
+      .get();
+    const adminData = adminSnapshot.docs[0]?.data();
+    const adminRole = resolveRoleFromEmployee({
+      role: typeof adminData?.role === 'string' ? adminData.role : undefined,
+      department: typeof adminData?.department === 'string' ? adminData.department : undefined,
+    });
+
+    const existingPushEnabled = before?.pushNotificationsEnabled !== false;
+    let pushNotificationsEnabled = existingPushEnabled;
+    if (typeof body.pushNotificationsEnabled === 'boolean' && isMasterRole(adminRole)) {
+      pushNotificationsEnabled = body.pushNotificationsEnabled;
+    }
+
     const payload = {
       timeZone: body.timeZone,
       currency: body.currency,
@@ -30,9 +52,17 @@ export async function PUT(request: Request) {
       ...(body.defaultDepartmentName
         ? { defaultDepartmentName: body.defaultDepartmentName }
         : {}),
+      pushNotificationsEnabled,
     };
 
+    const wasEnabled = existingPushEnabled;
+    const nowEnabled = pushNotificationsEnabled;
+
     await docRef.set(payload, { merge: true });
+
+    if (wasEnabled && !nowEnabled) {
+      await clearAllEmployeePushSubscriptions();
+    }
 
     await recordAuditFromRequest(request, admin, {
       action: 'settings.changed',

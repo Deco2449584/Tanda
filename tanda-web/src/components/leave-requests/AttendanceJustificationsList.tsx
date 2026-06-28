@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Clock, MessageSquare } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
   acknowledgeJustificationRequest,
@@ -22,8 +22,14 @@ interface AttendanceJustificationsListProps {
   searchQuery: string;
 }
 
-function statusLabel(status: AttendanceJustification['status']): string {
-  switch (status) {
+function statusLabel(
+  item: AttendanceJustification,
+): string {
+  if (item.adminAcknowledgedAt) {
+    return 'Reviewed';
+  }
+
+  switch (item.status) {
     case 'submitted':
       return 'Submitted';
     case 'pending':
@@ -35,8 +41,24 @@ function statusLabel(status: AttendanceJustification['status']): string {
     case 'awaiting_employee':
       return 'Awaiting employee';
     default:
-      return status;
+      return item.status;
   }
+}
+
+function statusBadgeClass(item: AttendanceJustification): string {
+  if (item.adminAcknowledgedAt) {
+    return 'bg-emerald-500/15 text-emerald-400';
+  }
+
+  if (item.status === 'pending' || item.status === 'awaiting_employee') {
+    return 'bg-amber-500/15 text-amber-300';
+  }
+
+  if (item.status === 'rejected') {
+    return 'bg-red-500/15 text-red-400';
+  }
+
+  return 'bg-surface-hover text-muted';
 }
 
 function matchesSearch(
@@ -131,38 +153,12 @@ export function AttendanceJustificationsList({
     }
   }
 
-  const Icon = view === 'late' ? MessageSquare : Clock;
-  const title =
-    view === 'late' ? 'Late arrival justifications' : 'No-show justifications';
-  const description =
-    view === 'late'
-      ? 'Informative notes submitted by staff after arriving late. No approval is required.'
-      : 'Informative explanations submitted after a no-show.';
-
   if (loading) {
     return <LoadingIndicator message="Loading justifications…" className="h-48" />;
   }
 
   return (
-    <section className="space-y-4">
-      <div className="rounded-2xl border border-border bg-surface-raised p-5">
-        <div className="flex items-center gap-2">
-          <span
-            className={`rounded-lg p-2 ${
-              view === 'late'
-                ? 'bg-amber-500/15 text-amber-400'
-                : 'bg-red-500/15 text-red-400'
-            }`}
-          >
-            <Icon className="h-4 w-4" />
-          </span>
-          <div>
-            <h2 className="text-sm font-semibold text-white">{title}</h2>
-            <p className="mt-0.5 text-xs text-subtle">{description}</p>
-          </div>
-        </div>
-      </div>
-
+    <section className="space-y-3">
       {error ? (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
           {error}
@@ -174,7 +170,7 @@ export function AttendanceJustificationsList({
           No justifications found for this period.
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-border/80 overflow-hidden rounded-xl border border-border bg-surface-raised md:space-y-0">
           {filteredItems.map((item) => {
             const employee = employeesByCode[item.employeeId];
             const displayName =
@@ -184,14 +180,16 @@ export function AttendanceJustificationsList({
             return (
               <li
                 key={item.id}
-                className={`rounded-xl border bg-surface-raised p-4 ${
-                  reviewed ? 'border-emerald-900/40' : 'border-border'
+                className={`px-4 py-3 ${
+                  reviewed ? 'bg-emerald-950/10' : ''
                 }`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{displayName}</p>
-                    <p className="mt-0.5 text-xs text-subtle">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {displayName}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted">
                       {item.date} · {item.shiftStartTime}–{item.shiftEndTime}
                       {view === 'late' &&
                       typeof item.lateMinutes === 'number' &&
@@ -200,9 +198,16 @@ export function AttendanceJustificationsList({
                         : ''}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
-                      {statusLabel(item.status)}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span
+                      title={
+                        reviewed && item.adminAcknowledgedByEmail
+                          ? `Reviewed by ${item.adminAcknowledgedByEmail}`
+                          : undefined
+                      }
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadgeClass(item)}`}
+                    >
+                      {statusLabel(item)}
                     </span>
                     <button
                       type="button"
@@ -223,15 +228,7 @@ export function AttendanceJustificationsList({
                     </button>
                   </div>
                 </div>
-                {reviewed ? (
-                  <p className="mt-2 text-[11px] text-emerald-400/90">
-                    Reviewed
-                    {item.adminAcknowledgedByEmail
-                      ? ` · ${item.adminAcknowledgedByEmail}`
-                      : ''}
-                  </p>
-                ) : null}
-                <p className="mt-3 text-sm leading-relaxed text-foreground">{item.reason}</p>
+                <p className="mt-2 text-sm leading-relaxed text-foreground">{item.reason}</p>
               </li>
             );
           })}

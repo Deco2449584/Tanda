@@ -36,15 +36,17 @@ function StatCard({
         : 'border-amber-500/30 bg-amber-950/20 text-amber-300';
 
   return (
-    <article className={`rounded-xl border p-4 ${toneClass}`}>
-      <div className="flex items-center justify-between gap-3">
+    <article className={`rounded-lg border px-2.5 py-2 sm:rounded-xl sm:p-4 ${toneClass}`}>
+      <div className="text-center sm:flex sm:items-center sm:justify-between sm:gap-3 sm:text-left">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide opacity-80">
+          <p className="text-[10px] font-medium uppercase tracking-wide opacity-80 sm:text-xs">
             {label}
           </p>
-          <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+          <p className="mt-0.5 text-lg font-bold leading-none text-white sm:mt-1 sm:text-2xl">
+            {value}
+          </p>
         </div>
-        <Icon className="h-5 w-5 opacity-80" aria-hidden />
+        <Icon className="mx-auto mt-1 hidden h-5 w-5 opacity-80 sm:mx-0 sm:mt-0 sm:block" aria-hidden />
       </div>
     </article>
   );
@@ -108,7 +110,7 @@ export function InspectionsPageClient() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <StatCard
           label="New today"
           value={todayStats.newCargo}
@@ -122,7 +124,7 @@ export function InspectionsPageClient() {
           tone="emerald"
         />
         <StatCard
-          label="Requires attention"
+          label="Attention"
           value={todayStats.requiresAttention}
           icon={AlertTriangle}
           tone="amber"

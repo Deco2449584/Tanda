@@ -60,15 +60,15 @@ export function DateRangePicker({ value, onChange, onStepWeek }: DateRangePicker
   }
 
   return (
-    <div className="relative inline-block" ref={containerRef}>
-      <div className="flex items-center gap-1 rounded-xl border border-border-strong bg-surface-raised p-1 transition-colors focus-within:border-primary/40">
+    <div className="relative block w-full min-w-0" ref={containerRef}>
+      <div className="flex w-full items-center gap-1 rounded-xl border border-border-strong bg-surface-raised p-1 transition-colors focus-within:border-primary/40">
         {onStepWeek && (
           <button
             type="button"
             onClick={() => onStepWeek(-1)}
             className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-            aria-label="Previous week"
-            title="Previous week"
+            aria-label="Previous period"
+            title="Previous period"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -77,11 +77,11 @@ export function DateRangePicker({ value, onChange, onStepWeek }: DateRangePicker
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-surface-hover"
+          className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-surface-hover sm:px-3"
           aria-expanded={open}
         >
           <CalendarRange className="h-4 w-4 shrink-0 text-primary" />
-          <span className="whitespace-nowrap">{formatDateRangeLabel(value)}</span>
+          <span className="truncate">{formatDateRangeLabel(value)}</span>
         </button>
 
         {onStepWeek && (
@@ -89,8 +89,8 @@ export function DateRangePicker({ value, onChange, onStepWeek }: DateRangePicker
             type="button"
             onClick={() => onStepWeek(1)}
             className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-            aria-label="Next week"
-            title="Next week"
+            aria-label="Next period"
+            title="Next period"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

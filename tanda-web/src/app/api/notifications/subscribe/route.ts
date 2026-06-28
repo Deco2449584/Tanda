@@ -4,6 +4,7 @@ import { verifyEmployeeRequest } from '@/lib/auth/verify-employee-request';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { COLLECTIONS } from '@/lib/constants';
 import { isPushConfigured } from '@/lib/notifications/vapid';
+import { isSystemPushEnabled } from '@/lib/notifications/server/system-push';
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +12,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Push notifications are not configured.' },
         { status: 503 },
+      );
+    }
+
+    if (!(await isSystemPushEnabled())) {
+      return NextResponse.json(
+        { error: 'Push notifications are disabled system-wide.' },
+        { status: 403 },
       );
     }
 

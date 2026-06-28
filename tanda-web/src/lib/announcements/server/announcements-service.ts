@@ -11,6 +11,7 @@ import { buildAttendanceNotificationDocId } from '@/lib/notifications/build-atte
 import { sendPushNotification } from '@/lib/notifications/send-push';
 import { isNotificationChannelEnabled } from '@/lib/notifications/notification-channels';
 import { getNotificationChannelsForEmail } from '@/lib/notifications/server/notification-preferences';
+import { isSystemPushEnabled } from '@/lib/notifications/server/system-push';
 import { isPushConfigured } from '@/lib/notifications/vapid';
 import type {
   Announcement,
@@ -131,7 +132,7 @@ export async function broadcastAnnouncement(input: {
   const href = `/announcements/${announcementId}`;
   const preview = truncatePreview(body);
   const resendEnabled = isResendConfigured();
-  const pushEnabled = isPushConfigured();
+  const pushEnabled = isPushConfigured() && (await isSystemPushEnabled());
 
   let emailSentCount = 0;
   let notificationCount = 0;

@@ -29,6 +29,8 @@ export interface CompanySettings {
   attendanceBreak: AttendanceBreakSettings;
   attendancePolicy: AttendancePolicySettings;
   attendanceRestrictions: AttendanceRestrictionsSettings;
+  /** When false, no browser push is sent company-wide. Master-only setting. */
+  pushNotificationsEnabled?: boolean;
 }
 
 export const DEFAULT_ATTENDANCE_POLICY: AttendancePolicySettings = {
@@ -54,4 +56,5 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   attendanceBreak: DEFAULT_ATTENDANCE_BREAK,
   attendancePolicy: DEFAULT_ATTENDANCE_POLICY,
   attendanceRestrictions: DEFAULT_ATTENDANCE_RESTRICTIONS,
+  pushNotificationsEnabled: true,
 };

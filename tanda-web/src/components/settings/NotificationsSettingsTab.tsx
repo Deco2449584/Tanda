@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { NotificationChannelPreferencesPanel } from '@/components/notifications/NotificationChannelPreferencesPanel';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { isAdminAreaRole } from '@/lib/auth/roles';
 import {
   saveNotificationChannels,
@@ -13,15 +14,19 @@ import {
   mapNotificationChannels,
   type NotificationChannelPreferences,
 } from '@/lib/notifications/notification-channels';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 
 export function NotificationsSettingsTab() {
   const { user, role } = useAuthRole();
+  const { isMaster } = useAdminAccess();
+  const { settings, saveSettings, saving: savingSettings } = useCompanySettings();
   const canManagePush = isAdminAreaRole(role ?? 'empleado');
   const email = user?.email?.trim().toLowerCase() ?? '';
   const [channels, setChannels] = useState<NotificationChannelPreferences>(
     mapNotificationChannels(null),
   );
   const [saving, setSaving] = useState(false);
+  const [systemPushBusy, setSystemPushBusy] = useState(false);
   const {
     supported: pushSupported,
     subscribed: pushSubscribed,
@@ -30,6 +35,8 @@ export function NotificationsSettingsTab() {
     enable: enablePush,
     disable: disablePush,
   } = usePushNotifications();
+
+  const systemPushEnabled = settings.pushNotificationsEnabled !== false;
 
   useEffect(() => {
     if (!email) return;
@@ -51,14 +58,30 @@ export function NotificationsSettingsTab() {
       });
   }
 
+  async function handleSystemPushToggle() {
+    setSystemPushBusy(true);
+    try {
+      await saveSettings({
+        ...settings,
+        pushNotificationsEnabled: !systemPushEnabled,
+      });
+    } catch (error) {
+      console.error('handleSystemPushToggle', error);
+    } finally {
+      setSystemPushBusy(false);
+    }
+  }
+
   return (
     <section className="space-y-6 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
       <div>
         <h2 className="text-sm font-semibold text-white">Notifications</h2>
         <p className="mt-1 text-xs text-subtle">
-          {canManagePush
-            ? 'These preferences apply across the app: operational alerts, in-app messages, and push on this device.'
-            : 'In-app notification preferences for your account.'}
+          {isMaster
+            ? 'These preferences apply across the app. As Master, you can disable browser push for the entire organization.'
+            : canManagePush
+              ? 'These preferences apply across the app: operational alerts, in-app messages, and push on this device.'
+              : 'In-app notification preferences for your account.'}
         </p>
       </div>
 
@@ -68,7 +91,34 @@ export function NotificationsSettingsTab() {
         onChange={handleChannelsChange}
       />
 
-      {canManagePush && pushSupported ? (
+      {isMaster ? (
+        <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+          <p className="text-sm font-medium text-foreground">Browser push alerts</p>
+          <p className="mt-1 text-xs text-subtle">
+            Controls push notifications for all users across the system, not just this
+            device. Disabling clears existing device subscriptions.
+          </p>
+
+          <button
+            type="button"
+            disabled={systemPushBusy || savingSettings}
+            onClick={() => void handleSystemPushToggle()}
+            className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60 ${
+              systemPushEnabled
+                ? 'border border-border-strong text-muted transition-colors hover:bg-surface-hover hover:text-foreground'
+                : 'bg-primary text-white hover:opacity-90'
+            }`}
+          >
+            {systemPushBusy || savingSettings
+              ? 'Updating…'
+              : systemPushEnabled
+                ? 'Disable push system-wide'
+                : 'Enable push system-wide'}
+          </button>
+        </div>
+      ) : null}
+
+      {canManagePush && !isMaster && pushSupported ? (
         <div className="rounded-xl border border-border bg-surface-base/50 p-4">
           <p className="text-sm font-medium text-foreground">Browser push alerts</p>
           <p className="mt-1 text-xs text-subtle">

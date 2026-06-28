@@ -10,6 +10,7 @@ import { isNotificationChannelEnabled } from '@/lib/notifications/notification-c
 import { getNotificationChannelsForEmail } from '@/lib/notifications/server/notification-preferences';
 import { isPushConfigured } from '@/lib/notifications/vapid';
 import { sendPushNotification } from '@/lib/notifications/send-push';
+import { isSystemPushEnabled } from '@/lib/notifications/server/system-push';
 
 export async function upsertEmployeeShiftNotification(input: {
   recipientEmail: string;
@@ -69,7 +70,11 @@ export async function upsertEmployeeShiftNotification(input: {
 
   let push = false;
   const pushSubscription = input.pushSubscription?.trim();
-  if (isPushConfigured() && pushSubscription) {
+  if (
+    (await isSystemPushEnabled()) &&
+    isPushConfigured() &&
+    pushSubscription
+  ) {
     const result = await sendPushNotification(pushSubscription, {
       title: content.title,
       body: content.body,
