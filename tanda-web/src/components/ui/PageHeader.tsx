@@ -17,7 +17,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       )}
     >
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
+        <h1 className="font-display text-xl font-normal tracking-wide text-foreground md:text-2xl">
           {title}
         </h1>
         {description ? (
@@ -41,7 +41,7 @@ export function PageSection({ title, description, children, className }: PageSec
     <section className={cn('space-y-4', className)}>
       {(title || description) && (
         <div>
-          {title ? <h2 className="text-sm font-semibold text-foreground">{title}</h2> : null}
+          {title ? <h2 className="font-display text-sm font-normal text-foreground">{title}</h2> : null}
           {description ? (
             <p className="mt-1 text-xs text-muted">{description}</p>
           ) : null}

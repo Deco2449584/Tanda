@@ -54,7 +54,7 @@ export function PortalInspectionDetailView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/portal/track"
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#001A3F]"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#262626]"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to list
@@ -64,7 +64,7 @@ export function PortalInspectionDetailView({
           type="button"
           onClick={() => void handleExportPdf()}
           disabled={exportingPdf}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#001A3F]/20 bg-[#001A3F]/5 px-3 py-2 text-xs font-semibold text-[#001A3F] hover:bg-[#001A3F]/10 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#262626]/20 bg-[#262626]/5 px-3 py-2 text-xs font-semibold text-[#262626] hover:bg-[#262626]/10 disabled:opacity-50"
         >
           {exportingPdf ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -76,7 +76,7 @@ export function PortalInspectionDetailView({
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#001A3F]/70">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#262626]/70">
           Cargo inspection
         </p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl">

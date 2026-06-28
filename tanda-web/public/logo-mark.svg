@@ -17,12 +17,12 @@
 
   <g mask="url(#ring-cutout)">
     <g transform="translate(250, 190)">
-      <circle cx="0" cy="0" r="85" fill="none" stroke="#001A3F" stroke-width="16" />
-      <circle cx="0" cy="0" r="53" fill="none" stroke="#001A3F" stroke-width="16" />
+      <circle cx="0" cy="0" r="85" fill="none" stroke="#262626" stroke-width="16" />
+      <circle cx="0" cy="0" r="53" fill="none" stroke="#262626" stroke-width="16" />
     </g>
   </g>
 
   <g transform="translate(250, 190)">
-    <use href="#star" fill="#001A3F" />
+    <use href="#star" fill="#262626" />
   </g>
 </svg>

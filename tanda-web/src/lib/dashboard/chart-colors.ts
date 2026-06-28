@@ -1,8 +1,10 @@
+import { BRAND } from '@/lib/brand/tokens';
+
 export const DASHBOARD_CHART_COLORS = [
-  '#4d7cff',
-  '#e5a23c',
+  BRAND.magenta,
+  BRAND.charcoal,
   '#22c55e',
-  '#f472b6',
+  BRAND.silver,
   '#a78bfa',
   '#38bdf8',
   '#fb7185',

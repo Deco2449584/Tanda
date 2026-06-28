@@ -1,23 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --surface-base: #0b0d10;
-  --surface-sidebar: #12151a;
-  --surface-raised: #181c24;
-  --surface-overlay: #1f2530;
-  --surface-hover: #252b36;
+  --surface-base: #262626;
+  --surface-sidebar: #262626;
+  --surface-raised: #2e2e2e;
+  --surface-overlay: #3a3a3a;
+  --surface-hover: #3a3a3a;
 
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.1);
+  --border-default: rgba(203, 203, 203, 0.12);
+  --border-strong: rgba(203, 203, 203, 0.2);
 
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a8b3;
-  --text-muted: #6b7280;
+  --text-primary: #f5f5f5;
+  --text-secondary: #cbcbcb;
+  --text-muted: #606060;
 
-  --accent: #4d7cff;
-  --accent-muted: rgba(77, 124, 255, 0.15);
-  --accent-secondary: #e5a23c;
-  --accent-secondary-muted: rgba(229, 162, 60, 0.15);
+  --accent: #f51ea0;
+  --accent-muted: rgba(245, 30, 160, 0.14);
+  --brand-primary: var(--accent);
+  --accent-secondary: #606060;
+  --accent-secondary-muted: rgba(96, 96, 96, 0.2);
 
   --success: #34d399;
   --warning: #fbbf24;
@@ -51,19 +52,29 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
 
-  --font-sans: var(--font-jakarta);
+  --font-sans: var(--font-poppins);
+  --font-serif: var(--font-tex-gyre);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--surface-base);
   color: var(--text-primary);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  font-weight: 300;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-tex-gyre), Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.05em;
 }
 
 input,
@@ -79,8 +90,18 @@ select,
 .app-ambient {
   background-color: var(--surface-base);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(77, 124, 255, 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(229, 162, 60, 0.04), transparent);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(96, 96, 96, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(245, 30, 160, 0.06), transparent);
+}
+
+.kiosk-ambient {
+  background-color: var(--surface-base);
+  background-image: radial-gradient(
+    125% 85% at 50% -10%,
+    #606060 0%,
+    #262626 42%,
+    #1a1a1a 100%
+  );
 }
 
 .scrollbar-thin {
@@ -110,7 +131,7 @@ select,
 /* Modern, sleek scrollbar for scrollable data tables / sliders */
 .scrollbar-modern {
   scrollbar-width: thin;
-  scrollbar-color: rgba(77, 124, 255, 0.45) transparent;
+  scrollbar-color: rgba(245, 30, 160, 0.45) transparent;
 }
 
 .scrollbar-modern::-webkit-scrollbar {
@@ -126,8 +147,8 @@ select,
 .scrollbar-modern::-webkit-scrollbar-thumb {
   background: linear-gradient(
     90deg,
-    rgba(77, 124, 255, 0.55),
-    rgba(77, 124, 255, 0.3)
+    rgba(245, 30, 160, 0.55),
+    rgba(245, 30, 160, 0.3)
   );
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -138,8 +159,8 @@ select,
 .scrollbar-modern::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     90deg,
-    rgba(77, 124, 255, 0.9),
-    rgba(77, 124, 255, 0.55)
+    rgba(245, 30, 160, 0.9),
+    rgba(245, 30, 160, 0.55)
   );
   background-clip: padding-box;
 }

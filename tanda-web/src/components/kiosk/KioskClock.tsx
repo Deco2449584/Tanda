@@ -103,9 +103,9 @@ function AnalogClockFace({
           <stop offset="100%" stopColor="rgba(0,0,0,0.35)" />
         </radialGradient>
         <linearGradient id="kiosk-clock-bezel" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(77,124,255,0.55)" />
+          <stop offset="0%" stopColor="rgba(245,30,160,0.55)" />
           <stop offset="50%" stopColor="rgba(255,255,255,0.18)" />
-          <stop offset="100%" stopColor="rgba(77,124,255,0.35)" />
+          <stop offset="100%" stopColor="rgba(245,30,160,0.35)" />
         </linearGradient>
       </defs>
 
@@ -160,11 +160,11 @@ function AnalogClockFace({
         angle={secondAngle}
         length={64}
         width={1.5}
-        color="#4d7cff"
+        color="#F51EA0"
         className="transition-transform duration-75 ease-linear"
       />
 
-      <circle cx={CX} cy={CY} r="5" fill="#4d7cff" />
+      <circle cx={CX} cy={CY} r="5" fill="#F51EA0" />
       <circle cx={CX} cy={CY} r="2.5" fill="rgba(255,255,255,0.9)" />
     </svg>
   );

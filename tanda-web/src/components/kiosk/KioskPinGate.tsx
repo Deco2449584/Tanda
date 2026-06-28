@@ -52,7 +52,7 @@ export function KioskPinGate({
   }, [pin, onSuccess]);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[radial-gradient(125%_85%_at_50%_-10%,#13224a_0%,#0a1020_42%,#05070d_100%)] px-4 py-10 text-white">
+    <div className="kiosk-ambient flex min-h-[100dvh] flex-col items-center justify-center px-4 py-10 text-white">
       <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center shadow-2xl backdrop-blur-md">
         {onCancel ? (
           <button

@@ -56,10 +56,10 @@ export function CompanyLogoSidebar({ className }: { className?: string }) {
         <CompanyLogo variant="mark-light" className="h-12 w-12 max-h-full max-w-full" priority />
       </div>
       <div className="min-w-0 px-1">
-        <p className="text-[11px] font-extrabold leading-tight tracking-wide text-foreground">
+        <p className="font-display text-[11px] font-normal leading-tight tracking-[0.08em] text-foreground">
           CONTINENTAL CARGO
         </p>
-        <p className="mt-0.5 text-[9px] font-semibold tracking-[0.16em] text-subtle">
+        <p className="mt-0.5 text-[9px] font-light tracking-[0.16em] text-subtle">
           LOGISTICS COMPANY
         </p>
       </div>

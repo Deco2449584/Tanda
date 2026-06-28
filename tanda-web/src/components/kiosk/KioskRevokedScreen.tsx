@@ -60,7 +60,7 @@ export function KioskRevokedScreen({
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[radial-gradient(125%_85%_at_50%_-10%,#13224a_0%,#0a1020_42%,#05070d_100%)] px-4 py-8 text-white">
+    <div className="kiosk-ambient flex min-h-[100dvh] items-center justify-center px-4 py-8 text-white">
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center shadow-2xl backdrop-blur-md">
         <CompanyLogo variant="light" className="mx-auto h-auto w-40 object-contain" />
         <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300">

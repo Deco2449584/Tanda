@@ -52,8 +52,8 @@ function VideoThumbnail({
         className={
           light
             ? large
-              ? 'h-12 w-12 text-[#001A3F]/50'
-              : 'h-5 w-5 text-[#001A3F]/40'
+              ? 'h-12 w-12 text-[#262626]/50'
+              : 'h-5 w-5 text-[#262626]/40'
             : large
               ? 'h-12 w-12 text-primary/70'
               : 'h-5 w-5 text-primary/60'
@@ -143,7 +143,7 @@ export function InspectionVideoGallery({
     : 'overflow-hidden rounded-xl border border-border bg-surface-base';
 
   const actionClass = isLight
-    ? 'inline-flex items-center gap-2 rounded-lg border border-[#001A3F]/25 bg-[#001A3F]/5 px-4 py-2 text-xs font-semibold text-[#001A3F] transition hover:bg-[#001A3F]/10'
+    ? 'inline-flex items-center gap-2 rounded-lg border border-[#262626]/25 bg-[#262626]/5 px-4 py-2 text-xs font-semibold text-[#262626] transition hover:bg-[#262626]/10'
     : 'inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50';
 
   return (
@@ -198,7 +198,7 @@ export function InspectionVideoGallery({
               className={`shrink-0 overflow-hidden rounded-lg border-2 transition ${
                 index === activeIndex
                   ? isLight
-                    ? 'border-[#001A3F]'
+                    ? 'border-[#262626]'
                     : 'border-primary'
                   : isLight
                     ? 'border-slate-200 opacity-70 hover:opacity-100'

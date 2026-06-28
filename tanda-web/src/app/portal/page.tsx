@@ -50,9 +50,9 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-[#F5F5F5]">
       <div className="flex flex-1 flex-col lg:flex-row">
-        <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-[#001A3F] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-12">
+        <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-r from-[#262626] to-[#606060] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-12">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.07]"
             style={{
@@ -65,7 +65,7 @@ export default function PortalLoginPage() {
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute -bottom-16 left-10 h-48 w-48 rounded-full bg-[#1A5FA8]/30 blur-3xl"
+            className="pointer-events-none absolute -bottom-16 left-10 h-48 w-48 rounded-full bg-[#F51EA0]/20 blur-3xl"
             aria-hidden
           />
 
@@ -75,15 +75,15 @@ export default function PortalLoginPage() {
               priority
               className="h-20 w-auto max-w-[280px] object-contain sm:h-24"
             />
-            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+            <p className="mt-2 text-xs font-light uppercase tracking-[0.25em] text-white/60">
               {PORTAL_COMPANY_TAGLINE}
             </p>
 
-            <h1 className="mt-10 max-w-lg text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+            <h1 className="font-display mt-10 max-w-lg text-3xl font-normal leading-tight tracking-wide sm:text-4xl">
               Cargo visibility for{' '}
-              <span className="text-sky-300">forwarder partners.</span>
+              <span className="text-[#F51EA0]">forwarder partners.</span>
             </h1>
-            <p className="mt-4 max-w-md text-base leading-relaxed text-white/75">
+            <p className="mt-4 max-w-md text-base font-light leading-relaxed text-white/75">
               {COMPANY_NAME} client portal — monitor perishable inspections,
               review evidence, and stay aligned with warehouse operations in
               real time.
@@ -98,7 +98,7 @@ export default function PortalLoginPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
                     {stat.label}
                   </p>
-                  <p className="mt-1 text-sm font-bold text-white">{stat.value}</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{stat.value}</p>
                 </div>
               ))}
             </div>
@@ -112,12 +112,12 @@ export default function PortalLoginPage() {
                   key={item.title}
                   className="flex gap-4 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sky-200">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#CBCBCB]">
                     <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="mt-0.5 text-sm text-white/65">{item.description}</p>
+                    <p className="mt-0.5 text-sm font-light text-white/65">{item.description}</p>
                   </div>
                 </li>
               );
@@ -125,28 +125,28 @@ export default function PortalLoginPage() {
           </ul>
 
           <div className="relative mt-8 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 lg:hidden">
-            <Thermometer className="h-5 w-5 shrink-0 text-sky-200" aria-hidden />
-            <p className="text-sm text-white/80">
+            <Thermometer className="h-5 w-5 shrink-0 text-[#CBCBCB]" aria-hidden />
+            <p className="text-sm font-light text-white/80">
               Temperature-controlled perishables · Sydney air cargo hub
             </p>
           </div>
         </section>
 
-        <section className="flex flex-1 flex-col justify-center px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
+        <section className="flex flex-1 flex-col justify-center bg-[#F5F5F5] px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
           <div className="mx-auto w-full max-w-md">
             <div className="mb-8 lg:hidden">
               <CompanyLogo className="mx-auto h-16 w-auto" />
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+            <div className="rounded-2xl border border-[#CBCBCB]/40 bg-white p-6 shadow-xl shadow-[#262626]/10 sm:p-8">
               <div className="mb-6">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#001A3F]/60">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#606060]">
                   Client portal
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                <h2 className="font-display mt-2 text-2xl font-normal text-[#262626]">
                   Track your shipment
                 </h2>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-sm font-light text-[#606060]">
                   Enter your AWB number and company PIN to view live inspection
                   status.
                 </p>
@@ -156,7 +156,7 @@ export default function PortalLoginPage() {
                 <div>
                   <label
                     htmlFor="awb"
-                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#606060]"
                   >
                     AWB number
                   </label>
@@ -168,20 +168,20 @@ export default function PortalLoginPage() {
                     placeholder="e.g. 045-12345678"
                     autoComplete="off"
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#001A3F]/40 focus:bg-white focus:ring-2 focus:ring-[#001A3F]/10"
+                    className="w-full rounded-xl border border-[#CBCBCB] bg-[#F5F5F5] px-4 py-3 text-sm text-[#262626] outline-none transition focus:border-[#F51EA0]/40 focus:bg-white focus:ring-2 focus:ring-[#F51EA0]/10"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="pin"
-                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#606060]"
                   >
                     Company PIN
                   </label>
                   <div className="relative">
                     <Lock
-                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#606060]"
                       aria-hidden
                     />
                     <input
@@ -193,7 +193,7 @@ export default function PortalLoginPage() {
                       placeholder="6–8 digits"
                       autoComplete="off"
                       required
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#001A3F]/40 focus:bg-white focus:ring-2 focus:ring-[#001A3F]/10"
+                      className="w-full rounded-xl border border-[#CBCBCB] bg-[#F5F5F5] py-3 pl-11 pr-4 text-sm text-[#262626] outline-none transition focus:border-[#F51EA0]/40 focus:bg-white focus:ring-2 focus:ring-[#F51EA0]/10"
                     />
                   </div>
                 </div>
@@ -210,13 +210,13 @@ export default function PortalLoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-[#001A3F] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#001A3F]/20 transition hover:bg-[#0A2D5C] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl bg-[#F51EA0] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F51EA0]/20 transition hover:bg-[#d4198a] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Verifying…' : 'Check status'}
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-xs leading-relaxed text-slate-500">
+              <p className="mt-6 text-center text-xs font-light leading-relaxed text-[#606060]">
                 Don&apos;t have a PIN? Contact your {COMPANY_NAME} representative.
               </p>
             </div>

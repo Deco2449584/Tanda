@@ -141,7 +141,7 @@ export function KioskActivation({
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[radial-gradient(125%_85%_at_50%_-10%,#13224a_0%,#0a1020_42%,#05070d_100%)] px-4 py-8 text-white">
+    <div className="kiosk-ambient flex min-h-[100dvh] items-center justify-center px-4 py-8 text-white">
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-md">
         <div className="flex flex-col items-center text-center">
           <CompanyLogo variant="light" className="h-auto w-40 object-contain" />

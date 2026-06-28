@@ -85,7 +85,7 @@ function PortalTrackContent() {
 
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-2xl border border-[#001A3F]/10 bg-[#001A3F] text-white shadow-lg">
+      <section className="overflow-hidden rounded-2xl border border-[#262626]/10 bg-gradient-to-r from-[#262626] to-[#606060] text-white shadow-lg">
         <div className="relative px-6 py-8 md:px-8 md:py-10">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.06]"

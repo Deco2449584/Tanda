@@ -1,9 +1,6 @@
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
-/** Continental Cargo logo navy — matches public/logo.svg */
-export const PORTAL_NAVY = '#001A3F';
-export const PORTAL_NAVY_LIGHT = '#0A2D5C';
-export const PORTAL_ACCENT = '#1A5FA8';
+export { BRAND, PORTAL_ACCENT, PORTAL_NAVY, PORTAL_NAVY_LIGHT } from '@/lib/brand/tokens';
 
 export const PORTAL_COMPANY_TAGLINE = 'Logistics Company';
 

@@ -2,7 +2,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ImageResponse } from 'next/og';
 
-const BRAND_BLUE = '#001A3F';
+import { BRAND } from '@/lib/brand/tokens';
+
+const BRAND_BACKGROUND = BRAND.graphite;
 
 let cachedMarkDataUrl: string | null = null;
 
@@ -28,7 +30,7 @@ interface RenderLogoIconOptions {
 export async function renderLogoIcon({
   size,
   paddingRatio = 0.18,
-  background = BRAND_BLUE,
+  background = BRAND_BACKGROUND,
 }: RenderLogoIconOptions) {
   const markSrc = await getMarkDataUrl();
   const padding = Math.round(size * paddingRatio);

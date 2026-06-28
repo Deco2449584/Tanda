@@ -23,7 +23,7 @@ export function KioskIdleScreen({
       : session.locationName || 'Assigned warehouse';
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-zinc-950 px-6 py-10 text-center text-white">
+    <div className="kiosk-ambient flex min-h-[100dvh] flex-col items-center justify-center px-6 py-10 text-center text-white">
       <CompanyLogo variant="light" className="h-auto w-40 object-contain opacity-90" />
       <div className="mt-6 w-full max-w-sm rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-md">
         <MonitorSmartphone className="mx-auto h-8 w-8 text-primary" />

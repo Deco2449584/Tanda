@@ -31,13 +31,13 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
   return (
     <Link
       href={`/portal/track/${inspection.id}`}
-      className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-[#001A3F]/25 hover:shadow-md"
+      className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-[#262626]/25 hover:shadow-md"
     >
-      <div className="w-1.5 shrink-0 bg-[#001A3F]" aria-hidden />
+      <div className="w-1.5 shrink-0 bg-[#262626]" aria-hidden />
 
       <div className="flex min-w-0 flex-1 gap-4 p-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#001A3F]/5">
-          <Package className="h-5 w-5 text-[#001A3F]" aria-hidden />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#262626]/5">
+          <Package className="h-5 w-5 text-[#262626]" aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -51,7 +51,7 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
               </p>
             </div>
             <ChevronRight
-              className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-[#001A3F]"
+              className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-[#262626]"
               aria-hidden
             />
           </div>

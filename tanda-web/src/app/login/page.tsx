@@ -128,8 +128,8 @@ function LoginPageContent() {
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(77,124,255,0.03) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(77,124,255,0.03) 1px, transparent 1px)
+              linear-gradient(rgba(96,96,96,0.04) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(96,96,96,0.04) 1px, transparent 1px)
             `,
             backgroundSize: '48px 48px',
           }}
@@ -150,7 +150,7 @@ function LoginPageContent() {
             <Truck className="h-3.5 w-3.5" />
             Logistics workforce platform
           </div>
-          <h1 className="mt-8 max-w-md text-3xl font-semibold leading-tight tracking-tight text-foreground xl:text-4xl">
+          <h1 className="font-display mt-8 max-w-md text-3xl font-normal leading-tight tracking-wide text-foreground xl:text-4xl">
             Operations hub for{' '}
             <span className="text-primary">{COMPANY_NAME}</span>
           </h1>
@@ -190,7 +190,7 @@ function LoginPageContent() {
           <div className="mb-8 lg:hidden">
             <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-raised/60 px-6 py-7 text-center backdrop-blur-sm">
               <div
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(77,124,255,0.12),transparent_70%)]"
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,30,160,0.1),transparent_70%)]"
                 aria-hidden
               />
               <CompanyLogo

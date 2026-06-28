@@ -14,6 +14,7 @@ import {
 } from '@/components/dashboard/charts/DashboardAreaChart';
 import { DashboardGroupedBarChart } from '@/components/dashboard/charts/DashboardGroupedBarChart';
 import { DashboardCurrencyPieChart, DashboardPieChart } from '@/components/dashboard/charts/DashboardPieChart';
+import { COLOR_HORAS_EXTRA_FALLBACK } from '@/components/dashboard/chart-theme';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
@@ -320,7 +321,7 @@ export function DynamicDashboard({
             loading={chartsLoading}
             valueLabel="Late arrivals"
             yAxisLabel="Count"
-            color="#e5a23c"
+            color={COLOR_HORAS_EXTRA_FALLBACK}
           />
         );
       case 'no-shows-by-location':

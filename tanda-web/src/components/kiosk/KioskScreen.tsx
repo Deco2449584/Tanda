@@ -227,7 +227,7 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
   const showLogo = step !== 'success';
 
   return (
-    <div className="relative flex min-h-[100dvh] w-full flex-col bg-[radial-gradient(125%_85%_at_50%_-10%,#13224a_0%,#0a1020_42%,#05070d_100%)] text-white">
+    <div className="kiosk-ambient relative flex min-h-[100dvh] w-full flex-col text-white">
       {onExit ? (
         <button
           type="button"

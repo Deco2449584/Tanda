@@ -1,18 +1,19 @@
+import { BRAND } from '@/lib/brand/tokens';
 import { PORTAL_COMPANY_TAGLINE, PORTAL_CONTACT } from '@/lib/portal/portal-brand';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
-/** Brand tokens aligned with the web app and portal. */
-const BRAND = {
-  navy: '#001A3F',
-  navyLight: '#0A2D5C',
-  accent: '#4d7cff',
-  accentDark: '#3a63d8',
-  gold: '#e5a23c',
-  text: '#18181b',
-  muted: '#52525b',
+const EMAIL = {
+  graphite: BRAND.graphite,
+  charcoal: BRAND.charcoal,
+  silver: BRAND.silver,
+  cloud: BRAND.cloud,
+  accent: BRAND.magenta,
+  accentDark: '#d4198a',
+  text: BRAND.graphite,
+  muted: BRAND.charcoal,
   subtle: '#71717a',
   border: '#e4e4e7',
-  surface: '#f8fafc',
+  surface: BRAND.cloud,
 } as const;
 
 export interface EmployeeInviteEmailInput {
@@ -48,19 +49,19 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Set up your ${escapeHtml(COMPANY_NAME)} account</title>
 </head>
-<body style="margin:0;padding:0;background-color:${BRAND.surface};font-family:'Segoe UI',Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background-color:${EMAIL.surface};font-family:'Segoe UI',Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
     Your ${escapeHtml(COMPANY_NAME)} account is ready. Set your password and sign in at ${appDomain}.
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${BRAND.surface};padding:32px 16px 40px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL.surface};padding:32px 16px 40px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;border-radius:16px;overflow:hidden;border:1px solid ${BRAND.border};box-shadow:0 12px 40px rgba(0,26,63,0.12);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;border-radius:16px;overflow:hidden;border:1px solid ${EMAIL.border};box-shadow:0 12px 40px rgba(38,38,38,0.12);">
 
           <!-- Header -->
           <tr>
-            <td style="padding:36px 32px 28px;background:linear-gradient(160deg, ${BRAND.navy} 0%, ${BRAND.navyLight} 55%, #123a72 100%);text-align:center;">
+            <td style="padding:36px 32px 28px;background:linear-gradient(90deg, ${EMAIL.graphite} 0%, ${EMAIL.charcoal} 100%);text-align:center;">
               <img
                 src="${logoUrl}"
                 width="240"
@@ -73,7 +74,7 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;">
                 <tr>
-                  <td style="height:3px;width:56px;background-color:${BRAND.gold};border-radius:999px;font-size:0;line-height:0;">&nbsp;</td>
+                  <td style="height:3px;width:56px;background-color:${EMAIL.accent};border-radius:999px;font-size:0;line-height:0;">&nbsp;</td>
                 </tr>
               </table>
             </td>
@@ -82,15 +83,15 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
           <!-- Hero -->
           <tr>
             <td style="padding:32px 32px 8px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${BRAND.accent};">
+              <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL.accent};">
                 Welcome aboard
               </p>
-              <h1 style="margin:0 0 16px;font-size:26px;line-height:1.25;font-weight:700;color:${BRAND.text};">
+              <h1 style="margin:0 0 16px;font-size:26px;line-height:1.25;font-weight:700;color:${EMAIL.text};">
                 Hi ${firstName}, your account is ready
               </h1>
-              <p style="margin:0;font-size:15px;line-height:1.7;color:${BRAND.muted};">
+              <p style="margin:0;font-size:15px;line-height:1.7;color:${EMAIL.muted};">
                 An administrator created your employee profile for
-                <strong style="color:${BRAND.text};">${appDomain}</strong>.
+                <strong style="color:${EMAIL.text};">${appDomain}</strong>.
                 Set a password below to access attendance, schedules, leave requests, and more.
               </p>
             </td>
@@ -99,19 +100,19 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
           <!-- Steps -->
           <tr>
             <td style="padding:8px 32px 24px;background-color:#ffffff;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${BRAND.surface};border:1px solid ${BRAND.border};border-radius:12px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL.surface};border:1px solid ${EMAIL.border};border-radius:12px;">
                 <tr>
                   <td style="padding:18px 20px;">
-                    <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${BRAND.subtle};">
+                    <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL.subtle};">
                       Getting started
                     </p>
-                    <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${BRAND.text};">
-                      <span style="display:inline-block;width:22px;height:22px;margin-right:8px;border-radius:999px;background-color:rgba(77,124,255,0.12);color:${BRAND.accent};font-size:12px;font-weight:700;text-align:center;line-height:22px;vertical-align:middle;">1</span>
+                    <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${EMAIL.text};">
+                      <span style="display:inline-block;width:22px;height:22px;margin-right:8px;border-radius:999px;background-color:rgba(245,30,160,0.12);color:${EMAIL.accent};font-size:12px;font-weight:700;text-align:center;line-height:22px;vertical-align:middle;">1</span>
                       Click the button and choose a secure password
                     </p>
-                    <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.text};">
-                      <span style="display:inline-block;width:22px;height:22px;margin-right:8px;border-radius:999px;background-color:rgba(77,124,255,0.12);color:${BRAND.accent};font-size:12px;font-weight:700;text-align:center;line-height:22px;vertical-align:middle;">2</span>
-                      Sign in at <a href="${loginUrl}" style="color:${BRAND.accent};text-decoration:none;font-weight:600;">${loginUrl}</a>
+                    <p style="margin:0;font-size:14px;line-height:1.6;color:${EMAIL.text};">
+                      <span style="display:inline-block;width:22px;height:22px;margin-right:8px;border-radius:999px;background-color:rgba(245,30,160,0.12);color:${EMAIL.accent};font-size:12px;font-weight:700;text-align:center;line-height:22px;vertical-align:middle;">2</span>
+                      Sign in at <a href="${loginUrl}" style="color:${EMAIL.accent};text-decoration:none;font-weight:600;">${loginUrl}</a>
                     </p>
                   </td>
                 </tr>
@@ -124,7 +125,7 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
             <td align="center" style="padding:0 32px 28px;background-color:#ffffff;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="border-radius:10px;background:linear-gradient(180deg, ${BRAND.accent} 0%, ${BRAND.accentDark} 100%);">
+                  <td align="center" style="border-radius:10px;background:linear-gradient(180deg, ${EMAIL.accent} 0%, ${EMAIL.accentDark} 100%);">
                     <a href="${setupLink}"
                        target="_blank"
                        style="display:inline-block;padding:15px 34px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">
@@ -133,7 +134,7 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
                   </td>
                 </tr>
               </table>
-              <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:${BRAND.subtle};">
+              <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:${EMAIL.subtle};">
                 This link is personal. Do not share it with anyone.
               </p>
             </td>
@@ -142,13 +143,13 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
           <!-- Account note -->
           <tr>
             <td style="padding:0 32px 28px;background-color:#ffffff;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${BRAND.border};">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${EMAIL.border};">
                 <tr>
                   <td style="padding-top:20px;">
-                    <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${BRAND.subtle};">
+                    <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${EMAIL.subtle};">
                       Your sign-in email
                     </p>
-                    <p style="margin:0;font-size:14px;line-height:1.5;color:${BRAND.text};font-weight:600;">
+                    <p style="margin:0;font-size:14px;line-height:1.5;color:${EMAIL.text};font-weight:600;">
                       ${escapeHtml(input.email.trim().toLowerCase())}
                     </p>
                   </td>
@@ -160,21 +161,21 @@ export function buildEmployeeInviteEmailHtml(input: EmployeeInviteEmailInput): s
           <!-- Fallback link -->
           <tr>
             <td style="padding:0 32px 32px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:${BRAND.subtle};">
+              <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:${EMAIL.subtle};">
                 If the button does not work, copy and paste this link into your browser:
               </p>
               <p style="margin:0;font-size:11px;line-height:1.5;word-break:break-all;">
-                <a href="${setupLink}" style="color:${BRAND.accent};text-decoration:underline;">${setupLink}</a>
+                <a href="${setupLink}" style="color:${EMAIL.accent};text-decoration:underline;">${setupLink}</a>
               </p>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding:22px 32px 26px;background-color:#0f172a;text-align:center;">
+            <td style="padding:22px 32px 26px;background-color:${EMAIL.graphite};text-align:center;">
               <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.72);">
                 Need help? Contact your administrator or
-                <a href="mailto:${escapeHtml(PORTAL_CONTACT.email)}" style="color:#93c5fd;text-decoration:none;">
+                <a href="mailto:${escapeHtml(PORTAL_CONTACT.email)}" style="color:${EMAIL.silver};text-decoration:none;">
                   ${escapeHtml(PORTAL_CONTACT.email)}
                 </a>
               </p>
