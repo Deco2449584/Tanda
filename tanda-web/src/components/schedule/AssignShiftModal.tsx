@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
+import { EmployeeDepartmentSelect } from '@/components/employees/EmployeeDepartmentSelect';
 import { COLLECTIONS } from '@/lib/constants';
 import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
@@ -94,11 +95,6 @@ export function AssignShiftModal({
 
     if (!employeeId.trim()) {
       setError('Select an employee.');
-      return;
-    }
-
-    if (!department.trim()) {
-      setError('Enter the department.');
       return;
     }
 
@@ -256,21 +252,13 @@ export function AssignShiftModal({
             </div>
           </div>
 
-          <div>
-            <label htmlFor="shift-dept" className="mb-1.5 block text-sm text-muted">
-              Department
-            </label>
-            <input
-              id="shift-dept"
-              type="text"
-              required
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              disabled={isSubmitting || isPastDate}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
-              placeholder="Logistics"
-            />
-          </div>
+          <EmployeeDepartmentSelect
+            id="shift-dept"
+            value={department}
+            onChange={setDepartment}
+            disabled={isSubmitting || isPastDate}
+            allowUnassigned
+          />
 
           <EmployeeLocationSelect
             id="shift-location"

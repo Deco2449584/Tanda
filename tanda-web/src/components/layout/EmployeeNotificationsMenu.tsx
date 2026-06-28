@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CalendarClock, CalendarX, FileWarning, Megaphone } from 'lucide-react';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotificationsProvider';
 import type { AppNotification } from '@/lib/types/notification';
 
@@ -17,14 +16,6 @@ export function EmployeeNotificationsMenu() {
     markRead,
     clearAll,
   } = useEmployeeShiftNotifications();
-  const {
-    supported: pushSupported,
-    subscribed: pushSubscribed,
-    busy: pushBusy,
-    error: pushError,
-    enable: enablePush,
-    disable: disablePush,
-  } = usePushNotifications();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -59,8 +50,6 @@ export function EmployeeNotificationsMenu() {
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-zinc-950 md:ring-[#0a0a0a]">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
-        ) : pushSupported && !pushSubscribed ? (
-          <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-zinc-950 md:ring-[#0a0a0a]" />
         ) : null}
       </button>
 
@@ -90,47 +79,6 @@ export function EmployeeNotificationsMenu() {
               ) : null}
             </div>
           </div>
-
-          {pushSupported ? (
-            <div className="border-b border-border px-4 py-3">
-              {pushSubscribed ? (
-                <>
-                  <p className="text-xs text-muted">
-                    Phone alerts are enabled on this device. Manage activity types in
-                    Settings → Notifications or My overview.
-                  </p>
-                  <button
-                    type="button"
-                    disabled={pushBusy}
-                    onClick={() => void disablePush()}
-                    className="mt-2 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-60"
-                  >
-                    {pushBusy ? 'Updating…' : 'Disable phone alerts'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs text-muted">
-                    Enable phone alerts on this device. Activity preferences are in
-                    Settings → Notifications or My overview.
-                  </p>
-                  <button
-                    type="button"
-                    disabled={pushBusy}
-                    onClick={() => void enablePush()}
-                    className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
-                  >
-                    {pushBusy ? 'Enabling…' : 'Enable phone alerts'}
-                  </button>
-                </>
-              )}
-              {pushError ? (
-                <p className="mt-2 text-xs text-red-400" role="alert">
-                  {pushError}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
 
           {notifications.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">

@@ -24,6 +24,7 @@ import { db } from '@/lib/firebase';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
+import { useDepartments } from '@/providers/DepartmentsProvider';
 import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
@@ -39,6 +40,7 @@ type ViewMode = 'weekly' | 'monthly';
 export default function SchedulePage() {
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations } = useLocations();
+  const { departmentNames } = useDepartments();
   const { groups } = useLocationGroups();
   const [weekReference, setWeekReference] = useState(() => new Date());
   const [monthReference, setMonthReference] = useState(() => new Date());
@@ -146,11 +148,14 @@ export default function SchedulePage() {
   const pageLoading = loading || employeesLoading;
 
   const departments = useMemo(() => {
-    const unique = new Set(
-      employees.map((employee) => employee.department).filter(Boolean),
-    );
+    const unique = new Set(departmentNames);
+    employees.forEach((employee) => {
+      if (employee.department?.trim()) {
+        unique.add(employee.department.trim());
+      }
+    });
     return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b, 'en'))];
-  }, [employees]);
+  }, [departmentNames, employees]);
 
   const locationOptions = useMemo(
     () => [

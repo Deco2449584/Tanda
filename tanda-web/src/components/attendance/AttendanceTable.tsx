@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { LogOut, Pencil, Trash2 } from 'lucide-react';
 import { deleteAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { DeleteConfirmModal } from '@/components/attendance/DeleteConfirmModal';
@@ -41,6 +42,7 @@ export function AttendanceTable({
   onEdit,
   onAddManualCheckout,
 }: AttendanceTableProps) {
+  const { isMaster } = useAdminAccess();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AttendanceRecord | null>(null);
 
@@ -155,7 +157,9 @@ export function AttendanceTable({
                     <td className="px-4 py-3.5">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <AttendanceTypeBadge type={record.type} />
-                        <AttendanceProvenanceBadge record={record} />
+                        {isMaster ? (
+                          <AttendanceProvenanceBadge record={record} />
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-muted">
@@ -174,7 +178,9 @@ export function AttendanceTable({
                       ) : (
                         <div>
                           <span>{formatRecordTime(record.timestampServer)}</span>
-                          <AttendanceProvenanceNote record={record} compact />
+                          {isMaster ? (
+                            <AttendanceProvenanceNote record={record} compact />
+                          ) : null}
                         </div>
                       )}
                     </td>
@@ -280,9 +286,13 @@ export function AttendanceTable({
                           </span>
                         )}
                         <AttendanceTypeBadge type={record.type} compact />
-                        <AttendanceProvenanceBadge record={record} compact />
+                        {isMaster ? (
+                          <AttendanceProvenanceBadge record={record} compact />
+                        ) : null}
                       </div>
-                      <AttendanceProvenanceNote record={record} compact />
+                      {isMaster ? (
+                        <AttendanceProvenanceNote record={record} compact />
+                      ) : null}
 
                       {forgotten ? (
                         <button

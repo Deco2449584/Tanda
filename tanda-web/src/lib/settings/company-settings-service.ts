@@ -95,6 +95,11 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
     attendanceBreak: mapAttendanceBreak(data),
     attendancePolicy: mapAttendancePolicy(data),
     attendanceRestrictions: mapAttendanceRestrictions(data),
+    defaultDepartmentName:
+      typeof data.defaultDepartmentName === 'string' &&
+      data.defaultDepartmentName.trim()
+        ? data.defaultDepartmentName.trim()
+        : undefined,
   };
 }
 
@@ -127,6 +132,9 @@ export async function saveCompanySettings(
       attendanceBreak: settings.attendanceBreak,
       attendancePolicy: settings.attendancePolicy,
       attendanceRestrictions: settings.attendanceRestrictions,
+      ...(settings.defaultDepartmentName
+        ? { defaultDepartmentName: settings.defaultDepartmentName }
+        : {}),
     },
     { merge: true },
   );

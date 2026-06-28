@@ -5,6 +5,7 @@ import { Megaphone, Send } from 'lucide-react';
 import { broadcastAnnouncementRequest } from '@/lib/announcements/announcement-api';
 import type { AnnouncementAudience } from '@/lib/types/announcement';
 import type { Employee } from '@/lib/types/employee';
+import { useDepartments } from '@/providers/DepartmentsProvider';
 import type { Location } from '@/lib/types/location';
 
 interface BroadcastAnnouncementFormProps {
@@ -34,14 +35,16 @@ export function BroadcastAnnouncementForm({
   const [audienceValue, setAudienceValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const { departmentNames } = useDepartments();
+
   const departments = useMemo(() => {
-    const values = new Set<string>();
+    const values = new Set(departmentNames);
     employees.forEach((employee) => {
       const department = employee.department?.trim();
       if (department) values.add(department);
     });
     return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [employees]);
+  }, [departmentNames, employees]);
 
   const recipientCount = useMemo(() => {
     return employees.filter((employee) => {

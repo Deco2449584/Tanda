@@ -7,7 +7,6 @@ import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
-import { NotificationsSettingsTab } from '@/components/settings/NotificationsSettingsTab';
 import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
 import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
@@ -88,8 +87,6 @@ export default function EmployeeDashboardPage() {
             employeeId={employee.employeeId}
             loading={employeeLoading}
           />
-
-          <NotificationsSettingsTab />
 
           <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
             <WeeklyHoursCard hours={weeklyHours} loading={recordsLoading} />

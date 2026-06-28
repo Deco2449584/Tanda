@@ -5,6 +5,7 @@ import { Coffee, X } from 'lucide-react';
 import { updateAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { AttendanceMapLink } from '@/components/attendance/AttendanceMapLink';
 import { AttendanceProvenancePanel } from '@/components/attendance/ManualAttendanceBadge';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import {
   formatAttendanceType,
   formatRecordDate,
@@ -30,6 +31,7 @@ export function EditAttendanceModal({
   attendanceBreak,
   onClose,
 }: EditAttendanceModalProps) {
+  const { isMaster } = useAdminAccess();
   const [type, setType] = useState<AttendanceType>('check_in');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -242,7 +244,7 @@ export function EditAttendanceModal({
           ) : null}
 
           <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-3 text-xs text-subtle">
-            <AttendanceProvenancePanel record={record} />
+            {isMaster ? <AttendanceProvenancePanel record={record} /> : null}
             <div className="grid gap-2 sm:grid-cols-2">
               <p>
                 <span className="font-medium text-muted">Kiosk</span>

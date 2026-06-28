@@ -17,6 +17,7 @@ import {
 } from '@/components/employees/EmployeeAccessRoleSection';
 import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
+import { EmployeeDepartmentSelect } from '@/components/employees/EmployeeDepartmentSelect';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import {
   FormActions,
@@ -52,6 +53,7 @@ import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAdminRoleTemplates } from '@/hooks/useAdminRoleTemplates';
 import { db } from '@/lib/firebase';
 import { useLocations } from '@/providers/LocationsProvider';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import type { CreateEmployeeFormValues, Employee } from '@/lib/types/employee';
 
@@ -86,6 +88,7 @@ function isEmployeeIdTakenByOther(
 export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeFormProps) {
   const isEditMode = Boolean(employee);
   const { activeLocations } = useLocations();
+  const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
   const { isMaster } = useAdminAccess();
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
@@ -170,6 +173,15 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   }, [employeeIdEdited, employees, employeesLoading, isEditMode]);
 
   useEffect(() => {
+    if (isEditMode || !settings.defaultDepartmentName) return;
+
+    setForm((current) => {
+      if (current.department.trim()) return current;
+      return { ...current, department: settings.defaultDepartmentName ?? '' };
+    });
+  }, [isEditMode, settings.defaultDepartmentName]);
+
+  useEffect(() => {
     if (accessRole !== 'admin' || adminRoleId || adminRoleTemplates.length === 0) {
       return;
     }
@@ -220,8 +232,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     if (
       !form.employeeId.trim() ||
       !form.name.trim() ||
-      !form.email.trim() ||
-      (!isKiosk && !form.department.trim())
+      !form.email.trim()
     ) {
       setError('Complete all required work details.');
       return;
@@ -516,22 +527,25 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             />
           </FormField>
 
-          <FormField
-            label="Department"
-            htmlFor="emp-dept"
-            required={!isKiosk}
-          >
-            <input
+          {!isKiosk ? (
+            <EmployeeDepartmentSelect
               id="emp-dept"
-              type="text"
-              required={!isKiosk}
-              value={isKiosk ? 'Kiosk' : form.department}
-              onChange={(event) => patchForm({ department: event.target.value })}
-              disabled={isBusy || isKiosk}
-              className={formInputClass}
-              placeholder="Logistics, Operations…"
+              value={form.department}
+              onChange={(department) => patchForm({ department })}
+              disabled={isBusy}
+              allowUnassigned
             />
-          </FormField>
+          ) : (
+            <FormField label="Department" htmlFor="emp-dept">
+              <input
+                id="emp-dept"
+                type="text"
+                value="Kiosk"
+                disabled
+                className={formInputClass}
+              />
+            </FormField>
+          )}
 
           {isMaster ? (
             <div className="md:col-span-2">

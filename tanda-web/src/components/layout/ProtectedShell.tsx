@@ -15,9 +15,9 @@ import { AdminAccessProvider } from '@/providers/AdminAccessProvider';
 import { useAttendanceAlertSync } from '@/hooks/useAttendanceAlertSync';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
 import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
-import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
-import { LocationGroupsProvider } from '@/providers/LocationGroupsProvider';
 import { LocationsProvider } from '@/providers/LocationsProvider';
+import { LocationGroupsProvider } from '@/providers/LocationGroupsProvider';
+import { DepartmentsProvider } from '@/providers/DepartmentsProvider';
 
 interface ProtectedShellProps {
   children: React.ReactNode;
@@ -153,7 +153,9 @@ function ProtectedLayoutContent({
       <AdminAttendanceSync>
         <EmployeesProvider>
           <LocationsProvider>
-            <LocationGroupsProvider>{layout}</LocationGroupsProvider>
+            <DepartmentsProvider>
+              <LocationGroupsProvider>{layout}</LocationGroupsProvider>
+            </DepartmentsProvider>
           </LocationsProvider>
         </EmployeesProvider>
       </AdminAttendanceSync>
@@ -190,7 +192,6 @@ function EmployeeNotificationsShell({
       userEmail={userEmail ?? ''}
       employeeCode={employee?.employeeId ?? ''}
     >
-      <PushNotificationSetup />
       {children}
     </EmployeeShiftNotificationsProvider>
   );

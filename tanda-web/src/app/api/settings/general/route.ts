@@ -27,6 +27,9 @@ export async function PUT(request: Request) {
       attendanceBreak: body.attendanceBreak,
       attendancePolicy: body.attendancePolicy,
       attendanceRestrictions: body.attendanceRestrictions,
+      ...(body.defaultDepartmentName
+        ? { defaultDepartmentName: body.defaultDepartmentName }
+        : {}),
     };
 
     await docRef.set(payload, { merge: true });

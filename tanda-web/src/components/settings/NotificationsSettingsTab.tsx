@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { NotificationChannelPreferencesPanel } from '@/components/notifications/NotificationChannelPreferencesPanel';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { isAdminAreaRole } from '@/lib/auth/roles';
 import {
   saveNotificationChannels,
   subscribeToNotificationChannels,
@@ -14,7 +15,8 @@ import {
 } from '@/lib/notifications/notification-channels';
 
 export function NotificationsSettingsTab() {
-  const { user } = useAuthRole();
+  const { user, role } = useAuthRole();
+  const canManagePush = isAdminAreaRole(role ?? 'empleado');
   const email = user?.email?.trim().toLowerCase() ?? '';
   const [channels, setChannels] = useState<NotificationChannelPreferences>(
     mapNotificationChannels(null),
@@ -54,8 +56,9 @@ export function NotificationsSettingsTab() {
       <div>
         <h2 className="text-sm font-semibold text-white">Notifications</h2>
         <p className="mt-1 text-xs text-subtle">
-          These preferences apply across the app: your notification tray, admin
-          operational alerts, in-app messages, and push on this device.
+          {canManagePush
+            ? 'These preferences apply across the app: operational alerts, in-app messages, and push on this device.'
+            : 'In-app notification preferences for your account.'}
         </p>
       </div>
 
@@ -65,7 +68,7 @@ export function NotificationsSettingsTab() {
         onChange={handleChannelsChange}
       />
 
-      {pushSupported ? (
+      {canManagePush && pushSupported ? (
         <div className="rounded-xl border border-border bg-surface-base/50 p-4">
           <p className="text-sm font-medium text-foreground">Browser push alerts</p>
           <p className="mt-1 text-xs text-subtle">

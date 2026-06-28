@@ -24,6 +24,8 @@ export interface AttendanceRestrictionsSettings {
 export interface CompanySettings {
   timeZone: string;
   currency: string;
+  /** Pre-selected department name when creating new employees. */
+  defaultDepartmentName?: string;
   attendanceBreak: AttendanceBreakSettings;
   attendancePolicy: AttendancePolicySettings;
   attendanceRestrictions: AttendanceRestrictionsSettings;

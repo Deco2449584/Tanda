@@ -9,6 +9,7 @@ import { AuditLogsTab } from '@/components/settings/AuditLogsTab';
 import { DataPurgeTab } from '@/components/settings/DataPurgeTab';
 import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { LocationsTab } from '@/components/settings/LocationsTab';
+import { DepartmentsTab } from '@/components/settings/DepartmentsTab';
 import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
 import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
 import { NotificationsSettingsTab } from '@/components/settings/NotificationsSettingsTab';
@@ -36,6 +37,7 @@ type SettingsTab =
   | 'data'
   | 'portal'
   | 'locations'
+  | 'departments'
   | 'locationGroups'
   | 'kioskDevices';
 
@@ -47,6 +49,7 @@ const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'auditLogs', label: 'Audit logs' },
   { id: 'profile', label: 'Administrator' },
   { id: 'locations', label: 'Locations' },
+  { id: 'departments', label: 'Departments' },
   { id: 'locationGroups', label: 'Location groups' },
   { id: 'kioskDevices', label: 'Kiosk devices' },
   { id: 'portal', label: 'Portal clients' },
@@ -205,6 +208,9 @@ export default function SettingsPage() {
           )}
           {activeTab === 'locations' && canManageSettings && (
             <LocationsTab onToast={showToast} />
+          )}
+          {activeTab === 'departments' && canManageSettings && (
+            <DepartmentsTab onToast={showToast} />
           )}
           {activeTab === 'locationGroups' && canManageSettings && (
             <LocationGroupsTab onToast={showToast} />

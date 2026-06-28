@@ -1,37 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ChevronDown, LogOut, Menu } from 'lucide-react';
 import { AdminNotificationsMenu } from '@/components/layout/AdminNotificationsMenu';
 import { EmployeeNotificationsMenu } from '@/components/layout/EmployeeNotificationsMenu';
+import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { useSignOut } from '@/hooks/useSignOut';
+import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { auth } from '@/lib/firebase';
 import { cn } from '@/lib/cn';
 import type { UserRole } from '@/lib/auth/roles';
 import { isAdminAreaRole } from '@/lib/auth/roles';
 
 const DEFAULT_PROFILE_NAME = 'Admin';
-
-function getInitials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return '?';
-
-  if (trimmed.includes('@')) {
-    const local = trimmed.split('@')[0] ?? '';
-    const parts = local.split(/[._-]+/).filter(Boolean);
-    if (parts.length >= 2) {
-      return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase();
-    }
-    return local.slice(0, 2).toUpperCase();
-  }
-
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
-  }
-  return trimmed.slice(0, 2).toUpperCase();
-}
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -40,11 +22,13 @@ interface HeaderProps {
 
 export function Header({ onMenuClick, role }: HeaderProps) {
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { signOutUser, signingOut } = useSignOut();
+  const { employee } = useCurrentEmployee(userEmail);
 
-  const initials = useMemo(() => getInitials(profileName), [profileName]);
+  const displayName = employee?.name?.trim() || profileName;
 
   useEffect(() => {
     if (!auth) return;
@@ -52,6 +36,7 @@ export function Header({ onMenuClick, role }: HeaderProps) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       const display = user?.displayName?.trim() || user?.email || DEFAULT_PROFILE_NAME;
       setProfileName(display);
+      setUserEmail(user?.email ?? null);
     });
 
     return () => unsubscribe();
@@ -77,7 +62,7 @@ export function Header({ onMenuClick, role }: HeaderProps) {
   }
 
   return (
-    <header className="relative z-50 flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface-base/80 px-4 backdrop-blur-sm">
+    <header className="relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface-base/80 px-4 backdrop-blur-sm">
       <div className="flex min-w-0 flex-1 items-center md:hidden">
         <button
           type="button"
@@ -103,14 +88,13 @@ export function Header({ onMenuClick, role }: HeaderProps) {
             aria-expanded={menuOpen}
             aria-haspopup="menu"
           >
-            <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-muted text-xs font-semibold text-primary"
-              aria-hidden
-            >
-              {initials}
-            </span>
+            <EmployeeAvatar
+              name={displayName}
+              photoUrl={employee?.photoUrl}
+              size="sm"
+            />
             <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">
-              {profileName.includes('@') ? profileName.split('@')[0] : profileName}
+              {displayName.includes('@') ? displayName.split('@')[0] : displayName}
             </span>
             <ChevronDown
               className={cn(
@@ -125,7 +109,7 @@ export function Header({ onMenuClick, role }: HeaderProps) {
               role="menu"
               className="absolute right-0 top-full z-[100] mt-2 w-52 overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-xl"
             >
-              <p className="truncate px-3 py-2 text-xs text-subtle">{profileName}</p>
+              <p className="truncate px-3 py-2 text-xs text-subtle">{displayName}</p>
               <div className="my-1 border-t border-border" />
               <button
                 type="button"
