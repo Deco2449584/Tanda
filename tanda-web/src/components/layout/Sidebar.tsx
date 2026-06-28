@@ -8,6 +8,8 @@ import {
   CalendarDays,
   ClipboardList,
   Clock,
+  Flag,
+  HelpCircle,
   LayoutDashboard,
   Megaphone,
   MonitorSmartphone,
@@ -15,6 +17,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Video,
   X,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
@@ -59,6 +62,14 @@ const adminNavGroups: NavGroup[] = [
     items: [{ label: 'Inspections', href: '/inspections', icon: PackageSearch }],
   },
   {
+    title: 'Support',
+    items: [
+      { label: 'Help', href: '/help', icon: HelpCircle },
+      { label: 'Issue reports', href: '/issue-reports', icon: Flag },
+      { label: 'Help tutorials', href: '/help-tutorials', icon: Video },
+    ],
+  },
+  {
     title: 'System',
     items: [
       { label: 'Kiosk check-in', href: '/kiosk', icon: MonitorSmartphone },
@@ -78,6 +89,13 @@ const employeeNavGroups: NavGroup[] = [
       { label: 'My records', href: '/my-records', icon: ClipboardList },
       { label: 'My schedule', href: '/my-schedule', icon: CalendarDays },
       { label: 'My leave', href: '/my-requests', icon: ShieldCheck },
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      { label: 'Help', href: '/help', icon: HelpCircle },
+      { label: 'Report issue', href: '/report-issue', icon: Flag },
     ],
   },
 ];

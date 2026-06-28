@@ -16,6 +16,8 @@ export const COLLECTIONS = {
   ADMIN_ROLES: 'admin_roles',
   AUDIT_LOGS: 'audit_logs',
   SETTINGS: 'settings',
+  ISSUE_REPORTS: 'issue_reports',
+  HELP_TUTORIALS: 'help_tutorials',
 } as const;
 
 export const TIMEZONE_OPTIONS = [

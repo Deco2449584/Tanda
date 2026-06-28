@@ -297,6 +297,16 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // 17. Reportes de incidencias — solo Admin SDK (API routes)
+    match /issue_reports/{reportId} {
+      allow read, write: if false;
+    }
+
+    // 18. Tutoriales de ayuda — solo Admin SDK (API routes)
+    match /help_tutorials/{tutorialId} {
+      allow read, write: if false;
+    }
+
     // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;

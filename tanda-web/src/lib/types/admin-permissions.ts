@@ -6,6 +6,8 @@ export const ADMIN_MODULE_KEYS = [
   'announcements',
   'leaveRequests',
   'inspections',
+  'issueReports',
+  'helpTutorials',
   'kiosk',
   'settings',
 ] as const;
@@ -18,6 +20,8 @@ export const ADMIN_EDIT_MODULE_KEYS = [
   'employees',
   'leaveRequests',
   'announcements',
+  'issueReports',
+  'helpTutorials',
   'settings',
 ] as const;
 

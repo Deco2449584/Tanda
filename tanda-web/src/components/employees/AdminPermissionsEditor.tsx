@@ -16,6 +16,8 @@ const MODULE_LABELS: Record<AdminModuleKey, string> = {
   announcements: 'Announcements',
   leaveRequests: 'Leave requests',
   inspections: 'Inspections',
+  issueReports: 'Issue reports',
+  helpTutorials: 'Help tutorials',
   kiosk: 'Kiosk check-in',
   settings: 'Settings',
 };
@@ -26,6 +28,8 @@ const EDIT_LABELS: Record<AdminEditModuleKey, string> = {
   employees: 'Edit employees',
   leaveRequests: 'Manage leave requests',
   announcements: 'Publish announcements',
+  issueReports: 'Triage issue reports',
+  helpTutorials: 'Manage help tutorials',
   settings: 'Change system settings',
 };
 

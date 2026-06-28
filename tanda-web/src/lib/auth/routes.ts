@@ -21,6 +21,14 @@ export function isRouteAllowedForEmployee(pathname: string): boolean {
     return true;
   }
 
+  if (pathname === '/help' || pathname.startsWith('/help/')) {
+    return true;
+  }
+
+  if (pathname === '/report-issue' || pathname.startsWith('/report-issue/')) {
+    return true;
+  }
+
   return isEmployeeOnlyRoute(pathname);
 }
 

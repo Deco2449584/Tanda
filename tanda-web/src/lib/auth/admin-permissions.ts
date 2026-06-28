@@ -17,6 +17,8 @@ export const ADMIN_MODULE_ROUTES: Record<AdminModuleKey, string> = {
   announcements: '/announcements',
   leaveRequests: '/leave-requests',
   inspections: '/inspections',
+  issueReports: '/issue-reports',
+  helpTutorials: '/help-tutorials',
   kiosk: '/kiosk',
   settings: '/settings',
 };
