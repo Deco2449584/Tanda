@@ -11,6 +11,7 @@ import {
   getAttendanceRecordSnapshot,
   updateAttendanceRecordAdmin,
 } from '@/lib/attendance/server/attendance-records-admin';
+import { reconcileEmployeePresenceByCode } from '@/lib/attendance/server/employee-presence';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 
 export async function PATCH(
@@ -73,6 +74,12 @@ export async function PATCH(
 
     await updateAttendanceRecordAdmin(id, update, admin);
 
+    const employeeCode =
+      typeof existing.data.employeeId === 'string' ? existing.data.employeeId : '';
+    if (employeeCode) {
+      await reconcileEmployeePresenceByCode(employeeCode);
+    }
+
     const after = await getAttendanceRecordSnapshot(id);
     const employeeName =
       typeof existing.data.employeeNameSnapshot === 'string'
@@ -126,7 +133,14 @@ export async function DELETE(
         ? existing.data.employeeNameSnapshot
         : String(existing.data.employeeId ?? 'employee');
 
+    const employeeCode =
+      typeof existing.data.employeeId === 'string' ? existing.data.employeeId : '';
+
     await deleteAttendanceRecordAdmin(id);
+
+    if (employeeCode) {
+      await reconcileEmployeePresenceByCode(employeeCode);
+    }
 
     await recordAuditFromRequest(request, admin, {
       action: 'attendance.deleted',

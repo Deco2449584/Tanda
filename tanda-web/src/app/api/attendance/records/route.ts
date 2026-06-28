@@ -8,8 +8,8 @@ import {
 import {
   createAttendanceRecordAdmin,
   getEmployeeSnapshot,
-  syncEmployeePresence,
 } from '@/lib/attendance/server/attendance-records-admin';
+import { reconcileEmployeePresence } from '@/lib/attendance/server/employee-presence';
 import {
   logAttendanceRestrictionBlocked,
   validateEmployeeCheckInRestrictions,
@@ -127,11 +127,7 @@ export async function POST(request: Request) {
     });
 
     if (body.syncEmployeePresence) {
-      await syncEmployeePresence({
-        employeeDocId,
-        type: body.type,
-        timestampMs: body.timestampMs,
-      });
+      await reconcileEmployeePresence(employeeDocId, employeeCode);
     }
 
     const afterSnapshot = {
