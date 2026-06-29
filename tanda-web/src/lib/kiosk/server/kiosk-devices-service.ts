@@ -10,6 +10,7 @@ import type {
   KioskDevice,
   KioskDeviceDetails,
   KioskDeviceSession,
+  KioskDeviceStatus,
   KioskDeviceType,
 } from '@/lib/types/kiosk-device';
 
@@ -95,6 +96,35 @@ export interface ActivateKioskDeviceInput {
   requiresApproval?: boolean;
 }
 
+export function kioskDeviceOwnerEmail(device: Pick<KioskDevice, 'ownerEmail' | 'createdBy'>): string {
+  return (device.ownerEmail ?? device.createdBy ?? '').trim().toLowerCase();
+}
+
+export function isKioskDeviceOwnedBy(
+  device: Pick<KioskDevice, 'ownerEmail' | 'createdBy'>,
+  email: string,
+): boolean {
+  const owner = kioskDeviceOwnerEmail(device);
+  const requester = email.trim().toLowerCase();
+  return Boolean(owner && requester && owner === requester);
+}
+
+function resolveActivationStatus(
+  existing: KioskDevice | null,
+  requiresApproval: boolean,
+  createdBy: string,
+): KioskDeviceStatus {
+  if (!requiresApproval) {
+    return 'active';
+  }
+
+  if (existing?.status === 'active' && isKioskDeviceOwnedBy(existing, createdBy)) {
+    return 'active';
+  }
+
+  return 'pending';
+}
+
 /**
  * Registers a kiosk device for this browser tab. Uses clientSessionId as the
  * Firestore document id so the same tab cannot create duplicate connections.
@@ -110,7 +140,11 @@ export async function activateKioskDevice(
 
   const docRef = db.collection(COLLECTIONS.KIOSK_DEVICES).doc(clientSessionId);
   const existingSnap = await docRef.get();
-  const nextStatus = input.requiresApproval ? 'pending' : 'active';
+  const existing = existingSnap.exists
+    ? mapKioskDeviceDoc(existingSnap.id, existingSnap.data() ?? {})
+    : null;
+  const requiresApproval = input.requiresApproval === true;
+  const nextStatus = resolveActivationStatus(existing, requiresApproval, input.createdBy);
 
   const base: Record<string, unknown> = {
     status: nextStatus,
@@ -130,10 +164,8 @@ export async function activateKioskDevice(
     ? hashKioskLockPin(input.lockPin)
     : null;
 
-  if (existingSnap.exists) {
-    const existing = mapKioskDeviceDoc(existingSnap.id, existingSnap.data() ?? {});
-
-    if (existing.status === 'active') {
+  if (existingSnap.exists && existing) {
+    if (existing.status === 'active' && !requiresApproval) {
       const updatePayload: Record<string, unknown> = {
         ...base,
         status: 'active',

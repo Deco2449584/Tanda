@@ -7,6 +7,7 @@ import {
 } from '@/lib/kiosk/server/device-token';
 import {
   buildKioskDeviceSession,
+  isKioskDeviceOwnedBy,
   resolveKioskDeviceForClient,
 } from '@/lib/kiosk/server/kiosk-devices-service';
 
@@ -42,6 +43,15 @@ export async function GET(request: Request) {
         pendingDevice: null,
         revokedDevice: null,
         resetToken: Boolean(token),
+      });
+    }
+
+    if (!isKioskDeviceOwnedBy(device, auth.email)) {
+      return NextResponse.json({
+        session: null,
+        pendingDevice: null,
+        revokedDevice: null,
+        resetToken: true,
       });
     }
 

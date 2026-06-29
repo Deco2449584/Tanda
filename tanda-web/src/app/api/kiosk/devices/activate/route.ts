@@ -4,6 +4,13 @@ import { getKioskClientSessionIdFromRequest, getKioskDeviceTokenFromRequest } fr
 import { activateKioskDevice } from '@/lib/kiosk/server/kiosk-devices-service';
 import type { KioskDeviceDetails, KioskDeviceType } from '@/lib/types/kiosk-device';
 
+function kioskActivationRequiresApproval(
+  role: 'admin' | 'master' | 'kiosk' | 'empleado',
+): boolean {
+  // Dedicated kiosk accounts and admins activate devices directly.
+  return role === 'empleado';
+}
+
 const MIN_TOKEN_LENGTH = 16;
 const LOCK_PIN_PATTERN = /^\d{4,8}$/;
 
@@ -67,7 +74,7 @@ export async function POST(request: Request) {
       lockPin: type === 'tablet' ? lockPin : undefined,
       details: body.details,
       createdBy: auth.email,
-      requiresApproval: auth.role === 'empleado',
+      requiresApproval: kioskActivationRequiresApproval(auth.role),
     });
 
     return NextResponse.json({ session });
