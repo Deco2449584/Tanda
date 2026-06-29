@@ -17,10 +17,9 @@ import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useSignOut } from '@/hooks/useSignOut';
 import { getHomeRouteForRole, isAdminAreaRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
+import { releaseKioskSession } from '@/lib/kiosk/clear-kiosk-session';
 import {
-  clearKioskDeviceToken,
   ensureKioskClientSessionId,
-  getKioskDeviceToken,
   kioskDeviceHeaders,
 } from '@/lib/kiosk/device-token';
 import {
@@ -96,8 +95,7 @@ export function KioskApp() {
         | null;
 
       if (data?.resetToken) {
-        clearKioskDeviceToken();
-        clearKioskModeActive();
+        await releaseKioskSession();
         setSession(null);
         setPhase('setup');
         setLockedView('idle');
@@ -230,12 +228,8 @@ export function KioskApp() {
   }, [dashboardRoute, router]);
 
   const handleSignOut = useCallback(async () => {
-    clearKioskDeviceToken();
-    clearKioskModeActive();
-    await exitKioskFullscreen();
     await signOutUser();
-    router.replace('/login');
-  }, [router, signOutUser]);
+  }, [signOutUser]);
 
   if (authLoading || !user || (hasAccess && employeeLoading) || phase === 'loading') {
     return (

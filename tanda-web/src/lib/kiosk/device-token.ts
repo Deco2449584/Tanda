@@ -71,8 +71,21 @@ export function ensureKioskDeviceToken(): string {
 }
 
 export function clearKioskDeviceToken(): void {
-  const storage = getStorage();
-  storage?.removeItem(DEVICE_TOKEN_KEY);
+  if (typeof window === 'undefined') return;
+  getStorage()?.removeItem(DEVICE_TOKEN_KEY);
+  window.sessionStorage.removeItem(DEVICE_TOKEN_KEY);
+}
+
+export function clearKioskClientSessionId(): void {
+  if (typeof window === 'undefined') return;
+  getStorage()?.removeItem(CLIENT_SESSION_KEY);
+  window.sessionStorage.removeItem(CLIENT_SESSION_KEY);
+}
+
+/** Drops all kiosk browser state so the next login does not inherit this device. */
+export function clearKioskLocalCache(): void {
+  clearKioskDeviceToken();
+  clearKioskClientSessionId();
 }
 
 export function kioskDeviceHeaders(): HeadersInit {

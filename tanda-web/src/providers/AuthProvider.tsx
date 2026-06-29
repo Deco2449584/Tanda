@@ -17,6 +17,7 @@ import {
 } from '@/lib/auth/employee-session';
 import type { UserRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
+import { releaseKioskSession } from '@/lib/kiosk/clear-kiosk-session';
 
 interface AuthContextValue {
   user: User | null;
@@ -66,10 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return;
             }
 
-            void signOut(auth).finally(() => {
-              if (requestId !== roleRequestId) return;
-              setUser(null);
-              setRole(null);
+            void releaseKioskSession().finally(() => {
+              if (!auth) {
+                setRole(null);
+                return;
+              }
+
+              void signOut(auth).finally(() => {
+                if (requestId !== roleRequestId) return;
+                setUser(null);
+                setRole(null);
+              });
             });
             return;
           }
@@ -99,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
+      await releaseKioskSession();
       await signOut(auth);
       router.replace('/login');
     } catch {

@@ -19,6 +19,7 @@ import {
 } from '@/lib/auth/employee-session';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
+import { releaseKioskSession } from '@/lib/kiosk/clear-kiosk-session';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -104,6 +105,7 @@ function LoginPageContent() {
       const blockMessage = getEmployeeSessionBlockMessage(session);
 
       if (blockMessage) {
+        await releaseKioskSession();
         await signOut(auth);
         setError(blockMessage);
         return;
