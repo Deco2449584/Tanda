@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Lock, MonitorSmartphone } from 'lucide-react';
+import { Loader2, Lock, MonitorSmartphone, X } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { auth } from '@/lib/firebase';
 import {
@@ -20,6 +20,7 @@ interface KioskActivationProps {
   defaultName: string;
   onActivated: (session: KioskDeviceSession) => void;
   onCancel?: () => void;
+  cancelLabel?: string;
 }
 
 export function KioskActivation({
@@ -28,6 +29,7 @@ export function KioskActivation({
   defaultName,
   onActivated,
   onCancel,
+  cancelLabel = 'Cancel',
 }: KioskActivationProps) {
   const [mode, setMode] = useState<'tablet' | 'mobile'>(defaultMode);
   const isTablet = mode === 'tablet';
@@ -142,7 +144,19 @@ export function KioskActivation({
 
   return (
     <div className="kiosk-ambient flex min-h-[100dvh] items-center justify-center px-4 py-8 text-white">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-md">
+      <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-md">
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-zinc-400 transition hover:border-white/20 hover:text-white disabled:opacity-60"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+            {cancelLabel}
+          </button>
+        ) : null}
+
         <div className="flex flex-col items-center text-center">
           <CompanyLogo variant="light" className="h-auto w-40 object-contain" />
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -287,7 +301,7 @@ export function KioskActivation({
               disabled={submitting}
               className="w-full text-center text-xs text-zinc-500 transition hover:text-zinc-300 disabled:opacity-60"
             >
-              Cancel
+              {cancelLabel}
             </button>
           ) : null}
         </div>

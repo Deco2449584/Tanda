@@ -51,6 +51,7 @@ export function KioskApp() {
   const [session, setSession] = useState<KioskDeviceSession | null>(null);
   const [lockedView, setLockedView] = useState<LockedView>('idle');
   const [kioskPaused, setKioskPaused] = useState(false);
+  const [showDeviceSetup, setShowDeviceSetup] = useState(false);
 
   const dashboardRoute = getHomeRouteForRole(role ?? 'empleado');
   const isKioskAccount = role === 'kiosk';
@@ -72,6 +73,7 @@ export function KioskApp() {
       setSession(null);
       setPhase('setup');
       setLockedView('idle');
+      setShowDeviceSetup(false);
       return;
     }
 
@@ -99,6 +101,7 @@ export function KioskApp() {
         setSession(null);
         setPhase('setup');
         setLockedView('idle');
+        setShowDeviceSetup(false);
         return;
       }
 
@@ -136,10 +139,12 @@ export function KioskApp() {
       setSession(null);
       setPhase('setup');
       setLockedView('idle');
+      setShowDeviceSetup(false);
     } catch {
       setSession(null);
       setPhase('setup');
       setLockedView('idle');
+      setShowDeviceSetup(false);
     }
   }, []);
 
@@ -269,13 +274,32 @@ export function KioskApp() {
   }
 
   if (phase === 'setup') {
+    if (isKioskAccount && !showDeviceSetup) {
+      return (
+        <KioskIdleScreen
+          showDashboardLink={false}
+          onSetUpDevice={() => setShowDeviceSetup(true)}
+          onGoToDashboard={() => router.push(dashboardRoute)}
+          onSignOut={handleSignOut}
+          signingOut={signingOut}
+        />
+      );
+    }
+
     return (
       <KioskActivation
         defaultMode={isKioskAccount ? 'tablet' : 'mobile'}
         defaultLocationId={employee?.locationId ?? ''}
         defaultName={employee?.name ?? ''}
         onActivated={(next) => void handleActivated(next)}
-        onCancel={canLeaveToDashboard ? () => router.push(dashboardRoute) : undefined}
+        onCancel={
+          isKioskAccount
+            ? () => setShowDeviceSetup(false)
+            : canLeaveToDashboard
+              ? () => router.push(dashboardRoute)
+              : undefined
+        }
+        cancelLabel={isKioskAccount ? 'Exit' : 'Cancel'}
       />
     );
   }
