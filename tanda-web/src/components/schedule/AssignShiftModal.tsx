@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
@@ -10,8 +10,15 @@ import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
 import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
+import {
+  getAllowedLocationsForEmployee,
+  isLocationAllowedForEmployee,
+} from '@/lib/location-groups/can-punch-at-location';
 import { useLocations } from '@/providers/LocationsProvider';
+import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import type { Employee } from '@/lib/types/employee';
+import type { Location } from '@/lib/types/location';
+import type { LocationGroup } from '@/lib/types/location-group';
 import type { AssignShiftInput } from '@/lib/types/shift';
 
 interface AssignShiftModalProps {
@@ -28,6 +35,30 @@ const emptyForm: Omit<AssignShiftInput, 'employeeId' | 'employeeName' | 'date'> 
   locationId: '',
 };
 
+function resolveEmployeeShiftLocation(
+  employee: Employee,
+  preferredLocationId: string | undefined,
+  locations: readonly Location[],
+  groups: readonly LocationGroup[],
+): string {
+  const allowed = getAllowedLocationsForEmployee(employee, locations, groups);
+  const preferred = preferredLocationId?.trim();
+
+  if (preferred && allowed.some((location) => location.id === preferred)) {
+    return preferred;
+  }
+
+  const assignedLocationId = employee.locationId?.trim();
+  if (
+    assignedLocationId &&
+    allowed.some((location) => location.id === assignedLocationId)
+  ) {
+    return assignedLocationId;
+  }
+
+  return allowed[0]?.id ?? '';
+}
+
 export function AssignShiftModal({
   open,
   initialData,
@@ -35,6 +66,7 @@ export function AssignShiftModal({
   onClose,
 }: AssignShiftModalProps) {
   const { locations } = useLocations();
+  const { groups } = useLocationGroups();
   const [employeeId, setEmployeeId] = useState('');
   const [startTime, setStartTime] = useState(emptyForm.startTime);
   const [endTime, setEndTime] = useState(emptyForm.endTime);
@@ -50,13 +82,40 @@ export function AssignShiftModal({
     setStartTime(initialData.startTime || emptyForm.startTime);
     setEndTime(initialData.endTime || emptyForm.endTime);
     setDepartment(initialData.department || emptyForm.department);
-    setLocationId(initialData.locationId ?? emptyForm.locationId ?? '');
     setError('');
-  }, [open, initialData]);
+
+    const employee = employees.find((item) => item.employeeId === initialData.employeeId);
+    if (employee) {
+      setLocationId(
+        resolveEmployeeShiftLocation(
+          employee,
+          initialData.locationId,
+          locations,
+          groups,
+        ),
+      );
+    } else {
+      setLocationId(initialData.locationId ?? emptyForm.locationId ?? '');
+    }
+  }, [open, initialData, employees, locations, groups]);
+
+  const selectedEmployee = useMemo(
+    () => employees.find((employee) => employee.employeeId === employeeId),
+    [employees, employeeId],
+  );
+
+  const allowedLocations = useMemo(() => {
+    if (!selectedEmployee) return [];
+    return getAllowedLocationsForEmployee(selectedEmployee, locations, groups);
+  }, [selectedEmployee, locations, groups]);
+
+  const allowedLocationIds = useMemo(
+    () => allowedLocations.map((location) => location.id),
+    [allowedLocations],
+  );
 
   if (!open || !initialData) return null;
 
-  const selectedEmployee = employees.find((e) => e.employeeId === employeeId);
   const employeeName = selectedEmployee?.name ?? initialData.employeeName;
   const isPastDate = !isOnOrAfterToday(initialData.date);
   const isEditing = Boolean(initialData.shiftId?.trim());
@@ -72,8 +131,10 @@ export function AssignShiftModal({
     if (employee?.department) {
       setDepartment(employee.department);
     }
-    if (employee?.locationId) {
-      setLocationId(employee.locationId);
+    if (employee) {
+      setLocationId(resolveEmployeeShiftLocation(employee, undefined, locations, groups));
+    } else {
+      setLocationId('');
     }
   }
 
@@ -101,6 +162,23 @@ export function AssignShiftModal({
 
     if (!locationId.trim()) {
       setError('Select a location.');
+      return;
+    }
+
+    if (!selectedEmployee) {
+      setError('Select an employee.');
+      return;
+    }
+
+    if (allowedLocations.length === 0) {
+      setError(
+        'This employee has no assigned location or location group. Update their profile before scheduling.',
+      );
+      return;
+    }
+
+    if (!isLocationAllowedForEmployee(selectedEmployee, locationId, groups)) {
+      setError('This location is not assigned to the selected employee.');
       return;
     }
 
@@ -287,9 +365,16 @@ export function AssignShiftModal({
             id="shift-location"
             value={locationId}
             onChange={setLocationId}
-            disabled={isSubmitting || isPastDate}
+            disabled={isSubmitting || isPastDate || !selectedEmployee}
             required
+            allowedLocationIds={selectedEmployee ? allowedLocationIds : []}
           />
+          {selectedEmployee && allowedLocations.length === 0 ? (
+            <p className="text-xs text-amber-300">
+              Assign a location or location group to this employee in their profile
+              before scheduling shifts.
+            </p>
+          ) : null}
 
           {error ? (
             <p
@@ -311,7 +396,7 @@ export function AssignShiftModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isPastDate}
+              disabled={isSubmitting || isPastDate || allowedLocations.length === 0}
               className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white hover:opacity-90 disabled:opacity-70"
             >
               {isSubmitting ? 'Saving...' : isEditing ? 'Save changes' : 'Assign shift'}

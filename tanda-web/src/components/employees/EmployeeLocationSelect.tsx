@@ -10,6 +10,8 @@ interface EmployeeLocationSelectProps {
   disabled?: boolean;
   required?: boolean;
   allowUnassigned?: boolean;
+  /** When set, only these location ids are shown (e.g. employee's site + group). */
+  allowedLocationIds?: string[];
 }
 
 export function EmployeeLocationSelect({
@@ -19,10 +21,16 @@ export function EmployeeLocationSelect({
   disabled = false,
   required = false,
   allowUnassigned = false,
+  allowedLocationIds,
 }: EmployeeLocationSelectProps) {
   const { activeLocations, locations, loading } = useLocations();
 
-  const options = activeLocations.length > 0 ? activeLocations : locations;
+  const baseOptions = activeLocations.length > 0 ? activeLocations : locations;
+  const options =
+    allowedLocationIds === undefined
+      ? baseOptions
+      : baseOptions.filter((location) => allowedLocationIds.includes(location.id));
+  const hasAllowedFilter = allowedLocationIds !== undefined;
 
   return (
     <div>
@@ -47,7 +55,11 @@ export function EmployeeLocationSelect({
         )}
         {options.length === 0 ? (
           <option value="" disabled>
-            {loading ? 'Loading locations…' : 'No locations — create one in Settings'}
+            {loading
+              ? 'Loading locations…'
+              : hasAllowedFilter
+                ? 'No locations available for this employee'
+                : 'No locations — create one in Settings'}
           </option>
         ) : (
           options.map((location) => (
