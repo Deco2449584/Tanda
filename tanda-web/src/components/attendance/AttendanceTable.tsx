@@ -30,8 +30,10 @@ interface AttendanceTableProps {
   employeeCodes: Record<string, string>;
   loading: boolean;
   searchQuery: string;
-  onEdit: (record: AttendanceRecord) => void;
-  onAddManualCheckout: (record: AttendanceRecord) => void;
+  onEdit?: (record: AttendanceRecord) => void;
+  onAddManualCheckout?: (record: AttendanceRecord) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export function AttendanceTable({
@@ -41,10 +43,14 @@ export function AttendanceTable({
   searchQuery,
   onEdit,
   onAddManualCheckout,
+  canUpdate = false,
+  canDelete = false,
 }: AttendanceTableProps) {
   const { isMaster } = useAdminAccess();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AttendanceRecord | null>(null);
+
+  const showRowActions = canUpdate || canDelete || Boolean(onAddManualCheckout);
 
   const filteredRecords = useMemo(() => {
     const queryText = searchQuery.trim().toLowerCase();
@@ -113,9 +119,11 @@ export function AttendanceTable({
                 <th className="px-4 py-3.5 font-semibold text-white">
                   Timestamp (Server)
                 </th>
-                <th className="px-4 py-3.5 font-semibold text-white">
-                  Actions
-                </th>
+                {showRowActions ? (
+                  <th className="px-4 py-3.5 font-semibold text-white">
+                    Actions
+                  </th>
+                ) : null}
               </tr>
             </thead>
             <tbody>
@@ -166,14 +174,16 @@ export function AttendanceTable({
                       {isForgottenCheckIn(record, records) ? (
                         <div className="flex flex-col items-start gap-2">
                           <ForgottenCheckoutBadge />
-                          <button
-                            type="button"
-                            onClick={() => onAddManualCheckout(record)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/15 px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
-                          >
-                            <LogOut className="h-3.5 w-3.5" />
-                            Add check-out
-                          </button>
+                          {onAddManualCheckout ? (
+                            <button
+                              type="button"
+                              onClick={() => onAddManualCheckout(record)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/15 px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
+                            >
+                              <LogOut className="h-3.5 w-3.5" />
+                              Add check-out
+                            </button>
+                          ) : null}
                         </div>
                       ) : (
                         <div>
@@ -184,27 +194,33 @@ export function AttendanceTable({
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(record)}
-                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
-                          aria-label={`Edit record for ${record.employeeNameSnapshot}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPendingDelete(record)}
-                          disabled={deletingId === record.id}
-                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Delete record for ${record.employeeNameSnapshot}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+                    {showRowActions ? (
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          {canUpdate && onEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => onEdit(record)}
+                              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
+                              aria-label={`Edit record for ${record.employeeNameSnapshot}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                          {canDelete ? (
+                            <button
+                              type="button"
+                              onClick={() => setPendingDelete(record)}
+                              disabled={deletingId === record.id}
+                              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Delete record for ${record.employeeNameSnapshot}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                    ) : null}
                   </tr>
                 ))
               )}
@@ -255,23 +271,27 @@ export function AttendanceTable({
                         </div>
 
                         <div className="flex shrink-0 items-center gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => onEdit(record)}
-                            className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-primary"
-                            aria-label={`Edit record for ${record.employeeNameSnapshot}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPendingDelete(record)}
-                            disabled={deletingId === record.id}
-                            className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Delete record for ${record.employeeNameSnapshot}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {canUpdate && onEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => onEdit(record)}
+                              className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-primary"
+                              aria-label={`Edit record for ${record.employeeNameSnapshot}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                          {canDelete ? (
+                            <button
+                              type="button"
+                              onClick={() => setPendingDelete(record)}
+                              disabled={deletingId === record.id}
+                              className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={`Delete record for ${record.employeeNameSnapshot}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          ) : null}
                         </div>
                       </div>
 
@@ -283,7 +303,7 @@ export function AttendanceTable({
                         ) : null}
                       </div>
 
-                      {forgotten ? (
+                      {forgotten && onAddManualCheckout ? (
                         <button
                           type="button"
                           onClick={() => onAddManualCheckout(record)}

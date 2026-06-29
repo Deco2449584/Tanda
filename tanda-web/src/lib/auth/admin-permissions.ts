@@ -1,6 +1,15 @@
 import {
+  mapModulePermissions,
+  moduleHasAnyAction,
+  canPerformAction,
+  buildResolvedActionsFromMapped,
+} from '@/lib/auth/admin-action-permissions';
+import {
   ADMIN_EDIT_MODULE_KEYS,
   ADMIN_MODULE_KEYS,
+  ADMIN_MODULE_ACTIONS,
+  type AdminActionModule,
+  type AdminActionName,
   type AdminEditModuleKey,
   type AdminModuleKey,
   type AdminModulePermissionsFirestore,
@@ -8,6 +17,16 @@ import {
 } from '@/lib/types/admin-permissions';
 import type { UserRole } from '@/lib/auth/roles';
 import { isAdminAreaRole, isMasterRole } from '@/lib/auth/roles';
+
+export {
+  ADMIN_ACTION_LABELS,
+  ADMIN_EDIT_MODULE_KEYS,
+  ADMIN_MODULE_ACTIONS,
+  ADMIN_MODULE_KEYS,
+  canPerformAction,
+  moduleHasAnyAction,
+  mapModulePermissions,
+} from '@/lib/auth/admin-action-permissions';
 
 export const ADMIN_MODULE_ROUTES: Record<AdminModuleKey, string> = {
   dashboard: '/dashboard',
@@ -25,32 +44,25 @@ export const ADMIN_MODULE_ROUTES: Record<AdminModuleKey, string> = {
 
 const MODULE_ORDER: AdminModuleKey[] = [...ADMIN_MODULE_KEYS];
 
+function buildFullActions(): ResolvedAdminAccess['actions'] {
+  return Object.fromEntries(
+    ADMIN_EDIT_MODULE_KEYS.map((moduleKey) => [
+      moduleKey,
+      Object.fromEntries(
+        ADMIN_MODULE_ACTIONS[moduleKey].map((action) => [action, true]),
+      ),
+    ]),
+  ) as ResolvedAdminAccess['actions'];
+}
+
 function buildFullAccess(): ResolvedAdminAccess {
+  const mapped = mapModulePermissions(null);
   return {
     isMaster: false,
     isAdminArea: true,
-    modules: Object.fromEntries(
-      ADMIN_MODULE_KEYS.map((key) => [key, true]),
-    ) as Record<AdminModuleKey, boolean>,
-    edit: Object.fromEntries(
-      ADMIN_EDIT_MODULE_KEYS.map((key) => [key, true]),
-    ) as Record<AdminEditModuleKey, boolean>,
-  };
-}
-
-export function mapModulePermissions(
-  raw: AdminModulePermissionsFirestore | null | undefined,
-): AdminModulePermissionsFirestore {
-  const modules = raw?.modules ?? {};
-  const edit = raw?.edit ?? {};
-
-  return {
-    modules: Object.fromEntries(
-      ADMIN_MODULE_KEYS.map((key) => [key, modules[key] !== false]),
-    ) as Record<AdminModuleKey, boolean>,
-    edit: Object.fromEntries(
-      ADMIN_EDIT_MODULE_KEYS.map((key) => [key, edit[key] !== false]),
-    ) as Record<AdminEditModuleKey, boolean>,
+    modules: mapped.modules as Record<AdminModuleKey, boolean>,
+    edit: mapped.edit as Record<AdminEditModuleKey, boolean>,
+    actions: buildFullActions(),
   };
 }
 
@@ -76,6 +88,7 @@ export function resolveAdminAccess(input: {
     isAdminArea: true,
     modules: mapped.modules as Record<AdminModuleKey, boolean>,
     edit: mapped.edit as Record<AdminEditModuleKey, boolean>,
+    actions: buildResolvedActionsFromMapped(mapped),
   };
 }
 
@@ -118,3 +131,6 @@ export function getDefaultAdminHref(access: ResolvedAdminAccess): string {
 export function createDefaultModulePermissions(): AdminModulePermissionsFirestore {
   return mapModulePermissions(null);
 }
+
+// Re-export for consumers that import from this module
+export type { AdminActionModule, AdminActionName };

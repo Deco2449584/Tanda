@@ -28,6 +28,9 @@ interface HelpTutorialManagePanelProps {
   loading?: boolean;
   onChanged: () => void;
   onError: (message: string) => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 const AUDIENCE_LABELS: Record<HelpTutorialAudience, string> = {
@@ -44,6 +47,9 @@ export function HelpTutorialManagePanel({
   loading,
   onChanged,
   onError,
+  canCreate = true,
+  canUpdate = true,
+  canDelete = true,
 }: HelpTutorialManagePanelProps) {
   const { departmentNames } = useDepartments();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -178,6 +184,7 @@ export function HelpTutorialManagePanel({
 
   return (
     <div className="space-y-6">
+      {canCreate ? (
       <form
         onSubmit={(event) => void handleSubmit(event)}
         className="space-y-4 rounded-2xl border border-border bg-surface-raised p-5 md:p-6"
@@ -357,6 +364,11 @@ export function HelpTutorialManagePanel({
           {saving ? 'Uploading…' : 'Save tutorial'}
         </button>
       </form>
+      ) : (
+        <p className="rounded-2xl border border-border bg-surface-raised p-5 text-sm text-subtle md:p-6">
+          You can view tutorials but do not have permission to upload new ones.
+        </p>
+      )}
 
       <section>
         <h2 className="mb-3 text-sm font-semibold text-foreground">Published tutorials</h2>
@@ -384,26 +396,30 @@ export function HelpTutorialManagePanel({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void handleTogglePublished(tutorial)}
-                    className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted transition hover:text-foreground"
-                  >
-                    {tutorial.published ? 'Unpublish' : 'Publish'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={deletingId === tutorial.id}
-                    onClick={() => void handleDelete(tutorial.id)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-red-900/40 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-950/30 disabled:opacity-60"
-                  >
-                    {deletingId === tutorial.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                    Delete
-                  </button>
+                  {canUpdate ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleTogglePublished(tutorial)}
+                      className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted transition hover:text-foreground"
+                    >
+                      {tutorial.published ? 'Unpublish' : 'Publish'}
+                    </button>
+                  ) : null}
+                  {canDelete ? (
+                    <button
+                      type="button"
+                      disabled={deletingId === tutorial.id}
+                      onClick={() => void handleDelete(tutorial.id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-900/40 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-950/30 disabled:opacity-60"
+                    >
+                      {deletingId === tutorial.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                      Delete
+                    </button>
+                  ) : null}
                 </div>
               </li>
             ))}

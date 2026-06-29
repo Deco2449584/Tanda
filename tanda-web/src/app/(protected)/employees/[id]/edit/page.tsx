@@ -1,20 +1,40 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { EmployeeForm } from '@/components/employees/EmployeeForm';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useEmployees } from '@/providers/EmployeesProvider';
 
 export default function EditEmployeePage() {
   const router = useRouter();
   const params = useParams();
   const employeeDocId = typeof params.id === 'string' ? params.id : '';
-  const { employees, loading } = useEmployees();
+  const { employees, loading: employeesLoading } = useEmployees();
+  const { loading: accessLoading, canAccessModule, canPerformAction } = useAdminAccess();
+  const canUpdate = canPerformAction('employees', 'update');
 
   const employee = employees.find((item) => item.id === employeeDocId) ?? null;
+  const loading = employeesLoading || accessLoading;
+
+  useEffect(() => {
+    if (accessLoading) return;
+    if (!canAccessModule('employees') || !canUpdate) {
+      router.replace('/employees');
+    }
+  }, [accessLoading, canAccessModule, canUpdate, router]);
+
+  if (loading || !canUpdate) {
+    return (
+      <PageContent>
+        <LoadingIndicator message="Loading…" />
+      </PageContent>
+    );
+  }
 
   return (
     <PageContent className="mx-auto max-w-4xl space-y-6 pb-8">
@@ -38,7 +58,7 @@ export default function EditEmployeePage() {
         </div>
       </div>
 
-      {loading ? (
+      {employeesLoading ? (
         <LoadingIndicator message="Loading employee…" className="h-64" />
       ) : !employee ? (
         <p className="rounded-xl border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">

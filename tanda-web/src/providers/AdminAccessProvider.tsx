@@ -16,11 +16,15 @@ import {
   getDefaultAdminHref,
   mapModulePermissions,
   resolveAdminAccess,
+  canPerformAction,
+  moduleHasAnyAction,
 } from '@/lib/auth/admin-permissions';
 import { isAdminAreaRole } from '@/lib/auth/roles';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import type {
+  AdminActionModule,
+  AdminActionName,
   AdminEditModuleKey,
   AdminModuleKey,
   AdminModulePermissionsFirestore,
@@ -34,6 +38,10 @@ interface AdminAccessContextValue {
   defaultHref: string;
   canAccessModule: (moduleKey: AdminModuleKey) => boolean;
   canEditModule: (moduleKey: AdminEditModuleKey) => boolean;
+  canPerformAction: <M extends AdminActionModule>(
+    module: M,
+    action: AdminActionName<M>,
+  ) => boolean;
 }
 
 const AdminAccessContext = createContext<AdminAccessContextValue | null>(null);
@@ -104,7 +112,12 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       access?.isMaster === true || access?.modules[moduleKey] === true;
 
     const canEditModule = (moduleKey: AdminEditModuleKey) =>
-      access?.isMaster === true || access?.edit[moduleKey] === true;
+      moduleHasAnyAction(access, moduleKey);
+
+    const canPerformActionForUser = <M extends AdminActionModule>(
+      module: M,
+      action: AdminActionName<M>,
+    ) => canPerformAction(access, module, action);
 
     return {
       access,
@@ -113,6 +126,7 @@ export function AdminAccessProvider({ children }: { children: ReactNode }) {
       defaultHref: access ? getDefaultAdminHref(access) : '/dashboard',
       canAccessModule,
       canEditModule,
+      canPerformAction: canPerformActionForUser,
     };
   }, [access, employeeLoading, isAdminUser, templateLoading]);
 

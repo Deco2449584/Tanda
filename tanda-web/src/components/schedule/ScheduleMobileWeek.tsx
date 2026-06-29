@@ -19,7 +19,7 @@ interface ScheduleMobileWeekProps {
   shiftsByCell: Map<string, Shift[]>;
   employeesByCode: Map<string, Employee>;
   onCellClick: (employee: Employee, date: string) => void;
-  onDeleteShift: (shift: Shift, employeeName: string) => void;
+  onDeleteShift?: (shift: Shift, employeeName: string) => void;
 }
 
 function shiftKey(employeeId: string, date: string) {
@@ -45,7 +45,7 @@ interface MobileDayCellProps {
   employee: Employee;
   employeesByCode: Map<string, Employee>;
   onCellClick: (employee: Employee, date: string) => void;
-  onDeleteShift: (shift: Shift, employeeName: string) => void;
+  onDeleteShift?: (shift: Shift, employeeName: string) => void;
 }
 
 function MobileDayCell({
@@ -104,20 +104,22 @@ function MobileDayCell({
               +{shifts.length - 1}
             </span>
           ) : null}
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDeleteShift(
-                primaryShift,
-                employeesByCode.get(primaryShift.employeeId)?.name ?? employee.name,
-              );
-            }}
-            className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-border-strong bg-surface-raised text-subtle shadow-sm hover:text-red-400"
-            aria-label={`Delete shift for ${employee.name}`}
-          >
-            <Trash2 className="h-2.5 w-2.5" />
-          </button>
+          {onDeleteShift ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDeleteShift(
+                  primaryShift,
+                  employeesByCode.get(primaryShift.employeeId)?.name ?? employee.name,
+                );
+              }}
+              className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-border-strong bg-surface-raised text-subtle shadow-sm hover:text-red-400"
+              aria-label={`Delete shift for ${employee.name}`}
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+            </button>
+          ) : null}
         </>
       ) : (
         <Plus className="h-4 w-4 text-subtle" aria-hidden />

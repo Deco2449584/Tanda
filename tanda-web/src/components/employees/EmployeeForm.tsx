@@ -90,7 +90,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const { activeLocations } = useLocations();
   const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
-  const { isMaster } = useAdminAccess();
+  const { isMaster, canPerformAction } = useAdminAccess();
+  const canInviteEmployees = canPerformAction('employees', 'invite');
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
   const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
   const [adminRoleId, setAdminRoleId] = useState('');
@@ -398,18 +399,20 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           });
         }
 
-        try {
-          await requestEmployeeInvite({
-            email: form.email.trim(),
-            name: form.name.trim(),
-            employeeDocId: docRef.id,
-          });
-        } catch (inviteError) {
-          const message =
-            inviteError instanceof Error
-              ? inviteError.message
-              : 'Could not send the invite email.';
-          throw new Error(`Employee saved, but the invite email failed: ${message}`);
+        if (canInviteEmployees) {
+          try {
+            await requestEmployeeInvite({
+              email: form.email.trim(),
+              name: form.name.trim(),
+              employeeDocId: docRef.id,
+            });
+          } catch (inviteError) {
+            const message =
+              inviteError instanceof Error
+                ? inviteError.message
+                : 'Could not send the invite email.';
+            throw new Error(`Employee saved, but the invite email failed: ${message}`);
+          }
         }
 
         void recordEmployeeAuditEvent({
@@ -630,7 +633,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           )}
         </FormGrid>
 
-        {isEditMode && employee ? (
+        {isEditMode && employee && canInviteEmployees ? (
           <div className="rounded-xl border border-border/80 bg-surface-base/50 p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

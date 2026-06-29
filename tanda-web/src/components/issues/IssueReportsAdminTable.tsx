@@ -12,6 +12,7 @@ interface IssueReportsAdminTableProps {
   reports: SerializedIssueReport[];
   loading?: boolean;
   onUpdated?: () => void;
+  canManage?: boolean;
 }
 
 function formatWhen(value: string | null): string {
@@ -28,6 +29,7 @@ export function IssueReportsAdminTable({
   reports,
   loading,
   onUpdated,
+  canManage = true,
 }: IssueReportsAdminTableProps) {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
@@ -94,18 +96,24 @@ export function IssueReportsAdminTable({
               <p className="mt-1 text-xs text-muted">{report.reporterEmail}</p>
             </div>
             <div className="flex items-center gap-2">
-              <select
-                value={report.status}
-                disabled={savingId === report.id}
-                onChange={(event) => void handleStatusChange(report, event.target.value)}
-                className="rounded-lg border border-border bg-surface-base px-2.5 py-1.5 text-xs text-foreground"
-              >
-                {ISSUE_REPORT_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status.replace('_', ' ')}
-                  </option>
-                ))}
-              </select>
+              {canManage ? (
+                <select
+                  value={report.status}
+                  disabled={savingId === report.id}
+                  onChange={(event) => void handleStatusChange(report, event.target.value)}
+                  className="rounded-lg border border-border bg-surface-base px-2.5 py-1.5 text-xs text-foreground"
+                >
+                  {ISSUE_REPORT_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status.replace('_', ' ')}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="rounded-lg border border-border bg-surface-base px-2.5 py-1.5 text-xs text-muted">
+                  {report.status.replace('_', ' ')}
+                </span>
+              )}
               {savingId === report.id ? (
                 <Loader2 className="h-4 w-4 animate-spin text-muted" />
               ) : null}
@@ -127,27 +135,35 @@ export function IssueReportsAdminTable({
 
           <div className="mt-4 space-y-2">
             <label className="text-xs font-medium text-muted">Admin notes</label>
-            <textarea
-              rows={2}
-              value={notesDraft[report.id] ?? report.adminNotes ?? ''}
-              disabled={savingId === report.id}
-              onChange={(event) =>
-                setNotesDraft((current) => ({
-                  ...current,
-                  [report.id]: event.target.value,
-                }))
-              }
-              className="w-full rounded-lg border border-border bg-surface-base px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-              placeholder="Internal notes or reply to the employee"
-            />
-            <button
-              type="button"
-              disabled={savingId === report.id}
-              onClick={() => void handleSaveNotes(report)}
-              className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted transition hover:text-foreground disabled:opacity-60"
-            >
-              Save notes
-            </button>
+            {canManage ? (
+              <>
+                <textarea
+                  rows={2}
+                  value={notesDraft[report.id] ?? report.adminNotes ?? ''}
+                  disabled={savingId === report.id}
+                  onChange={(event) =>
+                    setNotesDraft((current) => ({
+                      ...current,
+                      [report.id]: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-border bg-surface-base px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  placeholder="Internal notes or reply to the employee"
+                />
+                <button
+                  type="button"
+                  disabled={savingId === report.id}
+                  onClick={() => void handleSaveNotes(report)}
+                  className="rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted transition hover:text-foreground disabled:opacity-60"
+                >
+                  Save notes
+                </button>
+              </>
+            ) : (
+              <p className="whitespace-pre-wrap rounded-lg border border-border bg-surface-base px-3 py-2 text-sm text-muted">
+                {report.adminNotes?.trim() || '—'}
+              </p>
+            )}
           </div>
         </article>
       ))}

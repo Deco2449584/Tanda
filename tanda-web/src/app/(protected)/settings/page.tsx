@@ -73,9 +73,9 @@ function deriveDisplayName(
 export default function SettingsPage() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuthRole();
-  const { isMaster, canAccessModule, canEditModule } = useAdminAccess();
+  const { isMaster, canAccessModule, canPerformAction } = useAdminAccess();
   const canManageSettings = canAccessModule('settings');
-  const canEditSettings = canEditModule('settings');
+  const canEditSettings = canPerformAction('settings', 'update');
 
   const tabs = useMemo(
     () =>

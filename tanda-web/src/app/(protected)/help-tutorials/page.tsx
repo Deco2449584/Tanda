@@ -6,12 +6,17 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { fetchHelpTutorialsAdmin } from '@/lib/help/help-tutorials-api';
 import type { SerializedHelpTutorial } from '@/lib/help/help-tutorials-api';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 
 export default function HelpTutorialsAdminPage() {
+  const { canPerformAction } = useAdminAccess();
+  const canCreateTutorials = canPerformAction('helpTutorials', 'create');
+  const canUpdateTutorials = canPerformAction('helpTutorials', 'update');
+  const canDeleteTutorials = canPerformAction('helpTutorials', 'delete');
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations, loading: locationsLoading } = useLocations();
   const [tutorials, setTutorials] = useState<SerializedHelpTutorial[]>([]);
@@ -56,6 +61,9 @@ export default function HelpTutorialsAdminPage() {
           employees={employees}
           locations={locations}
           loading={loading}
+          canCreate={canCreateTutorials}
+          canUpdate={canUpdateTutorials}
+          canDelete={canDeleteTutorials}
           onChanged={() => {
             setToast({
               id: crypto.randomUUID(),

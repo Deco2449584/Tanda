@@ -14,8 +14,10 @@ import type { Employee } from '@/lib/types/employee';
 export default function EmployeesPage() {
   const router = useRouter();
   const { employees, loading } = useEmployees();
-  const { canEditModule } = useAdminAccess();
-  const canEditEmployees = canEditModule('employees');
+  const { canPerformAction } = useAdminAccess();
+  const canCreateEmployees = canPerformAction('employees', 'create');
+  const canUpdateEmployees = canPerformAction('employees', 'update');
+  const canDeleteEmployees = canPerformAction('employees', 'delete');
   const [searchQuery, setSearchQuery] = useState('');
 
   function handleEdit(employee: Employee) {
@@ -27,7 +29,7 @@ export default function EmployeesPage() {
       <PageHeader title="Staff Management" />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {canEditEmployees ? (
+        {canCreateEmployees ? (
           <Link
             href="/employees/new"
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-colors hover:opacity-90"
@@ -58,7 +60,8 @@ export default function EmployeesPage() {
         employees={employees}
         loading={loading}
         searchQuery={searchQuery}
-        onEdit={canEditEmployees ? handleEdit : undefined}
+        onEdit={canUpdateEmployees ? handleEdit : undefined}
+        canDelete={canDeleteEmployees}
       />
     </PageContent>
   );

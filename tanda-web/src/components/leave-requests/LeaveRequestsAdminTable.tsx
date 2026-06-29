@@ -18,6 +18,7 @@ interface LeaveRequestsAdminTableProps {
   employeesByCode: Record<string, Employee>;
   loading: boolean;
   searchQuery: string;
+  canManage?: boolean;
 }
 
 export function LeaveRequestsAdminTable({
@@ -25,6 +26,7 @@ export function LeaveRequestsAdminTable({
   employeesByCode,
   loading,
   searchQuery,
+  canManage = true,
 }: LeaveRequestsAdminTableProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -143,27 +145,31 @@ export function LeaveRequestsAdminTable({
                     </td>
                     <td className="px-4 py-3.5">
                       {isPending ? (
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateStatus(request.id, 'Approved')}
-                            disabled={isUpdating}
-                            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            APPROVE
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => updateStatus(request.id, 'Rejected')}
-                            disabled={isUpdating}
-                            className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                            REJECT
-                          </button>
-                        </div>
-                      ) : (
+                        canManage ? (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateStatus(request.id, 'Approved')}
+                              disabled={isUpdating}
+                              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                              APPROVE
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateStatus(request.id, 'Rejected')}
+                              disabled={isUpdating}
+                              className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              REJECT
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-subtle">View only</span>
+                        )
+                      ) : canManage ? (
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -180,6 +186,8 @@ export function LeaveRequestsAdminTable({
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
+                      ) : (
+                        <span className="text-xs text-subtle">View only</span>
                       )}
                     </td>
                   </tr>
@@ -239,27 +247,33 @@ export function LeaveRequestsAdminTable({
                 </dl>
 
                 {isPending ? (
-                  <div className="mt-4 flex gap-2 border-t border-border/60 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => updateStatus(request.id, 'Approved')}
-                      disabled={isUpdating}
-                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      APPROVE
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateStatus(request.id, 'Rejected')}
-                      disabled={isUpdating}
-                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      REJECT
-                    </button>
-                  </div>
-                ) : (
+                  canManage ? (
+                    <div className="mt-4 flex gap-2 border-t border-border/60 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(request.id, 'Approved')}
+                        disabled={isUpdating}
+                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        APPROVE
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(request.id, 'Rejected')}
+                        disabled={isUpdating}
+                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        REJECT
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="mt-4 border-t border-border/60 pt-3 text-center text-xs text-subtle">
+                      View only — you cannot approve or reject requests.
+                    </p>
+                  )
+                ) : canManage ? (
                   <div className="mt-4 flex justify-end gap-2 border-t border-border/60 pt-3">
                     <button
                       type="button"
@@ -276,6 +290,10 @@ export function LeaveRequestsAdminTable({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+                ) : (
+                  <p className="mt-4 border-t border-border/60 pt-3 text-center text-xs text-subtle">
+                    View only
+                  </p>
                 )}
               </article>
             );

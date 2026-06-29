@@ -24,6 +24,7 @@ interface EmployeeTableProps {
   loading: boolean;
   searchQuery: string;
   onEdit?: (employee: Employee) => void;
+  canDelete?: boolean;
 }
 
 function StatusBadge({
@@ -59,6 +60,7 @@ export function EmployeeTable({
   loading,
   searchQuery,
   onEdit,
+  canDelete = false,
 }: EmployeeTableProps) {
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
@@ -126,7 +128,7 @@ export function EmployeeTable({
   const emptyMessage = searchQuery
     ? 'No employees match that search.'
     : 'No employees registered. Create the first one.';
-  const showActions = Boolean(onEdit);
+  const showActions = Boolean(onEdit) || canDelete;
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
@@ -193,28 +195,32 @@ export function EmployeeTable({
                   {showActions ? (
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEdit?.(employee)}
-                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
-                          aria-label={`Edit ${employee.name}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(employee)}
-                          disabled={deletingId === employee.id || isAdminAccount}
-                          title={
-                            isAdminAccount
-                              ? 'Administrator accounts cannot be deleted'
-                              : `Delete ${employee.name}`
-                          }
-                          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Delete ${employee.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {onEdit ? (
+                          <button
+                            type="button"
+                            onClick={() => onEdit(employee)}
+                            className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
+                            aria-label={`Edit ${employee.name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(employee)}
+                            disabled={deletingId === employee.id || isAdminAccount}
+                            title={
+                              isAdminAccount
+                                ? 'Administrator accounts cannot be deleted'
+                                : `Delete ${employee.name}`
+                            }
+                            className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Delete ${employee.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   ) : null}
@@ -266,28 +272,32 @@ export function EmployeeTable({
 
                     {showActions ? (
                       <div className="flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => onEdit?.(employee)}
-                          className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-primary"
-                          aria-label={`Edit ${employee.name}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(employee)}
-                          disabled={deletingId === employee.id || isAdminAccount}
-                          title={
-                            isAdminAccount
-                              ? 'Administrator accounts cannot be deleted'
-                              : `Delete ${employee.name}`
-                          }
-                          className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Delete ${employee.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {onEdit ? (
+                          <button
+                            type="button"
+                            onClick={() => onEdit(employee)}
+                            className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-primary"
+                            aria-label={`Edit ${employee.name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(employee)}
+                            disabled={deletingId === employee.id || isAdminAccount}
+                            title={
+                              isAdminAccount
+                                ? 'Administrator accounts cannot be deleted'
+                                : `Delete ${employee.name}`
+                            }
+                            className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Delete ${employee.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

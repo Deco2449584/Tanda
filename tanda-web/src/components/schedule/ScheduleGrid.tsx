@@ -24,6 +24,8 @@ interface ScheduleGridProps {
   weekDays: WeekDay[];
   loading: boolean;
   onCellClick: (employee: Employee, date: string) => void;
+  canAssignShifts?: boolean;
+  canDeleteShifts?: boolean;
 }
 
 function shiftKey(employeeId: string, date: string) {
@@ -36,6 +38,8 @@ export function ScheduleGrid({
   weekDays,
   loading,
   onCellClick,
+  canAssignShifts = true,
+  canDeleteShifts = true,
 }: ScheduleGridProps) {
   const [pendingDelete, setPendingDelete] = useState<{
     shift: Shift;
@@ -131,8 +135,8 @@ export function ScheduleGrid({
           weekDays={weekDays}
           shiftsByCell={shiftsByCell}
           employeesByCode={employeesByCode}
-          onCellClick={onCellClick}
-          onDeleteShift={requestDelete}
+          onCellClick={canAssignShifts ? onCellClick : () => {}}
+          onDeleteShift={canDeleteShifts ? requestDelete : undefined}
         />
       </div>
 
@@ -176,7 +180,7 @@ export function ScheduleGrid({
                       shiftsByCell.get(shiftKey(employee.employeeId, day.date)) ??
                       [];
                     const hasShift = cellShifts.length > 0;
-                    const canSchedule = isOnOrAfterToday(day.date);
+                    const canSchedule = isOnOrAfterToday(day.date) && canAssignShifts;
 
                     function handleCellKeyDown(event: KeyboardEvent<HTMLDivElement>) {
                       if (!canSchedule) return;
@@ -212,12 +216,15 @@ export function ScheduleGrid({
                                 shift={shift}
                                 employeeName={employee.name}
                                 employeePhotoUrl={employee.photoUrl}
-                                onDelete={(shiftToDelete) =>
-                                  requestDelete(
-                                    shiftToDelete,
-                                    employeesByCode.get(shiftToDelete.employeeId)
-                                      ?.name ?? employee.name,
-                                  )
+                                onDelete={
+                                  canDeleteShifts
+                                    ? (shiftToDelete) =>
+                                        requestDelete(
+                                          shiftToDelete,
+                                          employeesByCode.get(shiftToDelete.employeeId)
+                                            ?.name ?? employee.name,
+                                        )
+                                    : undefined
                                 }
                               />
                             ))}

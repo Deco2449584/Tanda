@@ -8,6 +8,7 @@ import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAuthRole } from '@/hooks/useAuthRole';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { fetchAnnouncements } from '@/lib/announcements/announcement-api';
 import type { Announcement } from '@/lib/types/announcement';
 import { useEmployees } from '@/providers/EmployeesProvider';
@@ -29,6 +30,8 @@ function deriveDisplayName(
 
 export default function AnnouncementsPage() {
   const { user } = useAuthRole();
+  const { canPerformAction } = useAdminAccess();
+  const canPublishAnnouncements = canPerformAction('announcements', 'publish');
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations, loading: locationsLoading } = useLocations();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -72,7 +75,7 @@ export default function AnnouncementsPage() {
 
       {pageLoading ? (
         <LoadingIndicator message="Loading employees and locations…" />
-      ) : (
+      ) : canPublishAnnouncements ? (
         <BroadcastAnnouncementForm
           employees={employees}
           locations={locations}
@@ -93,6 +96,11 @@ export default function AnnouncementsPage() {
             });
           }}
         />
+      ) : (
+        <p className="rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-muted">
+          You can view announcement history but do not have permission to publish new
+          messages.
+        </p>
       )}
 
       <AnnouncementHistoryTable announcements={announcements} loading={loading} />

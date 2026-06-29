@@ -27,6 +27,7 @@ import { useLocations } from '@/providers/LocationsProvider';
 import { useDepartments } from '@/providers/DepartmentsProvider';
 import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
 import { isSchedulableEmployee } from '@/lib/employees/is-schedulable-employee';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
 import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
@@ -39,6 +40,9 @@ import type { AssignShiftInput, Shift } from '@/lib/types/shift';
 type ViewMode = 'weekly' | 'monthly';
 
 export default function SchedulePage() {
+  const { canPerformAction } = useAdminAccess();
+  const canAssignShifts = canPerformAction('schedule', 'create');
+  const canDeleteShifts = canPerformAction('schedule', 'delete');
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations } = useLocations();
   const { departmentNames } = useDepartments();
@@ -210,7 +214,7 @@ export default function SchedulePage() {
   }, [employees]);
 
   function handleCellClick(employee: Employee, date: string) {
-    if (!isOnOrAfterToday(date)) return;
+    if (!canAssignShifts || !isOnOrAfterToday(date)) return;
 
     setAssignData({
       employeeId: employee.employeeId,
@@ -225,7 +229,7 @@ export default function SchedulePage() {
   }
 
   function handleMonthDayClick(date: string) {
-    if (!isOnOrAfterToday(date)) return;
+    if (!canAssignShifts || !isOnOrAfterToday(date)) return;
 
     const first = filteredEmployees[0];
     setAssignData({
@@ -247,6 +251,8 @@ export default function SchedulePage() {
       weekDays={week.days}
       loading={pageLoading}
       onCellClick={handleCellClick}
+      canAssignShifts={canAssignShifts}
+      canDeleteShifts={canDeleteShifts}
     />
   );
 

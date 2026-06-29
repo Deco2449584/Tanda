@@ -5,10 +5,13 @@ import { IssueReportsAdminTable } from '@/components/issues/IssueReportsAdminTab
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { fetchIssueReports } from '@/lib/issues/issue-reports-api';
 import type { SerializedIssueReport } from '@/lib/issues/issue-reports-api';
 
 export default function IssueReportsAdminPage() {
+  const { canPerformAction } = useAdminAccess();
+  const canManageIssueReports = canPerformAction('issueReports', 'manage');
   const [reports, setReports] = useState<SerializedIssueReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -44,6 +47,7 @@ export default function IssueReportsAdminPage() {
       <IssueReportsAdminTable
         reports={reports}
         loading={loading}
+        canManage={canManageIssueReports}
         onUpdated={() => {
           setToast({
             id: crypto.randomUUID(),

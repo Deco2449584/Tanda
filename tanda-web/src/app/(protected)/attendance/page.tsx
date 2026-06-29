@@ -38,11 +38,16 @@ import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
 export default function AttendancePage() {
   const { settings } = useCompanySettings();
+  const { canPerformAction } = useAdminAccess();
+  const canCreateAttendance = canPerformAction('attendance', 'create');
+  const canUpdateAttendance = canPerformAction('attendance', 'update');
+  const canDeleteAttendance = canPerformAction('attendance', 'delete');
   const { employees, loading: employeesLoading } = useEmployees();
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
@@ -243,16 +248,18 @@ export default function AttendancePage() {
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setManualRecordOpen(true)}
-              disabled={pageLoading}
-              title="Add manual check-in or check-out"
-              aria-label="Add manual check-in or check-out"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-raised/80 text-muted transition-colors duration-150 hover:border-primary/40 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Plus className="h-4 w-4" strokeWidth={2} />
-            </button>
+            {canCreateAttendance ? (
+              <button
+                type="button"
+                onClick={() => setManualRecordOpen(true)}
+                disabled={pageLoading}
+                title="Add manual check-in or check-out"
+                aria-label="Add manual check-in or check-out"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-raised/80 text-muted transition-colors duration-150 hover:border-primary/40 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2} />
+              </button>
+            ) : null}
 
             <button
               type="button"
@@ -286,8 +293,12 @@ export default function AttendancePage() {
         employeeCodes={employeeCodes}
         loading={pageLoading}
         searchQuery={searchQuery}
-        onEdit={setEditingRecord}
-        onAddManualCheckout={setManualCheckoutRecord}
+        onEdit={canUpdateAttendance ? setEditingRecord : undefined}
+        onAddManualCheckout={
+          canCreateAttendance ? setManualCheckoutRecord : undefined
+        }
+        canUpdate={canUpdateAttendance}
+        canDelete={canDeleteAttendance}
       />
 
       <EditAttendanceModal
