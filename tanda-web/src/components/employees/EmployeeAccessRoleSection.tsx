@@ -98,8 +98,8 @@ export function EmployeeAccessRoleSection({
 
       {isKioskAccessRole(accessRole) ? (
         <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-subtle">
-          Kiosk accounts only need identity and sign-in details. Scheduling, payroll,
-          and personal file sections are hidden.
+          Set a sign-in email and password for the tablet. Employees clock in with their
+          own PIN — this account only opens the kiosk app.
         </p>
       ) : null}
     </div>

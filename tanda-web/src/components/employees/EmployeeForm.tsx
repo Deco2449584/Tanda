@@ -40,6 +40,7 @@ import {
 import { uploadEmployeeDocument } from '@/lib/employees/upload-document';
 import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { requestEmployeeInvite } from '@/lib/employees/request-employee-invite';
+import { requestKioskEmployeeAuth } from '@/lib/employees/request-kiosk-employee-auth';
 import { requestEmployeeAdminAccess } from '@/lib/employees/request-admin-access';
 import { recordEmployeeAuditEvent } from '@/lib/audit/audit-logs-client';
 import type { EmployeeAccessRole } from '@/lib/employees/request-admin-access';
@@ -48,6 +49,8 @@ import {
   isEmployeeIdTaken,
   suggestEmployeeId,
 } from '@/lib/employees/suggest-employee-id';
+import { suggestKioskAccountEmployeeId } from '@/lib/employees/suggest-kiosk-account-id';
+import { normalizeKioskLoginEmail } from '@/lib/employees/normalize-kiosk-login-email';
 import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAdminRoleTemplates } from '@/hooks/useAdminRoleTemplates';
@@ -108,6 +111,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResendingInvite, setIsResendingInvite] = useState(false);
   const [inviteMessage, setInviteMessage] = useState('');
+  const [kioskPassword, setKioskPassword] = useState('');
+  const [kioskPasswordConfirm, setKioskPasswordConfirm] = useState('');
   const [error, setError] = useState('');
 
   const isBusy = isUploading || isSubmitting || isResendingInvite;
@@ -130,6 +135,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       setVisaFile(null);
       setError('');
       setInviteMessage('');
+      setKioskPassword('');
+      setKioskPasswordConfirm('');
       return;
     }
 
@@ -144,6 +151,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     setVisaFile(null);
     setError('');
     setInviteMessage('');
+    setKioskPassword('');
+    setKioskPasswordConfirm('');
   }, [employee]);
 
   function applySuggestedEmployeeId() {
@@ -158,7 +167,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   }
 
   useEffect(() => {
-    if (isEditMode || employeeIdEdited || employeesLoading) return;
+    if (isEditMode || employeeIdEdited || employeesLoading || isKiosk) return;
 
     setForm((current) => {
       if (current.employeeId.trim()) return current;
@@ -171,7 +180,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         return current;
       }
     });
-  }, [employeeIdEdited, employees, employeesLoading, isEditMode]);
+  }, [employeeIdEdited, employees, employeesLoading, isEditMode, isKiosk]);
 
   useEffect(() => {
     if (isEditMode || !settings.defaultDepartmentName) return;
@@ -230,13 +239,36 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       return;
     }
 
-    if (
-      !form.employeeId.trim() ||
-      !form.name.trim() ||
-      !form.email.trim()
-    ) {
+    if (!form.name.trim() || !form.email.trim()) {
       setError('Complete all required work details.');
       return;
+    }
+
+    if (!isKiosk && !form.employeeId.trim()) {
+      setError('Complete all required work details.');
+      return;
+    }
+
+    if (isKiosk) {
+      if (!isEditMode && !kioskPassword.trim()) {
+        setError('Set a sign-in password for this kiosk account.');
+        return;
+      }
+
+      if (kioskPassword.trim() && kioskPassword.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+
+      if (!isEditMode && kioskPassword !== kioskPasswordConfirm) {
+        setError('Passwords do not match.');
+        return;
+      }
+
+      if (isEditMode && kioskPassword.trim() && kioskPassword !== kioskPasswordConfirm) {
+        setError('Passwords do not match.');
+        return;
+      }
     }
 
     if (!isKiosk && form.hourlyRate <= 0) {
@@ -254,8 +286,31 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       return;
     }
 
-    const employeeCode = form.employeeId.trim();
-    if (
+    let employeeCode = form.employeeId.trim();
+    if (isKiosk) {
+      if (!employeeCode) {
+        try {
+          employeeCode = suggestKioskAccountEmployeeId(
+            employees.map((item) => item.employeeId),
+          );
+        } catch {
+          setError('Could not generate an internal kiosk account ID. Try again.');
+          return;
+        }
+      }
+
+      if (
+        isEmployeeIdTakenByOther(employees, employeeCode, employee?.id) ||
+        (!isEditMode &&
+          isEmployeeIdTaken(
+            employees.map((item) => item.employeeId),
+            employeeCode,
+          ))
+      ) {
+        setError('Could not generate a unique kiosk account ID. Try again.');
+        return;
+      }
+    } else if (
       isEmployeeIdTakenByOther(employees, employeeCode, employee?.id) ||
       (!isEditMode &&
         isEmployeeIdTaken(
@@ -300,10 +355,14 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
 
       const normalizedForm: CreateEmployeeFormValues = {
         ...form,
+        employeeId: employeeCode,
+        email: isKiosk ? normalizeKioskLoginEmail(form.email) : form.email.trim().toLowerCase(),
         department: isKiosk ? 'Kiosk' : form.department.trim(),
         hourlyRate: isKiosk ? 0 : form.hourlyRate,
         startDate: isKiosk ? undefined : form.startDate,
         endDate: isKiosk ? undefined : form.endDate,
+        locationId: isKiosk ? '' : form.locationId,
+        locationGroupId: isKiosk ? '' : form.locationGroupId,
       };
 
       if (isEditMode && employee) {
@@ -317,8 +376,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         payload.active = active;
         payload.kioskEnabled = isKiosk ? false : kioskEnabled;
 
-        if (!form.locationId?.trim()) payload.locationId = deleteField();
-        if (!form.locationGroupId?.trim()) payload.locationGroupId = deleteField();
+        if (!normalizedForm.locationId?.trim()) payload.locationId = deleteField();
+        if (!normalizedForm.locationGroupId?.trim()) payload.locationGroupId = deleteField();
         if (!form.startDate?.trim()) payload.startDate = deleteField();
         if (!form.endDate?.trim()) payload.endDate = deleteField();
 
@@ -370,6 +429,15 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           }
         }
 
+        if (isKiosk && kioskPassword.trim()) {
+          await requestKioskEmployeeAuth({
+            email: normalizedForm.email,
+            name: form.name.trim(),
+            password: kioskPassword,
+            employeeDocId: employee.id,
+          });
+        }
+
         if (active !== employee.active) {
           await requestSyncEmployeeAuth(employee.id, active ? 'enable' : 'disable');
         }
@@ -399,7 +467,14 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           });
         }
 
-        if (canInviteEmployees) {
+        if (isKiosk) {
+          await requestKioskEmployeeAuth({
+            email: normalizedForm.email,
+            name: form.name.trim(),
+            password: kioskPassword,
+            employeeDocId: docRef.id,
+          });
+        } else if (canInviteEmployees) {
           try {
             await requestEmployeeInvite({
               email: form.email.trim(),
@@ -440,7 +515,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   function getSubmitLabel() {
     if (isUploading) return 'Uploading files…';
     if (isSubmitting) return isEditMode ? 'Saving changes…' : 'Saving employee…';
-    return isEditMode ? 'Save changes' : 'Create employee';
+    return isEditMode ? 'Save changes' : isKiosk ? 'Create kiosk account' : 'Create employee';
   }
 
   return (
@@ -449,62 +524,71 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         title="Work details"
         description={
           isKiosk
-            ? 'Kiosk device account for check-in terminals.'
+            ? 'Shared sign-in for kiosk tablets. Warehouse is chosen when the device starts.'
             : 'Core information used for scheduling, payroll, and kiosk access.'
         }
         icon={Briefcase}
       >
-        <EmployeePhotoUpload
-          currentPhotoUrl={employee?.photoUrl}
-          selectedFile={photoFile}
-          onFileChange={setPhotoFile}
-          disabled={isBusy}
-        />
+        {!isKiosk ? (
+          <EmployeePhotoUpload
+            currentPhotoUrl={employee?.photoUrl}
+            selectedFile={photoFile}
+            onFileChange={setPhotoFile}
+            disabled={isBusy}
+          />
+        ) : null}
 
         <FormGrid>
-          <FormField
-            label="Employee ID"
-            htmlFor="emp-id"
-            required
-            hint={
-              isEditMode
-                ? 'Unique code used across scheduling and kiosk lookup.'
-                : 'Suggested automatically and unique among staff. You can edit it before saving.'
-            }
-          >
-            <div className="flex gap-2">
-              <input
-                id="emp-id"
-                type="text"
-                required
-                inputMode="numeric"
-                value={form.employeeId}
-                onChange={(event) => {
-                  setEmployeeIdEdited(true);
-                  patchForm({ employeeId: event.target.value });
-                }}
-                disabled={isBusy}
-                className={formInputClass}
-                placeholder="0045"
-              />
-              {!isEditMode ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmployeeIdEdited(false);
-                    applySuggestedEmployeeId();
+          {!isKiosk ? (
+            <FormField
+              label="Employee ID"
+              htmlFor="emp-id"
+              required
+              hint={
+                isEditMode
+                  ? 'Unique code used across scheduling and kiosk lookup.'
+                  : 'Suggested automatically and unique among staff. You can edit it before saving.'
+              }
+            >
+              <div className="flex gap-2">
+                <input
+                  id="emp-id"
+                  type="text"
+                  required
+                  inputMode="numeric"
+                  value={form.employeeId}
+                  onChange={(event) => {
+                    setEmployeeIdEdited(true);
+                    patchForm({ employeeId: event.target.value });
                   }}
-                  disabled={isBusy || employeesLoading}
-                  title="Suggest another ID"
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface-base/80 px-3 text-subtle transition hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </button>
-              ) : null}
-            </div>
-          </FormField>
+                  disabled={isBusy}
+                  className={formInputClass}
+                  placeholder="0045"
+                />
+                {!isEditMode ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmployeeIdEdited(false);
+                      applySuggestedEmployeeId();
+                    }}
+                    disabled={isBusy || employeesLoading}
+                    title="Suggest another ID"
+                    className="inline-flex shrink-0 items-center justify-center rounded-xl border border-border-strong bg-surface-base/80 px-3 text-subtle transition hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
+            </FormField>
+          ) : null}
 
-          <FormField label="Full name" htmlFor="emp-name" required>
+          <FormField
+            label={isKiosk ? 'Device label' : 'Full name'}
+            htmlFor="emp-name"
+            required
+            hint={isKiosk ? 'Shown in admin lists only, e.g. "Warehouse tablet".' : undefined}
+          >
             <input
               id="emp-name"
               type="text"
@@ -513,22 +597,77 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
               onChange={(event) => patchForm({ name: event.target.value })}
               disabled={isBusy}
               className={formInputClass}
-              placeholder="Full name"
+              placeholder={isKiosk ? 'Warehouse tablet' : 'Full name'}
             />
           </FormField>
 
-          <FormField label="Email" htmlFor="emp-email" required>
+          <FormField
+            label="Email"
+            htmlFor="emp-email"
+            required
+            hint={
+              isKiosk
+                ? 'Use any identifier — if you omit @, .local is added automatically for sign-in.'
+                : undefined
+            }
+          >
             <input
               id="emp-email"
-              type="email"
+              type={isKiosk ? 'text' : 'email'}
               required
+              autoComplete={isKiosk ? 'username' : 'email'}
               value={form.email}
               onChange={(event) => patchForm({ email: event.target.value })}
               disabled={isBusy}
               className={formInputClass}
-              placeholder="email@company.com"
+              placeholder={isKiosk ? 'kiosk.warehouse@local' : 'email@company.com'}
             />
           </FormField>
+
+          {isKiosk ? (
+            <>
+              <FormField
+                label="Password"
+                htmlFor="emp-kiosk-password"
+                required={!isEditMode}
+                hint={
+                  isEditMode
+                    ? 'Leave blank to keep the current password.'
+                    : 'Used to sign in at /login on the kiosk tablet.'
+                }
+              >
+                <input
+                  id="emp-kiosk-password"
+                  type="password"
+                  required={!isEditMode}
+                  autoComplete="new-password"
+                  value={kioskPassword}
+                  onChange={(event) => setKioskPassword(event.target.value)}
+                  disabled={isBusy}
+                  className={formInputClass}
+                  placeholder={isEditMode ? '••••••••' : 'At least 6 characters'}
+                />
+              </FormField>
+
+              <FormField
+                label="Confirm password"
+                htmlFor="emp-kiosk-password-confirm"
+                required={!isEditMode || Boolean(kioskPassword.trim())}
+              >
+                <input
+                  id="emp-kiosk-password-confirm"
+                  type="password"
+                  required={!isEditMode || Boolean(kioskPassword.trim())}
+                  autoComplete="new-password"
+                  value={kioskPasswordConfirm}
+                  onChange={(event) => setKioskPasswordConfirm(event.target.value)}
+                  disabled={isBusy}
+                  className={formInputClass}
+                  placeholder="Repeat password"
+                />
+              </FormField>
+            </>
+          ) : null}
 
           {!isKiosk ? (
             <EmployeeDepartmentSelect
@@ -538,17 +677,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
               disabled={isBusy}
               allowUnassigned
             />
-          ) : (
-            <FormField label="Department" htmlFor="emp-dept">
-              <input
-                id="emp-dept"
-                type="text"
-                value="Kiosk"
-                disabled
-                className={formInputClass}
-              />
-            </FormField>
-          )}
+          ) : null}
 
           {isMaster ? (
             <div className="md:col-span-2">
@@ -623,17 +752,10 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
                 />
               </FormField>
             </>
-          ) : (
-            <EmployeeLocationSelect
-              id="emp-location"
-              value={form.locationId ?? ''}
-              onChange={(locationId) => patchForm({ locationId })}
-              disabled={isBusy}
-            />
-          )}
+          ) : null}
         </FormGrid>
 
-        {isEditMode && employee && canInviteEmployees ? (
+        {isEditMode && employee && canInviteEmployees && !isKiosk ? (
           <div className="rounded-xl border border-border/80 bg-surface-base/50 p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
