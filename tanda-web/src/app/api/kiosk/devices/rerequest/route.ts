@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
     }
 
-    const session = await rerequestKioskDevice(deviceId, auth.role === 'empleado');
+    const session = await rerequestKioskDevice(deviceId, true);
     return NextResponse.json({ session });
   } catch (error) {
     console.error('POST /api/kiosk/devices/rerequest', error);

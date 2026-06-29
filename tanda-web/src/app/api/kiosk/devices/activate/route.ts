@@ -4,11 +4,9 @@ import { getKioskClientSessionIdFromRequest, getKioskDeviceTokenFromRequest } fr
 import { activateKioskDevice } from '@/lib/kiosk/server/kiosk-devices-service';
 import type { KioskDeviceDetails, KioskDeviceType } from '@/lib/types/kiosk-device';
 
-function kioskActivationRequiresApproval(
-  role: 'admin' | 'master' | 'kiosk' | 'empleado',
-): boolean {
-  // Dedicated kiosk accounts and admins activate devices directly.
-  return role === 'empleado';
+/** Every new browser/device registration waits for admin approval in Settings. */
+function kioskActivationRequiresApproval(): boolean {
+  return true;
 }
 
 const MIN_TOKEN_LENGTH = 16;
@@ -74,7 +72,7 @@ export async function POST(request: Request) {
       lockPin: type === 'tablet' ? lockPin : undefined,
       details: body.details,
       createdBy: auth.email,
-      requiresApproval: kioskActivationRequiresApproval(auth.role),
+      requiresApproval: kioskActivationRequiresApproval(),
     });
 
     return NextResponse.json({ session });
