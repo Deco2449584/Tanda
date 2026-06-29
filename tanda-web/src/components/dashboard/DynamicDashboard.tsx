@@ -377,10 +377,7 @@ export function DynamicDashboard({
     <div className="space-y-6">
       <DashboardFiltersBar
         dateRange={dateRange}
-        onDateRangeChange={(range) => {
-          setDateRange(range);
-          setPeriodPreset('custom');
-        }}
+        onDateRangeChange={setDateRange}
         periodPreset={periodPreset}
         onPeriodPresetChange={setPeriodPreset}
         locationFilter={locationFilter}

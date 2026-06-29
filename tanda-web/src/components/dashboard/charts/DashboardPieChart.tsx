@@ -40,8 +40,8 @@ function PieLegend({
         const percent = total > 0 ? Math.round((item.value / total) * 1000) / 10 : 0;
 
         return (
-          <li key={item.name} className="flex items-center justify-between gap-3">
-            <span className="flex min-w-0 items-center gap-2">
+          <li key={item.name} className="flex items-start justify-between gap-3">
+            <span className="flex min-w-0 flex-1 items-start gap-2">
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{
@@ -49,7 +49,7 @@ function PieLegend({
                     DASHBOARD_CHART_COLORS[index % DASHBOARD_CHART_COLORS.length],
                 }}
               />
-              <span className="truncate text-foreground">{item.name}</span>
+              <span className="text-foreground">{item.name}</span>
             </span>
             <span className="shrink-0 text-muted">
               {formatValue(item.value)} ({percent}%)
@@ -76,9 +76,16 @@ export function DashboardPieChart({
       loading={loading}
       hasData={data.length > 0}
       emptyMessage={emptyMessage}
+      fitContent
     >
-      <div className={showLegend ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]' : ''}>
-        <div className="h-[280px]">
+      <div
+        className={
+          showLegend
+            ? 'grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(200px,280px)]'
+            : ''
+        }
+      >
+        <div className="h-[240px] sm:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

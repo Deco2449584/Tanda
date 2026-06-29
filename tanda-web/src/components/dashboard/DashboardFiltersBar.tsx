@@ -114,6 +114,11 @@ export function DashboardFiltersBar({
     }
   }
 
+  function handleCustomRangeChange(range: DateRange) {
+    onPeriodPresetChange('custom');
+    onDateRangeChange(range);
+  }
+
   const locationLabel =
     locationOptions.find((item) => item.id === locationFilter)?.label ?? 'All locations';
   const collapsedSummary = `${formatDateRangeLabel(dateRange)} · ${locationLabel}`;
@@ -187,9 +192,9 @@ export function DashboardFiltersBar({
             {periodPreset === 'custom' ? (
               <DateRangePicker
                 value={dateRange}
-                onChange={onDateRangeChange}
+                onChange={handleCustomRangeChange}
                 onStepWeek={(direction) =>
-                  onDateRangeChange(shiftRangeByWeek(dateRange, direction))
+                  handleCustomRangeChange(shiftRangeByWeek(dateRange, direction))
                 }
               />
             ) : (
