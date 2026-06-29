@@ -55,14 +55,14 @@ export function MonthlyHoursCard({
               cy="50"
               r={RADIUS}
               fill="none"
-              stroke="#38bdf8"
+              stroke="var(--accent)"
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={loading ? CIRCUMFERENCE : strokeDashoffset}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-sky-300">
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary">
             {loading ? '—' : `${Math.round(progress * 100)}%`}
           </span>
         </div>

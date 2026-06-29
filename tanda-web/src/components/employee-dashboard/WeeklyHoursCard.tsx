@@ -37,7 +37,7 @@ export function WeeklyHoursCard({
       </p>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
         <div
-          className="h-full rounded-full bg-sky-500 transition-all"
+          className="h-full rounded-full bg-primary transition-all"
           style={{ width: loading ? '0%' : `${progress}%` }}
         />
       </div>

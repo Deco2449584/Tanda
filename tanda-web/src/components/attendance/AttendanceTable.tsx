@@ -248,9 +248,14 @@ export function AttendanceTable({
                 <li key={record.id}>
                   <article
                     className={`relative flex gap-3 px-4 py-3 ${
-                      isCheckIn ? 'border-l-2 border-l-emerald-500/70' : 'border-l-2 border-l-blue-500/70'
+                      isCheckIn ? 'border-l-2 border-l-emerald-500/70' : 'border-l-2 border-l-primary/60'
                     }`}
                   >
+                    <AttendancePhoto
+                      photoUrl={record.photoUrl}
+                      name={record.employeeNameSnapshot}
+                      size="md"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">

@@ -3,7 +3,7 @@
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
 import { AttendanceTypeBadge } from '@/components/attendance/AttendanceTypeBadge';
-import { FirebaseImage } from '@/components/ui/FirebaseImage';
+import { AttendancePhoto } from '@/components/attendance/AttendancePhoto';
 import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import type { EmployeeRecordsRange } from '@/hooks/useEmployeeAttendance';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -20,24 +20,6 @@ const RANGE_OPTIONS: Array<{ id: EmployeeRecordsRange; label: string }> = [
   { id: '7days', label: 'Last 7 days' },
   { id: 'month', label: 'This month' },
 ];
-
-function RecordPhoto({ photoUrl }: { photoUrl: string }) {
-  if (!photoUrl) {
-    return <span className="text-[10px] text-subtle">—</span>;
-  }
-
-  return (
-    <FirebaseImage
-      src={photoUrl}
-      alt="Photo verification"
-      width={32}
-      height={32}
-      className="h-8 w-8 rounded-full object-cover ring-1 ring-zinc-700"
-      sizes="32px"
-      quality={70}
-    />
-  );
-}
 
 export function RecentRecordsTable({
   records,
@@ -106,7 +88,11 @@ export function RecentRecordsTable({
                       {formatRecordTime(record.timestampServer)}
                     </td>
                     <td className="px-5 py-2.5">
-                      <RecordPhoto photoUrl={record.photoUrl} />
+                      <AttendancePhoto
+                        photoUrl={record.photoUrl}
+                        name={record.employeeNameSnapshot || 'Employee'}
+                        size="md"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -120,7 +106,11 @@ export function RecentRecordsTable({
                 key={record.id}
                 className="flex items-center gap-3 px-3 py-2.5"
               >
-                <RecordPhoto photoUrl={record.photoUrl} />
+                <AttendancePhoto
+                  photoUrl={record.photoUrl}
+                  name={record.employeeNameSnapshot || 'Employee'}
+                  size="md"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-sm font-medium text-foreground">

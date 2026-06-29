@@ -11,15 +11,20 @@ export interface ShiftStatusMeta {
   icon: LucideIcon;
 }
 
+/** Gray surface + fuchsia accent — avoids solid pink card fills. */
+const SCHEDULED_SURFACE =
+  'border-primary/35 bg-gradient-to-br from-zinc-800/85 via-zinc-900/95 to-zinc-950';
+
 export const SHIFT_STATUS_META: Record<ShiftStatus, ShiftStatusMeta> = {
   scheduled: {
     label: 'Scheduled',
     chipClass:
-      'bg-primary/15 text-primary ring-1 ring-primary/25',
-    listCardClass: 'border-primary/25 bg-primary/[0.07]',
-    dayCardClass: 'border-primary/30 bg-primary/[0.09]',
-    todayRingClass: 'ring-2 ring-primary/35 ring-offset-2 ring-offset-zinc-950',
-    todayBadgeClass: 'bg-primary/25 text-white',
+      'bg-zinc-800/90 text-primary ring-1 ring-primary/30',
+    listCardClass: SCHEDULED_SURFACE,
+    dayCardClass:
+      'border-primary/40 bg-gradient-to-b from-zinc-800/75 via-zinc-900/90 to-zinc-950',
+    todayRingClass: 'ring-2 ring-primary/45 ring-offset-2 ring-offset-zinc-950',
+    todayBadgeClass: 'bg-primary/20 text-primary',
     icon: Clock,
   },
   completed: {

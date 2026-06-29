@@ -19,7 +19,7 @@ function EmployeeIdDigits({ value }: { value: string }) {
       {digits.map((digit, index) => (
         <span
           key={`${digit}-${index}`}
-          className="flex h-14 w-11 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/10 text-2xl font-bold tabular-nums tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:h-16 sm:w-12 sm:text-3xl"
+          className="flex h-14 w-11 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-2xl font-bold tabular-nums tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:h-16 sm:w-12 sm:text-3xl"
         >
           {digit}
         </span>
@@ -40,12 +40,12 @@ export function EmployeeIdCard({
       className={
         embedded
           ? ''
-          : 'overflow-hidden rounded-2xl border border-border/80 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(56,189,248,0.12),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-5 sm:p-6'
+          : 'overflow-hidden rounded-2xl border border-border/80 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(245,30,160,0.12),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-5 sm:p-6'
       }
     >
       {!embedded ? (
         <>
-          <div className="flex items-center gap-2 text-sky-300">
+          <div className="flex items-center gap-2 text-primary">
             <BadgeCheck className="h-4 w-4 shrink-0" />
             <p className="text-xs font-semibold uppercase tracking-[0.18em]">
               Your employee ID
