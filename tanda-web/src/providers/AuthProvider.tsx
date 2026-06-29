@@ -17,6 +17,7 @@ import {
 } from '@/lib/auth/employee-session';
 import type { UserRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
+import { disconnectKioskDeviceSession } from '@/lib/kiosk/disconnect-kiosk-device';
 import { releaseKioskSession } from '@/lib/kiosk/clear-kiosk-session';
 
 interface AuthContextValue {
@@ -107,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
+      await disconnectKioskDeviceSession();
       await releaseKioskSession();
       await signOut(auth);
       router.replace('/login');
