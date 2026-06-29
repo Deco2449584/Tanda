@@ -9,25 +9,29 @@ interface NextShiftCardProps {
   employee: Employee;
   nextShift: Shift | null;
   loading: boolean;
+  embedded?: boolean;
 }
 
 export function NextShiftCard({
   employee,
   nextShift,
   loading,
+  embedded = false,
 }: NextShiftCardProps) {
   return (
-    <article className="rounded-2xl border border-border bg-surface-raised p-5 backdrop-blur-sm">
+    <div className={embedded ? '' : 'rounded-2xl border border-border bg-surface-raised p-5 backdrop-blur-sm'}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-subtle">
-            My next shift
-          </p>
+          {!embedded ? (
+            <p className="text-xs font-medium uppercase tracking-wide text-subtle">
+              My next shift
+            </p>
+          ) : null}
 
           {loading ? (
             <LoadingIndicator />
           ) : nextShift ? (
-            <div className="mt-3 space-y-1.5 text-sm">
+            <div className={`space-y-1.5 text-sm ${embedded ? '' : 'mt-3'}`}>
               <p className="text-muted">
                 <span className="text-subtle">Clock-in:</span>{' '}
                 <span className="font-medium text-white">
@@ -48,7 +52,9 @@ export function NextShiftCard({
               </p>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-muted">No upcoming shifts</p>
+            <p className={`text-sm text-muted ${embedded ? '' : 'mt-3'}`}>
+              No upcoming shifts
+            </p>
           )}
         </div>
 
@@ -58,6 +64,6 @@ export function NextShiftCard({
           size="md"
         />
       </div>
-    </article>
+    </div>
   );
 }

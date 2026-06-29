@@ -1,39 +1,33 @@
 ﻿import { formatShortDate } from '@/lib/employee-dashboard/format';
+import { getShiftStatusMeta } from '@/lib/employee-dashboard/shift-status-styles';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
-
-const statusStyles = {
-  scheduled: 'border-l-4 border-primary bg-primary/10',
-  completed: 'border-l-4 border-primary bg-primary/10',
-  absent: 'border-l-4 border-orange-500 bg-orange-950/30',
-} as const;
-
-const statusLabels = {
-  scheduled: 'Scheduled',
-  completed: 'Completed',
-  absent: 'Absent',
-} as const;
 
 interface ShiftListCardProps {
   shift: Shift;
 }
 
 export function ShiftListCard({ shift }: ShiftListCardProps) {
-  const style = statusStyles[shift.status] ?? statusStyles.scheduled;
-  const label = statusLabels[shift.status] ?? shift.status;
+  const meta = getShiftStatusMeta(shift.status);
+  const StatusIcon = meta.icon;
   const locationLabel = formatShiftLocationLabel(shift);
 
   return (
-    <article className={`rounded-2xl border border-border p-4 ${style}`}>
+    <article className={`rounded-2xl border p-4 ${meta.listCardClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-lg font-bold text-white">
             {formatShortDate(shift.date)}
           </p>
-          <p className="mt-1 text-sm text-muted">{label}</p>
+          <span
+            className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${meta.chipClass}`}
+          >
+            <StatusIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {meta.label}
+          </span>
         </div>
-        <span className="rounded-full bg-surface-raised px-2.5 py-1 text-xs font-medium text-muted">
+        <span className="rounded-full border border-border/80 bg-surface-base/60 px-2.5 py-1 text-xs font-medium text-muted">
           {locationLabel || shift.department}
         </span>
       </div>

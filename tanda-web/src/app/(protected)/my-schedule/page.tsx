@@ -5,17 +5,22 @@ import { useSearchParams } from 'next/navigation';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
 import { SubmitJustificationModal } from '@/components/attendance/SubmitJustificationModal';
+import { CollapsibleDashboardCard } from '@/components/dashboard/CollapsibleDashboardCard';
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ShiftListCard } from '@/components/my-schedule/ShiftListCard';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
+import { useEmployeeOverviewLayout } from '@/hooks/useEmployeeOverviewLayout';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
+import { formatShortDate } from '@/lib/employee-dashboard/format';
+import { formatTimeLabel } from '@/lib/schedule/week';
 
 export default function MySchedulePage() {
   const searchParams = useSearchParams();
   const [justifyId, setJustifyId] = useState<string | null>(null);
+  const { isSectionCollapsed, toggleSectionCollapsed } = useEmployeeOverviewLayout();
   const { user, loading: authLoading } = useAuthRole();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
@@ -31,6 +36,17 @@ export default function MySchedulePage() {
   } = useEmployeeShifts({ employeeCode });
 
   const loading = authLoading || employeeLoading || shiftsLoading;
+
+  const scheduledCount = Object.keys(shiftsByDate).length;
+  const weeklyScheduleSummary = shiftsLoading
+    ? 'Loading…'
+    : `${scheduledCount} shift${scheduledCount === 1 ? '' : 's'} this week`;
+
+  const upcomingSummary = shiftsLoading
+    ? 'Loading…'
+    : futureShifts.length === 0
+      ? 'No upcoming shifts'
+      : `${futureShifts.length} shift${futureShifts.length === 1 ? '' : 's'} · next ${formatShortDate(futureShifts[0].date)} ${formatTimeLabel(futureShifts[0].startTime)}`;
 
   useEffect(() => {
     const requestedId = searchParams.get('justify');
@@ -60,7 +76,7 @@ export default function MySchedulePage() {
       )}
 
       {employee && (
-        <>
+        <div className="space-y-4">
           <EmployeeWeeklySchedule
             weekDays={week.days}
             weekStart={week.start}
@@ -68,30 +84,34 @@ export default function MySchedulePage() {
             shiftsByDate={shiftsByDate}
             loading={shiftsLoading}
             showViewAllLink={false}
+            collapsible
+            collapsed={isSectionCollapsed('weekly-schedule')}
+            onToggleCollapse={() => toggleSectionCollapsed('weekly-schedule')}
+            collapseSummary={weeklyScheduleSummary}
           />
 
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Upcoming shifts</h2>
-
-            {loading && (
+          <CollapsibleDashboardCard
+            title="Upcoming shifts"
+            description="Your next scheduled shifts in chronological order."
+            summary={upcomingSummary}
+            collapsed={isSectionCollapsed('upcoming-shifts')}
+            onToggle={() => toggleSectionCollapsed('upcoming-shifts')}
+          >
+            {loading ? (
               <LoadingIndicator />
-            )}
-
-            {!loading && futureShifts.length === 0 && (
-              <p className="rounded-xl border border-border bg-surface-raised px-4 py-8 text-center text-sm text-subtle">
+            ) : futureShifts.length === 0 ? (
+              <p className="rounded-xl border border-border bg-surface-base/40 px-4 py-8 text-center text-sm text-subtle">
                 You have no upcoming shifts scheduled.
               </p>
-            )}
-
-            {!loading && futureShifts.length > 0 && (
+            ) : (
               <div className="flex flex-col gap-4">
                 {futureShifts.map((shift) => (
                   <ShiftListCard key={shift.id} shift={shift} />
                 ))}
               </div>
             )}
-          </section>
-        </>
+          </CollapsibleDashboardCard>
+        </div>
       )}
     </PageContent>
   );

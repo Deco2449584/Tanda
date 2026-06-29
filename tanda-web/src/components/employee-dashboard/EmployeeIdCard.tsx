@@ -5,6 +5,7 @@ import { BadgeCheck } from 'lucide-react';
 interface EmployeeIdCardProps {
   employeeId: string;
   loading?: boolean;
+  embedded?: boolean;
 }
 
 function EmployeeIdDigits({ value }: { value: string }) {
@@ -18,7 +19,7 @@ function EmployeeIdDigits({ value }: { value: string }) {
       {digits.map((digit, index) => (
         <span
           key={`${digit}-${index}`}
-          className="flex h-14 w-11 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 text-2xl font-bold tabular-nums tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:h-16 sm:w-12 sm:text-3xl"
+          className="flex h-14 w-11 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/10 text-2xl font-bold tabular-nums tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:h-16 sm:w-12 sm:text-3xl"
         >
           {digit}
         </span>
@@ -27,21 +28,41 @@ function EmployeeIdDigits({ value }: { value: string }) {
   );
 }
 
-export function EmployeeIdCard({ employeeId, loading = false }: EmployeeIdCardProps) {
+export function EmployeeIdCard({
+  employeeId,
+  loading = false,
+  embedded = false,
+}: EmployeeIdCardProps) {
   const displayId = employeeId.trim();
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-primary/25 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(59,130,246,0.16),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-5 sm:p-6">
-      <div className="flex items-center gap-2 text-primary">
-        <BadgeCheck className="h-4 w-4 shrink-0" />
-        <p className="text-xs font-semibold uppercase tracking-[0.18em]">Your employee ID</p>
-      </div>
+    <section
+      className={
+        embedded
+          ? ''
+          : 'overflow-hidden rounded-2xl border border-border/80 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(56,189,248,0.12),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-5 sm:p-6'
+      }
+    >
+      {!embedded ? (
+        <>
+          <div className="flex items-center gap-2 text-sky-300">
+            <BadgeCheck className="h-4 w-4 shrink-0" />
+            <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+              Your employee ID
+            </p>
+          </div>
 
-      <p className="mt-2 text-sm text-subtle">
-        Use this number at the warehouse time clock when you clock in or out.
-      </p>
+          <p className="mt-2 text-sm text-subtle">
+            Use this number at the warehouse time clock when you clock in or out.
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-subtle">
+          Use this number at the warehouse time clock when you clock in or out.
+        </p>
+      )}
 
-      <div className="mt-5">
+      <div className={embedded ? 'mt-3' : 'mt-5'}>
         {loading ? (
           <div className="flex flex-wrap justify-center gap-2 sm:justify-start sm:gap-3">
             {Array.from({ length: 4 }).map((_, index) => (
