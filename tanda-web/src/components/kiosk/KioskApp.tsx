@@ -10,7 +10,6 @@ import { KioskPendingScreen } from '@/components/kiosk/KioskPendingScreen';
 import { KioskPinGate } from '@/components/kiosk/KioskPinGate';
 import { KioskRevokedScreen } from '@/components/kiosk/KioskRevokedScreen';
 import { KioskScreen } from '@/components/kiosk/KioskScreen';
-import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -256,14 +255,6 @@ export function KioskApp() {
         >
           Go back
         </button>
-        {isKioskAccount ? (
-          <KioskSignOutButton
-            onSignOut={handleSignOut}
-            signingOut={signingOut}
-            variant="prominent"
-            className="mt-3 max-w-xs"
-          />
-        ) : null}
       </KioskMessage>
     );
   }
@@ -276,8 +267,6 @@ export function KioskApp() {
         defaultName={employee?.name ?? ''}
         onActivated={(next) => void handleActivated(next)}
         onCancel={canLeaveToDashboard ? handleExitUnlocked : undefined}
-        onSignOut={isKioskAccount ? handleSignOut : undefined}
-        signingOut={signingOut}
       />
     );
   }
@@ -288,8 +277,6 @@ export function KioskApp() {
         session={session}
         onRerequested={handleRerequested}
         onGoToDashboard={canLeaveToDashboard ? handleExitUnlocked : undefined}
-        onSignOut={isKioskAccount ? handleSignOut : undefined}
-        signingOut={signingOut}
       />
     );
   }
@@ -299,8 +286,6 @@ export function KioskApp() {
       <KioskPendingScreen
         session={session}
         onGoToDashboard={canLeaveToDashboard ? handleExitUnlocked : undefined}
-        onSignOut={isKioskAccount ? handleSignOut : undefined}
-        signingOut={signingOut}
       />
     );
   }
@@ -333,12 +318,7 @@ export function KioskApp() {
       }
 
       return (
-        <KioskLockedShell
-          session={session}
-          onExitKiosk={handleExitKiosk}
-          onSignOut={isKioskAccount ? handleSignOut : undefined}
-          signingOut={signingOut}
-        >
+        <KioskLockedShell session={session} onExitKiosk={handleExitKiosk}>
           <KioskScreen deviceSession={session} />
         </KioskLockedShell>
       );
@@ -349,8 +329,6 @@ export function KioskApp() {
         deviceSession={session}
         onExit={handleExitUnlocked}
         exitLabel="Exit"
-        onSignOut={isKioskAccount ? handleSignOut : undefined}
-        signingOut={signingOut}
       />
     );
   }

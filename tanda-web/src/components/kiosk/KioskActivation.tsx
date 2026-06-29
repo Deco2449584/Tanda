@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Lock, MonitorSmartphone } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import { auth } from '@/lib/firebase';
 import {
   collectKioskDeviceDetails,
@@ -21,8 +20,6 @@ interface KioskActivationProps {
   defaultName: string;
   onActivated: (session: KioskDeviceSession) => void;
   onCancel?: () => void;
-  onSignOut?: () => void | Promise<void>;
-  signingOut?: boolean;
 }
 
 export function KioskActivation({
@@ -31,8 +28,6 @@ export function KioskActivation({
   defaultName,
   onActivated,
   onCancel,
-  onSignOut,
-  signingOut = false,
 }: KioskActivationProps) {
   const [mode, setMode] = useState<'tablet' | 'mobile'>(defaultMode);
   const isTablet = mode === 'tablet';
@@ -294,13 +289,6 @@ export function KioskActivation({
             >
               Cancel
             </button>
-          ) : null}
-          {onSignOut ? (
-            <KioskSignOutButton
-              onSignOut={onSignOut}
-              signingOut={signingOut}
-              variant="prominent"
-            />
           ) : null}
         </div>
       </div>

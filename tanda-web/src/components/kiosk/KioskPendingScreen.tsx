@@ -2,21 +2,16 @@
 
 import { Clock } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
 interface KioskPendingScreenProps {
   session: KioskDeviceSession;
   onGoToDashboard?: () => void;
-  onSignOut?: () => void | Promise<void>;
-  signingOut?: boolean;
 }
 
 export function KioskPendingScreen({
   session,
   onGoToDashboard,
-  onSignOut,
-  signingOut = false,
 }: KioskPendingScreenProps) {
   const locationLabel = [session.locationName, session.locationCity].filter(Boolean).join(' · ');
 
@@ -53,13 +48,6 @@ export function KioskPendingScreen({
           >
             Back to dashboard
           </button>
-        ) : null}
-        {onSignOut ? (
-          <KioskSignOutButton
-            onSignOut={onSignOut}
-            signingOut={signingOut}
-            variant="prominent"
-          />
         ) : null}
       </div>
     </div>

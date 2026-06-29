@@ -8,7 +8,6 @@ import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
 import { KioskAlert } from '@/components/kiosk/KioskAlert';
-import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import {
   KioskSuccessModal,
   type KioskSuccessData,
@@ -32,16 +31,12 @@ interface KioskScreenProps {
   deviceSession: KioskDeviceSession;
   onExit?: () => void;
   exitLabel?: string;
-  onSignOut?: () => void | Promise<void>;
-  signingOut?: boolean;
 }
 
 export function KioskScreen({
   deviceSession,
   onExit,
   exitLabel = 'Exit',
-  onSignOut,
-  signingOut = false,
 }: KioskScreenProps) {
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
@@ -235,12 +230,6 @@ export function KioskScreen({
       ) : null}
 
       <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center gap-2">
-        {onSignOut ? (
-          <KioskSignOutButton
-            onSignOut={onSignOut}
-            signingOut={signingOut}
-          />
-        ) : null}
         {onExit ? (
           <button
             type="button"
