@@ -7,12 +7,13 @@ import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
+import { KioskAlert } from '@/components/kiosk/KioskAlert';
+import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import {
   KioskSuccessModal,
   type KioskSuccessData,
 } from '@/components/kiosk/KioskSuccessModal';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { kioskDeviceHeaders } from '@/lib/kiosk/device-token';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
@@ -27,27 +28,28 @@ interface KioskSession {
   actionType: 'check_in' | 'check_out';
 }
 
-function createToast(
-  text: string,
-  variant: ToastMessage['variant'],
-): ToastMessage {
-  return { id: crypto.randomUUID(), text, variant };
-}
-
 interface KioskScreenProps {
   deviceSession: KioskDeviceSession;
   onExit?: () => void;
   exitLabel?: string;
+  onSignOut?: () => void | Promise<void>;
+  signingOut?: boolean;
 }
 
-export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: KioskScreenProps) {
+export function KioskScreen({
+  deviceSession,
+  onExit,
+  exitLabel = 'Exit',
+  onSignOut,
+  signingOut = false,
+}: KioskScreenProps) {
   const [step, setStep] = useState<KioskStep>('pin');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [session, setSession] = useState<KioskSession | null>(null);
   const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const warehouseLabel =
     deviceSession.locationName && deviceSession.locationCity
@@ -78,6 +80,10 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
     return () => window.clearTimeout(timer);
   }, [step, successData, resetToPin]);
 
+  const showError = useCallback((message: string) => {
+    setErrorMessage(message);
+  }, []);
+
   const validatePin = useCallback(
     async (value: string) => {
       if (value.length !== PIN_LENGTH) {
@@ -85,6 +91,7 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
       }
 
       setLoading(true);
+      setErrorMessage(null);
 
       try {
         const response = await fetch('/api/kiosk/lookup', {
@@ -103,9 +110,7 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
           | null;
 
         if (!response.ok || !data) {
-          setToast(
-            createToast(data?.error ?? 'Could not validate ID. Please try again.', 'error'),
-          );
+          showError(data?.error ?? 'Could not validate ID. Please try again.');
           setPin('');
           return;
         }
@@ -118,13 +123,13 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
         setStep('camera');
       } catch (error) {
         console.error('Kiosk PIN validation failed:', error);
-        setToast(createToast('Could not validate PIN. Please try again.', 'error'));
+        showError('Could not validate PIN. Please try again.');
         setPin('');
       } finally {
         setLoading(false);
       }
     },
-    [],
+    [showError],
   );
 
   const handleDigit = (digit: string) => {
@@ -185,23 +190,20 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
           }
         } catch (error) {
           console.error('Kiosk background punch failed:', error);
-          setToast(
-            createToast(
-              error instanceof Error
-                ? error.message
-                : 'Could not save the record. Please try again.',
-              'error',
-            ),
+          showError(
+            error instanceof Error
+              ? error.message
+              : 'Could not save the record. Please try again.',
           );
         }
       })();
     },
-    [],
+    [showError],
   );
 
   const handleCapture = (imageBlob: Blob, previewDataUrl: string) => {
     if (!session) {
-      setToast(createToast('Session expired. Enter your ID again.', 'error'));
+      showError('Session expired. Enter your ID again.');
       resetToPin();
       return;
     }
@@ -228,16 +230,28 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
 
   return (
     <div className="kiosk-ambient relative flex min-h-[100dvh] w-full flex-col text-white">
-      {onExit ? (
-        <button
-          type="button"
-          onClick={onExit}
-          className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur transition hover:text-white"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          {exitLabel}
-        </button>
+      {errorMessage ? (
+        <KioskAlert message={errorMessage} onDismiss={() => setErrorMessage(null)} />
       ) : null}
+
+      <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center gap-2">
+        {onSignOut ? (
+          <KioskSignOutButton
+            onSignOut={onSignOut}
+            signingOut={signingOut}
+          />
+        ) : null}
+        {onExit ? (
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur transition hover:text-white"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            {exitLabel}
+          </button>
+        ) : null}
+      </div>
 
       <header className="z-20 flex shrink-0 flex-col items-center gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] lg:landscape:gap-4">
         {step === 'pin' && showLogo && (
@@ -292,6 +306,7 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
                 processing={processing}
                 onCapture={(blob, previewUrl) => handleCapture(blob, previewUrl)}
                 onCancel={resetToPin}
+                onError={showError}
               />
             )}
 
@@ -301,8 +316,6 @@ export function KioskScreen({ deviceSession, onExit, exitLabel = 'Exit' }: Kiosk
           </div>
         )}
       </main>
-
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

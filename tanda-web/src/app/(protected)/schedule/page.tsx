@@ -26,6 +26,7 @@ import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { useDepartments } from '@/providers/DepartmentsProvider';
 import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
+import { isSchedulableEmployee } from '@/lib/employees/is-schedulable-employee';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildMonthCalendar } from '@/lib/schedule/month';
 import { applyResolvedShiftStatuses } from '@/lib/schedule/resolve-shift-status';
@@ -171,7 +172,7 @@ export default function SchedulePage() {
   );
 
   const activeEmployees = useMemo(
-    () => employees.filter((employee) => employee.active),
+    () => employees.filter(isSchedulableEmployee),
     [employees],
   );
 

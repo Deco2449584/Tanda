@@ -21,7 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
-import { getRoleLabel, isAdminAreaRole } from '@/lib/auth/roles';
+import { getRoleLabel, isAdminAreaRole, isMasterRole } from '@/lib/auth/roles';
 import { getModuleKeyForPath } from '@/lib/auth/admin-permissions';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { cn } from '@/lib/cn';
@@ -128,6 +128,9 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         .map((group) => ({
           ...group,
           items: group.items.filter((item) => {
+            if (isMasterRole(role) && item.href === '/kiosk') {
+              return false;
+            }
             const moduleKey = getModuleKeyForPath(item.href);
             return !moduleKey || canAccessModule(moduleKey);
           }),

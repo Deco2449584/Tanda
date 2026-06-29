@@ -47,7 +47,7 @@ const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'notifications', label: 'Notifications' },
   { id: 'accessRoles', label: 'Access roles' },
   { id: 'auditLogs', label: 'Audit logs' },
-  { id: 'profile', label: 'Administrator' },
+  { id: 'profile', label: 'User profile' },
   { id: 'locations', label: 'Locations' },
   { id: 'departments', label: 'Departments' },
   { id: 'locationGroups', label: 'Location groups' },
@@ -61,7 +61,7 @@ function deriveDisplayName(
   email: string | null | undefined,
 ): string {
   if (displayName?.trim()) return displayName.trim();
-  if (!email) return 'Administrator';
+  if (!email) return 'User';
   const local = email.split('@')[0] ?? '';
   return local
     .split(/[._-]/)

@@ -2,6 +2,7 @@
 
 import { Lock, MonitorSmartphone } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 
 interface KioskIdleScreenProps {
@@ -9,6 +10,8 @@ interface KioskIdleScreenProps {
   showDashboardLink: boolean;
   onEnterKiosk: () => void;
   onGoToDashboard: () => void;
+  onSignOut?: () => void | Promise<void>;
+  signingOut?: boolean;
 }
 
 export function KioskIdleScreen({
@@ -16,6 +19,8 @@ export function KioskIdleScreen({
   showDashboardLink,
   onEnterKiosk,
   onGoToDashboard,
+  onSignOut,
+  signingOut = false,
 }: KioskIdleScreenProps) {
   const warehouse =
     session.locationName && session.locationCity
@@ -50,6 +55,13 @@ export function KioskIdleScreen({
           >
             Back to dashboard
           </button>
+        ) : null}
+        {onSignOut ? (
+          <KioskSignOutButton
+            onSignOut={onSignOut}
+            signingOut={signingOut}
+            variant="prominent"
+          />
         ) : null}
       </div>
     </div>

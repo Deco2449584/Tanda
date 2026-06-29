@@ -3,6 +3,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { Lock } from 'lucide-react';
 import { KioskPinGate } from '@/components/kiosk/KioskPinGate';
+import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import { useKioskBackButtonTrap } from '@/hooks/useKioskBackButtonTrap';
 import { useKioskLockedDisplay } from '@/hooks/useKioskLockedDisplay';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
@@ -10,12 +11,16 @@ import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
 interface KioskLockedShellProps {
   session: KioskDeviceSession;
   onExitKiosk: () => void | Promise<void>;
+  onSignOut?: () => void | Promise<void>;
+  signingOut?: boolean;
   children: ReactNode;
 }
 
 export function KioskLockedShell({
   session,
   onExitKiosk,
+  onSignOut,
+  signingOut = false,
   children,
 }: KioskLockedShellProps) {
   useKioskLockedDisplay(true);
@@ -49,6 +54,15 @@ export function KioskLockedShell({
       >
         <Lock className="h-4 w-4" />
       </button>
+
+      {onSignOut ? (
+        <div className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[70]">
+          <KioskSignOutButton
+            onSignOut={onSignOut}
+            signingOut={signingOut}
+          />
+        </div>
+      ) : null}
 
       {exitPromptOpen ? (
         <div className="fixed inset-0 z-[80]">

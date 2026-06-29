@@ -11,6 +11,7 @@ interface KioskCameraProps {
   processing: boolean;
   onCapture: (imageFile: File, previewUrl: string) => void;
   onCancel: () => void;
+  onError?: (message: string) => void;
 }
 
 const videoConstraints: MediaTrackConstraints = {
@@ -41,6 +42,7 @@ export function KioskCamera({
   processing,
   onCapture,
   onCancel,
+  onError,
 }: KioskCameraProps) {
   const webcamRef = useRef<Webcam>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -55,7 +57,9 @@ export function KioskCamera({
       height: 540,
     });
     if (!screenshot) {
-      setCameraError('Could not capture photo. Please try again.');
+      const message = 'Could not capture photo. Please try again.';
+      setCameraError(message);
+      onError?.(message);
       return;
     }
 
@@ -65,9 +69,11 @@ export function KioskCamera({
       const previewUrl = URL.createObjectURL(optimized);
       onCapture(optimized, previewUrl);
     } catch {
-      setCameraError('Could not process photo. Please try again.');
+      const message = 'Could not process photo. Please try again.';
+      setCameraError(message);
+      onError?.(message);
     }
-  }, [onCapture, processing]);
+  }, [onCapture, onError, processing]);
 
   return (
     <div className="flex w-full max-w-2xl shrink-0 flex-col items-center gap-2 px-2 md:gap-4 md:px-4">
@@ -87,8 +93,9 @@ export function KioskCamera({
         <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-700/80 bg-black shadow-2xl ring-1 ring-primary/10">
           <div className="relative mx-auto aspect-square max-h-[36vh] w-full md:max-h-[50vh]">
             {cameraError ? (
-              <div className="flex h-full items-center justify-center p-4 text-center text-xs text-red-200 md:p-8 md:text-sm">
-                {cameraError}
+              <div className="flex h-full flex-col items-center justify-center gap-3 bg-red-950/40 p-4 text-center md:p-8">
+                <p className="text-sm font-semibold text-red-100 md:text-base">{cameraError}</p>
+                <p className="text-xs text-red-200/80">Check permissions and try again.</p>
               </div>
             ) : (
               <>
@@ -98,11 +105,12 @@ export function KioskCamera({
                   screenshotFormat="image/jpeg"
                   screenshotQuality={0.85}
                   videoConstraints={videoConstraints}
-                  onUserMediaError={() =>
-                    setCameraError(
-                      'Camera access denied. Allow the camera in your browser settings.',
-                    )
-                  }
+                  onUserMediaError={() => {
+                    const message =
+                      'Camera access denied. Allow the camera in your browser settings.';
+                    setCameraError(message);
+                    onError?.(message);
+                  }}
                   className="h-full w-full object-cover"
                   mirrored
                 />

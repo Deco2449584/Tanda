@@ -108,9 +108,9 @@ export function AdminProfileTab({
 
   return (
     <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
-      <h2 className="text-sm font-semibold text-white">Administrator profile</h2>
+      <h2 className="text-sm font-semibold text-white">User profile</h2>
       <p className="mt-1 text-xs text-subtle">
-        Update your display name and sign-in password (Firebase Auth).
+        Update your display name and sign-in password.
       </p>
 
       <form onSubmit={handleSaveProfile} className="mt-6 space-y-4">

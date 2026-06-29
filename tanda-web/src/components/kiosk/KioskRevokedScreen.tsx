@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Loader2, ShieldOff } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { KioskSignOutButton } from '@/components/kiosk/KioskSignOutButton';
 import { auth } from '@/lib/firebase';
 import { kioskDeviceHeaders } from '@/lib/kiosk/device-token';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
@@ -11,12 +12,16 @@ interface KioskRevokedScreenProps {
   session: KioskDeviceSession;
   onRerequested: (session: KioskDeviceSession) => void;
   onGoToDashboard?: () => void;
+  onSignOut?: () => void | Promise<void>;
+  signingOut?: boolean;
 }
 
 export function KioskRevokedScreen({
   session,
   onRerequested,
   onGoToDashboard,
+  onSignOut,
+  signingOut = false,
 }: KioskRevokedScreenProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -86,7 +91,10 @@ export function KioskRevokedScreen({
         </dl>
 
         {error ? (
-          <p className="mt-4 text-center text-xs text-red-400" role="alert">
+          <p
+            className="mt-4 rounded-xl border-2 border-red-400/70 bg-red-950/80 px-3 py-2.5 text-center text-sm font-semibold text-red-100"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
@@ -110,6 +118,13 @@ export function KioskRevokedScreen({
           >
             Back to dashboard
           </button>
+        ) : null}
+        {onSignOut ? (
+          <KioskSignOutButton
+            onSignOut={onSignOut}
+            signingOut={signingOut}
+            variant="prominent"
+          />
         ) : null}
       </div>
     </div>

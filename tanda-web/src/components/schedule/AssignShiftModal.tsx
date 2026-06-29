@@ -268,11 +268,14 @@ export function AssignShiftModal({
             required
           />
 
-          {error && (
-            <p className="text-center text-xs text-red-500" role="alert">
+          {error ? (
+            <p
+              className="rounded-lg border border-red-500/50 bg-red-950/40 px-3 py-2.5 text-center text-sm font-semibold text-red-300"
+              role="alert"
+            >
               {error}
             </p>
-          )}
+          ) : null}
 
           <div className="flex gap-3 pt-2">
             <button
