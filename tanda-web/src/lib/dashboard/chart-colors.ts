@@ -1,14 +1,19 @@
-import { BRAND } from '@/lib/brand/tokens';
-
+/** Distinct palette for dashboard charts — one color per series or bar. */
 export const DASHBOARD_CHART_COLORS = [
-  BRAND.magenta,
-  BRAND.charcoal,
-  '#22c55e',
-  BRAND.silver,
-  '#a78bfa',
   '#38bdf8',
-  '#fb7185',
-  '#facc15',
-  '#34d399',
+  '#22c55e',
+  '#a78bfa',
+  '#f59e0b',
+  '#2dd4bf',
   '#818cf8',
+  '#fb7185',
+  '#34d399',
+  '#e879f9',
+  '#94a3b8',
+  '#f97316',
+  '#06b6d4',
 ] as const;
+
+export function getDashboardChartColor(index: number): string {
+  return DASHBOARD_CHART_COLORS[index % DASHBOARD_CHART_COLORS.length];
+}

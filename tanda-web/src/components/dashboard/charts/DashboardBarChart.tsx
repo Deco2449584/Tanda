@@ -5,11 +5,13 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
+import { getDashboardChartColor } from '@/lib/dashboard/chart-colors';
 import { COLOR_HORAS_NORMAL_FALLBACK } from '../chart-theme';
 import type { NamedValueDatum } from '@/lib/dashboard/types';
 import {
@@ -28,6 +30,8 @@ interface DashboardBarChartProps {
   yAxisLabel?: string;
   valueFormatter?: (value: number) => string;
   color?: string;
+  /** When true (default), each bar gets a distinct color. Set false when passing a single `color`. */
+  variedColors?: boolean;
 }
 
 export function DashboardBarChart({
@@ -38,7 +42,8 @@ export function DashboardBarChart({
   valueLabel = 'Value',
   yAxisLabel,
   valueFormatter,
-  color = COLOR_HORAS_NORMAL_FALLBACK,
+  color,
+  variedColors = color === undefined,
 }: DashboardBarChartProps) {
   const chartData = useMemo(
     () => data.map((item) => ({ name: item.name, [dataKey]: item.value })),
@@ -53,6 +58,8 @@ export function DashboardBarChart({
 
   const formatValue =
     valueFormatter ?? ((value: number) => value.toLocaleString('en-AU'));
+
+  const barColor = color ?? COLOR_HORAS_NORMAL_FALLBACK;
 
   return (
     <ChartShell
@@ -108,10 +115,16 @@ export function DashboardBarChart({
           <Bar
             dataKey={dataKey}
             name={valueLabel}
-            fill={color}
+            fill={barColor}
             radius={[4, 4, 0, 0]}
             maxBarSize={48}
-          />
+          >
+            {variedColors
+              ? chartData.map((entry, index) => (
+                  <Cell key={entry.name} fill={getDashboardChartColor(index)} />
+                ))
+              : null}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </ChartShell>

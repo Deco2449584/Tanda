@@ -151,7 +151,7 @@ export function LeaveRequestsAdminTable({
                               type="button"
                               onClick={() => updateStatus(request.id, 'Approved')}
                               disabled={isUpdating}
-                              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
+                              className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600/90 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60"
                             >
                               <Check className="h-3.5 w-3.5" />
                               APPROVE
@@ -160,7 +160,7 @@ export function LeaveRequestsAdminTable({
                               type="button"
                               onClick={() => updateStatus(request.id, 'Rejected')}
                               disabled={isUpdating}
-                              className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                              className="inline-flex items-center gap-1.5 rounded-md border border-rose-800/50 bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-300 transition-colors hover:bg-rose-950/60 hover:text-rose-200 disabled:opacity-60"
                             >
                               <X className="h-3.5 w-3.5" />
                               REJECT
@@ -253,7 +253,7 @@ export function LeaveRequestsAdminTable({
                         type="button"
                         onClick={() => updateStatus(request.id, 'Approved')}
                         disabled={isUpdating}
-                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-60"
+                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-emerald-600/90 text-xs font-bold text-white transition-colors hover:bg-emerald-600 disabled:opacity-60"
                       >
                         <Check className="h-3.5 w-3.5" />
                         APPROVE
@@ -262,7 +262,7 @@ export function LeaveRequestsAdminTable({
                         type="button"
                         onClick={() => updateStatus(request.id, 'Rejected')}
                         disabled={isUpdating}
-                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-rose-800/50 bg-rose-950/40 text-xs font-bold text-rose-300 transition-colors hover:bg-rose-950/60 hover:text-rose-200 disabled:opacity-60"
                       >
                         <X className="h-3.5 w-3.5" />
                         REJECT

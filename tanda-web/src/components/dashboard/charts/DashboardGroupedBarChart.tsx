@@ -17,7 +17,8 @@ import {
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
   COLOR_HORAS_EXTRA_FALLBACK,
-  COLOR_HORAS_NORMAL_FALLBACK,
+  COLOR_SCHEDULED_FALLBACK,
+  COLOR_ACTUAL_FALLBACK,
 } from '../chart-theme';
 import { ChartShell } from './ChartShell';
 
@@ -90,14 +91,14 @@ export function DashboardGroupedBarChart({
           <Bar
             dataKey="scheduled"
             name="Scheduled"
-            fill={COLOR_HORAS_NORMAL_FALLBACK}
+            fill={COLOR_SCHEDULED_FALLBACK}
             radius={[4, 4, 0, 0]}
             maxBarSize={36}
           />
           <Bar
             dataKey="actual"
             name="Actual"
-            fill={COLOR_HORAS_EXTRA_FALLBACK}
+            fill={COLOR_ACTUAL_FALLBACK}
             radius={[4, 4, 0, 0]}
             maxBarSize={36}
           />

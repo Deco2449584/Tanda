@@ -15,7 +15,7 @@ import { compareInputDates, toInputDate } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
-export type EmployeeRecordsRange = '7days' | 'month';
+export type EmployeeRecordsRange = 'all' | '7days' | 'month';
 
 interface UseEmployeeAttendanceOptions {
   /** Código corto del empleado (ej. '0002'), NO el doc.id de Firestore. */
@@ -34,6 +34,10 @@ function getSevenDaysStartDate(): string {
   const start = new Date();
   start.setDate(start.getDate() - 6);
   return toInputDate(start);
+}
+
+function getQueryStartTimestamp(displayRange: Exclude<EmployeeRecordsRange, 'all'>): Timestamp {
+  return getMonthStartTimestamp();
 }
 
 export function useEmployeeAttendance({
@@ -57,11 +61,15 @@ export function useEmployeeAttendance({
     setLoading(true);
     setError('');
 
-    const recordsQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('employeeId', '==', code),
-      where('timestampServer', '>=', getMonthStartTimestamp()),
-    );
+    const recordsRef = collection(db, COLLECTIONS.ATTENDANCE_RECORDS);
+    const recordsQuery =
+      displayRange === 'all'
+        ? query(recordsRef, where('employeeId', '==', code))
+        : query(
+            recordsRef,
+            where('employeeId', '==', code),
+            where('timestampServer', '>=', getQueryStartTimestamp(displayRange)),
+          );
 
     const unsubscribe = onSnapshot(
       recordsQuery,
@@ -86,10 +94,10 @@ export function useEmployeeAttendance({
     );
 
     return () => unsubscribe();
-  }, [code]);
+  }, [code, displayRange]);
 
   const displayRecords = useMemo(() => {
-    if (displayRange === 'month') {
+    if (displayRange === 'all' || displayRange === 'month') {
       return records;
     }
 

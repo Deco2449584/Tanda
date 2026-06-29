@@ -322,6 +322,7 @@ export function DynamicDashboard({
             valueLabel="Late arrivals"
             yAxisLabel="Count"
             color={COLOR_HORAS_EXTRA_FALLBACK}
+            variedColors={false}
           />
         );
       case 'no-shows-by-location':
@@ -332,6 +333,7 @@ export function DynamicDashboard({
             valueLabel="No-shows"
             yAxisLabel="Count"
             color="#fb7185"
+            variedColors={false}
           />
         );
       case 'headcount-by-location':
@@ -350,7 +352,8 @@ export function DynamicDashboard({
             loading={loading.leaveRequests}
             valueLabel="Requests"
             yAxisLabel="Count"
-            color="#facc15"
+            color="#f59e0b"
+            variedColors={false}
           />
         );
       case 'attendance-compliance':
@@ -362,6 +365,7 @@ export function DynamicDashboard({
             yAxisLabel="%"
             valueFormatter={(value) => `${value}%`}
             color="#22c55e"
+            variedColors={false}
           />
         );
       default:

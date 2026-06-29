@@ -83,7 +83,7 @@ export function EmployeeWeeklySchedule({
           {showViewAllLink && !collapsed && (
             <Link
               href="/my-schedule"
-              className="inline-flex items-center gap-1 rounded-lg border border-border-strong bg-surface-hover/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-lg border border-border-strong bg-surface-hover/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-foreground"
             >
               Full schedule
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -207,7 +207,7 @@ export function EmployeeWeeklySchedule({
 
             <div className="flex flex-wrap gap-3 border-t border-border/80 px-4 py-3 text-[10px] font-medium uppercase tracking-wide text-subtle md:px-5">
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-sky-400" />
+                <span className="h-2 w-2 rounded-full bg-primary/80" />
                 Scheduled
               </span>
               <span className="inline-flex items-center gap-1.5">

@@ -121,6 +121,7 @@ export function DashboardWeeklyHoursAreaChart({
       valueLabel="Scheduled hours"
       valueFormatter={(value) => `${value} h`}
       gradientId="fillScheduledHours"
+      color="#38bdf8"
     />
   );
 }
