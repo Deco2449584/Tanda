@@ -32,11 +32,21 @@ export const ADMIN_MODULE_ACTIONS = {
   employees: ['create', 'update', 'delete', 'invite'] as const,
   attendance: ['create', 'update', 'delete'] as const,
   schedule: ['create', 'update', 'delete'] as const,
-  leaveRequests: ['manage'] as const,
+  leaveRequests: ['manage', 'update', 'delete'] as const,
   announcements: ['publish', 'delete'] as const,
-  issueReports: ['manage'] as const,
+  issueReports: ['manage', 'update', 'delete'] as const,
   helpTutorials: ['create', 'update', 'delete'] as const,
-  settings: ['update'] as const,
+  settings: [
+    'update',
+    'viewLocalization',
+    'viewAttendance',
+    'viewNotifications',
+    'viewLocations',
+    'viewDepartments',
+    'viewLocationGroups',
+    'viewKioskDevices',
+    'viewPortal',
+  ] as const,
 } as const;
 
 export type AdminActionModule = keyof typeof ADMIN_MODULE_ACTIONS;
@@ -66,3 +76,17 @@ export interface ResolvedAdminAccess {
   edit: Record<AdminEditModuleKey, boolean>;
   actions: AdminResolvedActions;
 }
+
+/** Settings tabs gated by granular `settings` view actions (master-only tabs excluded). */
+export const SETTINGS_SECTION_ACTIONS = {
+  localization: 'viewLocalization',
+  attendance: 'viewAttendance',
+  notifications: 'viewNotifications',
+  locations: 'viewLocations',
+  departments: 'viewDepartments',
+  locationGroups: 'viewLocationGroups',
+  kioskDevices: 'viewKioskDevices',
+  portal: 'viewPortal',
+} as const;
+
+export type SettingsSectionKey = keyof typeof SETTINGS_SECTION_ACTIONS;

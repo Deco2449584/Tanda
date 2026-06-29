@@ -77,3 +77,14 @@ export async function updateIssueReportRequest(
   }
   return data.report;
 }
+
+export async function deleteIssueReportRequest(id: string): Promise<void> {
+  const response = await fetch(`/api/issue-reports/${id}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  });
+  const data = (await response.json().catch(() => null)) as { error?: string } | null;
+  if (!response.ok) {
+    throw new Error(data?.error ?? 'Could not delete issue report.');
+  }
+}

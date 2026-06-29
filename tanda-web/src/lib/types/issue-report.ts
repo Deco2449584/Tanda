@@ -43,4 +43,7 @@ export interface CreateIssueReportInput {
 export interface UpdateIssueReportInput {
   status?: IssueReportStatus;
   adminNotes?: string;
+  subject?: string;
+  description?: string;
+  category?: IssueReportCategory;
 }

@@ -42,6 +42,7 @@ type ViewMode = 'weekly' | 'monthly';
 export default function SchedulePage() {
   const { canPerformAction } = useAdminAccess();
   const canAssignShifts = canPerformAction('schedule', 'create');
+  const canUpdateShifts = canPerformAction('schedule', 'update');
   const canDeleteShifts = canPerformAction('schedule', 'delete');
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations } = useLocations();
@@ -213,6 +214,22 @@ export default function SchedulePage() {
     return map;
   }, [employees]);
 
+  function handleShiftClick(shift: Shift, employee: Employee) {
+    if (!canUpdateShifts || !isOnOrAfterToday(shift.date)) return;
+
+    setAssignData({
+      shiftId: shift.id,
+      employeeId: shift.employeeId,
+      employeeName: employee.name,
+      date: shift.date,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      department: shift.department,
+      locationId: shift.locationId ?? employee.locationId ?? '',
+    });
+    setAssignModalOpen(true);
+  }
+
   function handleCellClick(employee: Employee, date: string) {
     if (!canAssignShifts || !isOnOrAfterToday(date)) return;
 
@@ -251,7 +268,9 @@ export default function SchedulePage() {
       weekDays={week.days}
       loading={pageLoading}
       onCellClick={handleCellClick}
+      onShiftClick={handleShiftClick}
       canAssignShifts={canAssignShifts}
+      canUpdateShifts={canUpdateShifts}
       canDeleteShifts={canDeleteShifts}
     />
   );

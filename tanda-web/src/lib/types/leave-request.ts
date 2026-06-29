@@ -28,3 +28,11 @@ export interface NewLeaveRequestInput {
   endDate: string;
   justification: string;
 }
+
+export interface UpdateLeaveRequestInput {
+  type?: LeaveRequestType | string;
+  startDate?: string;
+  endDate?: string;
+  justification?: string;
+  status?: LeaveRequestStatus;
+}

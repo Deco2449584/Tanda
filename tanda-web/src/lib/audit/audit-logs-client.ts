@@ -80,7 +80,7 @@ export async function recordEmployeeAuditEvent(input: {
 }
 
 export async function recordShiftAuditEvent(input: {
-  action: 'shift.created' | 'shift.deleted';
+  action: 'shift.created' | 'shift.updated' | 'shift.deleted';
   shiftId: string;
   summary: string;
   before?: Record<string, unknown> | null;

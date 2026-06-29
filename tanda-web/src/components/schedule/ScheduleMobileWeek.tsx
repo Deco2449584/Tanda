@@ -19,6 +19,7 @@ interface ScheduleMobileWeekProps {
   shiftsByCell: Map<string, Shift[]>;
   employeesByCode: Map<string, Employee>;
   onCellClick: (employee: Employee, date: string) => void;
+  onShiftClick?: (shift: Shift, employee: Employee) => void;
   onDeleteShift?: (shift: Shift, employeeName: string) => void;
 }
 
@@ -45,6 +46,7 @@ interface MobileDayCellProps {
   employee: Employee;
   employeesByCode: Map<string, Employee>;
   onCellClick: (employee: Employee, date: string) => void;
+  onShiftClick?: (shift: Shift, employee: Employee) => void;
   onDeleteShift?: (shift: Shift, employeeName: string) => void;
 }
 
@@ -54,6 +56,7 @@ function MobileDayCell({
   employee,
   employeesByCode,
   onCellClick,
+  onShiftClick,
   onDeleteShift,
 }: MobileDayCellProps) {
   const today = isToday(parseISO(`${date}T12:00:00`));
@@ -61,11 +64,20 @@ function MobileDayCell({
   const primaryShift = shifts[0];
   const canSchedule = isOnOrAfterToday(date);
 
+  function handleActivate() {
+    if (!canSchedule) return;
+    if (hasShift && primaryShift && onShiftClick) {
+      onShiftClick(primaryShift, employee);
+      return;
+    }
+    onCellClick(employee, date);
+  }
+
   function handleCellKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (!canSchedule) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      onCellClick(employee, date);
+      handleActivate();
     }
   }
 
@@ -75,9 +87,7 @@ function MobileDayCell({
     <div
       role={canSchedule ? 'button' : undefined}
       tabIndex={canSchedule ? 0 : undefined}
-      onClick={() => {
-        if (canSchedule) onCellClick(employee, date);
-      }}
+      onClick={handleActivate}
       onKeyDown={handleCellKeyDown}
       className={`relative flex ${cellSizeClass} flex-col items-center justify-center rounded-lg border transition-colors ${
         !canSchedule ? 'cursor-default opacity-60' : 'focus:outline-none focus:ring-2 focus:ring-primary/40'
@@ -135,6 +145,7 @@ export function ScheduleMobileWeek({
   shiftsByCell,
   employeesByCode,
   onCellClick,
+  onShiftClick,
   onDeleteShift,
 }: ScheduleMobileWeekProps) {
   const totalShifts = shifts.length;
@@ -246,6 +257,7 @@ export function ScheduleMobileWeek({
                       employee={employee}
                       employeesByCode={employeesByCode}
                       onCellClick={onCellClick}
+                      onShiftClick={onShiftClick}
                       onDeleteShift={onDeleteShift}
                     />
                   ))}

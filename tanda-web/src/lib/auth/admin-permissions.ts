@@ -14,6 +14,8 @@ import {
   type AdminModuleKey,
   type AdminModulePermissionsFirestore,
   type ResolvedAdminAccess,
+  SETTINGS_SECTION_ACTIONS,
+  type SettingsSectionKey,
 } from '@/lib/types/admin-permissions';
 import type { UserRole } from '@/lib/auth/roles';
 import { isAdminAreaRole, isMasterRole } from '@/lib/auth/roles';
@@ -130,6 +132,18 @@ export function getDefaultAdminHref(access: ResolvedAdminAccess): string {
 
 export function createDefaultModulePermissions(): AdminModulePermissionsFirestore {
   return mapModulePermissions(null);
+}
+
+export function canViewSettingsSection(
+  access: ResolvedAdminAccess | null,
+  section: SettingsSectionKey,
+): boolean {
+  if (!access) return false;
+  if (access.isMaster) return true;
+  if (!access.modules.settings) return false;
+
+  const action = SETTINGS_SECTION_ACTIONS[section];
+  return access.actions.settings[action] === true;
 }
 
 // Re-export for consumers that import from this module

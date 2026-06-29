@@ -47,6 +47,8 @@ function parseViewParam(value: string | null): LeaveCenterView {
 export default function LeaveRequestsPage() {
   const { canPerformAction } = useAdminAccess();
   const canManageLeaveRequests = canPerformAction('leaveRequests', 'manage');
+  const canUpdateLeaveRequests = canPerformAction('leaveRequests', 'update');
+  const canDeleteLeaveRequests = canPerformAction('leaveRequests', 'delete');
   const searchParams = useSearchParams();
   const { employees, loading: employeesLoading } = useEmployees();
   const [dateRange, setDateRange] = useState<DateRange>(() => getCurrentMonthRange());
@@ -250,6 +252,8 @@ export default function LeaveRequestsPage() {
           loading={pageLoading}
           searchQuery={searchQuery}
           canManage={canManageLeaveRequests}
+          canUpdate={canUpdateLeaveRequests}
+          canDelete={canDeleteLeaveRequests}
         />
       ) : (
         <AttendanceJustificationsList

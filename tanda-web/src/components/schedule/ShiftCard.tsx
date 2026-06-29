@@ -8,6 +8,7 @@ interface ShiftCardProps {
   shift: Shift;
   employeeName: string;
   employeePhotoUrl?: string;
+  onEdit?: (shift: Shift) => void;
   onDelete?: (shift: Shift) => void;
   compact?: boolean;
 }
@@ -43,6 +44,7 @@ export function ShiftCard({
   shift,
   employeeName,
   employeePhotoUrl,
+  onEdit,
   onDelete,
   compact = false,
 }: ShiftCardProps) {
@@ -83,7 +85,24 @@ export function ShiftCard({
 
   return (
     <div
-      className={`relative rounded-lg p-2.5 backdrop-blur-sm ${styles.container}`}
+      role={onEdit ? 'button' : undefined}
+      tabIndex={onEdit ? 0 : undefined}
+      onClick={(event) => {
+        if (!onEdit) return;
+        event.stopPropagation();
+        onEdit(shift);
+      }}
+      onKeyDown={(event) => {
+        if (!onEdit) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          onEdit(shift);
+        }
+      }}
+      className={`relative rounded-lg p-2.5 backdrop-blur-sm ${styles.container} ${
+        onEdit ? 'cursor-pointer transition hover:brightness-110 focus:outline-none focus:ring-1 focus:ring-primary/50' : ''
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">

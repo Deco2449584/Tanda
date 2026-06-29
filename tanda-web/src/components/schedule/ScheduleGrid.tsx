@@ -24,7 +24,9 @@ interface ScheduleGridProps {
   weekDays: WeekDay[];
   loading: boolean;
   onCellClick: (employee: Employee, date: string) => void;
+  onShiftClick?: (shift: Shift, employee: Employee) => void;
   canAssignShifts?: boolean;
+  canUpdateShifts?: boolean;
   canDeleteShifts?: boolean;
 }
 
@@ -38,7 +40,9 @@ export function ScheduleGrid({
   weekDays,
   loading,
   onCellClick,
+  onShiftClick,
   canAssignShifts = true,
+  canUpdateShifts = true,
   canDeleteShifts = true,
 }: ScheduleGridProps) {
   const [pendingDelete, setPendingDelete] = useState<{
@@ -136,6 +140,7 @@ export function ScheduleGrid({
           shiftsByCell={shiftsByCell}
           employeesByCode={employeesByCode}
           onCellClick={canAssignShifts ? onCellClick : () => {}}
+          onShiftClick={canUpdateShifts ? onShiftClick : undefined}
           onDeleteShift={canDeleteShifts ? requestDelete : undefined}
         />
       </div>
@@ -216,6 +221,14 @@ export function ScheduleGrid({
                                 shift={shift}
                                 employeeName={employee.name}
                                 employeePhotoUrl={employee.photoUrl}
+                                onEdit={
+                                  canUpdateShifts &&
+                                  shift.status === 'scheduled' &&
+                                  isOnOrAfterToday(normalizeInputDate(shift.date)) &&
+                                  onShiftClick
+                                    ? () => onShiftClick(shift, employee)
+                                    : undefined
+                                }
                                 onDelete={
                                   canDeleteShifts
                                     ? (shiftToDelete) =>

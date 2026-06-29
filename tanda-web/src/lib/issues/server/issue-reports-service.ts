@@ -117,6 +117,22 @@ export async function updateIssueReport(
     update.adminNotes = input.adminNotes.trim();
   }
 
+  if (typeof input.subject === 'string') {
+    const subject = input.subject.trim();
+    if (!subject) throw new Error('Subject is required.');
+    update.subject = subject;
+  }
+
+  if (typeof input.description === 'string') {
+    const description = input.description.trim();
+    if (!description) throw new Error('Description is required.');
+    update.description = description;
+  }
+
+  if (typeof input.category === 'string' && input.category.trim()) {
+    update.category = parseCategory(input.category);
+  }
+
   await ref.update(update);
 
   const snapshot = await ref.get();
@@ -125,4 +141,13 @@ export async function updateIssueReport(
 
 export function serializeIssueReports(reports: IssueReport[]) {
   return reports.map(serializeIssueReport);
+}
+
+export async function deleteIssueReport(id: string): Promise<void> {
+  const ref = getAdminFirestore().collection(COLLECTIONS.ISSUE_REPORTS).doc(id.trim());
+  const existing = await ref.get();
+  if (!existing.exists) {
+    throw new Error('Issue report not found.');
+  }
+  await ref.delete();
 }

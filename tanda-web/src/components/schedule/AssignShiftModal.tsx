@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeeDepartmentSelect } from '@/components/employees/EmployeeDepartmentSelect';
@@ -59,6 +59,7 @@ export function AssignShiftModal({
   const selectedEmployee = employees.find((e) => e.employeeId === employeeId);
   const employeeName = selectedEmployee?.name ?? initialData.employeeName;
   const isPastDate = !isOnOrAfterToday(initialData.date);
+  const isEditing = Boolean(initialData.shiftId?.trim());
 
   function handleClose() {
     if (isSubmitting) return;
@@ -113,7 +114,7 @@ export function AssignShiftModal({
     setIsSubmitting(true);
 
     try {
-      const shiftRef = await addDoc(collection(db, COLLECTIONS.SHIFTS), {
+      const payload = {
         employeeId: employeeId.trim(),
         date: shiftDate,
         startTime,
@@ -122,36 +123,56 @@ export function AssignShiftModal({
         locationId: locationId.trim(),
         locationNameSnapshot: selectedLocation?.name ?? '',
         locationCitySnapshot: selectedLocation?.city ?? '',
-        status: 'scheduled',
-      });
+        status: 'scheduled' as const,
+      };
 
-      void notifyShiftChange({
-        type: 'assigned',
-        employeeId: employeeId.trim(),
-        shiftId: shiftRef.id,
-        date: shiftDate,
-        startTime,
-        endTime,
-        department: department.trim(),
-      });
+      if (isEditing && initialData.shiftId) {
+        await updateDoc(doc(db, COLLECTIONS.SHIFTS, initialData.shiftId), payload);
 
-      void recordShiftAuditEvent({
-        action: 'shift.created',
-        shiftId: shiftRef.id,
-        summary: `Assigned shift for ${employeeName} on ${shiftDate} (${startTime}–${endTime})`,
-        after: {
+        void notifyShiftChange({
+          type: 'assigned',
           employeeId: employeeId.trim(),
+          shiftId: initialData.shiftId,
           date: shiftDate,
           startTime,
           endTime,
           department: department.trim(),
-          locationId: locationId.trim(),
-        },
-      });
+        });
+
+        void recordShiftAuditEvent({
+          action: 'shift.updated',
+          shiftId: initialData.shiftId,
+          summary: `Updated shift for ${employeeName} on ${shiftDate} (${startTime}–${endTime})`,
+          after: payload,
+        });
+      } else {
+        const shiftRef = await addDoc(collection(db, COLLECTIONS.SHIFTS), payload);
+
+        void notifyShiftChange({
+          type: 'assigned',
+          employeeId: employeeId.trim(),
+          shiftId: shiftRef.id,
+          date: shiftDate,
+          startTime,
+          endTime,
+          department: department.trim(),
+        });
+
+        void recordShiftAuditEvent({
+          action: 'shift.created',
+          shiftId: shiftRef.id,
+          summary: `Assigned shift for ${employeeName} on ${shiftDate} (${startTime}–${endTime})`,
+          after: payload,
+        });
+      }
 
       onClose();
     } catch {
-      setError('Could not assign the shift. Please try again.');
+      setError(
+        isEditing
+          ? 'Could not update the shift. Please try again.'
+          : 'Could not assign the shift. Please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -172,7 +193,9 @@ export function AssignShiftModal({
 
       <div className="relative z-10 w-[95%] rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-md">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Assign shift</h2>
+          <h2 className="text-lg font-semibold text-white">
+            {isEditing ? 'Edit shift' : 'Assign shift'}
+          </h2>
           <button
             type="button"
             onClick={handleClose}
@@ -291,7 +314,7 @@ export function AssignShiftModal({
               disabled={isSubmitting || isPastDate}
               className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white hover:opacity-90 disabled:opacity-70"
             >
-              {isSubmitting ? 'Saving...' : 'Assign shift'}
+              {isSubmitting ? 'Saving...' : isEditing ? 'Save changes' : 'Assign shift'}
             </button>
           </div>
         </form>

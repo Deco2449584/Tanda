@@ -33,13 +33,17 @@ export const ADMIN_ACTION_LABELS: {
   },
   leaveRequests: {
     manage: 'Approve / reject requests',
+    update: 'Edit leave requests',
+    delete: 'Delete leave requests',
   },
   announcements: {
     publish: 'Publish announcements',
     delete: 'Delete announcements',
   },
   issueReports: {
-    manage: 'Triage and update reports',
+    manage: 'Update status and admin notes',
+    update: 'Edit issue details',
+    delete: 'Delete issue reports',
   },
   helpTutorials: {
     create: 'Upload tutorials',
@@ -47,7 +51,15 @@ export const ADMIN_ACTION_LABELS: {
     delete: 'Delete tutorials',
   },
   settings: {
-    update: 'Change system settings',
+    update: 'Save system settings',
+    viewLocalization: 'Localization tab',
+    viewAttendance: 'Time & attendance tab',
+    viewNotifications: 'Notifications tab',
+    viewLocations: 'Locations tab',
+    viewDepartments: 'Departments tab',
+    viewLocationGroups: 'Location groups tab',
+    viewKioskDevices: 'Kiosk devices tab',
+    viewPortal: 'Portal clients tab',
   },
 };
 
@@ -60,6 +72,37 @@ function buildFullActions(): AdminResolvedActions {
       ),
     ]),
   ) as AdminResolvedActions;
+}
+
+function applyLegacyActionFallback(
+  moduleKey: AdminEditModuleKey,
+  moduleActions: Record<string, boolean>,
+  rawModule: Partial<Record<string, boolean>>,
+) {
+  if (moduleKey === 'leaveRequests' || moduleKey === 'issueReports') {
+    if (moduleActions.manage === true) {
+      if (rawModule.update === undefined) moduleActions.update = true;
+      if (rawModule.delete === undefined) moduleActions.delete = true;
+    }
+  }
+
+  if (moduleKey === 'settings' && moduleActions.update === true) {
+    const viewKeys = [
+      'viewLocalization',
+      'viewAttendance',
+      'viewNotifications',
+      'viewLocations',
+      'viewDepartments',
+      'viewLocationGroups',
+      'viewKioskDevices',
+      'viewPortal',
+    ] as const;
+    for (const key of viewKeys) {
+      if (rawModule[key] === undefined) {
+        moduleActions[key] = true;
+      }
+    }
+  }
 }
 
 function resolveModuleActions(
@@ -87,6 +130,8 @@ function resolveModuleActions(
         moduleActions[action] = true;
       }
     }
+
+    applyLegacyActionFallback(moduleKey, moduleActions, rawModule);
 
     resolved[moduleKey] = moduleActions;
   }

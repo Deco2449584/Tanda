@@ -12,6 +12,8 @@ import type { SerializedIssueReport } from '@/lib/issues/issue-reports-api';
 export default function IssueReportsAdminPage() {
   const { canPerformAction } = useAdminAccess();
   const canManageIssueReports = canPerformAction('issueReports', 'manage');
+  const canUpdateIssueReports = canPerformAction('issueReports', 'update');
+  const canDeleteIssueReports = canPerformAction('issueReports', 'delete');
   const [reports, setReports] = useState<SerializedIssueReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -48,6 +50,8 @@ export default function IssueReportsAdminPage() {
         reports={reports}
         loading={loading}
         canManage={canManageIssueReports}
+        canUpdate={canUpdateIssueReports}
+        canDelete={canDeleteIssueReports}
         onUpdated={() => {
           setToast({
             id: crypto.randomUUID(),

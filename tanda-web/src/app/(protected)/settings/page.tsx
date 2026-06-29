@@ -21,11 +21,13 @@ import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { canViewSettingsSection } from '@/lib/auth/admin-permissions';
 import {
   COMPANY_NAME,
   DEFAULT_COMPANY_SETTINGS,
   type CompanySettings,
 } from '@/lib/types/company-settings';
+import type { SettingsSectionKey } from '@/lib/types/admin-permissions';
 
 type SettingsTab =
   | 'localization'
@@ -41,18 +43,18 @@ type SettingsTab =
   | 'locationGroups'
   | 'kioskDevices';
 
-const ADMIN_TABS: { id: SettingsTab; label: string }[] = [
-  { id: 'localization', label: 'Localization' },
-  { id: 'attendance', label: 'Time & attendance' },
-  { id: 'notifications', label: 'Notifications' },
+const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey }[] = [
+  { id: 'localization', label: 'Localization', section: 'localization' },
+  { id: 'attendance', label: 'Time & attendance', section: 'attendance' },
+  { id: 'notifications', label: 'Notifications', section: 'notifications' },
   { id: 'accessRoles', label: 'Access roles' },
   { id: 'auditLogs', label: 'Audit logs' },
   { id: 'profile', label: 'User profile' },
-  { id: 'locations', label: 'Locations' },
-  { id: 'departments', label: 'Departments' },
-  { id: 'locationGroups', label: 'Location groups' },
-  { id: 'kioskDevices', label: 'Kiosk devices' },
-  { id: 'portal', label: 'Portal clients' },
+  { id: 'locations', label: 'Locations', section: 'locations' },
+  { id: 'departments', label: 'Departments', section: 'departments' },
+  { id: 'locationGroups', label: 'Location groups', section: 'locationGroups' },
+  { id: 'kioskDevices', label: 'Kiosk devices', section: 'kioskDevices' },
+  { id: 'portal', label: 'Portal clients', section: 'portal' },
   { id: 'data', label: 'Data cleanup' },
 ];
 
@@ -73,9 +75,13 @@ function deriveDisplayName(
 export default function SettingsPage() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuthRole();
-  const { isMaster, canAccessModule, canPerformAction } = useAdminAccess();
-  const canManageSettings = canAccessModule('settings');
+  const { isMaster, access, canPerformAction } = useAdminAccess();
   const canEditSettings = canPerformAction('settings', 'update');
+
+  const canViewSection = useCallback(
+    (section: SettingsSectionKey) => canViewSettingsSection(access, section),
+    [access],
+  );
 
   const tabs = useMemo(
     () =>
@@ -83,12 +89,15 @@ export default function SettingsPage() {
         if (tab.id === 'data' || tab.id === 'accessRoles' || tab.id === 'auditLogs') {
           return isMaster;
         }
-        if (tab.id === 'profile' || tab.id === 'localization' || tab.id === 'notifications') {
+        if (tab.id === 'profile') {
           return true;
         }
-        return canManageSettings;
+        if (tab.section) {
+          return canViewSection(tab.section);
+        }
+        return false;
       }),
-    [canManageSettings, isMaster],
+    [canViewSection, isMaster],
   );
 
   const { settings, loading: settingsLoading, saving, saveSettings } =
@@ -182,7 +191,7 @@ export default function SettingsPage() {
               }
             />
           )}
-          {activeTab === 'attendance' && canManageSettings && (
+          {activeTab === 'attendance' && (
             <AttendanceSettingsTab
               draft={draft}
               saving={settingsSaving}
@@ -206,21 +215,13 @@ export default function SettingsPage() {
           {activeTab === 'data' && isMaster && (
             <DataPurgeTab adminEmail={user?.email ?? ''} />
           )}
-          {activeTab === 'locations' && canManageSettings && (
-            <LocationsTab onToast={showToast} />
-          )}
-          {activeTab === 'departments' && canManageSettings && (
-            <DepartmentsTab onToast={showToast} />
-          )}
-          {activeTab === 'locationGroups' && canManageSettings && (
+          {activeTab === 'locations' && <LocationsTab onToast={showToast} />}
+          {activeTab === 'departments' && <DepartmentsTab onToast={showToast} />}
+          {activeTab === 'locationGroups' && (
             <LocationGroupsTab onToast={showToast} />
           )}
-          {activeTab === 'kioskDevices' && canManageSettings && (
-            <KioskDevicesTab onToast={showToast} />
-          )}
-          {activeTab === 'portal' && canManageSettings && (
-            <PortalClientsTab onToast={showToast} />
-          )}
+          {activeTab === 'kioskDevices' && <KioskDevicesTab onToast={showToast} />}
+          {activeTab === 'portal' && <PortalClientsTab onToast={showToast} />}
         </div>
       )}
 
