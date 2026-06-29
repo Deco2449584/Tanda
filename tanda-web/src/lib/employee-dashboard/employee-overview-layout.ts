@@ -2,6 +2,7 @@ const STORAGE_KEY = 'tanda-employee-overview-layout-v1';
 
 export const EMPLOYEE_OVERVIEW_SECTIONS = [
   'employee-id',
+  'hours-earnings',
   'weekly-hours',
   'monthly-hours',
   'next-shift',

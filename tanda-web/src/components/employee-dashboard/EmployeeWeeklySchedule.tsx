@@ -59,8 +59,24 @@ export function EmployeeWeeklySchedule({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border/90 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 shadow-lg shadow-black/20">
-      <div className="flex flex-col gap-3 border-b border-border/80 bg-surface-raised/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
-        <div className="min-w-0 flex-1">
+      <div className="relative border-b border-border/80 bg-surface-raised/50 px-4 py-4 md:px-5">
+        {collapsible && onToggleCollapse ? (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-base/80 text-muted transition-colors hover:bg-surface-hover hover:text-foreground md:right-4 md:top-4"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Expand weekly schedule' : 'Collapse weekly schedule'}
+          >
+            {collapsed ? (
+              <ChevronDown className="h-4 w-4" aria-hidden />
+            ) : (
+              <ChevronUp className="h-4 w-4" aria-hidden />
+            )}
+          </button>
+        ) : null}
+
+        <div className="min-w-0 pr-10">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted">
             This week
           </p>
@@ -74,43 +90,24 @@ export function EmployeeWeeklySchedule({
           )}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          {!loading && !collapsed && (
-            <p className="rounded-full bg-surface-hover/80 px-3 py-1 text-xs font-medium text-muted">
-              {scheduledCount} shift{scheduledCount === 1 ? '' : 's'} this week
-            </p>
-          )}
-          {showViewAllLink && !collapsed && (
-            <Link
-              href="/my-schedule"
-              className="inline-flex items-center gap-1 rounded-lg border border-border-strong bg-surface-hover/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-foreground"
-            >
-              Full schedule
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          )}
-          {collapsible && onToggleCollapse ? (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-              aria-expanded={!collapsed}
-              aria-label={collapsed ? 'Expand weekly schedule' : 'Collapse weekly schedule'}
-            >
-              {collapsed ? (
-                <>
-                  <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                  Expand
-                </>
-              ) : (
-                <>
-                  <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-                  Collapse
-                </>
-              )}
-            </button>
-          ) : null}
-        </div>
+        {!collapsed ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {!loading ? (
+              <p className="rounded-full bg-surface-hover/80 px-3 py-1 text-xs font-medium text-muted">
+                {scheduledCount} shift{scheduledCount === 1 ? '' : 's'} this week
+              </p>
+            ) : null}
+            {showViewAllLink ? (
+              <Link
+                href="/my-schedule"
+                className="inline-flex items-center gap-1 rounded-lg border border-border-strong bg-surface-hover/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-foreground"
+              >
+                Full schedule
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {!collapsed ? (

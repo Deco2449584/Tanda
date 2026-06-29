@@ -1,14 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { CollapsibleDashboardCard } from '@/components/dashboard/CollapsibleDashboardCard';
+import {
+  EmployeeHoursEarningsCard,
+  formatHoursEarningsSummary,
+  type HoursEarningsPeriod,
+} from '@/components/employee-dashboard/EmployeeHoursEarningsCard';
 import { EmployeeIdCard } from '@/components/employee-dashboard/EmployeeIdCard';
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
+import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { MonthlyHoursCard } from '@/components/employee-dashboard/MonthlyHoursCard';
-import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
-import { WeeklyHoursCard } from '@/components/employee-dashboard/WeeklyHoursCard';
 import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useEmployeeOverviewLayout } from '@/hooks/useEmployeeOverviewLayout';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
@@ -18,9 +21,21 @@ import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
 import {
   calculateWorkedHoursInRange,
   getMonthDateRange,
+  getYearDateRange,
 } from '@/lib/attendance/work-sessions';
+import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { formatTimeLabel } from '@/lib/schedule/week';
+
+function resolveHoursRange(
+  period: HoursEarningsPeriod,
+  weekStart: string,
+  weekEnd: string,
+) {
+  if (period === 'week') return { start: weekStart, end: weekEnd };
+  if (period === 'month') return getMonthDateRange();
+  return getYearDateRange();
+}
 
 export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
@@ -28,8 +43,10 @@ export default function EmployeeDashboardPage() {
   const { isSectionCollapsed, toggleSectionCollapsed } = useEmployeeOverviewLayout();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
+  const [hoursPeriod, setHoursPeriod] = useState<HoursEarningsPeriod>('week');
 
   const employeeCode = employee?.employeeId ?? '';
+  const hourlyRate = employee?.hourlyRate ?? 0;
 
   const {
     week,
@@ -43,28 +60,26 @@ export default function EmployeeDashboardPage() {
     allRecords: attendanceRecords,
     loading: recordsLoading,
     error: recordsError,
-  } = useEmployeeAttendance({ employeeCode, displayRange: 'month' });
+  } = useEmployeeAttendance({ employeeCode, displayRange: 'all' });
 
-  const weeklyHours = useMemo(
-    () =>
-      calculateWorkedHoursInRange(
-        attendanceRecords,
-        week.start,
-        week.end,
-        settings.attendanceBreak,
-      ),
-    [attendanceRecords, week.end, week.start, settings.attendanceBreak],
-  );
-
-  const monthlyHours = useMemo(() => {
-    const { start, end } = getMonthDateRange();
-    return calculateWorkedHoursInRange(
+  const hoursEarningsStats = useMemo(() => {
+    const range = resolveHoursRange(hoursPeriod, week.start, week.end);
+    const hours = calculateWorkedHoursInRange(
       attendanceRecords,
-      start,
-      end,
+      range.start,
+      range.end,
       settings.attendanceBreak,
     );
-  }, [attendanceRecords, settings.attendanceBreak]);
+    const earnings = Math.round(hours * hourlyRate * 100) / 100;
+    return { hours, earnings };
+  }, [
+    attendanceRecords,
+    hourlyRate,
+    hoursPeriod,
+    settings.attendanceBreak,
+    week.end,
+    week.start,
+  ]);
 
   const scheduledCount = useMemo(
     () => Object.keys(shiftsByDate).length,
@@ -74,18 +89,24 @@ export default function EmployeeDashboardPage() {
   const dataLoading = shiftsLoading || recordsLoading;
   const dataError = shiftsError || recordsError;
 
-  const weeklyHoursSummary = recordsLoading
+  const hoursEarningsSummary = recordsLoading
     ? 'Loading…'
-    : `${Math.round(weeklyHours * 10) / 10} hrs this week`;
-
-  const monthlyHoursSummary = recordsLoading
-    ? 'Loading…'
-    : `${Math.round(monthlyHours * 10) / 10} hrs this month`;
+    : formatHoursEarningsSummary(
+        hoursEarningsStats.hours,
+        hoursEarningsStats.earnings,
+        settings.currency,
+        hoursPeriod,
+        hourlyRate,
+      );
 
   const nextShiftSummary = shiftsLoading
     ? 'Loading…'
     : nextScheduledShift
-      ? `${formatShortDate(nextScheduledShift.date)} · ${formatTimeLabel(nextScheduledShift.startTime)}`
+      ? (() => {
+          const location = formatShiftLocationLabel(nextScheduledShift);
+          const base = `${formatShortDate(nextScheduledShift.date)} · ${formatTimeLabel(nextScheduledShift.startTime)}`;
+          return location ? `${base} · ${location}` : base;
+        })()
       : 'No upcoming shifts';
 
   const weeklyScheduleSummary = shiftsLoading
@@ -124,39 +145,39 @@ export default function EmployeeDashboardPage() {
             />
           </CollapsibleDashboardCard>
 
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
-            <CollapsibleDashboardCard
-              title="Total weekly hours"
-              summary={weeklyHoursSummary}
-              collapsed={isSectionCollapsed('weekly-hours')}
-              onToggle={() => toggleSectionCollapsed('weekly-hours')}
-            >
-              <WeeklyHoursCard hours={weeklyHours} loading={recordsLoading} embedded />
-            </CollapsibleDashboardCard>
+          <CollapsibleDashboardCard
+            title="Hours & earnings"
+            summary={hoursEarningsSummary}
+            collapsed={isSectionCollapsed('hours-earnings')}
+            onToggle={() => toggleSectionCollapsed('hours-earnings')}
+          >
+            <EmployeeHoursEarningsCard
+              records={attendanceRecords}
+              weekStart={week.start}
+              weekEnd={week.end}
+              hourlyRate={hourlyRate}
+              currency={settings.currency}
+              loading={recordsLoading}
+              breakSettings={settings.attendanceBreak}
+              embedded
+              period={hoursPeriod}
+              onPeriodChange={setHoursPeriod}
+            />
+          </CollapsibleDashboardCard>
 
-            <CollapsibleDashboardCard
-              title="Total monthly hours"
-              summary={monthlyHoursSummary}
-              collapsed={isSectionCollapsed('monthly-hours')}
-              onToggle={() => toggleSectionCollapsed('monthly-hours')}
-            >
-              <MonthlyHoursCard hours={monthlyHours} loading={recordsLoading} embedded />
-            </CollapsibleDashboardCard>
-
-            <CollapsibleDashboardCard
-              title="My next shift"
-              summary={nextShiftSummary}
-              collapsed={isSectionCollapsed('next-shift')}
-              onToggle={() => toggleSectionCollapsed('next-shift')}
-            >
-              <NextShiftCard
-                employee={employee}
-                nextShift={nextScheduledShift}
-                loading={shiftsLoading}
-                embedded
-              />
-            </CollapsibleDashboardCard>
-          </div>
+          <CollapsibleDashboardCard
+            title="My next shift"
+            summary={nextShiftSummary}
+            collapsed={isSectionCollapsed('next-shift')}
+            onToggle={() => toggleSectionCollapsed('next-shift')}
+          >
+            <NextShiftCard
+              employee={employee}
+              nextShift={nextScheduledShift}
+              loading={shiftsLoading}
+              embedded
+            />
+          </CollapsibleDashboardCard>
 
           <EmployeeWeeklySchedule
             weekDays={week.days}

@@ -193,3 +193,17 @@ export function getMonthDateRange(reference: Date = new Date()): {
     end: toInputDate(end),
   };
 }
+
+export function getYearDateRange(reference: Date = new Date()): {
+  start: string;
+  end: string;
+} {
+  const year = reference.getFullYear();
+  const start = new Date(year, 0, 1);
+  const end = new Date(year, 11, 31);
+
+  return {
+    start: toInputDate(start),
+    end: toInputDate(end),
+  };
+}

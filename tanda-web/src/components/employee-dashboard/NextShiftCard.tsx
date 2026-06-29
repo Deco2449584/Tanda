@@ -1,6 +1,8 @@
+import { MapPin } from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
+import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatTimeLabel } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
@@ -18,6 +20,8 @@ export function NextShiftCard({
   loading,
   embedded = false,
 }: NextShiftCardProps) {
+  const locationLabel = nextShift ? formatShiftLocationLabel(nextShift) : '';
+
   return (
     <div className={embedded ? '' : 'rounded-2xl border border-border bg-surface-raised p-5 backdrop-blur-sm'}>
       <div className="flex items-start justify-between gap-3">
@@ -31,25 +35,24 @@ export function NextShiftCard({
           {loading ? (
             <LoadingIndicator />
           ) : nextShift ? (
-            <div className={`space-y-1.5 text-sm ${embedded ? '' : 'mt-3'}`}>
-              <p className="text-muted">
-                <span className="text-subtle">Clock-in:</span>{' '}
-                <span className="font-medium text-white">
-                  {formatTimeLabel(nextShift.startTime)}
-                </span>
+            <div className={`space-y-2 text-sm ${embedded ? '' : 'mt-3'}`}>
+              <p className="text-lg font-semibold text-white">
+                {formatShortDate(nextShift.date)}
               </p>
               <p className="text-muted">
-                <span className="text-subtle">Role:</span>{' '}
+                <span className="text-subtle">Time:</span>{' '}
                 <span className="font-medium text-white">
-                  {nextShift.department}
+                  {formatTimeLabel(nextShift.startTime)} – {formatTimeLabel(nextShift.endTime)}
                 </span>
               </p>
-              <p className="text-muted">
-                <span className="text-subtle">Date:</span>{' '}
-                <span className="font-medium text-white">
-                  {formatShortDate(nextShift.date)}
-                </span>
-              </p>
+              {locationLabel ? (
+                <p className="flex items-start gap-1.5 text-muted">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                  <span className="font-medium text-white">{locationLabel}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-subtle">Location not assigned</p>
+              )}
             </div>
           ) : (
             <p className={`text-sm text-muted ${embedded ? '' : 'mt-3'}`}>
