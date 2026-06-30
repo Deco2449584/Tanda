@@ -7,6 +7,8 @@ interface KioskSignOutButtonProps {
   signingOut?: boolean;
   className?: string;
   variant?: 'subtle' | 'prominent';
+  label?: string;
+  signingOutLabel?: string;
 }
 
 export function KioskSignOutButton({
@@ -14,6 +16,8 @@ export function KioskSignOutButton({
   signingOut = false,
   className = '',
   variant = 'subtle',
+  label = 'Sign out',
+  signingOutLabel = 'Signing out…',
 }: KioskSignOutButtonProps) {
   if (variant === 'prominent') {
     return (
@@ -28,7 +32,7 @@ export function KioskSignOutButton({
         ) : (
           <LogOut className="h-4 w-4" />
         )}
-        {signingOut ? 'Signing out…' : 'Sign out'}
+        {signingOut ? signingOutLabel : label}
       </button>
     );
   }
@@ -45,7 +49,7 @@ export function KioskSignOutButton({
       ) : (
         <LogOut className="h-3.5 w-3.5" />
       )}
-      {signingOut ? 'Signing out…' : 'Sign out'}
+      {signingOut ? signingOutLabel : label}
     </button>
   );
 }

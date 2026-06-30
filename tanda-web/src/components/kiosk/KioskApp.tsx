@@ -318,7 +318,11 @@ export function KioskApp() {
     return (
       <KioskPendingScreen
         session={session}
-        onGoToDashboard={canLeaveToDashboard ? () => router.push(dashboardRoute) : undefined}
+        onGoToDashboard={
+          canLeaveToDashboard ? () => router.push(dashboardRoute) : undefined
+        }
+        onSignOut={isKioskAccount ? handleSignOut : undefined}
+        signingOut={signingOut}
       />
     );
   }
