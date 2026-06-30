@@ -1,20 +1,20 @@
 'use client';
 
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Trash2, Upload, Video } from 'lucide-react';
 import {
+  addHelpTutorialCategoryRequest,
   createHelpTutorialRequest,
   deleteHelpTutorialRequest,
   updateHelpTutorialRequest,
   type SerializedHelpTutorial,
 } from '@/lib/help/help-tutorials-api';
 import { uploadTutorialVideo } from '@/lib/media/storage-uploads';
+import { HelpTutorialCategoryField } from '@/components/help/HelpTutorialCategoryField';
 import {
   HELP_TUTORIAL_AUDIENCES,
-  HELP_TUTORIAL_CATEGORIES,
   HELP_TUTORIAL_USER_ROLES,
   type HelpTutorialAudience,
-  type HelpTutorialCategory,
   type HelpTutorialUserRole,
 } from '@/lib/types/help-tutorial';
 import type { Employee } from '@/lib/types/employee';
@@ -23,6 +23,8 @@ import { useDepartments } from '@/providers/DepartmentsProvider';
 
 interface HelpTutorialManagePanelProps {
   tutorials: SerializedHelpTutorial[];
+  categories: string[];
+  onCategoriesChange: (categories: string[]) => void;
   employees: Employee[];
   locations: Location[];
   loading?: boolean;
@@ -42,6 +44,8 @@ const AUDIENCE_LABELS: Record<HelpTutorialAudience, string> = {
 
 export function HelpTutorialManagePanel({
   tutorials,
+  categories,
+  onCategoriesChange,
   employees,
   locations,
   loading,
@@ -56,7 +60,7 @@ export function HelpTutorialManagePanel({
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<HelpTutorialCategory>(HELP_TUTORIAL_CATEGORIES[0]);
+  const [category, setCategory] = useState('');
   const [audience, setAudience] = useState<HelpTutorialAudience>('all');
   const [audienceValue, setAudienceValue] = useState('');
   const [audienceRoles, setAudienceRoles] = useState<HelpTutorialUserRole[]>(['empleado']);
@@ -65,6 +69,25 @@ export function HelpTutorialManagePanel({
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const defaultCategory = categories[0] ?? '';
+
+  useEffect(() => {
+    if (!category && defaultCategory) {
+      setCategory(defaultCategory);
+      return;
+    }
+
+    if (category && !categories.includes(category) && defaultCategory) {
+      setCategory(defaultCategory);
+    }
+  }, [categories, category, defaultCategory]);
+
+  async function handleAddCategory(name: string) {
+    const nextCategories = await addHelpTutorialCategoryRequest(name);
+    onCategoriesChange(nextCategories);
+    return nextCategories;
+  }
 
   const departments = useMemo(() => {
     const values = new Set(departmentNames);
@@ -83,6 +106,11 @@ export function HelpTutorialManagePanel({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!category.trim()) {
+      onError('Select or add a category.');
+      return;
+    }
 
     if (!title.trim()) {
       onError('Title is required.');
@@ -143,7 +171,7 @@ export function HelpTutorialManagePanel({
 
       setTitle('');
       setDescription('');
-      setCategory(HELP_TUTORIAL_CATEGORIES[0]);
+      setCategory(defaultCategory);
       setAudience('all');
       setAudienceValue('');
       setAudienceRoles(['empleado']);
@@ -221,21 +249,14 @@ export function HelpTutorialManagePanel({
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted">Category</label>
-            <select
-              value={category}
-              disabled={saving}
-              onChange={(event) => setCategory(event.target.value as HelpTutorialCategory)}
-              className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
-            >
-              {HELP_TUTORIAL_CATEGORIES.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
+          <HelpTutorialCategoryField
+            categories={categories}
+            value={category}
+            onChange={setCategory}
+            onAddCategory={handleAddCategory}
+            disabled={saving}
+            onError={onError}
+          />
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-muted">Sort order</label>

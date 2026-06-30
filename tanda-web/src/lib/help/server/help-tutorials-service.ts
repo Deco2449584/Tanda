@@ -13,16 +13,20 @@ import type {
   UpdateHelpTutorialInput,
 } from '@/lib/types/help-tutorial';
 import {
+  normalizeHelpTutorialCategoryName,
+  validateHelpTutorialCategoryName,
+} from '@/lib/help/help-tutorial-categories';
+import {
   HELP_TUTORIAL_AUDIENCES,
-  HELP_TUTORIAL_CATEGORIES,
 } from '@/lib/types/help-tutorial';
 
-function parseCategory(value: string): CreateHelpTutorialInput['category'] {
-  const trimmed = value.trim();
-  if ((HELP_TUTORIAL_CATEGORIES as readonly string[]).includes(trimmed)) {
-    return trimmed as CreateHelpTutorialInput['category'];
+function parseCategory(value: string): string {
+  const normalized = normalizeHelpTutorialCategoryName(value);
+  const validationError = validateHelpTutorialCategoryName(normalized);
+  if (validationError) {
+    throw new Error(validationError);
   }
-  return 'Getting started';
+  return normalized;
 }
 
 function parseAudience(value: string): CreateHelpTutorialInput['audience'] {

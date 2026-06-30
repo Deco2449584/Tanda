@@ -33,32 +33,76 @@ export interface SerializedHelpTutorial {
   updatedAt: string | null;
 }
 
-export async function fetchHelpTutorials(): Promise<SerializedHelpTutorial[]> {
+export async function fetchHelpTutorials(): Promise<{
+  tutorials: SerializedHelpTutorial[];
+  categories: string[];
+}> {
   const response = await fetch('/api/help/tutorials', {
     headers: await authHeaders(),
   });
   const data = (await response.json().catch(() => null)) as {
     tutorials?: SerializedHelpTutorial[];
+    categories?: string[];
     error?: string;
   } | null;
   if (!response.ok) {
     throw new Error(data?.error ?? 'Could not load tutorials.');
   }
-  return data?.tutorials ?? [];
+  return {
+    tutorials: data?.tutorials ?? [],
+    categories: data?.categories ?? [],
+  };
 }
 
-export async function fetchHelpTutorialsAdmin(): Promise<SerializedHelpTutorial[]> {
+export async function fetchHelpTutorialsAdmin(): Promise<{
+  tutorials: SerializedHelpTutorial[];
+  categories: string[];
+}> {
   const response = await fetch('/api/help/tutorials/manage', {
     headers: await authHeaders(),
   });
   const data = (await response.json().catch(() => null)) as {
     tutorials?: SerializedHelpTutorial[];
+    categories?: string[];
     error?: string;
   } | null;
   if (!response.ok) {
     throw new Error(data?.error ?? 'Could not load tutorials.');
   }
-  return data?.tutorials ?? [];
+  return {
+    tutorials: data?.tutorials ?? [],
+    categories: data?.categories ?? [],
+  };
+}
+
+export async function fetchHelpTutorialCategories(): Promise<string[]> {
+  const response = await fetch('/api/help/tutorials/categories', {
+    headers: await authHeaders(),
+  });
+  const data = (await response.json().catch(() => null)) as {
+    categories?: string[];
+    error?: string;
+  } | null;
+  if (!response.ok) {
+    throw new Error(data?.error ?? 'Could not load categories.');
+  }
+  return data?.categories ?? [];
+}
+
+export async function addHelpTutorialCategoryRequest(name: string): Promise<string[]> {
+  const response = await fetch('/api/help/tutorials/categories', {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  const data = (await response.json().catch(() => null)) as {
+    categories?: string[];
+    error?: string;
+  } | null;
+  if (!response.ok) {
+    throw new Error(data?.error ?? 'Could not add category.');
+  }
+  return data?.categories ?? [];
 }
 
 export async function createHelpTutorialRequest(

@@ -10,14 +10,17 @@ import type { SerializedHelpTutorial } from '@/lib/help/help-tutorials-api';
 
 export default function HelpPage() {
   const [tutorials, setTutorials] = useState<SerializedHelpTutorial[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const loadTutorials = useCallback(async () => {
     setLoading(true);
     try {
-      const items = await fetchHelpTutorials();
+      const { tutorials: items, categories: nextCategories } =
+        await fetchHelpTutorials();
       setTutorials(items);
+      setCategories(nextCategories);
     } catch (error) {
       setToast({
         id: crypto.randomUUID(),
@@ -41,7 +44,11 @@ export default function HelpPage() {
         description="Video guides matched to your role, department and location."
       />
 
-      <HelpTutorialsViewer tutorials={tutorials} loading={loading} />
+      <HelpTutorialsViewer
+        tutorials={tutorials}
+        categories={categories}
+        loading={loading}
+      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </PageContent>

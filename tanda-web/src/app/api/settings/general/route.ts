@@ -53,6 +53,14 @@ export async function PUT(request: Request) {
         ? { defaultDepartmentName: body.defaultDepartmentName }
         : {}),
       pushNotificationsEnabled,
+      ...(Array.isArray(body.helpTutorialCategories)
+        ? {
+            helpTutorialCategories: body.helpTutorialCategories
+              .filter((item): item is string => typeof item === 'string')
+              .map((item) => item.trim())
+              .filter(Boolean),
+          }
+        : {}),
     };
 
     const wasEnabled = existingPushEnabled;

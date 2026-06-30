@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
+import { listHelpTutorialCategories } from '@/lib/help/server/help-tutorial-categories-service';
 import {
   createHelpTutorial,
   listAllHelpTutorials,
@@ -14,8 +15,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
-    const tutorials = await listAllHelpTutorials();
-    return NextResponse.json({ tutorials: serializeHelpTutorials(tutorials) });
+    const [tutorials, categories] = await Promise.all([
+      listAllHelpTutorials(),
+      listHelpTutorialCategories(),
+    ]);
+    return NextResponse.json({
+      tutorials: serializeHelpTutorials(tutorials),
+      categories,
+    });
   } catch (error) {
     console.error('GET /api/help/tutorials/manage', error);
     return NextResponse.json({ error: 'Could not load tutorials.' }, { status: 500 });

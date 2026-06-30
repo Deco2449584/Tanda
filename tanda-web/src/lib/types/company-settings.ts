@@ -31,6 +31,8 @@ export interface CompanySettings {
   attendanceRestrictions: AttendanceRestrictionsSettings;
   /** When false, no browser push is sent company-wide. Master-only setting. */
   pushNotificationsEnabled?: boolean;
+  /** Custom help tutorial video categories (merged with defaults and in-use values). */
+  helpTutorialCategories?: string[];
 }
 
 export const DEFAULT_ATTENDANCE_POLICY: AttendancePolicySettings = {

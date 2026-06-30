@@ -82,6 +82,20 @@ function mapAttendanceRestrictions(
   };
 }
 
+function mapHelpTutorialCategories(
+  data: Record<string, unknown>,
+): string[] | undefined {
+  const raw = data.helpTutorialCategories;
+  if (!Array.isArray(raw)) return undefined;
+
+  const values = raw
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return values.length > 0 ? values : undefined;
+}
+
 function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
   return {
     timeZone:
@@ -104,6 +118,7 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
       typeof data.pushNotificationsEnabled === 'boolean'
         ? data.pushNotificationsEnabled
         : DEFAULT_COMPANY_SETTINGS.pushNotificationsEnabled,
+    helpTutorialCategories: mapHelpTutorialCategories(data),
   };
 }
 
@@ -141,6 +156,9 @@ export async function saveCompanySettings(
         : {}),
       pushNotificationsEnabled:
         settings.pushNotificationsEnabled !== false,
+      ...(settings.helpTutorialCategories?.length
+        ? { helpTutorialCategories: settings.helpTutorialCategories }
+        : {}),
     },
     { merge: true },
   );

@@ -20,14 +20,17 @@ export default function HelpTutorialsAdminPage() {
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations, loading: locationsLoading } = useLocations();
   const [tutorials, setTutorials] = useState<SerializedHelpTutorial[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const loadTutorials = useCallback(async () => {
     setLoading(true);
     try {
-      const items = await fetchHelpTutorialsAdmin();
+      const { tutorials: items, categories: nextCategories } =
+        await fetchHelpTutorialsAdmin();
       setTutorials(items);
+      setCategories(nextCategories);
     } catch (error) {
       setToast({
         id: crypto.randomUUID(),
@@ -58,6 +61,8 @@ export default function HelpTutorialsAdminPage() {
       ) : (
         <HelpTutorialManagePanel
           tutorials={tutorials}
+          categories={categories}
+          onCategoriesChange={setCategories}
           employees={employees}
           locations={locations}
           loading={loading}

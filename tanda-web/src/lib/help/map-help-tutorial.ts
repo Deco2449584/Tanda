@@ -1,18 +1,12 @@
+import { parseStoredHelpTutorialCategory } from '@/lib/help/help-tutorial-categories';
 import type { HelpTutorial, HelpTutorialFirestore } from '@/lib/types/help-tutorial';
 import {
   HELP_TUTORIAL_AUDIENCES,
-  HELP_TUTORIAL_CATEGORIES,
   HELP_TUTORIAL_USER_ROLES,
 } from '@/lib/types/help-tutorial';
 
 function parseCategory(value: unknown): HelpTutorial['category'] {
-  if (
-    typeof value === 'string' &&
-    (HELP_TUTORIAL_CATEGORIES as readonly string[]).includes(value)
-  ) {
-    return value as HelpTutorial['category'];
-  }
-  return 'Getting started';
+  return parseStoredHelpTutorialCategory(value);
 }
 
 function parseAudience(value: unknown): HelpTutorial['audience'] {

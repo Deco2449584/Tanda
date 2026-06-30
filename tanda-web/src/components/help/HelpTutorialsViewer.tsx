@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Play } from 'lucide-react';
 import type { SerializedHelpTutorial } from '@/lib/help/help-tutorials-api';
-import { HELP_TUTORIAL_CATEGORIES } from '@/lib/types/help-tutorial';
+import { resolveHelpTutorialCategories } from '@/lib/help/help-tutorial-categories';
 
 function formatDuration(seconds?: number): string {
   if (!seconds || seconds <= 0) return '';
@@ -14,15 +14,29 @@ function formatDuration(seconds?: number): string {
 
 interface HelpTutorialsViewerProps {
   tutorials: SerializedHelpTutorial[];
+  categories: string[];
   loading?: boolean;
 }
 
-export function HelpTutorialsViewer({ tutorials, loading }: HelpTutorialsViewerProps) {
+export function HelpTutorialsViewer({
+  tutorials,
+  categories,
+  loading,
+}: HelpTutorialsViewerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const orderedCategories = useMemo(
+    () =>
+      resolveHelpTutorialCategories(
+        categories,
+        tutorials.map((tutorial) => tutorial.category),
+      ),
+    [categories, tutorials],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, SerializedHelpTutorial[]>();
-    for (const category of HELP_TUTORIAL_CATEGORIES) {
+    for (const category of orderedCategories) {
       map.set(category, []);
     }
     for (const tutorial of tutorials) {
@@ -35,7 +49,7 @@ export function HelpTutorialsViewer({ tutorials, loading }: HelpTutorialsViewerP
       map.set(category, list);
     }
     return map;
-  }, [tutorials]);
+  }, [orderedCategories, tutorials]);
 
   const activeTutorial = tutorials.find((item) => item.id === activeId) ?? null;
 
@@ -77,7 +91,7 @@ export function HelpTutorialsViewer({ tutorials, loading }: HelpTutorialsViewerP
         </section>
       ) : null}
 
-      {HELP_TUTORIAL_CATEGORIES.map((category) => {
+      {orderedCategories.map((category) => {
         const items = grouped.get(category) ?? [];
         if (items.length === 0) return null;
 

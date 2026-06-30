@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export const HELP_TUTORIAL_CATEGORIES = [
+export const DEFAULT_HELP_TUTORIAL_CATEGORIES = [
   'Getting started',
   'Attendance & kiosk',
   'Schedule',
@@ -8,7 +8,11 @@ export const HELP_TUTORIAL_CATEGORIES = [
   'Admin tools',
   'Mobile app',
 ] as const;
-export type HelpTutorialCategory = (typeof HELP_TUTORIAL_CATEGORIES)[number];
+
+/** @deprecated Use DEFAULT_HELP_TUTORIAL_CATEGORIES */
+export const HELP_TUTORIAL_CATEGORIES = DEFAULT_HELP_TUTORIAL_CATEGORIES;
+
+export type HelpTutorialCategory = string;
 
 export const HELP_TUTORIAL_AUDIENCES = [
   'all',
