@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { MapPin, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { createAttendanceRecordRequest, AttendanceRestrictionError } from '@/lib/attendance/attendance-records-api';
 import { formValuesToTimestamp } from '@/lib/attendance/format';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
@@ -29,12 +29,7 @@ export function AddManualRecordModal({
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [locationId, setLocationId] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [geoAccuracy, setGeoAccuracy] = useState('');
-  const [geoAddress, setGeoAddress] = useState('');
   const [saving, setSaving] = useState(false);
-  const [capturingGeo, setCapturingGeo] = useState(false);
   const [error, setError] = useState('');
 
   const activeEmployees = employees.filter((employee) => employee.active);
@@ -49,10 +44,6 @@ export function AddManualRecordModal({
     setDate(now.toISOString().slice(0, 10));
     setTime(now.toTimeString().slice(0, 5));
     setLocationId('');
-    setLatitude('');
-    setLongitude('');
-    setGeoAccuracy('');
-    setGeoAddress('');
     setError('');
   }, [open]);
 
@@ -61,31 +52,6 @@ export function AddManualRecordModal({
   function handleClose() {
     if (saving) return;
     onClose();
-  }
-
-  function parseOptionalNumber(value: string): number | undefined {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  async function handleUseCurrentLocation() {
-    setCapturingGeo(true);
-    try {
-      const geo = await captureCurrentPosition();
-      if (!geo) {
-        setError('Could not capture current location.');
-        return;
-      }
-
-      setLatitude(String(geo.latitude));
-      setLongitude(String(geo.longitude));
-      setGeoAccuracy(geo.accuracy != null ? String(geo.accuracy) : '');
-      setError('');
-    } finally {
-      setCapturingGeo(false);
-    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -129,9 +95,7 @@ export function AddManualRecordModal({
     const timestampServer = formValuesToTimestamp(date, time);
     const timestampMs = timestampServer.toMillis();
     const selectedLocation = activeLocations.find((item) => item.id === locationId);
-    const parsedLatitude = parseOptionalNumber(latitude);
-    const parsedLongitude = parseOptionalNumber(longitude);
-    const parsedAccuracy = parseOptionalNumber(geoAccuracy);
+    const geo = await captureCurrentPosition();
 
     const employeeRecords = allRecords.filter(
       (item) => item.employeeId === employee.employeeId,
@@ -150,10 +114,9 @@ export function AddManualRecordModal({
         locationId: selectedLocation?.id ?? null,
         locationNameSnapshot: selectedLocation?.name ?? null,
         locationCitySnapshot: selectedLocation?.city ?? null,
-        latitude: parsedLatitude,
-        longitude: parsedLongitude,
-        geoAccuracy: parsedAccuracy,
-        geoAddress: geoAddress.trim() || undefined,
+        latitude: geo?.latitude,
+        longitude: geo?.longitude,
+        geoAccuracy: geo?.accuracy,
         breakWaived: type === 'check_out' ? false : undefined,
         syncEmployeePresence: timestampMs >= latestMs,
         overrideRestrictions,
@@ -179,7 +142,7 @@ export function AddManualRecordModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-16 backdrop-blur-sm sm:items-center sm:pt-4"
       role="dialog"
       aria-modal="true"
     >
@@ -190,7 +153,7 @@ export function AddManualRecordModal({
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-lg">
+      <div className="relative z-10 max-h-[calc(100dvh-5rem)] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl sm:max-h-[90vh] md:w-full md:max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Add manual record</h2>
           <button
@@ -286,55 +249,6 @@ export function AddManualRecordModal({
               ))}
             </select>
           </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted">GPS (optional)</p>
-            <button
-              type="button"
-              onClick={() => void handleUseCurrentLocation()}
-              disabled={capturingGeo}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs text-muted hover:bg-surface-hover disabled:opacity-50"
-            >
-              <MapPin className="h-3.5 w-3.5" />
-              {capturingGeo ? 'Capturing…' : 'Use current location'}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="Latitude"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="Longitude"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="GPS accuracy (m)"
-            value={geoAccuracy}
-            onChange={(e) => setGeoAccuracy(e.target.value)}
-            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-
-          <textarea
-            rows={2}
-            placeholder="Exact location (optional)"
-            value={geoAddress}
-            onChange={(e) => setGeoAddress(e.target.value)}
-            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
 
           {error ? (
             <p className="text-center text-xs text-red-500" role="alert">

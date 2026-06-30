@@ -1,10 +1,11 @@
 ﻿'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Coffee, X } from 'lucide-react';
 import { updateAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { AttendanceMapLink } from '@/components/attendance/AttendanceMapLink';
 import { AttendanceProvenancePanel } from '@/components/attendance/ManualAttendanceBadge';
+import { canViewAttendanceLocation } from '@/lib/attendance/can-view-attendance-location';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import {
   formatAttendanceType,
@@ -13,9 +14,10 @@ import {
   formValuesToTimestamp,
   timestampToFormValues,
 } from '@/lib/attendance/format';
-import { formatKioskLabel } from '@/lib/attendance/location-display';
+import { fetchKioskDevices } from '@/lib/kiosk/fetch-kiosk-devices';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
+import type { KioskDevice } from '@/lib/types/kiosk-device';
 import type { Location } from '@/lib/types/location';
 
 interface EditAttendanceModalProps {
@@ -31,11 +33,15 @@ export function EditAttendanceModal({
   attendanceBreak,
   onClose,
 }: EditAttendanceModalProps) {
-  const { isMaster } = useAdminAccess();
+  const { isMaster, canPerformAction } = useAdminAccess();
+  const canUpdateAttendance = canPerformAction('attendance', 'update');
+  const canViewLocation = canViewAttendanceLocation(isMaster, canUpdateAttendance);
   const [type, setType] = useState<AttendanceType>('check_in');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [locationId, setLocationId] = useState('');
+  const [kioskDeviceId, setKioskDeviceId] = useState('');
+  const [kioskDevices, setKioskDevices] = useState<KioskDevice[]>([]);
   const [breakWaived, setBreakWaived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -50,9 +56,55 @@ export function EditAttendanceModal({
     setDate(formValues.date);
     setTime(formValues.time);
     setLocationId(record.locationId ?? '');
+    setKioskDeviceId(record.kioskDeviceId ?? '');
     setBreakWaived(record.breakWaived === true);
     setError('');
   }, [record]);
+
+  useEffect(() => {
+    if (!record) return;
+
+    let cancelled = false;
+
+    void fetchKioskDevices()
+      .then((devices) => {
+        if (!cancelled) setKioskDevices(devices);
+      })
+      .catch(() => {
+        if (!cancelled) setKioskDevices([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [record]);
+
+  const kioskOptions = useMemo(() => {
+    const active = kioskDevices.filter((device) => device.status === 'active');
+    const currentId = record?.kioskDeviceId?.trim();
+    const currentName = record?.kioskDeviceNameSnapshot?.trim();
+
+    if (
+      currentId &&
+      !active.some((device) => device.id === currentId) &&
+      currentName
+    ) {
+      return [
+        ...active,
+        {
+          id: currentId,
+          name: currentName,
+          status: 'revoked' as const,
+          type: record?.kioskDeviceType ?? 'tablet',
+          locationId: '',
+          hasLockPin: false,
+          createdAt: '',
+        },
+      ];
+    }
+
+    return active;
+  }, [kioskDevices, record]);
 
   if (!record) return null;
 
@@ -77,6 +129,7 @@ export function EditAttendanceModal({
 
     const selectedLocation = activeLocations.find((item) => item.id === locationId);
     const timestampMs = formValuesToTimestamp(date, time).toMillis();
+    const selectedKiosk = kioskOptions.find((device) => device.id === kioskDeviceId);
 
     const payload: Record<string, unknown> = {
       type,
@@ -85,6 +138,9 @@ export function EditAttendanceModal({
       locationNameSnapshot: selectedLocation ? selectedLocation.name : null,
       locationCitySnapshot: selectedLocation?.city ?? null,
       breakWaived: type === 'check_out' ? breakWaived : null,
+      kioskDeviceId: selectedKiosk ? selectedKiosk.id : null,
+      kioskDeviceNameSnapshot: selectedKiosk ? selectedKiosk.name : null,
+      kioskDeviceType: selectedKiosk ? selectedKiosk.type : null,
     };
 
     setSaving(true);
@@ -99,11 +155,9 @@ export function EditAttendanceModal({
     }
   }
 
-  const kioskLabel = formatKioskLabel(record);
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-16 backdrop-blur-sm sm:items-center sm:pt-4"
       role="dialog"
       aria-modal="true"
     >
@@ -114,7 +168,7 @@ export function EditAttendanceModal({
         onClick={handleClose}
       />
 
-      <div className="relative z-10 max-h-[90vh] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl md:w-full md:max-w-lg">
+      <div className="relative z-10 max-h-[calc(100dvh-5rem)] w-[95%] overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-2xl sm:max-h-[90vh] md:w-full md:max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Edit record</h2>
           <button
@@ -200,6 +254,26 @@ export function EditAttendanceModal({
             </select>
           </div>
 
+          <div>
+            <label htmlFor="record-kiosk" className="mb-1.5 block text-sm text-muted">
+              Kiosk
+            </label>
+            <select
+              id="record-kiosk"
+              value={kioskDeviceId}
+              onChange={(e) => setKioskDeviceId(e.target.value)}
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              <option value="">No kiosk</option>
+              {kioskOptions.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.name}
+                  {device.status !== 'active' ? ' (inactive)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {type === 'check_out' && attendanceBreak.enabled ? (
             <button
               type="button"
@@ -243,33 +317,18 @@ export function EditAttendanceModal({
             </button>
           ) : null}
 
-          <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-3 text-xs text-subtle">
-            {isMaster ? <AttendanceProvenancePanel record={record} /> : null}
-            <div className="grid gap-2 sm:grid-cols-2">
-              <p>
-                <span className="font-medium text-muted">Kiosk</span>
-                <br />
-                <span className="text-foreground">{kioskLabel}</span>
-              </p>
-              <p>
-                <span className="font-medium text-muted">Source</span>
-                <br />
-                <span className="text-foreground">{record.source || '—'}</span>
-              </p>
-              <p>
-                <span className="font-medium text-muted">Photo</span>
-                <br />
-                <span className="text-foreground">
-                  {record.photoCaptured ? 'Captured' : 'Not captured'}
-                </span>
-              </p>
-              <p>
-                <span className="font-medium text-muted">Map</span>
-                <br />
-                <AttendanceMapLink record={record} />
-              </p>
+          {isMaster || canViewLocation ? (
+            <div className="rounded-lg border border-border bg-surface-base/60 px-3 py-3 text-xs text-subtle">
+              {isMaster ? <AttendanceProvenancePanel record={record} /> : null}
+              {canViewLocation ? (
+                <p>
+                  <span className="font-medium text-muted">Map</span>
+                  <br />
+                  <AttendanceMapLink record={record} />
+                </p>
+              ) : null}
             </div>
-          </div>
+          ) : null}
 
           {error ? (
             <p className="text-center text-xs text-red-500" role="alert">

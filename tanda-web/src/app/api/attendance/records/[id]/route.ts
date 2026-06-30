@@ -33,6 +33,9 @@ export async function PATCH(
       locationCitySnapshot?: string | null;
       breakWaived?: boolean | null;
       timestampMs?: number;
+      kioskDeviceId?: string | null;
+      kioskDeviceNameSnapshot?: string | null;
+      kioskDeviceType?: 'tablet' | 'mobile' | null;
     };
 
     const existing = await getAttendanceRecordSnapshot(id);
@@ -66,6 +69,20 @@ export async function PATCH(
       update.breakWaived = FieldValue.delete();
     } else if (typeof body.breakWaived === 'boolean') {
       update.breakWaived = body.breakWaived;
+    }
+
+    if (body.kioskDeviceId === null || body.kioskDeviceId === '') {
+      update.kioskDeviceId = FieldValue.delete();
+      update.kioskDeviceNameSnapshot = FieldValue.delete();
+      update.kioskDeviceType = FieldValue.delete();
+    } else if (typeof body.kioskDeviceId === 'string') {
+      update.kioskDeviceId = body.kioskDeviceId;
+      update.kioskDeviceNameSnapshot = body.kioskDeviceNameSnapshot ?? null;
+      if (body.kioskDeviceType === 'tablet' || body.kioskDeviceType === 'mobile') {
+        update.kioskDeviceType = body.kioskDeviceType;
+      } else {
+        update.kioskDeviceType = FieldValue.delete();
+      }
     }
 
     if (Object.keys(update).length === 0) {
