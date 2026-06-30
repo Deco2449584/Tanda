@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, Download, ScrollText } from 'lucide-react';
+import { AuditLogDetailModal } from '@/components/settings/AuditLogDetailModal';
+import { AuditLogsTable } from '@/components/settings/AuditLogsTable';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
   downloadAuditLogsCsv,
@@ -40,22 +42,6 @@ const ENTITY_TYPE_OPTIONS: { value: '' | AuditEntityType; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
-function formatTimestamp(value: number): string {
-  return new Date(value).toLocaleString();
-}
-
-function JsonBlock({ value }: { value: Record<string, unknown> | null | undefined }) {
-  if (!value) {
-    return <p className="text-xs text-subtle">—</p>;
-  }
-
-  return (
-    <pre className="max-h-48 overflow-auto rounded-lg border border-border/80 bg-surface-base/80 p-3 text-[11px] leading-relaxed text-muted">
-      {JSON.stringify(value, null, 2)}
-    </pre>
-  );
-}
-
 export function AuditLogsTab() {
   const monthRange = getCurrentMonthRange();
   const [startDate, setStartDate] = useState(monthRange.start);
@@ -68,7 +54,7 @@ export function AuditLogsTab() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -235,60 +221,10 @@ export function AuditLogsTab() {
           No audit events match these filters.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {logs.map((log) => {
-            const expanded = expandedId === log.id;
-
-            return (
-              <li
-                key={log.id}
-                className="overflow-hidden rounded-xl border border-border bg-surface-raised"
-              >
-                <button
-                  type="button"
-                  onClick={() => setExpandedId(expanded ? null : log.id)}
-                  className="flex w-full items-start gap-3 px-4 py-4 text-left transition hover:bg-surface-hover/30"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">{log.summary}</span>
-                      <span className="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
-                        {log.action}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-subtle">
-                      {formatTimestamp(log.createdAt)} · {log.actorEmail}
-                      {log.entityId ? ` · ${log.entityType} / ${log.entityId}` : ` · ${log.entityType}`}
-                    </p>
-                  </div>
-                  <ChevronDown
-                    className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
-                      expanded ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                {expanded ? (
-                  <div className="grid gap-4 border-t border-border px-4 py-4 md:grid-cols-2">
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                        Before
-                      </p>
-                      <JsonBlock value={log.before} />
-                    </div>
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                        After
-                      </p>
-                      <JsonBlock value={log.after} />
-                    </div>
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+        <AuditLogsTable logs={logs} onViewDetails={setSelectedLog} />
       )}
+
+      <AuditLogDetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />
     </section>
   );
 }
