@@ -2,8 +2,8 @@
 
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
-import { useEffect, useState } from 'react';
-import { Copy, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Copy, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import {
   createPortalClient,
   deletePortalClient,
@@ -11,11 +11,41 @@ import {
   setPortalClientActive,
   subscribePortalClients,
 } from '@/lib/portal/portal-clients-service';
-import { generatePortalPin, validatePortalPinFormat } from '@/lib/portal/pin';
+import {
+  generateUniquePortalPinFromList,
+  isPortalPinTaken,
+  validatePortalPinFormat,
+} from '@/lib/portal/pin';
 import type { PortalClient } from '@/lib/types/portal-client';
 
 interface PortalClientsTabProps {
   onToast: (message: string, variant?: 'success' | 'error' | 'info') => void;
+}
+
+function PinCopyButton({
+  pin,
+  onCopied,
+  label = 'Copy PIN',
+}: {
+  pin: string;
+  onCopied: () => void;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void navigator.clipboard.writeText(pin);
+        onCopied();
+      }}
+      className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary"
+      aria-label={label}
+      title={label}
+    >
+      <Copy className="h-3.5 w-3.5" aria-hidden />
+      Copy
+    </button>
+  );
 }
 
 export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
@@ -23,11 +53,16 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState('');
   const [accessCode, setAccessCode] = useState('');
-  const [pin, setPin] = useState(() => generatePortalPin());
+  const [pin, setPin] = useState('');
   const [saving, setSaving] = useState(false);
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const takenPins = useMemo(
+    () => clients.map((client) => client.pin).filter((value): value is string => Boolean(value)),
+    [clients],
+  );
 
   useEffect(() => {
     const unsubscribe = subscribePortalClients(
@@ -44,6 +79,17 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
     return () => unsubscribe();
   }, [onToast]);
 
+  function handleGeneratePin() {
+    try {
+      const nextPin = generateUniquePortalPinFromList(takenPins);
+      setPin(nextPin);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not generate PIN.';
+      onToast(message, 'error');
+    }
+  }
+
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -56,13 +102,19 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
       return;
     }
 
+    if (isPortalPinTaken(pin, clients)) {
+      onToast('This PIN is already in use by another client.', 'error');
+      setSaving(false);
+      return;
+    }
+
     try {
       const result = await createPortalClient({ companyName, accessCode, pin });
       setRevealedPin(result.pin);
       setCompanyName('');
       setAccessCode('');
-      setPin(generatePortalPin());
-      onToast(`Client created. Share PIN with ${result.clientId ? 'the forwarder' : 'client'}.`);
+      setPin('');
+      onToast(`Client created. Share the PIN with ${result.clientId ? 'the forwarder' : 'the client'}.`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Could not create client.';
@@ -131,12 +183,15 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
     onToast('Portal link copied.');
   }
 
+  const pinTakenInForm =
+    pin.trim().length > 0 && isPortalPinTaken(pin, clients);
+
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h2 className="text-sm font-semibold text-white">Client portal (Suite 04)</h2>
         <p className="mt-2 text-sm text-muted">
-          Forwarders and customs agencies access{' '}
+          Each forwarder or customs agency has its own PIN. They sign in at{' '}
           <button
             type="button"
             onClick={copyPortalLink}
@@ -145,18 +200,28 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
             /portal
             <Copy className="h-3.5 w-3.5" aria-hidden />
           </button>{' '}
-          with AWB + company PIN.
+          with the shipment AWB and their company PIN. PINs do not expire unless
+          you generate a new one or deactivate the client.
         </p>
       </section>
 
       {revealedPin ? (
         <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-200">PIN (copy now)</p>
-          <p className="mt-1 font-mono text-2xl tracking-widest text-white">
-            {revealedPin}
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-200">PIN (copy now)</p>
+              <p className="mt-1 font-mono text-2xl tracking-widest text-white">
+                {revealedPin}
+              </p>
+            </div>
+            <PinCopyButton
+              pin={revealedPin}
+              onCopied={() => onToast('PIN copied.')}
+              label="Copy new PIN"
+            />
+          </div>
           <p className="mt-2 text-xs text-amber-200/80">
-            This PIN is shown only once. Store it securely before closing.
+            Share this PIN with the client. It also appears on their card below.
           </p>
           <p className="mt-2 text-xs text-muted">
             Then open an inspection, enable portal access, and assign this client
@@ -196,18 +261,39 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
               <label className="mb-1 block text-xs font-medium text-muted">
                 PIN (6–8 digits)
               </label>
-              <input
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                inputMode="numeric"
-                required
-                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
-              />
+              <div className="flex gap-2">
+                <input
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  inputMode="numeric"
+                  placeholder="Enter or generate"
+                  required
+                  className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                />
+                <button
+                  type="button"
+                  onClick={handleGeneratePin}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary"
+                  title="Generate unique PIN"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  Generate
+                </button>
+              </div>
+              {pinTakenInForm ? (
+                <p className="mt-1 text-xs text-amber-300">
+                  This PIN is already used by another client.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-subtle">
+                  Leave blank and use Generate, or type your own PIN.
+                </p>
+              )}
             </div>
           </div>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || pinTakenInForm || !pin.trim()}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
@@ -229,9 +315,28 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                 key={client.id}
                 className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-white">{client.companyName}</p>
                   <p className="text-xs text-subtle">Code: {client.accessCode}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted">PIN:</span>
+                    {client.pin ? (
+                      <>
+                        <span className="font-mono text-sm tracking-wider text-white">
+                          {client.pin}
+                        </span>
+                        <PinCopyButton
+                          pin={client.pin}
+                          onCopied={() => onToast(`PIN copied for ${client.companyName}.`)}
+                          label={`Copy PIN for ${client.companyName}`}
+                        />
+                      </>
+                    ) : (
+                      <span className="text-xs text-subtle">
+                        Unknown — use New PIN to set one
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span

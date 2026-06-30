@@ -21,6 +21,7 @@ export function mapPortalClientDoc(
     id,
     companyName: record.companyName?.trim() ?? '',
     accessCode: record.accessCode?.trim() ?? '',
+    pin: typeof record.pin === 'string' && record.pin.trim() ? record.pin.trim() : undefined,
     active: record.active !== false,
     createdAt: timestampToIso(record.createdAt),
   };

@@ -20,6 +20,7 @@ import {
   generatePortalPin,
   hashPortalPin,
   validatePortalPinFormat,
+  verifyPortalPin,
 } from '@/lib/portal/pin';
 import type { PortalClient } from '@/lib/types/portal-client';
 
@@ -45,6 +46,49 @@ export function subscribePortalClients(
   );
 }
 
+async function assertPortalPinAvailable(
+  pin: string,
+  excludeClientId?: string,
+): Promise<void> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  const trimmed = pin.trim();
+  const snapshot = await getDocs(collection(db, COLLECTIONS.PORTAL_CLIENTS));
+
+  for (const document of snapshot.docs) {
+    if (excludeClientId && document.id === excludeClientId) continue;
+
+    const data = document.data();
+    if (typeof data.pin === 'string' && data.pin === trimmed) {
+      throw new Error('This PIN is already in use by another client.');
+    }
+
+    if (typeof data.pinHash === 'string' && verifyPortalPin(trimmed, data.pinHash)) {
+      throw new Error('This PIN is already in use by another client.');
+    }
+  }
+}
+
+async function generateUniquePortalPin(excludeClientId?: string): Promise<string> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const candidate = generatePortalPin();
+    try {
+      await assertPortalPinAvailable(candidate, excludeClientId);
+      return candidate;
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === 'This PIN is already in use by another client.'
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error('Could not generate a unique PIN. Try again.');
+}
+
 export async function createPortalClient(input: {
   companyName: string;
   accessCode: string;
@@ -63,10 +107,13 @@ export async function createPortalClient(input: {
   }
 
   const pin = input.pin.trim();
+  await assertPortalPinAvailable(pin);
+
   const docRef = await addDoc(collection(db, COLLECTIONS.PORTAL_CLIENTS), {
     companyName,
     accessCode,
     pinHash: hashPortalPin(pin),
+    pin,
     active: true,
     createdAt: serverTimestamp(),
   });
@@ -79,9 +126,10 @@ export async function regeneratePortalClientPin(
 ): Promise<string> {
   if (!db) throw new Error('Firestore is not available.');
 
-  const pin = generatePortalPin();
+  const pin = await generateUniquePortalPin(clientId);
   await updateDoc(doc(db, COLLECTIONS.PORTAL_CLIENTS, clientId), {
     pinHash: hashPortalPin(pin),
+    pin,
   });
 
   return pin;
