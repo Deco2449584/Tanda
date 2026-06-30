@@ -1,11 +1,11 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { MapPin, Search } from 'lucide-react';
+import { Building2, MapPin, Search } from 'lucide-react';
 import { AttendanceDateFilterBar } from '@/components/attendance/AttendanceDateFilterBar';
 import type { DateRange } from '@/lib/attendance/date-range';
 
-interface LocationOption {
+interface FilterOption {
   id: string;
   label: string;
 }
@@ -13,9 +13,12 @@ interface LocationOption {
 interface AttendanceFilterToolbarProps {
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  departmentFilter: string;
+  onDepartmentFilterChange: (value: string) => void;
+  departmentOptions: FilterOption[];
   locationFilter: string;
   onLocationFilterChange: (value: string) => void;
-  locationOptions: LocationOption[];
+  locationOptions: FilterOption[];
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   actions?: ReactNode;
@@ -24,6 +27,9 @@ interface AttendanceFilterToolbarProps {
 export function AttendanceFilterToolbar({
   dateRange,
   onDateRangeChange,
+  departmentFilter,
+  onDepartmentFilterChange,
+  departmentOptions,
   locationFilter,
   onLocationFilterChange,
   locationOptions,
@@ -38,6 +44,29 @@ export function AttendanceFilterToolbar({
           dateRange={dateRange}
           onRangeChange={onDateRangeChange}
         />
+      </div>
+
+      <div className="relative w-full xl:w-52 xl:shrink-0">
+        <Building2
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+          aria-hidden
+        />
+        <select
+          value={departmentFilter}
+          onChange={(event) => onDepartmentFilterChange(event.target.value)}
+          className="w-full appearance-none rounded-lg border border-border bg-surface-raised py-2.5 pl-10 pr-9 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+          aria-label="Filter by department"
+        >
+          {departmentOptions.map((department) => (
+            <option
+              key={department.id}
+              value={department.id}
+              className="bg-surface-raised"
+            >
+              {department.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="relative w-full xl:w-52 xl:shrink-0">

@@ -31,6 +31,10 @@ import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { buildWorkSessionsFromRecords } from '@/lib/attendance/work-sessions';
 import { compareInputDates, toInputDate } from '@/lib/dates/input-date';
 import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
+import {
+  buildDepartmentFilterOptions,
+  filterEmployeesByDepartment,
+} from '@/lib/employees/department-filter-options';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import {
@@ -42,6 +46,7 @@ import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { isAdminAreaRole } from '@/lib/auth/roles';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
+import { useDepartments } from '@/providers/DepartmentsProvider';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -169,11 +174,13 @@ function EmployeeWorkedShiftsView() {
 function AdminWorkedShiftsView() {
   const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
+  const { departmentNames } = useDepartments();
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
 
@@ -213,6 +220,11 @@ function AdminWorkedShiftsView() {
     return () => unsubscribe();
   }, [dateRange]);
 
+  const departmentOptions = useMemo(
+    () => buildDepartmentFilterOptions(departmentNames, employees),
+    [departmentNames, employees],
+  );
+
   const locationOptions = useMemo(
     () => [
       { id: 'all', label: 'All locations' },
@@ -227,11 +239,16 @@ function AdminWorkedShiftsView() {
   );
 
   const employeesForFilters = useMemo(() => {
-    if (locationFilter === 'all') return employees;
-    return employees.filter((employee) =>
-      employeeMatchesLocationFilter(employee, locationFilter, groups),
-    );
-  }, [employees, locationFilter, groups]);
+    let base = filterEmployeesByDepartment(employees, departmentFilter);
+
+    if (locationFilter !== 'all') {
+      base = base.filter((employee) =>
+        employeeMatchesLocationFilter(employee, locationFilter, groups),
+      );
+    }
+
+    return base;
+  }, [employees, departmentFilter, locationFilter, groups]);
 
   const employeeIdsInFilter = useMemo(
     () => new Set(employeesForFilters.map((employee) => employee.employeeId)),
@@ -300,6 +317,9 @@ function AdminWorkedShiftsView() {
       <AttendanceFilterToolbar
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
+        departmentFilter={departmentFilter}
+        onDepartmentFilterChange={setDepartmentFilter}
+        departmentOptions={departmentOptions}
         locationFilter={locationFilter}
         onLocationFilterChange={setLocationFilter}
         locationOptions={locationOptions}

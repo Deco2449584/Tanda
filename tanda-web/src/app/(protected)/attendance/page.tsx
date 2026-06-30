@@ -24,9 +24,14 @@ import {
 } from '@/lib/attendance/date-range';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
+import { useDepartments } from '@/providers/DepartmentsProvider';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
+import {
+  buildDepartmentFilterOptions,
+  filterEmployeesByDepartment,
+} from '@/lib/employees/department-filter-options';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
@@ -43,11 +48,13 @@ export default function AttendancePage() {
   const canUpdateAttendance = canPerformAction('attendance', 'update');
   const canDeleteAttendance = canPerformAction('attendance', 'delete');
   const { employees, loading: employeesLoading } = useEmployees();
+  const { departmentNames } = useDepartments();
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
@@ -97,6 +104,11 @@ export default function AttendancePage() {
 
   const pageLoading = loading || employeesLoading;
 
+  const departmentOptions = useMemo(
+    () => buildDepartmentFilterOptions(departmentNames, employees),
+    [departmentNames, employees],
+  );
+
   const locationOptions = useMemo(
     () => [
       { id: 'all', label: 'All locations' },
@@ -111,11 +123,16 @@ export default function AttendancePage() {
   );
 
   const employeesForFilters = useMemo(() => {
-    if (locationFilter === 'all') return employees;
-    return employees.filter((employee) =>
-      employeeMatchesLocationFilter(employee, locationFilter, groups),
-    );
-  }, [employees, locationFilter, groups]);
+    let base = filterEmployeesByDepartment(employees, departmentFilter);
+
+    if (locationFilter !== 'all') {
+      base = base.filter((employee) =>
+        employeeMatchesLocationFilter(employee, locationFilter, groups),
+      );
+    }
+
+    return base;
+  }, [employees, departmentFilter, locationFilter, groups]);
 
   const allowedEmployeeIds = useMemo(
     () =>
@@ -128,9 +145,9 @@ export default function AttendancePage() {
   );
 
   const locationFilteredRecords = useMemo(() => {
-    if (locationFilter === 'all') return records;
+    if (departmentFilter === 'all' && locationFilter === 'all') return records;
     return records.filter((record) => allowedEmployeeIds.has(record.employeeId));
-  }, [allowedEmployeeIds, locationFilter, records]);
+  }, [allowedEmployeeIds, departmentFilter, locationFilter, records]);
 
   const employeeCodes = useMemo(() => {
     const map: Record<string, string> = {};
@@ -170,6 +187,9 @@ export default function AttendancePage() {
       <AttendanceFilterToolbar
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
+        departmentFilter={departmentFilter}
+        onDepartmentFilterChange={setDepartmentFilter}
+        departmentOptions={departmentOptions}
         locationFilter={locationFilter}
         onLocationFilterChange={setLocationFilter}
         locationOptions={locationOptions}
