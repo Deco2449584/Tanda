@@ -190,7 +190,7 @@ export function EditIssueReportModal({
               disabled={saving}
               className="flex h-10 flex-1 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white hover:opacity-90 disabled:opacity-70"
             >
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </form>

@@ -1,28 +1,14 @@
 'use client';
 
+import {
+  formatIssueReportWhen,
+  ISSUE_STATUS_CLASSES,
+  ISSUE_STATUS_LABELS,
+} from '@/components/issues/issue-report-status';
 import type { SerializedIssueReport } from '@/lib/issues/issue-reports-api';
 
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Open',
-  in_progress: 'In progress',
-  resolved: 'Resolved',
-};
-
-const STATUS_CLASSES: Record<string, string> = {
-  open: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  in_progress: 'bg-primary/15 text-primary border-primary/30',
-  resolved: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-};
-
 function formatWhen(value: string | null): string {
-  if (!value) return '—';
-  return new Date(value).toLocaleString('en-AU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatIssueReportWhen(value);
 }
 
 interface IssueReportsListProps {
@@ -62,9 +48,9 @@ export function IssueReportsList({ reports, loading }: IssueReportsListProps) {
               </p>
             </div>
             <span
-              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_CLASSES[report.status] ?? STATUS_CLASSES.open}`}
+              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${ISSUE_STATUS_CLASSES[report.status] ?? ISSUE_STATUS_CLASSES.open}`}
             >
-              {STATUS_LABELS[report.status] ?? report.status}
+              {ISSUE_STATUS_LABELS[report.status] ?? report.status}
             </span>
           </div>
           <p className="mt-3 whitespace-pre-wrap text-sm text-muted">{report.description}</p>
