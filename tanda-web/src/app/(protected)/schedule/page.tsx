@@ -26,6 +26,7 @@ import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { useDepartments } from '@/providers/DepartmentsProvider';
 import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
+import { buildDepartmentFilterOptions } from '@/lib/employees/department-filter-options';
 import { isSchedulableEmployee } from '@/lib/employees/is-schedulable-employee';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
@@ -153,15 +154,10 @@ export default function SchedulePage() {
 
   const pageLoading = loading || employeesLoading;
 
-  const departments = useMemo(() => {
-    const unique = new Set(departmentNames);
-    employees.forEach((employee) => {
-      if (employee.department?.trim()) {
-        unique.add(employee.department.trim());
-      }
-    });
-    return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b, 'en'))];
-  }, [departmentNames, employees]);
+  const departmentOptions = useMemo(
+    () => buildDepartmentFilterOptions(departmentNames),
+    [departmentNames],
+  );
 
   const locationOptions = useMemo(
     () => [
@@ -296,9 +292,9 @@ export default function SchedulePage() {
             className="w-full appearance-none rounded-xl border border-border bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
             aria-label="Filter by department"
           >
-            {departments.map((department) => (
-              <option key={department} value={department} className="bg-surface-raised">
-                {department === 'all' ? 'All departments' : department}
+            {departmentOptions.map((department) => (
+              <option key={department.id} value={department.id} className="bg-surface-raised">
+                {department.label}
               </option>
             ))}
           </select>
@@ -382,9 +378,9 @@ export default function SchedulePage() {
               className="w-full appearance-none rounded-lg border border-primary/30 bg-surface-raised py-2.5 pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary/30"
               aria-label="Filter by department"
             >
-              {departments.map((department) => (
-                <option key={department} value={department} className="bg-surface-raised">
-                  {department === 'all' ? 'All departments' : department}
+              {departmentOptions.map((department) => (
+                <option key={department.id} value={department.id} className="bg-surface-raised">
+                  {department.label}
                 </option>
               ))}
             </select>

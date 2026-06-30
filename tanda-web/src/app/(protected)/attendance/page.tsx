@@ -105,8 +105,8 @@ export default function AttendancePage() {
   const pageLoading = loading || employeesLoading;
 
   const departmentOptions = useMemo(
-    () => buildDepartmentFilterOptions(departmentNames, employees),
-    [departmentNames, employees],
+    () => buildDepartmentFilterOptions(departmentNames),
+    [departmentNames],
   );
 
   const locationOptions = useMemo(

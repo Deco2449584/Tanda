@@ -221,8 +221,8 @@ function AdminWorkedShiftsView() {
   }, [dateRange]);
 
   const departmentOptions = useMemo(
-    () => buildDepartmentFilterOptions(departmentNames, employees),
-    [departmentNames, employees],
+    () => buildDepartmentFilterOptions(departmentNames),
+    [departmentNames],
   );
 
   const locationOptions = useMemo(
