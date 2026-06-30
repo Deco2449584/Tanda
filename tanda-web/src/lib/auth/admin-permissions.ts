@@ -97,6 +97,13 @@ export function resolveAdminAccess(input: {
 export function getModuleKeyForPath(pathname: string): AdminModuleKey | null {
   const normalized = pathname.split('?')[0] ?? pathname;
 
+  if (
+    normalized === '/worked-shifts' ||
+    normalized.startsWith('/worked-shifts/')
+  ) {
+    return 'attendance';
+  }
+
   for (const key of MODULE_ORDER) {
     const href = ADMIN_MODULE_ROUTES[key];
     if (normalized === href || normalized.startsWith(`${href}/`)) {

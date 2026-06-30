@@ -10,6 +10,11 @@ export const EMPLOYEE_ROUTES = [
   '/my-requests',
 ] as const;
 
+/** Routes available to both employees and admins (e.g. worked shifts). */
+export function isSharedStaffRoute(pathname: string): boolean {
+  return pathname === '/worked-shifts' || pathname.startsWith('/worked-shifts/');
+}
+
 export function isEmployeeOnlyRoute(pathname: string): boolean {
   return EMPLOYEE_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
@@ -17,6 +22,9 @@ export function isEmployeeOnlyRoute(pathname: string): boolean {
 }
 
 export function isRouteAllowedForEmployee(pathname: string): boolean {
+  if (isSharedStaffRoute(pathname)) {
+    return true;
+  }
   if (/^\/announcements\/[^/]+$/.test(pathname)) {
     return true;
   }
@@ -45,7 +53,11 @@ export function getRedirectForRole(
     return '/employee-dashboard';
   }
 
-  if (isAdminAreaRole(role) && isEmployeeOnlyRoute(pathname)) {
+  if (
+    isAdminAreaRole(role) &&
+    isEmployeeOnlyRoute(pathname) &&
+    !isSharedStaffRoute(pathname)
+  ) {
     return access ? getDefaultAdminHref(access) : '/dashboard';
   }
 

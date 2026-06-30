@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import {
+  Briefcase,
   CalendarDays,
   ClipboardList,
   Clock,
@@ -45,6 +46,7 @@ const adminNavGroups: NavGroup[] = [
     title: 'Operations',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Worked shifts', href: '/worked-shifts', icon: Briefcase },
       { label: 'Attendance', href: '/attendance', icon: Clock },
       { label: 'Schedule', href: '/schedule', icon: CalendarDays },
     ],
@@ -86,6 +88,7 @@ const employeeNavGroups: NavGroup[] = [
   {
     title: 'My work',
     items: [
+      { label: 'Worked shifts', href: '/worked-shifts', icon: Briefcase },
       { label: 'My records', href: '/my-records', icon: ClipboardList },
       { label: 'My schedule', href: '/my-schedule', icon: CalendarDays },
       { label: 'My leave', href: '/my-requests', icon: ShieldCheck },

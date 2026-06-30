@@ -66,6 +66,37 @@ function resolveOpenCheckIn(
   };
 }
 
+function groupRecordsByEmployee(
+  records: AttendanceRecord[],
+): Map<string, AttendanceRecord[]> {
+  const groups = new Map<string, AttendanceRecord[]>();
+
+  records.forEach((record) => {
+    const employeeId = record.employeeId.trim();
+    if (!employeeId) return;
+
+    const existing = groups.get(employeeId) ?? [];
+    existing.push(record);
+    groups.set(employeeId, existing);
+  });
+
+  return groups;
+}
+
+/** Builds sessions from a mixed employee list (e.g. admin queries). */
+export function buildWorkSessionsFromRecords(
+  records: AttendanceRecord[],
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+): WorkSession[] {
+  const sessions: WorkSession[] = [];
+
+  groupRecordsByEmployee(records).forEach((employeeRecords) => {
+    sessions.push(...buildWorkSessions(employeeRecords, breakSettings));
+  });
+
+  return sessions;
+}
+
 export function buildWorkSessions(
   records: AttendanceRecord[],
   breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
@@ -86,7 +117,11 @@ export function buildWorkSessions(
       return;
     }
 
-    if (record.type === 'check_out' && pendingCheckIn) {
+    if (
+      record.type === 'check_out' &&
+      pendingCheckIn &&
+      pendingCheckIn.employeeId === record.employeeId
+    ) {
       const hours = diffHours(pendingCheckIn, record);
       sessions.push({
         checkIn: pendingCheckIn,
@@ -137,7 +172,7 @@ function completeSessionsInRange(
   rangeEnd: string,
   breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ) {
-  return buildWorkSessions(records, breakSettings).filter((session) => {
+  return buildWorkSessionsFromRecords(records, breakSettings).filter((session) => {
     if (session.status !== 'complete' || session.hours === null) {
       return false;
     }

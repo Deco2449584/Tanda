@@ -354,3 +354,4 @@ export function filterRecordsByEmployeeName(
     record.employeeNameSnapshot.toLowerCase().includes(queryText),
   );
 }
+

@@ -1,5 +1,5 @@
 import {
-  buildWorkSessions,
+  buildWorkSessionsFromRecords,
   calculateWorkedDaysInRange,
   calculateWorkedHoursInRange,
 } from '@/lib/attendance/work-sessions';
@@ -66,7 +66,7 @@ function countIncompleteSessionsInRange(
   records: AttendanceRecord[],
   dateRange: DateRange,
 ): number {
-  const sessions = buildWorkSessions(records);
+  const sessions = buildWorkSessionsFromRecords(records);
 
   return sessions.filter((session) => {
     if (session.status === 'complete') return false;
