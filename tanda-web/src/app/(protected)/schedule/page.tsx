@@ -224,7 +224,6 @@ export default function SchedulePage() {
       date: shift.date,
       startTime: shift.startTime,
       endTime: shift.endTime,
-      department: shift.department,
       locationId: shift.locationId ?? employee.locationId ?? '',
     });
     setAssignModalOpen(true);
@@ -239,7 +238,6 @@ export default function SchedulePage() {
       date,
       startTime: '09:00',
       endTime: '17:00',
-      department: employee.department,
       locationId: employee.locationId ?? '',
     });
     setAssignModalOpen(true);
@@ -255,7 +253,6 @@ export default function SchedulePage() {
       date,
       startTime: '09:00',
       endTime: '17:00',
-      department: first?.department ?? '',
       locationId: first?.locationId ?? '',
     });
     setAssignModalOpen(true);

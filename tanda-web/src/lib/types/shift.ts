@@ -23,7 +23,6 @@ export interface AssignShiftInput {
   date: string;
   startTime: string;
   endTime: string;
-  department: string;
   locationId?: string;
   /** When set, the modal updates an existing shift instead of creating one. */
   shiftId?: string;

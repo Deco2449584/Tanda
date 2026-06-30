@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
-import { EmployeeDepartmentSelect } from '@/components/employees/EmployeeDepartmentSelect';
 import { COLLECTIONS } from '@/lib/constants';
 import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
@@ -31,7 +30,6 @@ interface AssignShiftModalProps {
 const emptyForm: Omit<AssignShiftInput, 'employeeId' | 'employeeName' | 'date'> = {
   startTime: '09:00',
   endTime: '17:00',
-  department: '',
   locationId: '',
 };
 
@@ -70,7 +68,6 @@ export function AssignShiftModal({
   const [employeeId, setEmployeeId] = useState('');
   const [startTime, setStartTime] = useState(emptyForm.startTime);
   const [endTime, setEndTime] = useState(emptyForm.endTime);
-  const [department, setDepartment] = useState(emptyForm.department);
   const [locationId, setLocationId] = useState(emptyForm.locationId ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -81,7 +78,6 @@ export function AssignShiftModal({
     setEmployeeId(initialData.employeeId);
     setStartTime(initialData.startTime || emptyForm.startTime);
     setEndTime(initialData.endTime || emptyForm.endTime);
-    setDepartment(initialData.department || emptyForm.department);
     setError('');
 
     const employee = employees.find((item) => item.employeeId === initialData.employeeId);
@@ -128,9 +124,6 @@ export function AssignShiftModal({
   function handleEmployeeChange(nextId: string) {
     setEmployeeId(nextId);
     const employee = employees.find((e) => e.employeeId === nextId);
-    if (employee?.department) {
-      setDepartment(employee.department);
-    }
     if (employee) {
       setLocationId(resolveEmployeeShiftLocation(employee, undefined, locations, groups));
     } else {
@@ -189,6 +182,8 @@ export function AssignShiftModal({
 
     const selectedLocation = locations.find((location) => location.id === locationId);
 
+    const employeeDepartment = selectedEmployee.department?.trim() ?? '';
+
     setIsSubmitting(true);
 
     try {
@@ -197,7 +192,7 @@ export function AssignShiftModal({
         date: shiftDate,
         startTime,
         endTime,
-        department: department.trim(),
+        department: employeeDepartment,
         locationId: locationId.trim(),
         locationNameSnapshot: selectedLocation?.name ?? '',
         locationCitySnapshot: selectedLocation?.city ?? '',
@@ -214,7 +209,7 @@ export function AssignShiftModal({
           date: shiftDate,
           startTime,
           endTime,
-          department: department.trim(),
+          department: employeeDepartment,
         });
 
         void recordShiftAuditEvent({
@@ -233,7 +228,7 @@ export function AssignShiftModal({
           date: shiftDate,
           startTime,
           endTime,
-          department: department.trim(),
+          department: employeeDepartment,
         });
 
         void recordShiftAuditEvent({
@@ -352,14 +347,6 @@ export function AssignShiftModal({
               />
             </div>
           </div>
-
-          <EmployeeDepartmentSelect
-            id="shift-dept"
-            value={department}
-            onChange={setDepartment}
-            disabled={isSubmitting || isPastDate}
-            allowUnassigned
-          />
 
           <EmployeeLocationSelect
             id="shift-location"
