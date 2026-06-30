@@ -43,7 +43,7 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto p-4 pt-16 sm:items-center sm:pt-4"
       role="dialog"
       aria-modal="true"
     >
@@ -55,7 +55,7 @@ export function Dialog({
       />
       <div
         className={cn(
-          'relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-[var(--shadow-card)]',
+          'relative z-10 max-h-[calc(100dvh-5rem)] w-full overflow-y-auto rounded-xl border border-border bg-surface-raised p-6 shadow-[var(--shadow-card)] sm:max-h-[90vh]',
           sizeMap[size],
           className,
         )}
