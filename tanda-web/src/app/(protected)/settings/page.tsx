@@ -180,7 +180,11 @@ export default function SettingsPage() {
       {pageLoading ? (
         <LoadingIndicator message="Loading settings…" className="h-96" />
       ) : (
-        <div className={activeTab === 'auditLogs' ? 'max-w-5xl' : 'max-w-2xl'}>
+        <div
+          className={
+            activeTab === 'auditLogs' ? 'max-w-5xl min-w-0' : 'max-w-2xl min-w-0'
+          }
+        >
           {activeTab === 'localization' && (
             <LocalizationTab
               draft={draft}

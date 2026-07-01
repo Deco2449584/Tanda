@@ -187,8 +187,8 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
     pin.trim().length > 0 && isPortalPinTaken(pin, clients);
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+    <div className="min-w-0 space-y-8">
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h2 className="text-sm font-semibold text-white">Client portal (Suite 04)</h2>
         <p className="mt-2 text-sm text-muted">
           Each forwarder or customs agency has its own PIN. They sign in at{' '}
@@ -230,10 +230,10 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">New portal client</h3>
-        <form onSubmit={(e) => void handleCreate(e)} className="mt-4 space-y-4">
-          <div>
+        <form onSubmit={(e) => void handleCreate(e)} className="mt-4 min-w-0 space-y-4">
+          <div className="min-w-0">
             <label className="mb-1 block text-xs font-medium text-muted">
               Company name
             </label>
@@ -241,11 +241,11 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               required
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
+            <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-muted">
                 Access code
               </label>
@@ -254,30 +254,30 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
                 onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                 placeholder="FWD-ACME"
                 required
-                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-muted">
                 PIN (6–8 digits)
               </label>
-              <div className="flex gap-2">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                 <input
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                   inputMode="numeric"
                   placeholder="Enter or generate"
                   required
-                  className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                  className="w-full min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
                 />
                 <button
                   type="button"
                   onClick={handleGeneratePin}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary"
+                  className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary sm:w-auto"
                   title="Generate unique PIN"
                 >
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                  Generate
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Generate PIN
                 </button>
               </div>
               {pinTakenInForm ? (
@@ -302,7 +302,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
         </form>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h3 className="text-sm font-semibold text-white">Registered clients</h3>
         {loading ? (
           <LoadingIndicator />
