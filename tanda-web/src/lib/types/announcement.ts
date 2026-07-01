@@ -40,3 +40,8 @@ export interface BroadcastAnnouncementInput {
   audienceValue?: string;
   recipientEmails?: string[];
 }
+
+export interface UpdateAnnouncementInput {
+  title: string;
+  body: string;
+}

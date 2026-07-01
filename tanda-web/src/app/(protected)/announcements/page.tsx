@@ -96,6 +96,8 @@ function AdminAnnouncementsPage() {
   const { user } = useAuthRole();
   const { canPerformAction } = useAdminAccess();
   const canPublishAnnouncements = canPerformAction('announcements', 'publish');
+  const canUpdateAnnouncements = canPerformAction('announcements', 'update');
+  const canDeleteAnnouncements = canPerformAction('announcements', 'delete');
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations, loading: locationsLoading } = useLocations();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -167,7 +169,22 @@ function AdminAnnouncementsPage() {
         </p>
       )}
 
-      <AnnouncementHistoryTable announcements={announcements} loading={loading} />
+      <AnnouncementHistoryTable
+        announcements={announcements}
+        loading={loading}
+        canUpdate={canUpdateAnnouncements}
+        canDelete={canDeleteAnnouncements}
+        onChanged={() => {
+          void loadHistory();
+        }}
+        onError={(message) => {
+          setToast({
+            id: crypto.randomUUID(),
+            text: message,
+            variant: 'error',
+          });
+        }}
+      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </PageContent>

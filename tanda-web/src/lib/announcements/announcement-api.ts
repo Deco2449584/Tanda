@@ -1,5 +1,5 @@
 import { auth } from '@/lib/firebase';
-import type { Announcement, BroadcastAnnouncementInput } from '@/lib/types/announcement';
+import type { Announcement, BroadcastAnnouncementInput, UpdateAnnouncementInput } from '@/lib/types/announcement';
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const user = auth?.currentUser;
@@ -51,6 +51,39 @@ export async function fetchAnnouncement(id: string): Promise<Announcement | null
 
   const data = (await response.json()) as { announcement: Announcement };
   return data.announcement;
+}
+
+export async function updateAnnouncementRequest(
+  id: string,
+  payload: UpdateAnnouncementInput,
+): Promise<Announcement> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`/api/announcements/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json()) as { error?: string };
+    throw new Error(data.error ?? 'Could not update announcement.');
+  }
+
+  const data = (await response.json()) as { announcement: Announcement };
+  return data.announcement;
+}
+
+export async function deleteAnnouncementRequest(id: string): Promise<void> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`/api/announcements/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers,
+  });
+
+  if (!response.ok) {
+    const data = (await response.json()) as { error?: string };
+    throw new Error(data.error ?? 'Could not delete announcement.');
+  }
 }
 
 export async function broadcastAnnouncementRequest(input: {

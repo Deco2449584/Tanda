@@ -356,3 +356,98 @@ export async function employeeCanReadAnnouncement(
 export function getAnnouncementPublicUrl(announcementId: string): string {
   return `${getAppBaseUrl()}/announcements#announcement-${announcementId}`;
 }
+
+const NOTIFICATION_BATCH_SIZE = 400;
+
+async function listAnnouncementNotificationDocs(announcementId: string) {
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.NOTIFICATIONS)
+    .where('type', '==', 'announcement')
+    .where('metadata.announcementId', '==', announcementId)
+    .get();
+
+  return snapshot.docs;
+}
+
+async function syncAnnouncementNotifications(
+  announcementId: string,
+  input: { title: string; body: string },
+  mode: 'update' | 'delete',
+): Promise<void> {
+  const docs = await listAnnouncementNotificationDocs(announcementId);
+  if (docs.length === 0) return;
+
+  const db = getAdminFirestore();
+  const preview = truncatePreview(input.body);
+  const href = `/announcements#announcement-${announcementId}`;
+
+  for (let index = 0; index < docs.length; index += NOTIFICATION_BATCH_SIZE) {
+    const chunk = docs.slice(index, index + NOTIFICATION_BATCH_SIZE);
+    const batch = db.batch();
+
+    for (const doc of chunk) {
+      if (mode === 'delete') {
+        batch.delete(doc.ref);
+      } else {
+        batch.update(doc.ref, {
+          title: input.title,
+          body: preview,
+          href,
+        });
+      }
+    }
+
+    await batch.commit();
+  }
+}
+
+export async function updateAnnouncement(
+  id: string,
+  input: { title: string; body: string },
+): Promise<Announcement> {
+  const title = input.title.trim();
+  const body = input.body.trim();
+
+  if (!title) {
+    throw new Error('Title is required.');
+  }
+
+  if (!body) {
+    throw new Error('Message is required.');
+  }
+
+  const ref = getAdminFirestore().collection(COLLECTIONS.ANNOUNCEMENTS).doc(id.trim());
+  const existing = await ref.get();
+
+  if (!existing.exists) {
+    throw new Error('Announcement not found.');
+  }
+
+  await ref.update({
+    title,
+    body,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  await syncAnnouncementNotifications(id, { title, body }, 'update');
+
+  const snapshot = await ref.get();
+  return mapAnnouncementDoc(snapshot.id, snapshot.data() ?? {});
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const trimmedId = id.trim();
+  const ref = getAdminFirestore().collection(COLLECTIONS.ANNOUNCEMENTS).doc(trimmedId);
+  const existing = await ref.get();
+
+  if (!existing.exists) {
+    throw new Error('Announcement not found.');
+  }
+
+  const data = existing.data() ?? {};
+  const title = typeof data.title === 'string' ? data.title : '';
+  const body = typeof data.body === 'string' ? data.body : '';
+
+  await syncAnnouncementNotifications(trimmedId, { title, body }, 'delete');
+  await ref.delete();
+}

@@ -38,6 +38,7 @@ export const ADMIN_ACTION_LABELS: {
   },
   announcements: {
     publish: 'Publish announcements',
+    update: 'Edit announcements',
     delete: 'Delete announcements',
   },
   issueReports: {
@@ -84,6 +85,10 @@ function applyLegacyActionFallback(
       if (rawModule.update === undefined) moduleActions.update = true;
       if (rawModule.delete === undefined) moduleActions.delete = true;
     }
+  }
+
+  if (moduleKey === 'announcements' && moduleActions.publish === true) {
+    if (rawModule.update === undefined) moduleActions.update = true;
   }
 
   if (moduleKey === 'settings' && moduleActions.update === true) {
