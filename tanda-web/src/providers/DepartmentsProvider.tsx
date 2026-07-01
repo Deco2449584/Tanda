@@ -2,13 +2,15 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { subscribeDepartments } from '@/lib/departments/departments-service';
+import { fetchDepartments } from '@/lib/departments/departments-service';
 import type { Department } from '@/lib/types/department';
 
 interface DepartmentsContextValue {
@@ -16,7 +18,9 @@ interface DepartmentsContextValue {
   activeDepartments: Department[];
   departmentNames: string[];
   loading: boolean;
+  refreshing: boolean;
   error: string;
+  refresh: () => Promise<void>;
 }
 
 const DepartmentsContext = createContext<DepartmentsContextValue | null>(null);
@@ -24,23 +28,36 @@ const DepartmentsContext = createContext<DepartmentsContextValue | null>(null);
 export function DepartmentsProvider({ children }: { children: ReactNode }) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const initialLoadDoneRef = useRef(false);
+
+  const refresh = useCallback(async () => {
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+    setError('');
+
+    try {
+      setDepartments(await fetchDepartments());
+    } catch (fetchError) {
+      setError(
+        fetchError instanceof Error
+          ? fetchError.message
+          : 'Could not load departments.',
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
+  }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeDepartments(
-      (data) => {
-        setDepartments(data);
-        setLoading(false);
-        setError('');
-      },
-      (subscribeError) => {
-        setLoading(false);
-        setError(subscribeError.message);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
+    void refresh();
+  }, [refresh]);
 
   const activeDepartments = useMemo(
     () => departments.filter((department) => department.active),
@@ -58,9 +75,11 @@ export function DepartmentsProvider({ children }: { children: ReactNode }) {
       activeDepartments,
       departmentNames,
       loading,
+      refreshing,
       error,
+      refresh,
     }),
-    [departments, activeDepartments, departmentNames, loading, error],
+    [departments, activeDepartments, departmentNames, loading, refreshing, error, refresh],
   );
 
   return (

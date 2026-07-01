@@ -1,10 +1,10 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   collection,
+  getDocs,
   limit,
-  onSnapshot,
   orderBy,
   query,
   where,
@@ -16,6 +16,7 @@ import { AttendanceToolbarButton } from '@/components/attendance/AttendanceToolb
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
 import { AddManualRecordModal } from '@/components/attendance/AddManualRecordModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import {
   getDefaultDateRange,
@@ -63,44 +64,50 @@ export default function AttendancePage() {
   const [manualCheckoutRecord, setManualCheckoutRecord] =
     useState<AttendanceRecord | null>(null);
   const [manualRecordOpen, setManualRecordOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => {
+  const loadRecords = useCallback(async () => {
     if (!db) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
-    const { start, end } = toFirestoreRangeBounds(dateRange);
-
-    const attendanceQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('timestampServer', '>=', start),
-      where('timestampServer', '<=', end),
-      orderBy('timestampServer', 'desc'),
-      limit(5000),
-    );
-
-    const unsubscribeRecords = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs.map((document) =>
+    try {
+      const { start, end } = toFirestoreRangeBounds(dateRange);
+      const snapshot = await getDocs(
+        query(
+          collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+          where('timestampServer', '>=', start),
+          where('timestampServer', '<=', end),
+          orderBy('timestampServer', 'desc'),
+          limit(5000),
+        ),
+      );
+      setRecords(
+        snapshot.docs.map((document) =>
           mapAttendanceDoc(document.id, document.data()),
-        );
-        setRecords(mapped);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error loading attendance records:', error);
-        setLoading(false);
-      },
-    );
-
-    return () => {
-      unsubscribeRecords();
-    };
+        ),
+      );
+    } catch (error) {
+      console.error('Error loading attendance records:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [dateRange]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void loadRecords();
+  }, [loadRecords]);
 
   const pageLoading = loading || employeesLoading;
 
@@ -197,6 +204,12 @@ export default function AttendancePage() {
         onSearchQueryChange={setSearchQuery}
         actions={
           <>
+            <RefreshButton
+              onClick={loadRecords}
+              refreshing={refreshing}
+              disabled={pageLoading}
+            />
+
             {canCreateAttendance ? (
               <AttendanceToolbarButton
                 onClick={() => setManualRecordOpen(true)}

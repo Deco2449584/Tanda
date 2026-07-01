@@ -12,6 +12,7 @@ import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/Employee
 import { NextShiftCard } from '@/components/employee-dashboard/NextShiftCard';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useEmployeeOverviewLayout } from '@/hooks/useEmployeeOverviewLayout';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
@@ -53,13 +54,17 @@ export default function EmployeeDashboardPage() {
     shiftsByDate,
     nextScheduledShift,
     loading: shiftsLoading,
+    refreshing: shiftsRefreshing,
     error: shiftsError,
+    refresh: refreshShifts,
   } = useEmployeeShifts({ employeeCode });
 
   const {
     allRecords: attendanceRecords,
     loading: recordsLoading,
+    refreshing: recordsRefreshing,
     error: recordsError,
+    refresh: refreshRecords,
   } = useEmployeeAttendance({ employeeCode, displayRange: 'all' });
 
   const hoursEarningsStats = useMemo(() => {
@@ -113,9 +118,24 @@ export default function EmployeeDashboardPage() {
     ? 'Loading…'
     : `${scheduledCount} shift${scheduledCount === 1 ? '' : 's'} this week`;
 
+  const isRefreshing = shiftsRefreshing || recordsRefreshing;
+
+  function handleRefresh() {
+    void Promise.all([refreshShifts(), refreshRecords()]);
+  }
+
   return (
     <PageContent className="space-y-5 md:space-y-6">
-      <PageHeader title="My overview" />
+      <PageHeader
+        title="My overview"
+        actions={
+          <RefreshButton
+            onClick={handleRefresh}
+            refreshing={isRefreshing}
+            disabled={dataLoading}
+          />
+        }
+      />
 
       {employeeError && !employeeLoading && (
         <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -176,6 +196,7 @@ export default function EmployeeDashboardPage() {
               nextShift={nextScheduledShift}
               loading={shiftsLoading}
               embedded
+              onShiftUpdated={() => void refreshShifts()}
             />
           </CollapsibleDashboardCard>
 

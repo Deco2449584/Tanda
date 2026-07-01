@@ -9,9 +9,10 @@ import type { Shift } from '@/lib/types/shift';
 
 interface ShiftListCardProps {
   shift: Shift;
+  onUpdated?: () => void;
 }
 
-export function ShiftListCard({ shift }: ShiftListCardProps) {
+export function ShiftListCard({ shift, onUpdated }: ShiftListCardProps) {
   const meta = getShiftStatusMeta(shift.status);
   const StatusIcon = meta.icon;
   const locationLabel = formatShiftLocationLabel(shift);
@@ -43,7 +44,10 @@ export function ShiftListCard({ shift }: ShiftListCardProps) {
         {formatTimeLabel(shift.startTime)} – {formatTimeLabel(shift.endTime)}
       </p>
 
-      <ShiftConfirmationActions shift={shift} />
+      <ShiftConfirmationActions
+        shift={shift}
+        onUpdated={onUpdated ? () => onUpdated() : undefined}
+      />
     </article>
   );
 }

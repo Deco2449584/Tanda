@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, Download, Package, Search, Truck } from 'lucide-react';
 import { InspectionCard } from '@/components/inspections/InspectionCard';
 import { InspectionsFilterBar } from '@/components/inspections/InspectionsFilterBar';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { exportInspectionsToCsv } from '@/lib/inspections/export-inspections-csv';
 import {
   filterInspectionsByDateRange,
@@ -53,7 +54,7 @@ function StatCard({
 }
 
 export function InspectionsPageClient() {
-  const { inspections, loading, error } = useCargoInspections();
+  const { inspections, loading, error, refresh } = useCargoInspections();
   const [searchQuery, setSearchQuery] = useState('');
   const [datePreset, setDatePreset] = useState<InspectionDatePreset>('week');
   const [customFrom, setCustomFrom] = useState(() => new Date());
@@ -101,13 +102,16 @@ export function InspectionsPageClient() {
 
   return (
     <div className="min-h-full space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-base font-bold tracking-wide text-white uppercase">
-          Cargo inspections
-        </h1>
-        <p className="mt-1 text-sm text-subtle">
-          ULD / AWB records from Continental Inspect — same data as the mobile app.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-base font-bold tracking-wide text-white uppercase">
+            Cargo inspections
+          </h1>
+          <p className="mt-1 text-sm text-subtle">
+            ULD / AWB records from Continental Inspect — same data as the mobile app.
+          </p>
+        </div>
+        <RefreshButton onClick={refresh} refreshing={loading} />
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">

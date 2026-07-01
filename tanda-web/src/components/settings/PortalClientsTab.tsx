@@ -2,14 +2,14 @@
 
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import {
   createPortalClient,
   deletePortalClient,
+  fetchPortalClients,
   regeneratePortalClientPin,
   setPortalClientActive,
-  subscribePortalClients,
 } from '@/lib/portal/portal-clients-service';
 import {
   generateUniquePortalPinFromList,
@@ -58,26 +58,35 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
   const takenPins = useMemo(
     () => clients.map((client) => client.pin).filter((value): value is string => Boolean(value)),
     [clients],
   );
 
-  useEffect(() => {
-    const unsubscribe = subscribePortalClients(
-      (data) => {
-        setClients(data);
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-        onToast('Could not load portal clients.', 'error');
-      },
-    );
+  const loadClients = useCallback(async () => {
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
-    return () => unsubscribe();
+    try {
+      setClients(await fetchPortalClients());
+    } catch {
+      onToast('Could not load portal clients.', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [onToast]);
+
+  useEffect(() => {
+    void loadClients();
+  }, [loadClients]);
 
   function handleGeneratePin() {
     try {
@@ -114,6 +123,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
       setCompanyName('');
       setAccessCode('');
       setPin('');
+      void loadClients();
       onToast(`Client created. Share the PIN with ${result.clientId ? 'the forwarder' : 'the client'}.`);
     } catch (error) {
       const message =
@@ -131,6 +141,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
     try {
       const newPin = await regeneratePortalClientPin(client.id);
       setRevealedPin(newPin);
+      void loadClients();
       onToast(`New PIN generated for ${client.companyName}.`);
     } catch {
       onToast('Could not regenerate PIN.', 'error');
@@ -142,6 +153,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
   async function handleToggleActive(client: PortalClient) {
     try {
       await setPortalClientActive(client.id, !client.active);
+      void loadClients();
       onToast(
         client.active
           ? `${client.companyName} deactivated.`
@@ -162,6 +174,7 @@ export function PortalClientsTab({ onToast }: PortalClientsTabProps) {
 
     try {
       const detachedCount = await deletePortalClient(client.id);
+      void loadClients();
       onToast(
         detachedCount > 0
           ? `${client.companyName} deleted. Portal access removed from ${detachedCount} inspection(s).`

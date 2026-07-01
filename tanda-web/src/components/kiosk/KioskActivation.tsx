@@ -10,7 +10,7 @@ import {
 } from '@/lib/kiosk/device-details';
 import { ensureKioskClientSessionId, ensureKioskDeviceToken, getKioskDeviceToken } from '@/lib/kiosk/device-token';
 import { enterKioskFullscreen } from '@/lib/pwa/kiosk-display';
-import { subscribeLocations } from '@/lib/locations/locations-service';
+import { fetchLocations } from '@/lib/locations/locations-service';
 import type { KioskDeviceDetails, KioskDeviceSession } from '@/lib/types/kiosk-device';
 import type { Location } from '@/lib/types/location';
 
@@ -42,8 +42,9 @@ export function KioskActivation({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const unsubscribe = subscribeLocations(setLocations);
-    return () => unsubscribe();
+    void fetchLocations()
+      .then(setLocations)
+      .catch(() => setLocations([]));
   }, []);
 
   useEffect(() => {

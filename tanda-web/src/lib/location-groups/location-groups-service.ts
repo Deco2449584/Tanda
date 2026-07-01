@@ -4,7 +4,6 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -21,25 +20,17 @@ import type {
   UpdateLocationGroupInput,
 } from '@/lib/types/location-group';
 
-export function subscribeLocationGroups(
-  onData: (groups: LocationGroup[]) => void,
-  onError?: (error: Error) => void,
-): () => void {
+export async function fetchLocationGroups(): Promise<LocationGroup[]> {
   if (!db) {
-    onError?.(new Error('Firestore is not available.'));
-    return () => {};
+    throw new Error('Firestore is not available.');
   }
 
-  return onSnapshot(
+  const snapshot = await getDocs(
     query(collection(db, COLLECTIONS.LOCATION_GROUPS), orderBy('name')),
-    (snapshot) => {
-      onData(
-        snapshot.docs.map((document) =>
-          mapLocationGroupDoc(document.id, document.data()),
-        ),
-      );
-    },
-    (error) => onError?.(error),
+  );
+
+  return snapshot.docs.map((document) =>
+    mapLocationGroupDoc(document.id, document.data()),
   );
 }
 

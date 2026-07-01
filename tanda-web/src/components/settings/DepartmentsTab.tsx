@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Briefcase, Pencil, Plus, Trash2 } from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
   createDepartment,
   deleteDepartment,
   setDepartmentActive,
-  subscribeDepartments,
   updateDepartment,
 } from '@/lib/departments/departments-service';
 import type { Department } from '@/lib/types/department';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { useDepartments } from '@/providers/DepartmentsProvider';
 
 interface DepartmentsTabProps {
   onToast: (message: string, variant?: 'success' | 'error' | 'info') => void;
@@ -19,29 +19,13 @@ interface DepartmentsTabProps {
 
 export function DepartmentsTab({ onToast }: DepartmentsTabProps) {
   const { settings, saveSettings, saving: savingSettings } = useCompanySettings();
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { departments, loading, refresh } = useDepartments();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = subscribeDepartments(
-      (data) => {
-        setDepartments(data);
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-        onToast('Could not load departments.', 'error');
-      },
-    );
-
-    return () => unsubscribe();
-  }, [onToast]);
 
   const activeDepartments = departments.filter((department) => department.active);
 
@@ -52,6 +36,7 @@ export function DepartmentsTab({ onToast }: DepartmentsTabProps) {
     try {
       await createDepartment({ name });
       setName('');
+      void refresh();
       onToast('Department created.');
     } catch (error) {
       const message =
@@ -85,6 +70,7 @@ export function DepartmentsTab({ onToast }: DepartmentsTabProps) {
       await updateDepartment(departmentId, { name: editName });
       setEditingId(null);
       setEditName('');
+      void refresh();
       onToast('Department updated.');
     } catch (error) {
       const message =
@@ -98,6 +84,7 @@ export function DepartmentsTab({ onToast }: DepartmentsTabProps) {
   async function handleToggleActive(department: Department) {
     try {
       await setDepartmentActive(department.id, !department.active);
+      void refresh();
       onToast(
         department.active
           ? `${department.name} deactivated.`
@@ -121,6 +108,7 @@ export function DepartmentsTab({ onToast }: DepartmentsTabProps) {
       if (settings.defaultDepartmentName === department.name) {
         await saveSettings({ ...settings, defaultDepartmentName: undefined });
       }
+      void refresh();
       onToast(`${department.name} deleted.`);
     } catch (error) {
       const message =

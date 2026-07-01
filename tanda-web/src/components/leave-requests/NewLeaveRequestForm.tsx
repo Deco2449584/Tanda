@@ -16,6 +16,7 @@ const LEAVE_TYPES: LeaveRequestType[] = [
 interface NewLeaveRequestFormProps {
   employeeId: string;
   disabled?: boolean;
+  onSubmitted?: () => void;
 }
 
 const initialForm: NewLeaveRequestInput = {
@@ -28,6 +29,7 @@ const initialForm: NewLeaveRequestInput = {
 export function NewLeaveRequestForm({
   employeeId,
   disabled = false,
+  onSubmitted,
 }: NewLeaveRequestFormProps) {
   const [form, setForm] = useState<NewLeaveRequestInput>(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,6 +76,7 @@ export function NewLeaveRequestForm({
 
       setForm(initialForm);
       setSuccess('Request submitted successfully.');
+      onSubmitted?.();
     } catch {
       setError('Could not submit the request. Please try again.');
     } finally {

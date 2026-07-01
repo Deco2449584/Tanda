@@ -5,7 +5,6 @@ import {
   deleteField,
   doc,
   getDocs,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -21,25 +20,17 @@ import type {
   UpdateLocationInput,
 } from '@/lib/types/location';
 
-export function subscribeLocations(
-  onData: (locations: Location[]) => void,
-  onError?: (error: Error) => void,
-): () => void {
+export async function fetchLocations(): Promise<Location[]> {
   if (!db) {
-    onError?.(new Error('Firestore is not available.'));
-    return () => {};
+    throw new Error('Firestore is not available.');
   }
 
-  return onSnapshot(
+  const snapshot = await getDocs(
     query(collection(db, COLLECTIONS.LOCATIONS), orderBy('name')),
-    (snapshot) => {
-      onData(
-        snapshot.docs.map((document) =>
-          mapLocationDoc(document.id, document.data()),
-        ),
-      );
-    },
-    (error) => onError?.(error),
+  );
+
+  return snapshot.docs.map((document) =>
+    mapLocationDoc(document.id, document.data()),
   );
 }
 

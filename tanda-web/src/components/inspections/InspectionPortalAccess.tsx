@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Copy, Globe, Loader2 } from 'lucide-react';
 import { updateInspectionPortalAccess } from '@/lib/inspections/update-portal-access';
-import { subscribePortalClients } from '@/lib/portal/portal-clients-service';
+import { fetchPortalClients } from '@/lib/portal/portal-clients-service';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 import type { PortalClient } from '@/lib/types/portal-client';
 
@@ -31,8 +31,9 @@ export function InspectionPortalAccess({
   }, [inspection.portalClientId, inspection.portalEnabled]);
 
   useEffect(() => {
-    const unsubscribe = subscribePortalClients(setClients);
-    return () => unsubscribe();
+    void fetchPortalClients()
+      .then(setClients)
+      .catch(() => setClients([]));
   }, []);
 
   const activeClients = clients.filter((client) => client.active);

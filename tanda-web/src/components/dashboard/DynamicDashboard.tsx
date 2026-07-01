@@ -131,7 +131,7 @@ export function DynamicDashboard({
     layout,
   } = useDashboardLayout();
 
-  const { shifts, leaveRequests, attendance, loading } =
+  const { shifts, leaveRequests, attendance, loading, refreshing, refresh } =
     useDashboardData(dateRange);
 
   const analytics = useMemo(
@@ -385,6 +385,8 @@ export function DynamicDashboard({
         locationOptions={locationOptions}
         onCustomize={() => setCustomizeOpen(true)}
         onResetLayout={resetLayout}
+        onRefresh={refresh}
+        refreshing={refreshing}
       />
 
       <div className="space-y-4">

@@ -5,7 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -22,25 +21,17 @@ import type {
   UpdateDepartmentInput,
 } from '@/lib/types/department';
 
-export function subscribeDepartments(
-  onData: (departments: Department[]) => void,
-  onError?: (error: Error) => void,
-): () => void {
+export async function fetchDepartments(): Promise<Department[]> {
   if (!db) {
-    onError?.(new Error('Firestore is not available.'));
-    return () => {};
+    throw new Error('Firestore is not available.');
   }
 
-  return onSnapshot(
+  const snapshot = await getDocs(
     query(collection(db, COLLECTIONS.DEPARTMENTS), orderBy('name')),
-    (snapshot) => {
-      onData(
-        snapshot.docs.map((document) =>
-          mapDepartmentDoc(document.id, document.data() as DepartmentFirestore),
-        ),
-      );
-    },
-    (error) => onError?.(error),
+  );
+
+  return snapshot.docs.map((document) =>
+    mapDepartmentDoc(document.id, document.data() as DepartmentFirestore),
   );
 }
 

@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   createLocationGroup,
   deleteLocationGroup,
   setLocationGroupActive,
-  subscribeLocationGroups,
   updateLocationGroup,
 } from '@/lib/location-groups/location-groups-service';
 import { formatLocationGroupSites } from '@/lib/location-groups/format-location-group';
-import { subscribeLocations } from '@/lib/locations/locations-service';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+import { useLocationGroups } from '@/providers/LocationGroupsProvider';
+import { useLocations } from '@/providers/LocationsProvider';
 import type { Location } from '@/lib/types/location';
 import type { LocationGroup } from '@/lib/types/location-group';
 
@@ -20,9 +20,8 @@ interface LocationGroupsTabProps {
 }
 
 export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
-  const [groups, setGroups] = useState<LocationGroup[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { groups, loading, refresh: refreshGroups } = useLocationGroups();
+  const { locations } = useLocations();
   const [name, setName] = useState('');
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -31,25 +30,6 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
   const [editLocationIds, setEditLocationIds] = useState<string[]>([]);
 
   const activeLocations = locations.filter((location) => location.active);
-
-  useEffect(() => {
-    const unsubGroups = subscribeLocationGroups(
-      (data) => {
-        setGroups(data);
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-        onToast('Could not load location groups.', 'error');
-      },
-    );
-    const unsubLocations = subscribeLocations(setLocations);
-
-    return () => {
-      unsubGroups();
-      unsubLocations();
-    };
-  }, [onToast]);
 
   function toggleLocation(id: string, current: string[], setter: (ids: string[]) => void) {
     if (current.includes(id)) {
@@ -66,6 +46,7 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
       await createLocationGroup({ name, locationIds: selectedLocationIds });
       setName('');
       setSelectedLocationIds([]);
+      void refreshGroups();
       onToast('Location group created.');
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'Could not create group.', 'error');
@@ -88,6 +69,7 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
         locationIds: editLocationIds,
       });
       setEditingId(null);
+      void refreshGroups();
       onToast('Location group updated.');
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'Could not update group.', 'error');
@@ -209,9 +191,10 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
                       <button
                         type="button"
                         onClick={() =>
-                          void setLocationGroupActive(group.id, !group.active).then(() =>
-                            onToast(group.active ? 'Group deactivated.' : 'Group activated.'),
-                          )
+                          void setLocationGroupActive(group.id, !group.active).then(() => {
+                            void refreshGroups();
+                            onToast(group.active ? 'Group deactivated.' : 'Group activated.');
+                          })
                         }
                         className="rounded-lg px-2 py-1 text-xs text-muted hover:bg-surface-hover"
                       >
@@ -221,7 +204,10 @@ export function LocationGroupsTab({ onToast }: LocationGroupsTabProps) {
                         type="button"
                         onClick={() =>
                           void deleteLocationGroup(group.id)
-                            .then(() => onToast('Group deleted.'))
+                            .then(() => {
+                              void refreshGroups();
+                              onToast('Group deleted.');
+                            })
                             .catch((error) =>
                               onToast(
                                 error instanceof Error ? error.message : 'Delete failed.',

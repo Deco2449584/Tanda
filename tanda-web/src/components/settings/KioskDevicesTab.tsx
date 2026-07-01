@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { auth } from '@/lib/firebase';
-import { subscribeLocations } from '@/lib/locations/locations-service';
+import { fetchLocations } from '@/lib/locations/locations-service';
 import type { KioskDevice } from '@/lib/types/kiosk-device';
 import type { Location } from '@/lib/types/location';
 
@@ -74,12 +74,12 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
   }, []);
 
   useEffect(() => {
-    const unsubLocations = subscribeLocations(setLocations);
+    void fetchLocations()
+      .then(setLocations)
+      .catch(() => setLocations([]));
     void loadDevices()
       .catch(() => onToast('Could not load kiosk devices.', 'error'))
       .finally(() => setLoading(false));
-
-    return () => unsubLocations();
   }, [loadDevices, onToast]);
 
   const activeLocations = useMemo(

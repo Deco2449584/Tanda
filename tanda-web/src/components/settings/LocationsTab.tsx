@@ -2,16 +2,16 @@
 
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   createLocation,
   deleteLocation,
   setLocationActive,
-  subscribeLocations,
   updateLocation,
 } from '@/lib/locations/locations-service';
 import type { Location } from '@/lib/types/location';
+import { useLocations } from '@/providers/LocationsProvider';
 
 interface LocationsTabProps {
   onToast: (message: string, variant?: 'success' | 'error' | 'info') => void;
@@ -26,8 +26,7 @@ interface EditFormState {
 const emptyEditForm: EditFormState = { name: '', city: '', code: '' };
 
 export function LocationsTab({ onToast }: LocationsTabProps) {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { locations, loading, refresh } = useLocations();
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [code, setCode] = useState('');
@@ -36,21 +35,6 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [editForm, setEditForm] = useState<EditFormState>(emptyEditForm);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = subscribeLocations(
-      (data) => {
-        setLocations(data);
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-        onToast('Could not load locations.', 'error');
-      },
-    );
-
-    return () => unsubscribe();
-  }, [onToast]);
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -61,6 +45,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       setName('');
       setCity('');
       setCode('');
+      void refresh();
       onToast('Location created.');
     } catch (error) {
       const message =
@@ -95,6 +80,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         code: editForm.code || undefined,
       });
       cancelEdit();
+      void refresh();
       onToast('Location updated.');
     } catch (error) {
       const message =
@@ -108,6 +94,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   async function handleToggleActive(location: Location) {
     try {
       await setLocationActive(location.id, !location.active);
+      void refresh();
       onToast(
         location.active
           ? `${location.name} deactivated.`
@@ -128,6 +115,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
 
     try {
       await deleteLocation(location.id);
+      void refresh();
       onToast(`${location.name} deleted.`);
     } catch (error) {
       const message =

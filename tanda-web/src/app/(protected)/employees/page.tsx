@@ -7,6 +7,7 @@ import { Plus, Search, Users } from 'lucide-react';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import {
@@ -18,7 +19,7 @@ import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
   const router = useRouter();
-  const { employees, loading } = useEmployees();
+  const { employees, loading, refreshing, refresh } = useEmployees();
   const { canPerformAction } = useAdminAccess();
   const canCreateEmployees = canPerformAction('employees', 'create');
   const canUpdateEmployees = canPerformAction('employees', 'update');
@@ -37,7 +38,16 @@ export default function EmployeesPage() {
 
   return (
     <PageContent className="space-y-6">
-      <PageHeader title="Staff Management" />
+      <PageHeader
+        title="Staff Management"
+        actions={
+          <RefreshButton
+            onClick={refresh}
+            refreshing={refreshing}
+            disabled={loading}
+          />
+        }
+      />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {canCreateEmployees ? (

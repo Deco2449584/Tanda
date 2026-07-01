@@ -9,6 +9,7 @@ import { CollapsibleDashboardCard } from '@/components/dashboard/CollapsibleDash
 import { EmployeeWeeklySchedule } from '@/components/employee-dashboard/EmployeeWeeklySchedule';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { ShiftListCard } from '@/components/my-schedule/ShiftListCard';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -32,7 +33,9 @@ export default function MySchedulePage() {
     shiftsByDate,
     futureShifts,
     loading: shiftsLoading,
+    refreshing: shiftsRefreshing,
     error: shiftsError,
+    refresh,
   } = useEmployeeShifts({ employeeCode });
 
   const loading = authLoading || employeeLoading || shiftsLoading;
@@ -57,7 +60,16 @@ export default function MySchedulePage() {
 
   return (
     <PageContent className="space-y-5">
-      <PageHeader title="My schedule" />
+      <PageHeader
+        title="My schedule"
+        actions={
+          <RefreshButton
+            onClick={refresh}
+            refreshing={shiftsRefreshing}
+            disabled={loading}
+          />
+        }
+      />
       <SubmitJustificationModal
         justificationId={justifyId}
         onClose={() => setJustifyId(null)}
@@ -106,7 +118,11 @@ export default function MySchedulePage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {futureShifts.map((shift) => (
-                  <ShiftListCard key={shift.id} shift={shift} />
+                  <ShiftListCard
+                    key={shift.id}
+                    shift={shift}
+                    onUpdated={() => void refresh()}
+                  />
                 ))}
               </div>
             )}

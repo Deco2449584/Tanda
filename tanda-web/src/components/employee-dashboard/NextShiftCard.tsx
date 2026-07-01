@@ -15,6 +15,7 @@ interface NextShiftCardProps {
   nextShift: Shift | null;
   loading: boolean;
   embedded?: boolean;
+  onShiftUpdated?: () => void;
 }
 
 export function NextShiftCard({
@@ -22,6 +23,7 @@ export function NextShiftCard({
   nextShift,
   loading,
   embedded = false,
+  onShiftUpdated,
 }: NextShiftCardProps) {
   const locationLabel = nextShift ? formatShiftLocationLabel(nextShift) : '';
 
@@ -56,7 +58,11 @@ export function NextShiftCard({
               ) : (
                 <p className="text-xs text-subtle">Location not assigned</p>
               )}
-              <ShiftConfirmationActions shift={nextShift} compact />
+              <ShiftConfirmationActions
+                shift={nextShift}
+                compact
+                onUpdated={onShiftUpdated ? () => onShiftUpdated() : undefined}
+              />
             </div>
           ) : (
             <p className={`text-sm text-muted ${embedded ? '' : 'mt-3'}`}>

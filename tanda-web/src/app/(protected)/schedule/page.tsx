@@ -1,9 +1,9 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   collection,
-  onSnapshot,
+  getDocs,
   orderBy,
   query,
   where,
@@ -17,6 +17,7 @@ import { ScheduleMonthCalendar } from '@/components/schedule/ScheduleMonthCalend
 import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
@@ -62,6 +63,8 @@ export default function SchedulePage() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignData, setAssignData] = useState<AssignShiftInput | null>(null);
   const [useWeekRange, setUseWeekRange] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
   const week = useMemo(() => buildWeekRange(weekReference), [weekReference]);
   const month = useMemo(() => buildMonthCalendar(monthReference), [monthReference]);
@@ -77,80 +80,64 @@ export default function SchedulePage() {
   const rangeStart = useWeekRange ? week.start : month.start;
   const rangeEnd = useWeekRange ? week.end : month.end;
 
-  useEffect(() => {
+  const loadScheduleData = useCallback(async () => {
     if (!db) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-
-    let shiftsReady = false;
-    let attendanceReady = false;
-
-    function checkReady() {
-      if (shiftsReady && attendanceReady) {
-        setLoading(false);
-      }
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
     }
 
-    const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds({
-      start: rangeStart,
-      end: rangeEnd,
-    });
+    try {
+      const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds({
+        start: rangeStart,
+        end: rangeEnd,
+      });
 
-    const shiftsQuery = query(
-      collection(db, COLLECTIONS.SHIFTS),
-      where('date', '>=', rangeStart),
-      where('date', '<=', rangeEnd),
-      orderBy('date', 'asc'),
-    );
-
-    const unsubscribeShifts = onSnapshot(
-      shiftsQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs.map((document) =>
-          mapShiftDoc(document.id, document.data()),
-        );
-        setShifts(mapped);
-        shiftsReady = true;
-        checkReady();
-      },
-      () => {
-        shiftsReady = true;
-        checkReady();
-      },
-    );
-
-    const attendanceQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('timestampServer', '>=', attendanceStart),
-      where('timestampServer', '<=', attendanceEnd),
-      orderBy('timestampServer', 'asc'),
-    );
-
-    const unsubscribeAttendance = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        setAttendanceRecords(
-          snapshot.docs.map((document) =>
-            mapAttendanceDoc(document.id, document.data()),
+      const [shiftsSnapshot, attendanceSnapshot] = await Promise.all([
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.SHIFTS),
+            where('date', '>=', rangeStart),
+            where('date', '<=', rangeEnd),
+            orderBy('date', 'asc'),
           ),
-        );
-        attendanceReady = true;
-        checkReady();
-      },
-      () => {
-        attendanceReady = true;
-        checkReady();
-      },
-    );
+        ),
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+            where('timestampServer', '>=', attendanceStart),
+            where('timestampServer', '<=', attendanceEnd),
+            orderBy('timestampServer', 'asc'),
+          ),
+        ),
+      ]);
 
-    return () => {
-      unsubscribeShifts();
-      unsubscribeAttendance();
-    };
+      setShifts(
+        shiftsSnapshot.docs.map((document) =>
+          mapShiftDoc(document.id, document.data()),
+        ),
+      );
+      setAttendanceRecords(
+        attendanceSnapshot.docs.map((document) =>
+          mapAttendanceDoc(document.id, document.data()),
+        ),
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [rangeEnd, rangeStart]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void loadScheduleData();
+  }, [loadScheduleData]);
 
   const pageLoading = loading || employeesLoading;
 
@@ -273,6 +260,13 @@ export default function SchedulePage() {
       <PageHeader
         title="Scheduling and rosters (Agenda)"
         description="Weekly schedule"
+        actions={
+          <RefreshButton
+            onClick={loadScheduleData}
+            refreshing={refreshing}
+            disabled={pageLoading}
+          />
+        }
       />
 
       <div className="flex flex-col gap-2.5 md:hidden">
@@ -451,6 +445,7 @@ export default function SchedulePage() {
         onClose={() => {
           setAssignModalOpen(false);
           setAssignData(null);
+          void loadScheduleData();
         }}
       />
     </PageContent>

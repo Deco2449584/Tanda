@@ -1,10 +1,10 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   collection,
-  onSnapshot,
+  getDocs,
   orderBy,
   query,
 } from 'firebase/firestore';
@@ -21,6 +21,7 @@ import {
 import { LeaveRequestsAdminTable } from '@/components/leave-requests/LeaveRequestsAdminTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { COLLECTIONS, LEAVE_REQUEST_STATUSES } from '@/lib/constants';
 import {
   getCurrentMonthRange,
@@ -62,39 +63,43 @@ export default function LeaveRequestsPage() {
   );
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => {
+  const loadRequests = useCallback(async () => {
     if (!db) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
-    const requestsQuery = query(
-      collection(db, COLLECTIONS.LEAVE_REQUESTS),
-      orderBy('createdAt', 'desc'),
-    );
-
-    const unsubscribeRequests = onSnapshot(
-      requestsQuery,
-      (snapshot) => {
-        setRequests(
-          snapshot.docs.map((document) =>
-            mapLeaveRequestDoc(document.id, document.data()),
-          ),
-        );
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-      },
-    );
-
-    return () => {
-      unsubscribeRequests();
-    };
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, COLLECTIONS.LEAVE_REQUESTS),
+          orderBy('createdAt', 'desc'),
+        ),
+      );
+      setRequests(
+        snapshot.docs.map((document) =>
+          mapLeaveRequestDoc(document.id, document.data()),
+        ),
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, []);
+
+  useEffect(() => {
+    void loadRequests();
+  }, [loadRequests]);
 
   useEffect(() => {
     setCenterView(parseViewParam(searchParams.get('view')));
@@ -159,6 +164,13 @@ export default function LeaveRequestsPage() {
             : centerView === 'late'
               ? 'Read-only list of late arrival justifications.'
               : 'Read-only list of no-show explanations.'
+        }
+        actions={
+          <RefreshButton
+            onClick={loadRequests}
+            refreshing={refreshing}
+            disabled={pageLoading}
+          />
         }
       />
 

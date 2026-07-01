@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Timestamp,
   collection,
-  onSnapshot,
+  getDocs,
   query,
   where,
 } from 'firebase/firestore';
@@ -18,7 +18,6 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 export type EmployeeRecordsRange = 'all' | '7days' | 'month';
 
 interface UseEmployeeAttendanceOptions {
-  /** Código corto del empleado (ej. '0002'), NO el doc.id de Firestore. */
   employeeCode: string;
   displayRange?: EmployeeRecordsRange;
 }
@@ -36,7 +35,7 @@ function getSevenDaysStartDate(): string {
   return toInputDate(start);
 }
 
-function getQueryStartTimestamp(displayRange: Exclude<EmployeeRecordsRange, 'all'>): Timestamp {
+function getQueryStartTimestamp(): Timestamp {
   return getMonthStartTimestamp();
 }
 
@@ -46,55 +45,64 @@ export function useEmployeeAttendance({
 }: UseEmployeeAttendanceOptions) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const initialLoadDoneRef = useRef(false);
 
   const code = employeeCode.trim();
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!db || !code) {
       setRecords([]);
       setLoading(false);
+      setRefreshing(false);
       setError('');
+      initialLoadDoneRef.current = false;
       return;
     }
 
-    setLoading(true);
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
     setError('');
 
-    const recordsRef = collection(db, COLLECTIONS.ATTENDANCE_RECORDS);
-    const recordsQuery =
-      displayRange === 'all'
-        ? query(recordsRef, where('employeeId', '==', code))
-        : query(
-            recordsRef,
-            where('employeeId', '==', code),
-            where('timestampServer', '>=', getQueryStartTimestamp(displayRange)),
-          );
+    try {
+      const recordsRef = collection(db, COLLECTIONS.ATTENDANCE_RECORDS);
+      const recordsQuery =
+        displayRange === 'all'
+          ? query(recordsRef, where('employeeId', '==', code))
+          : query(
+              recordsRef,
+              where('employeeId', '==', code),
+              where('timestampServer', '>=', getQueryStartTimestamp()),
+            );
 
-    const unsubscribe = onSnapshot(
-      recordsQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs
-          .map((document) => mapAttendanceDoc(document.id, document.data()))
-          .sort((a, b) => {
-            const aTime = a.timestampServer?.toMillis() ?? 0;
-            const bTime = b.timestampServer?.toMillis() ?? 0;
-            return bTime - aTime;
-          });
-        setRecords(mapped);
-        setLoading(false);
-        setError('');
-      },
-      (snapshotError) => {
-        console.error('useEmployeeAttendance', snapshotError);
-        setRecords([]);
-        setLoading(false);
-        setError('Could not load attendance records.');
-      },
-    );
-
-    return () => unsubscribe();
+      const snapshot = await getDocs(recordsQuery);
+      const mapped = snapshot.docs
+        .map((document) => mapAttendanceDoc(document.id, document.data()))
+        .sort((a, b) => {
+          const aTime = a.timestampServer?.toMillis() ?? 0;
+          const bTime = b.timestampServer?.toMillis() ?? 0;
+          return bTime - aTime;
+        });
+      setRecords(mapped);
+    } catch (fetchError) {
+      console.error('useEmployeeAttendance', fetchError);
+      setRecords([]);
+      setError('Could not load attendance records.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [code, displayRange]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void refresh();
+  }, [refresh]);
 
   const displayRecords = useMemo(() => {
     if (displayRange === 'all' || displayRange === 'month') {
@@ -109,7 +117,14 @@ export function useEmployeeAttendance({
   }, [displayRange, records]);
 
   return useMemo(
-    () => ({ records: displayRecords, allRecords: records, loading, error }),
-    [displayRecords, records, loading, error],
+    () => ({
+      records: displayRecords,
+      allRecords: records,
+      loading,
+      refreshing,
+      error,
+      refresh,
+    }),
+    [displayRecords, records, loading, refreshing, error, refresh],
   );
 }

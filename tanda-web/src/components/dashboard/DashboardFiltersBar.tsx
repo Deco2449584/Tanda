@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, LayoutDashboard, MapPin, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { DateRangePicker } from '@/components/attendance/DateRangePicker';
 import { Button } from '@/components/ui/Button';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import type { DateRange } from '@/lib/attendance/date-range';
 import {
   formatDateRangeLabel,
@@ -40,6 +41,8 @@ interface DashboardFiltersBarProps {
   locationOptions: LocationOption[];
   onCustomize: () => void;
   onResetLayout: () => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
 const PRESET_OPTIONS: Array<{ id: DashboardPeriodPreset; label: string }> = [
@@ -84,6 +87,8 @@ export function DashboardFiltersBar({
   locationOptions,
   onCustomize,
   onResetLayout,
+  onRefresh,
+  refreshing = false,
 }: DashboardFiltersBarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -138,6 +143,12 @@ export function DashboardFiltersBar({
         <div className="flex flex-wrap items-center gap-2">
           {!collapsed ? (
             <>
+              {onRefresh ? (
+                <RefreshButton
+                  onClick={onRefresh}
+                  refreshing={refreshing}
+                />
+              ) : null}
               <Button type="button" variant="secondary" size="sm" onClick={onCustomize}>
                 <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
                 Customize widgets

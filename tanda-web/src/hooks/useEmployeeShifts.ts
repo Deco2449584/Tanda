@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   compareInputDates,
@@ -20,7 +20,6 @@ const SHIFT_LOOKBACK_DAYS = 28;
 const SHIFT_LOOKAHEAD_DAYS = 90;
 
 interface UseEmployeeShiftsOptions {
-  /** Código corto del empleado (ej. '0002'), NO el doc.id de Firestore. */
   employeeCode: string;
   weekReference?: Date;
   includeUpcoming?: boolean;
@@ -33,7 +32,9 @@ export function useEmployeeShifts({
 }: UseEmployeeShiftsOptions) {
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const initialLoadDoneRef = useRef(false);
 
   const todayKey = toInputDate();
   const week = useMemo(
@@ -45,44 +46,50 @@ export function useEmployeeShifts({
   const minDate = offsetInputDate(todayKey, -SHIFT_LOOKBACK_DAYS);
   const maxDate = offsetInputDate(todayKey, SHIFT_LOOKAHEAD_DAYS);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!db || !code) {
       setAllShifts([]);
       setLoading(false);
+      setRefreshing(false);
       setError('');
+      initialLoadDoneRef.current = false;
       return;
     }
 
-    setLoading(true);
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
     setError('');
 
-    const shiftsQuery = query(
-      collection(db, COLLECTIONS.SHIFTS),
-      where('employeeId', '==', code),
-      where('date', '>=', minDate),
-      where('date', '<=', maxDate),
-    );
-
-    const unsubscribe = onSnapshot(
-      shiftsQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs.map((document) =>
-          mapShiftDoc(document.id, document.data()),
-        );
-        setAllShifts(mapped);
-        setLoading(false);
-        setError('');
-      },
-      (snapshotError) => {
-        console.error('useEmployeeShifts', snapshotError);
-        setAllShifts([]);
-        setLoading(false);
-        setError('Could not load shifts.');
-      },
-    );
-
-    return () => unsubscribe();
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, COLLECTIONS.SHIFTS),
+          where('employeeId', '==', code),
+          where('date', '>=', minDate),
+          where('date', '<=', maxDate),
+        ),
+      );
+      setAllShifts(
+        snapshot.docs.map((document) => mapShiftDoc(document.id, document.data())),
+      );
+    } catch (fetchError) {
+      console.error('useEmployeeShifts', fetchError);
+      setAllShifts([]);
+      setError('Could not load shifts.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [code, maxDate, minDate]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void refresh();
+  }, [refresh]);
 
   const weekShifts = useMemo(() => {
     return allShifts
@@ -144,6 +151,8 @@ export function useEmployeeShifts({
     nextScheduledShift,
     shiftsByDate,
     loading,
+    refreshing,
     error,
+    refresh,
   };
 }

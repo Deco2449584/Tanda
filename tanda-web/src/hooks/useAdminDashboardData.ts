@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Timestamp,
   collection,
-  onSnapshot,
+  getDocs,
   orderBy,
   query,
   where,
@@ -50,110 +50,84 @@ export function useAdminDashboardData() {
     leaveRequests: true,
     attendance: true,
   });
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
   const week = useMemo(() => buildWeekRange(new Date()), []);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!db) {
       setLoading({ shifts: false, leaveRequests: false, attendance: false });
+      setRefreshing(false);
       return;
     }
 
-    let shiftsReady = false;
-    let leaveReady = false;
-    let attendanceReady = false;
-
-    function updateLoading() {
-      if (shiftsReady && leaveReady && attendanceReady) {
-        setLoading({ shifts: false, leaveRequests: false, attendance: false });
-      }
+    if (!initialLoadDoneRef.current) {
+      setLoading({ shifts: true, leaveRequests: true, attendance: true });
+    } else {
+      setRefreshing(true);
     }
 
-    const shiftsQuery = query(
-      collection(db, COLLECTIONS.SHIFTS),
-      where('date', '>=', week.start),
-      where('date', '<=', week.end),
-      orderBy('date', 'asc'),
-    );
-
-    const unsubscribeShifts = onSnapshot(
-      shiftsQuery,
-      (snapshot) => {
-        setShifts(
-          snapshot.docs.map((document) =>
-            mapShiftDoc(document.id, document.data()),
-          ),
-        );
-        shiftsReady = true;
-        updateLoading();
-      },
-      (error) => {
-        console.error('useAdminDashboardData shifts', error);
-        shiftsReady = true;
-        updateLoading();
-      },
-    );
-
-    const leaveQuery = query(
-      collection(db, COLLECTIONS.LEAVE_REQUESTS),
-      where('status', '==', 'Pending'),
-    );
-
-    const unsubscribeLeave = onSnapshot(
-      leaveQuery,
-      (snapshot) => {
-        setLeaveRequests(
-          snapshot.docs.map((document) =>
-            mapLeaveRequestDoc(document.id, document.data()),
-          ),
-        );
-        leaveReady = true;
-        updateLoading();
-      },
-      (error) => {
-        console.error('useAdminDashboardData leaveRequests', error);
-        leaveReady = true;
-        updateLoading();
-      },
-    );
-
     const { start, end } = getTodayTimestampBounds();
-    const attendanceQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('timestampServer', '>=', start),
-      where('timestampServer', '<=', end),
-    );
 
-    const unsubscribeAttendance = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        setTodayAttendance(
-          snapshot.docs.map((document) =>
-            mapAttendanceDoc(document.id, document.data()),
+    try {
+      const [shiftsSnapshot, leaveSnapshot, attendanceSnapshot] = await Promise.all([
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.SHIFTS),
+            where('date', '>=', week.start),
+            where('date', '<=', week.end),
+            orderBy('date', 'asc'),
           ),
-        );
-        attendanceReady = true;
-        updateLoading();
-      },
-      (error) => {
-        console.error('useAdminDashboardData attendance', error);
-        attendanceReady = true;
-        updateLoading();
-      },
-    );
+        ),
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.LEAVE_REQUESTS),
+            where('status', '==', 'Pending'),
+          ),
+        ),
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+            where('timestampServer', '>=', start),
+            where('timestampServer', '<=', end),
+            orderBy('timestampServer', 'asc'),
+          ),
+        ),
+      ]);
 
-    return () => {
-      unsubscribeShifts();
-      unsubscribeLeave();
-      unsubscribeAttendance();
-    };
+      setShifts(
+        shiftsSnapshot.docs.map((document) =>
+          mapShiftDoc(document.id, document.data()),
+        ),
+      );
+      setLeaveRequests(
+        leaveSnapshot.docs.map((document) =>
+          mapLeaveRequestDoc(document.id, document.data()),
+        ),
+      );
+      setTodayAttendance(
+        attendanceSnapshot.docs.map((document) =>
+          mapAttendanceDoc(document.id, document.data()),
+        ),
+      );
+    } catch (error) {
+      console.error('useAdminDashboardData', error);
+    } finally {
+      setLoading({ shifts: false, leaveRequests: false, attendance: false });
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [week.end, week.start]);
 
-  const todayShifts = useMemo(() => filterTodayShifts(shifts), [shifts]);
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void refresh();
+  }, [refresh]);
 
-  const pendingPermits = useMemo(
-    () => countPendingLeaveRequests(leaveRequests),
-    [leaveRequests],
+  const todayShifts = useMemo(
+    () => filterTodayShifts(shifts, settings.timeZone),
+    [settings.timeZone, shifts],
   );
 
   const lateAlerts = useMemo(
@@ -165,23 +139,33 @@ export function useAdminDashboardData() {
     [settings.attendancePolicy, settings.timeZone, todayAttendance, todayShifts],
   );
 
-  const shiftLoadData = useMemo<ShiftLoadDatum[]>(
-    () => buildShiftLoadByDepartment(todayShifts),
-    [todayShifts],
+  const pendingLeaveCount = useMemo(
+    () => countPendingLeaveRequests(leaveRequests),
+    [leaveRequests],
   );
 
-  const weeklyHoursData = useMemo<WeeklyHoursDatum[]>(
+  const weeklyHours: WeeklyHoursDatum[] = useMemo(
     () => buildWeeklyHoursData(shifts, week.days),
     [shifts, week.days],
   );
 
+  const shiftLoadByDepartment: ShiftLoadDatum[] = useMemo(
+    () => buildShiftLoadByDepartment(shifts),
+    [shifts],
+  );
+
   return {
-    pendingPermits,
-    lateAlerts,
-    shiftLoadData,
-    weeklyHoursData,
-    todayShifts,
+    week,
+    shifts,
+    leaveRequests,
     todayAttendance,
+    todayShifts,
+    lateAlerts,
+    pendingLeaveCount,
+    weeklyHours,
+    shiftLoadByDepartment,
     loading,
+    refreshing,
+    refresh,
   };
 }

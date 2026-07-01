@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   collection,
+  getDocs,
   limit,
-  onSnapshot,
   orderBy,
   query,
   where,
@@ -29,109 +29,85 @@ export function useDashboardData(dateRange: DateRange) {
     leaveRequests: true,
     attendance: true,
   });
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!db) {
       setLoading({ shifts: false, leaveRequests: false, attendance: false });
+      setRefreshing(false);
       return;
     }
 
-    let shiftsReady = false;
-    let leaveReady = false;
-    let attendanceReady = false;
-
-    function updateLoading() {
-      if (shiftsReady && leaveReady && attendanceReady) {
-        setLoading({ shifts: false, leaveRequests: false, attendance: false });
-      }
+    if (!initialLoadDoneRef.current) {
+      setLoading({ shifts: true, leaveRequests: true, attendance: true });
+    } else {
+      setRefreshing(true);
     }
 
-    const shiftsQuery = query(
-      collection(db, COLLECTIONS.SHIFTS),
-      where('date', '>=', dateRange.start),
-      where('date', '<=', dateRange.end),
-      orderBy('date', 'asc'),
-    );
-
-    const unsubscribeShifts = onSnapshot(
-      shiftsQuery,
-      (snapshot) => {
-        setShifts(
-          snapshot.docs.map((document) =>
-            mapShiftDoc(document.id, document.data()),
+    try {
+      const bounds = toFirestoreRangeBounds(dateRange);
+      const [shiftsSnapshot, leaveSnapshot, attendanceSnapshot] = await Promise.all([
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.SHIFTS),
+            where('date', '>=', dateRange.start),
+            where('date', '<=', dateRange.end),
+            orderBy('date', 'asc'),
           ),
-        );
-        shiftsReady = true;
-        updateLoading();
-      },
-      (error) => {
-        console.error('useDashboardData shifts', error);
-        shiftsReady = true;
-        updateLoading();
-      },
-    );
-
-    const leaveQuery = query(
-      collection(db, COLLECTIONS.LEAVE_REQUESTS),
-      where('status', '==', 'Pending'),
-    );
-
-    const unsubscribeLeave = onSnapshot(
-      leaveQuery,
-      (snapshot) => {
-        setLeaveRequests(
-          snapshot.docs.map((document) =>
-            mapLeaveRequestDoc(document.id, document.data()),
+        ),
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.LEAVE_REQUESTS),
+            where('status', '==', 'Pending'),
           ),
-        );
-        leaveReady = true;
-        updateLoading();
-      },
-      (error) => {
-        console.error('useDashboardData leaveRequests', error);
-        leaveReady = true;
-        updateLoading();
-      },
-    );
-
-    const { start, end } = toFirestoreRangeBounds(dateRange);
-    const attendanceQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('timestampServer', '>=', start),
-      where('timestampServer', '<=', end),
-      orderBy('timestampServer', 'desc'),
-      limit(5000),
-    );
-
-    const unsubscribeAttendance = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        setAttendance(
-          snapshot.docs.map((document) =>
-            mapAttendanceDoc(document.id, document.data()),
+        ),
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+            where('timestampServer', '>=', bounds.start),
+            where('timestampServer', '<=', bounds.end),
+            orderBy('timestampServer', 'desc'),
+            limit(5000),
           ),
-        );
-        attendanceReady = true;
-        updateLoading();
-      },
-      (error) => {
-        console.error('useDashboardData attendance', error);
-        attendanceReady = true;
-        updateLoading();
-      },
-    );
+        ),
+      ]);
 
-    return () => {
-      unsubscribeShifts();
-      unsubscribeLeave();
-      unsubscribeAttendance();
-    };
+      setShifts(
+        shiftsSnapshot.docs.map((document) =>
+          mapShiftDoc(document.id, document.data()),
+        ),
+      );
+      setLeaveRequests(
+        leaveSnapshot.docs.map((document) =>
+          mapLeaveRequestDoc(document.id, document.data()),
+        ),
+      );
+      setAttendance(
+        attendanceSnapshot.docs.map((document) =>
+          mapAttendanceDoc(document.id, document.data()),
+        ),
+      );
+    } catch (error) {
+      console.error('useDashboardData', error);
+    } finally {
+      setLoading({ shifts: false, leaveRequests: false, attendance: false });
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [dateRange.end, dateRange.start]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void refresh();
+  }, [refresh]);
 
   return {
     shifts,
     leaveRequests,
     attendance,
     loading,
+    refreshing,
+    refresh,
   };
 }

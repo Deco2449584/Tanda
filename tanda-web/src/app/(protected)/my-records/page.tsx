@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import {
   useEmployeeAttendance,
   type EmployeeRecordsRange,
@@ -23,7 +24,9 @@ export default function MyRecordsPage() {
   const {
     records: displayRecords,
     loading: recordsLoading,
+    refreshing,
     error: recordsError,
+    refresh,
   } = useEmployeeAttendance({ employeeCode, displayRange: recordsRange });
 
   const loading = authLoading || employeeLoading || recordsLoading;
@@ -33,6 +36,13 @@ export default function MyRecordsPage() {
       <PageHeader
         title="My attendance records"
         description="Check-ins, check-outs, and photo verification for your shifts."
+        actions={
+          <RefreshButton
+            onClick={refresh}
+            refreshing={refreshing}
+            disabled={loading}
+          />
+        }
       />
 
       {employeeError && !employeeLoading && (

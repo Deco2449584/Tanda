@@ -5,7 +5,6 @@ import {
   deleteField,
   doc,
   getDocs,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -24,25 +23,17 @@ import {
 } from '@/lib/portal/pin';
 import type { PortalClient } from '@/lib/types/portal-client';
 
-export function subscribePortalClients(
-  onData: (clients: PortalClient[]) => void,
-  onError?: (error: Error) => void,
-): () => void {
+export async function fetchPortalClients(): Promise<PortalClient[]> {
   if (!db) {
-    onError?.(new Error('Firestore is not available.'));
-    return () => {};
+    throw new Error('Firestore is not available.');
   }
 
-  return onSnapshot(
+  const snapshot = await getDocs(
     query(collection(db, COLLECTIONS.PORTAL_CLIENTS), orderBy('companyName')),
-    (snapshot) => {
-      onData(
-        snapshot.docs.map((document) =>
-          mapPortalClientDoc(document.id, document.data()),
-        ),
-      );
-    },
-    (error) => onError?.(error),
+  );
+
+  return snapshot.docs.map((document) =>
+    mapPortalClientDoc(document.id, document.data()),
   );
 }
 

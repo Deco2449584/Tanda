@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   collection,
+  getDocs,
   limit,
-  onSnapshot,
   orderBy,
   query,
   where,
@@ -16,6 +16,7 @@ import { filterRecordsByEmployeeName } from '@/components/attendance/AttendanceT
 import { WorkedShiftsTable } from '@/components/worked-shifts/WorkedShiftsTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import {
   filterSessionsByDateRange,
   mapSessionsToRows,
@@ -95,7 +96,9 @@ function EmployeeWorkedShiftsView() {
   const {
     records: allRecords,
     loading: recordsLoading,
+    refreshing,
     error: recordsError,
+    refresh,
   } = useEmployeeAttendance({ employeeCode, displayRange: recordsRange });
 
   const employeePhotoUrl = employee?.photoUrl ?? '';
@@ -150,18 +153,25 @@ function EmployeeWorkedShiftsView() {
               ))}
             </div>
 
-            <AttendanceToolbarButton
-              onClick={() =>
-                exportWorkedShiftsToCsv(rows, {
-                  [employeeCode]: employeeCode,
-                })
-              }
-              disabled={loading || rows.length === 0}
-              title="Export worked shifts (CSV)"
-              aria-label="Export worked shifts (CSV)"
-            >
-              <Download className="h-4 w-4" strokeWidth={2} />
-            </AttendanceToolbarButton>
+            <div className="flex items-center gap-2">
+              <RefreshButton
+                onClick={refresh}
+                refreshing={refreshing}
+                disabled={loading}
+              />
+              <AttendanceToolbarButton
+                onClick={() =>
+                  exportWorkedShiftsToCsv(rows, {
+                    [employeeCode]: employeeCode,
+                  })
+                }
+                disabled={loading || rows.length === 0}
+                title="Export worked shifts (CSV)"
+                aria-label="Export worked shifts (CSV)"
+              >
+                <Download className="h-4 w-4" strokeWidth={2} />
+              </AttendanceToolbarButton>
+            </div>
           </div>
 
           <WorkedShiftsTable rows={rows} loading={loading} />
@@ -183,42 +193,50 @@ function AdminWorkedShiftsView() {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => {
+  const loadRecords = useCallback(async () => {
     if (!db) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
-    const { start, end } = toFirestoreRangeBounds(dateRange);
-
-    const attendanceQuery = query(
-      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-      where('timestampServer', '>=', start),
-      where('timestampServer', '<=', end),
-      orderBy('timestampServer', 'desc'),
-      limit(5000),
-    );
-
-    const unsubscribe = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs.map((document) =>
+    try {
+      const { start, end } = toFirestoreRangeBounds(dateRange);
+      const snapshot = await getDocs(
+        query(
+          collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+          where('timestampServer', '>=', start),
+          where('timestampServer', '<=', end),
+          orderBy('timestampServer', 'desc'),
+          limit(5000),
+        ),
+      );
+      setRecords(
+        snapshot.docs.map((document) =>
           mapAttendanceDoc(document.id, document.data()),
-        );
-        setRecords(mapped);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('AdminWorkedShiftsView', error);
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
+        ),
+      );
+    } catch (error) {
+      console.error('AdminWorkedShiftsView', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [dateRange]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void loadRecords();
+  }, [loadRecords]);
 
   const departmentOptions = useMemo(
     () => buildDepartmentFilterOptions(departmentNames),
@@ -326,7 +344,13 @@ function AdminWorkedShiftsView() {
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         actions={
-          <AttendanceToolbarButton
+          <>
+            <RefreshButton
+              onClick={loadRecords}
+              refreshing={refreshing}
+              disabled={pageLoading}
+            />
+            <AttendanceToolbarButton
             onClick={() =>
               exportWorkedShiftsToCsv(rows, employeeCodes, dateRange)
             }
@@ -336,6 +360,7 @@ function AdminWorkedShiftsView() {
           >
             <Download className="h-4 w-4" strokeWidth={2} />
           </AttendanceToolbarButton>
+          </>
         }
       />
 

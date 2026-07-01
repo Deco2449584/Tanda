@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { LeaveRequestHistoryTable } from '@/components/leave-requests/LeaveRequestHistoryTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import { NewLeaveRequestForm } from '@/components/leave-requests/NewLeaveRequestForm';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -19,42 +20,51 @@ export default function MyRequestsPage() {
     useCurrentEmployee(user?.email);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => {
+  const loadRequests = useCallback(async () => {
     if (!db || !employee?.employeeId) {
       setRequests([]);
       setRequestsLoading(false);
+      initialLoadDoneRef.current = false;
       return;
     }
 
-    setRequestsLoading(true);
+    if (!initialLoadDoneRef.current) {
+      setRequestsLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
-    const requestsQuery = query(
-      collection(db, COLLECTIONS.LEAVE_REQUESTS),
-      where('employeeId', '==', employee.employeeId),
-    );
-
-    const unsubscribe = onSnapshot(
-      requestsQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs
-          .map((document) => mapLeaveRequestDoc(document.id, document.data()))
-          .sort((a, b) => {
-            const aTime = a.createdAt?.toMillis() ?? 0;
-            const bTime = b.createdAt?.toMillis() ?? 0;
-            return bTime - aTime;
-          });
-        setRequests(mapped);
-        setRequestsLoading(false);
-      },
-      () => {
-        setRequests([]);
-        setRequestsLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, COLLECTIONS.LEAVE_REQUESTS),
+          where('employeeId', '==', employee.employeeId),
+        ),
+      );
+      const mapped = snapshot.docs
+        .map((document) => mapLeaveRequestDoc(document.id, document.data()))
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toMillis() ?? 0;
+          const bTime = b.createdAt?.toMillis() ?? 0;
+          return bTime - aTime;
+        });
+      setRequests(mapped);
+    } catch {
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
   }, [employee?.employeeId]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    void loadRequests();
+  }, [loadRequests]);
 
   const loading = authLoading || employeeLoading;
 
@@ -65,7 +75,16 @@ export default function MyRequestsPage() {
 
   return (
     <PageContent className="space-y-6">
-      <PageHeader title="My leave" />
+      <PageHeader
+        title="My leave"
+        actions={
+          <RefreshButton
+            onClick={loadRequests}
+            refreshing={refreshing}
+            disabled={loading || requestsLoading}
+          />
+        }
+      />
 
       {employeeError && !loading && (
         <p className="rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
@@ -77,6 +96,7 @@ export default function MyRequestsPage() {
         <NewLeaveRequestForm
           employeeId={employee?.employeeId ?? ''}
           disabled={formDisabled}
+          onSubmitted={() => void loadRequests()}
         />
 
         <LeaveRequestHistoryTable

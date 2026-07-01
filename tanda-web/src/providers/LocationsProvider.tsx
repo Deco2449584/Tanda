@@ -2,20 +2,24 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { subscribeLocations } from '@/lib/locations/locations-service';
+import { fetchLocations } from '@/lib/locations/locations-service';
 import type { Location } from '@/lib/types/location';
 
 interface LocationsContextValue {
   locations: Location[];
   activeLocations: Location[];
   loading: boolean;
+  refreshing: boolean;
   error: string;
+  refresh: () => Promise<void>;
 }
 
 const LocationsContext = createContext<LocationsContextValue | null>(null);
@@ -23,23 +27,36 @@ const LocationsContext = createContext<LocationsContextValue | null>(null);
 export function LocationsProvider({ children }: { children: ReactNode }) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const initialLoadDoneRef = useRef(false);
+
+  const refresh = useCallback(async () => {
+    if (!initialLoadDoneRef.current) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+    setError('');
+
+    try {
+      setLocations(await fetchLocations());
+    } catch (fetchError) {
+      setError(
+        fetchError instanceof Error
+          ? fetchError.message
+          : 'Could not load locations.',
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      initialLoadDoneRef.current = true;
+    }
+  }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeLocations(
-      (data) => {
-        setLocations(data);
-        setLoading(false);
-        setError('');
-      },
-      (subscribeError) => {
-        setLoading(false);
-        setError(subscribeError.message);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
+    void refresh();
+  }, [refresh]);
 
   const activeLocations = useMemo(
     () => locations.filter((location) => location.active),
@@ -51,9 +68,11 @@ export function LocationsProvider({ children }: { children: ReactNode }) {
       locations,
       activeLocations,
       loading,
+      refreshing,
       error,
+      refresh,
     }),
-    [locations, activeLocations, loading, error],
+    [locations, activeLocations, loading, refreshing, error, refresh],
   );
 
   return (
