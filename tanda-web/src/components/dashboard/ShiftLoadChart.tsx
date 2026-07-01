@@ -14,6 +14,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Ca
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
   CHART_AXIS_TICK,
+  CHART_BAR_CURSOR,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
   COLOR_HORAS_NORMAL_FALLBACK,
@@ -102,7 +103,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
                 contentStyle={CHART_TOOLTIP_STYLE}
                 labelStyle={{ color: '#fafafa' }}
                 itemStyle={{ color: '#e4e4e7' }}
-                cursor={{ fill: 'color-mix(in srgb, var(--brand-primary) 8%, transparent)' }}
+                cursor={CHART_BAR_CURSOR}
               />
               <Bar
                 dataKey="turnos"

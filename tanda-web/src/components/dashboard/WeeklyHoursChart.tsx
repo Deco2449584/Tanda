@@ -13,6 +13,8 @@ import {
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import {
+  CHART_ACTIVE_DOT,
+  CHART_AREA_CURSOR,
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
@@ -104,6 +106,7 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
                 contentStyle={CHART_TOOLTIP_STYLE}
                 labelStyle={{ color: '#fafafa' }}
                 itemStyle={{ color: '#e4e4e7' }}
+                cursor={CHART_AREA_CURSOR}
                 formatter={(value) => [`${value} h`, 'Scheduled hours']}
               />
               <Area
@@ -115,10 +118,8 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
                 fill="url(#fillHorasProgramadas)"
                 dot={{ r: 3, fill: chartColor }}
                 activeDot={{
-                  r: 5,
+                  ...CHART_ACTIVE_DOT,
                   fill: chartColor,
-                  stroke: '#fff',
-                  strokeWidth: 2,
                 }}
               />
             </AreaChart>

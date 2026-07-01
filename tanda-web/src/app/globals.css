@@ -186,3 +186,8 @@ select,
 .portal-gallery .bg-zinc-950 {
   background-color: #f1f5f9;
 }
+
+/* Recharts: default hover cursor is a light band — keep it subtle on dark charts */
+.recharts-tooltip-cursor {
+  fill: rgba(255, 255, 255, 0.06) !important;
+}

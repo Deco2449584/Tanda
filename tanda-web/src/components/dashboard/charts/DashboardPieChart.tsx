@@ -111,6 +111,7 @@ export function DashboardPieChart({
                 contentStyle={CHART_TOOLTIP_STYLE}
                 labelStyle={{ color: '#fafafa' }}
                 itemStyle={{ color: '#e4e4e7' }}
+                cursor={false}
                 formatter={(value, _name, item) => [
                   formatValue(Number(value)),
                   item?.payload?.name ?? 'Value',

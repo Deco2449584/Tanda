@@ -13,6 +13,8 @@ import {
 import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 import type { NamedValueDatum, WeeklyHoursDatum } from '@/lib/dashboard/types';
 import {
+  CHART_ACTIVE_DOT,
+  CHART_AREA_CURSOR,
   CHART_AXIS_TICK,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
@@ -82,6 +84,7 @@ export function DashboardAreaChart({
             contentStyle={CHART_TOOLTIP_STYLE}
             labelStyle={{ color: '#fafafa' }}
             itemStyle={{ color: '#e4e4e7' }}
+            cursor={CHART_AREA_CURSOR}
             formatter={(value) => [formatValue(Number(value)), valueLabel]}
           />
           <Area
@@ -93,10 +96,8 @@ export function DashboardAreaChart({
             fill={`url(#${gradientId})`}
             dot={{ r: 3, fill: color }}
             activeDot={{
-              r: 5,
+              ...CHART_ACTIVE_DOT,
               fill: color,
-              stroke: '#fff',
-              strokeWidth: 2,
             }}
           />
         </AreaChart>

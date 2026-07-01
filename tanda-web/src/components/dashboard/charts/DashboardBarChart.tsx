@@ -16,6 +16,7 @@ import { COLOR_HORAS_NORMAL_FALLBACK } from '../chart-theme';
 import type { NamedValueDatum } from '@/lib/dashboard/types';
 import {
   CHART_AXIS_TICK,
+  CHART_BAR_CURSOR,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
 } from '../chart-theme';
@@ -110,6 +111,7 @@ export function DashboardBarChart({
             contentStyle={CHART_TOOLTIP_STYLE}
             labelStyle={{ color: '#fafafa' }}
             itemStyle={{ color: '#e4e4e7' }}
+            cursor={CHART_BAR_CURSOR}
             formatter={(value) => [formatValue(Number(value)), valueLabel]}
           />
           <Bar

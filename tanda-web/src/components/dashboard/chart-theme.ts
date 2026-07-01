@@ -8,6 +8,24 @@ export const CHART_TOOLTIP_STYLE = {
   fontSize: '12px',
 } as const;
 
+/** Hover band behind bar columns (Recharts default is light gray/white). */
+export const CHART_BAR_CURSOR = {
+  fill: 'rgba(255, 255, 255, 0.06)',
+} as const;
+
+/** Vertical hover guide for area/line charts. */
+export const CHART_AREA_CURSOR = {
+  stroke: 'rgba(161, 168, 179, 0.35)',
+  strokeWidth: 1,
+  strokeDasharray: '4 4',
+} as const;
+
+export const CHART_ACTIVE_DOT = {
+  r: 5,
+  stroke: 'rgba(255, 255, 255, 0.35)',
+  strokeWidth: 2,
+} as const;
+
 export const CHART_AXIS_TICK = { fill: '#cbcbcb', fontSize: 11 } as const;
 
 export const CHART_GRID_STROKE = 'rgba(203, 203, 203, 0.12)';

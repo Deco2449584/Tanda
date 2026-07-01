@@ -14,6 +14,7 @@ import {
 import type { GroupedBarDatum } from '@/lib/dashboard/types';
 import {
   CHART_AXIS_TICK,
+  CHART_BAR_CURSOR,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
   COLOR_HORAS_EXTRA_FALLBACK,
@@ -85,6 +86,7 @@ export function DashboardGroupedBarChart({
             contentStyle={CHART_TOOLTIP_STYLE}
             labelStyle={{ color: '#fafafa' }}
             itemStyle={{ color: '#e4e4e7' }}
+            cursor={CHART_BAR_CURSOR}
             formatter={(value, name) => [`${value} h`, name]}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: '#a1a8b3' }} />
