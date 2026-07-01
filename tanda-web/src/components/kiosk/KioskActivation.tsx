@@ -15,7 +15,7 @@ import type { KioskDeviceDetails, KioskDeviceSession } from '@/lib/types/kiosk-d
 import type { Location } from '@/lib/types/location';
 
 interface KioskActivationProps {
-  defaultMode: 'tablet' | 'mobile';
+  mode: 'tablet' | 'mobile';
   defaultLocationId: string;
   defaultName: string;
   onActivated: (session: KioskDeviceSession) => void;
@@ -24,14 +24,13 @@ interface KioskActivationProps {
 }
 
 export function KioskActivation({
-  defaultMode,
+  mode,
   defaultLocationId,
   defaultName,
   onActivated,
   onCancel,
   cancelLabel = 'Cancel',
 }: KioskActivationProps) {
-  const [mode, setMode] = useState<'tablet' | 'mobile'>(defaultMode);
   const isTablet = mode === 'tablet';
   const [locations, setLocations] = useState<Location[]>([]);
   const [details, setDetails] = useState<KioskDeviceDetails>({});
@@ -165,40 +164,9 @@ export function KioskActivation({
           </div>
           <p className="mt-2 text-sm text-zinc-400">
             {isTablet
-              ? 'This device will run in locked kiosk mode. A PIN will be required to exit.'
-              : 'Confirm the warehouse and a name to start clocking in from this device.'}
+              ? 'This shared tablet will run in locked kiosk mode. A PIN will be required to exit.'
+              : 'Confirm the warehouse and a name to clock in from this device.'}
           </p>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => setMode('tablet')}
-            className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-center transition disabled:opacity-60 ${
-              isTablet
-                ? 'border-primary bg-primary/15 text-white'
-                : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Lock className="h-4 w-4" />
-            <span className="text-xs font-semibold">Shared tablet</span>
-            <span className="text-[10px] leading-tight opacity-80">Locked · PIN to exit</span>
-          </button>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => setMode('mobile')}
-            className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-center transition disabled:opacity-60 ${
-              !isTablet
-                ? 'border-primary bg-primary/15 text-white'
-                : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white'
-            }`}
-          >
-            <MonitorSmartphone className="h-4 w-4" />
-            <span className="text-xs font-semibold">This device</span>
-            <span className="text-[10px] leading-tight opacity-80">No lock · personal</span>
-          </button>
         </div>
 
         <div className="mt-5 space-y-4">

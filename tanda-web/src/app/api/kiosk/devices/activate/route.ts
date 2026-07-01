@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid device token.' }, { status: 400 });
     }
 
-    const type: KioskDeviceType = body.type === 'mobile' ? 'mobile' : 'tablet';
+    const type: KioskDeviceType = auth.isKioskAccount ? 'tablet' : 'mobile';
 
     const name = body.name?.trim() ?? '';
     if (!name) {
