@@ -1,4 +1,7 @@
-﻿import { formatShortDate } from '@/lib/employee-dashboard/format';
+﻿'use client';
+
+import { ShiftConfirmationActions } from '@/components/shifts/ShiftConfirmationActions';
+import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { getShiftStatusMeta } from '@/lib/employee-dashboard/shift-status-styles';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatTimeLabel } from '@/lib/schedule/week';
@@ -39,6 +42,8 @@ export function ShiftListCard({ shift }: ShiftListCardProps) {
       <p className="mt-4 text-base font-semibold text-foreground">
         {formatTimeLabel(shift.startTime)} – {formatTimeLabel(shift.endTime)}
       </p>
+
+      <ShiftConfirmationActions shift={shift} />
     </article>
   );
 }

@@ -1,5 +1,7 @@
 export type ShiftStatus = 'scheduled' | 'completed' | 'absent';
 
+export type ShiftConfirmationStatus = 'pending' | 'confirmed' | 'declined';
+
 export interface ShiftFirestore {
   employeeId: string;
   date: string;
@@ -11,10 +13,14 @@ export interface ShiftFirestore {
   locationCitySnapshot?: string;
   status: ShiftStatus;
   note?: string;
+  confirmationStatus?: ShiftConfirmationStatus;
+  confirmationNote?: string;
+  confirmedAt?: unknown;
 }
 
-export interface Shift extends ShiftFirestore {
+export interface Shift extends Omit<ShiftFirestore, 'confirmedAt'> {
   id: string;
+  confirmedAt?: number;
 }
 
 export interface AssignShiftInput {

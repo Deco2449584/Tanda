@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronUp,
 } from 'lucide-react';
+import { ShiftConfirmationBadge } from '@/components/shifts/ShiftConfirmationActions';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { getShiftStatusMeta } from '@/lib/employee-dashboard/shift-status-styles';
 import { compareInputDates, normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
@@ -197,6 +198,11 @@ export function EmployeeWeeklySchedule({
                       <StatusIcon className="h-3 w-3 shrink-0" aria-hidden />
                       {meta.label}
                     </span>
+                    {shift.status === 'scheduled' && shift.confirmationStatus ? (
+                      <div className="mt-2">
+                        <ShiftConfirmationBadge shift={shift} />
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}

@@ -1,5 +1,6 @@
 ﻿import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
+import { ShiftConfirmationBadge } from '@/components/shifts/ShiftConfirmationActions';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShiftTimeRangeShort, formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
@@ -115,6 +116,16 @@ export function ShiftCard({
               Scheduled clock-in {formatTimeLabel(shift.startTime)}
             </p>
           )}
+          {shift.status === 'scheduled' && shift.confirmationStatus ? (
+            <div className="mt-1.5">
+              <ShiftConfirmationBadge shift={shift} />
+              {shift.confirmationStatus === 'declined' && shift.confirmationNote ? (
+                <p className={`mt-1 text-[10px] ${styles.subtext}`}>
+                  {shift.confirmationNote}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {shift.status === 'completed' && (
             <p className={`mt-1 text-[10px] ${styles.subtext}`}>
               Clock-in {formatTimeLabel(shift.startTime)} — Clock-out{' '}

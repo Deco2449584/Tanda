@@ -43,8 +43,8 @@ export function buildShiftNotificationContent(input: {
     type: 'shift_assigned',
     title: 'New shift assigned',
     body: detail
-      ? `You have a new shift on ${detail}.`
-      : 'You have a new shift on your schedule.',
+      ? `You have a new shift on ${detail}. Open My schedule to confirm if you can attend.`
+      : 'You have a new shift on your schedule. Open My schedule to confirm if you can attend.',
     href: '/my-schedule',
     metadata: { shiftId: input.shiftId },
   };

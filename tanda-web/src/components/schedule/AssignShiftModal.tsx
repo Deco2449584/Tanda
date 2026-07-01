@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteField, doc, updateDoc } from 'firebase/firestore';
 import { X } from 'lucide-react';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { COLLECTIONS } from '@/lib/constants';
@@ -197,10 +197,15 @@ export function AssignShiftModal({
         locationNameSnapshot: selectedLocation?.name ?? '',
         locationCitySnapshot: selectedLocation?.city ?? '',
         status: 'scheduled' as const,
+        confirmationStatus: 'pending' as const,
       };
 
       if (isEditing && initialData.shiftId) {
-        await updateDoc(doc(db, COLLECTIONS.SHIFTS, initialData.shiftId), payload);
+        await updateDoc(doc(db, COLLECTIONS.SHIFTS, initialData.shiftId), {
+          ...payload,
+          confirmationNote: deleteField(),
+          confirmedAt: deleteField(),
+        });
 
         void notifyShiftChange({
           type: 'assigned',

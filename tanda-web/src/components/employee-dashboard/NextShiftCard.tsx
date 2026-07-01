@@ -1,6 +1,9 @@
+'use client';
+
 import { MapPin } from 'lucide-react';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
+import { ShiftConfirmationActions } from '@/components/shifts/ShiftConfirmationActions';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatTimeLabel } from '@/lib/schedule/week';
@@ -53,6 +56,7 @@ export function NextShiftCard({
               ) : (
                 <p className="text-xs text-subtle">Location not assigned</p>
               )}
+              <ShiftConfirmationActions shift={nextShift} compact />
             </div>
           ) : (
             <p className={`text-sm text-muted ${embedded ? '' : 'mt-3'}`}>
