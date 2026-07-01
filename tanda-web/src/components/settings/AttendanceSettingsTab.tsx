@@ -1,7 +1,8 @@
 'use client';
 
-import { Coffee, ShieldAlert, ShieldCheck, Timer } from 'lucide-react';
+import { Coffee, Landmark, ShieldAlert, ShieldCheck, Timer } from 'lucide-react';
 import type { CompanySettings } from '@/lib/types/company-settings';
+import { DEFAULT_PAYROLL_ACCOUNTING } from '@/lib/types/company-settings';
 
 interface AttendanceSettingsTabProps {
   draft: CompanySettings;
@@ -317,6 +318,104 @@ export function AttendanceSettingsTab({
           {saving ? 'Saving…' : 'Save attendance rules'}
         </button>
       ) : null}
+    </section>
+
+    <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+      <div className="flex items-start gap-3">
+        <div className="rounded-xl bg-emerald-500/15 p-2.5">
+          <Landmark className="h-5 w-5 text-emerald-400" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-white">Payroll accounting</h2>
+          <p className="mt-1 text-xs text-subtle">
+            Account codes used when exporting payroll journal CSV files for Excel or
+            your accounting system.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-xs text-subtle">Wages expense code</span>
+          <input
+            type="text"
+            value={
+              draft.payrollAccounting?.wagesExpenseAccountCode ??
+              DEFAULT_PAYROLL_ACCOUNTING.wagesExpenseAccountCode
+            }
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                payrollAccounting: {
+                  ...(draft.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING),
+                  wagesExpenseAccountCode: event.target.value,
+                },
+              })
+            }
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-subtle">Wages expense name</span>
+          <input
+            type="text"
+            value={
+              draft.payrollAccounting?.wagesExpenseAccountName ??
+              DEFAULT_PAYROLL_ACCOUNTING.wagesExpenseAccountName
+            }
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                payrollAccounting: {
+                  ...(draft.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING),
+                  wagesExpenseAccountName: event.target.value,
+                },
+              })
+            }
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-subtle">Wages payable code</span>
+          <input
+            type="text"
+            value={
+              draft.payrollAccounting?.wagesPayableAccountCode ??
+              DEFAULT_PAYROLL_ACCOUNTING.wagesPayableAccountCode
+            }
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                payrollAccounting: {
+                  ...(draft.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING),
+                  wagesPayableAccountCode: event.target.value,
+                },
+              })
+            }
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-subtle">Wages payable name</span>
+          <input
+            type="text"
+            value={
+              draft.payrollAccounting?.wagesPayableAccountName ??
+              DEFAULT_PAYROLL_ACCOUNTING.wagesPayableAccountName
+            }
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                payrollAccounting: {
+                  ...(draft.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING),
+                  wagesPayableAccountName: event.target.value,
+                },
+              })
+            }
+            className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary"
+          />
+        </label>
+      </div>
     </section>
     </div>
   );

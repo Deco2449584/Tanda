@@ -18,6 +18,7 @@ import type {
 const MODULE_LABELS: Record<AdminModuleKey, string> = {
   dashboard: 'Dashboard',
   attendance: 'Attendance',
+  payroll: 'Payroll',
   schedule: 'Schedule',
   employees: 'Employees',
   announcements: 'Announcements',

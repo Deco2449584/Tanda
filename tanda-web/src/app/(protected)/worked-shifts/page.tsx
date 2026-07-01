@@ -296,6 +296,16 @@ function AdminWorkedShiftsView() {
     return map;
   }, [employeesForFilters]);
 
+  const employeeHourlyRates = useMemo(() => {
+    const map: Record<string, number> = {};
+    employeesForFilters.forEach((employee) => {
+      if (employee.employeeId) {
+        map[employee.employeeId] = employee.hourlyRate ?? 0;
+      }
+    });
+    return map;
+  }, [employeesForFilters]);
+
   const employeePhotos = useMemo(() => {
     const map: Record<string, string> = {};
     employees.forEach((employee) => {
@@ -352,7 +362,12 @@ function AdminWorkedShiftsView() {
             />
             <AttendanceToolbarButton
             onClick={() =>
-              exportWorkedShiftsToCsv(rows, employeeCodes, dateRange)
+              exportWorkedShiftsToCsv(
+                rows,
+                employeeCodes,
+                dateRange,
+                employeeHourlyRates,
+              )
             }
             disabled={pageLoading || rows.length === 0}
             title="Export worked shifts (CSV)"

@@ -6,16 +6,23 @@ import {
 import { formatRecordDate } from '@/lib/attendance/format';
 import { compareInputDates } from '@/lib/dates/input-date';
 import { formatPayPeriodLabel, type DateRange } from '@/lib/attendance/date-range';
+import { getSiteKeyForEmployee } from '@/lib/dashboard/filter-dashboard-data';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
-import { DEFAULT_ATTENDANCE_BREAK } from '@/lib/types/company-settings';
+import {
+  DEFAULT_ATTENDANCE_BREAK,
+  DEFAULT_PAYROLL_ACCOUNTING,
+  type PayrollAccountingSettings,
+} from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
+import type { Location } from '@/lib/types/location';
 
 export interface PayrollReportRow {
   employeeId: string;
   name: string;
   department: string;
+  location: string;
   hourlyRate: number;
   daysWorked: number;
   totalHours: number;
@@ -37,6 +44,29 @@ export interface PayrollReport {
     grossPay: number;
   };
   incompleteSessions: number;
+}
+
+export interface PayrollGroupReportRow {
+  groupKey: string;
+  employeeCount: number;
+  totalHours: number;
+  grossPay: number;
+}
+
+export interface PayrollGroupReport {
+  companyName: string;
+  currency: string;
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  groupBy: 'location' | 'department';
+  rows: PayrollGroupReportRow[];
+  totals: {
+    employees: number;
+    totalHours: number;
+    grossPay: number;
+  };
 }
 
 function formatMoney(amount: number, currency: string): string {
@@ -87,6 +117,7 @@ export function buildPayrollReport(
     companyName?: string;
     currency?: string;
     attendanceBreak?: AttendanceBreakSettings;
+    locations?: Location[];
   },
 ): PayrollReport {
   const companyName = options?.companyName ?? COMPANY_NAME;
@@ -129,6 +160,9 @@ export function buildPayrollReport(
       employeeId: employee.employeeId,
       name: employee.name,
       department: employee.department?.trim() || '—',
+      location: options?.locations
+        ? getSiteKeyForEmployee(employee, options.locations)
+        : '—',
       hourlyRate,
       daysWorked,
       totalHours: roundedHours,
@@ -181,6 +215,202 @@ function headerRow(label: string, value: string | number): string {
   return `${csvCell(label)},${csvCell(value)}`;
 }
 
+function downloadCsv(filename: string, lines: string[]): void {
+  const csvContent = lines.join('\n');
+  const blob = new Blob([`\uFEFF${csvContent}`], {
+    type: 'text/csv;charset=utf-8;',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildGroupReport(
+  report: PayrollReport,
+  groupBy: 'location' | 'department',
+): PayrollGroupReport {
+  const grouped = new Map<
+    string,
+    { employeeIds: Set<string>; totalHours: number; grossPay: number }
+  >();
+
+  report.rows.forEach((row) => {
+    const key =
+      groupBy === 'location'
+        ? row.location || 'Unassigned'
+        : row.department || '—';
+    const existing = grouped.get(key) ?? {
+      employeeIds: new Set<string>(),
+      totalHours: 0,
+      grossPay: 0,
+    };
+    existing.employeeIds.add(row.employeeId);
+    existing.totalHours = Math.round((existing.totalHours + row.totalHours) * 100) / 100;
+    existing.grossPay = Math.round((existing.grossPay + row.grossPay) * 100) / 100;
+    grouped.set(key, existing);
+  });
+
+  const rows: PayrollGroupReportRow[] = [...grouped.entries()]
+    .map(([groupKey, value]) => ({
+      groupKey,
+      employeeCount: value.employeeIds.size,
+      totalHours: value.totalHours,
+      grossPay: value.grossPay,
+    }))
+    .sort((a, b) => a.groupKey.localeCompare(b.groupKey, 'en'));
+
+  return {
+    companyName: report.companyName,
+    currency: report.currency,
+    periodLabel: report.periodLabel,
+    periodStart: report.periodStart,
+    periodEnd: report.periodEnd,
+    generatedAt: report.generatedAt,
+    groupBy,
+    rows,
+    totals: {
+      employees: report.totals.employees,
+      totalHours: report.totals.totalHours,
+      grossPay: report.totals.grossPay,
+    },
+  };
+}
+
+export function buildPayrollByLocationReport(
+  report: PayrollReport,
+): PayrollGroupReport {
+  return buildGroupReport(report, 'location');
+}
+
+export function buildPayrollByDepartmentReport(
+  report: PayrollReport,
+): PayrollGroupReport {
+  return buildGroupReport(report, 'department');
+}
+
+function buildGroupCsvLines(groupReport: PayrollGroupReport): string[] {
+  const groupLabel =
+    groupReport.groupBy === 'location' ? 'Location' : 'Department';
+  const reportTitle =
+    groupReport.groupBy === 'location'
+      ? 'Payroll by location'
+      : 'Payroll by department';
+
+  const lines: string[] = [
+    headerRow('Report', reportTitle),
+    headerRow('Company', groupReport.companyName),
+    headerRow('Pay period', groupReport.periodLabel),
+    headerRow('Period start', groupReport.periodStart),
+    headerRow('Period end', groupReport.periodEnd),
+    headerRow('Currency', groupReport.currency),
+    headerRow('Generated at', groupReport.generatedAt),
+    '',
+    [
+      csvCell(groupLabel),
+      csvCell('Employees'),
+      csvCell('Hours worked'),
+      csvCell('Gross pay'),
+    ].join(','),
+  ];
+
+  groupReport.rows.forEach((row) => {
+    lines.push(
+      [
+        csvCell(row.groupKey),
+        csvCell(row.employeeCount),
+        csvCell(row.totalHours.toFixed(2)),
+        csvCell(row.grossPay.toFixed(2)),
+      ].join(','),
+    );
+  });
+
+  lines.push('');
+  lines.push(
+    [
+      csvCell('TOTALS'),
+      csvCell(groupReport.totals.employees),
+      csvCell(groupReport.totals.totalHours.toFixed(2)),
+      csvCell(groupReport.totals.grossPay.toFixed(2)),
+    ].join(','),
+  );
+
+  return lines;
+}
+
+function buildJournalCsvLines(
+  report: PayrollReport,
+  payrollAccounting: PayrollAccountingSettings,
+): string[] {
+  const locationReport = buildPayrollByLocationReport(report);
+  const journalDate = report.periodEnd;
+  const description = `Weekly payroll - ${report.periodLabel}`;
+
+  const lines: string[] = [
+    headerRow('Report', 'Payroll journal'),
+    headerRow('Company', report.companyName),
+    headerRow('Pay period', report.periodLabel),
+    headerRow('Journal date', journalDate),
+    headerRow('Generated at', report.generatedAt),
+    '',
+    [
+      csvCell('Date'),
+      csvCell('Account code'),
+      csvCell('Account name'),
+      csvCell('Description'),
+      csvCell('Debit'),
+      csvCell('Credit'),
+      csvCell('Tracking'),
+    ].join(','),
+  ];
+
+  locationReport.rows.forEach((row) => {
+    if (row.grossPay <= 0) return;
+    lines.push(
+      [
+        csvCell(journalDate),
+        csvCell(payrollAccounting.wagesExpenseAccountCode),
+        csvCell(payrollAccounting.wagesExpenseAccountName),
+        csvCell(description),
+        csvCell(row.grossPay.toFixed(2)),
+        csvCell(''),
+        csvCell(row.groupKey),
+      ].join(','),
+    );
+  });
+
+  if (report.totals.grossPay > 0) {
+    lines.push(
+      [
+        csvCell(journalDate),
+        csvCell(payrollAccounting.wagesPayableAccountCode),
+        csvCell(payrollAccounting.wagesPayableAccountName),
+        csvCell(description),
+        csvCell(''),
+        csvCell(report.totals.grossPay.toFixed(2)),
+        csvCell(''),
+      ].join(','),
+    );
+  }
+
+  lines.push('');
+  lines.push(
+    [
+      csvCell('TOTALS'),
+      csvCell(''),
+      csvCell(''),
+      csvCell(''),
+      csvCell(report.totals.grossPay.toFixed(2)),
+      csvCell(report.totals.grossPay.toFixed(2)),
+      csvCell(''),
+    ].join(','),
+  );
+
+  return lines;
+}
+
 function buildCsvLines(report: PayrollReport): string[] {
   const { currency } = report;
   const lines: string[] = [
@@ -196,6 +426,7 @@ function buildCsvLines(report: PayrollReport): string[] {
       csvCell('Employee ID'),
       csvCell('Employee name'),
       csvCell('Department'),
+      csvCell('Location'),
       csvCell('Hourly rate'),
       csvCell('Days worked'),
       csvCell('Hours worked'),
@@ -209,6 +440,7 @@ function buildCsvLines(report: PayrollReport): string[] {
         csvCell(row.employeeId),
         csvCell(row.name),
         csvCell(row.department),
+        csvCell(row.location),
         csvCell(row.hourlyRate.toFixed(2)),
         csvCell(row.daysWorked),
         csvCell(row.totalHours.toFixed(2)),
@@ -221,6 +453,7 @@ function buildCsvLines(report: PayrollReport): string[] {
   lines.push(
     [
       csvCell('TOTALS'),
+      csvCell(''),
       csvCell(''),
       csvCell(''),
       csvCell(''),
@@ -238,12 +471,14 @@ function buildCsvLines(report: PayrollReport): string[] {
       csvCell(''),
       csvCell(''),
       csvCell(''),
+      csvCell(''),
     ].join(','),
   );
   lines.push(
     [
       csvCell('Total gross payroll'),
       csvCell(formatMoney(report.totals.grossPay, currency)),
+      csvCell(''),
       csvCell(''),
       csvCell(''),
       csvCell(''),
@@ -265,30 +500,95 @@ function buildCsvLines(report: PayrollReport): string[] {
   return lines;
 }
 
+export interface PayrollExportOptions {
+  companyName?: string;
+  currency?: string;
+  attendanceBreak?: AttendanceBreakSettings;
+  locations?: Location[];
+  payrollAccounting?: PayrollAccountingSettings;
+}
+
+function buildReportForExport(
+  records: AttendanceRecord[],
+  employees: Employee[],
+  dateRange: DateRange,
+  options?: PayrollExportOptions,
+): PayrollReport | null {
+  const hasActiveEmployees = employees.some((employee) => employee.active);
+  if (!hasActiveEmployees) return null;
+
+  return buildPayrollReport(records, employees, dateRange, options);
+}
+
 export function exportPayrollReportToCsv(
   records: AttendanceRecord[],
   employees: Employee[],
   dateRange: DateRange,
-  options?: {
-    companyName?: string;
-    currency?: string;
-    attendanceBreak?: AttendanceBreakSettings;
-  },
+  options?: PayrollExportOptions,
 ): boolean {
-  const report = buildPayrollReport(records, employees, dateRange, options);
-  const hasActiveEmployees = employees.some((employee) => employee.active);
-  if (!hasActiveEmployees) return false;
+  const report = buildReportForExport(records, employees, dateRange, options);
+  if (!report) return false;
 
-  const csvContent = buildCsvLines(report).join('\n');
-  const blob = new Blob([`\uFEFF${csvContent}`], {
-    type: 'text/csv;charset=utf-8;',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `payroll-weekly-${report.periodStart}_${report.periodEnd}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadCsv(
+    `payroll-weekly-${report.periodStart}_${report.periodEnd}.csv`,
+    buildCsvLines(report),
+  );
+
+  return true;
+}
+
+export function exportPayrollByLocationToCsv(
+  records: AttendanceRecord[],
+  employees: Employee[],
+  dateRange: DateRange,
+  options?: PayrollExportOptions,
+): boolean {
+  const report = buildReportForExport(records, employees, dateRange, options);
+  if (!report) return false;
+
+  const groupReport = buildPayrollByLocationReport(report);
+  downloadCsv(
+    `payroll-by-location-${report.periodStart}_${report.periodEnd}.csv`,
+    buildGroupCsvLines(groupReport),
+  );
+
+  return true;
+}
+
+export function exportPayrollByDepartmentToCsv(
+  records: AttendanceRecord[],
+  employees: Employee[],
+  dateRange: DateRange,
+  options?: PayrollExportOptions,
+): boolean {
+  const report = buildReportForExport(records, employees, dateRange, options);
+  if (!report) return false;
+
+  const groupReport = buildPayrollByDepartmentReport(report);
+  downloadCsv(
+    `payroll-by-department-${report.periodStart}_${report.periodEnd}.csv`,
+    buildGroupCsvLines(groupReport),
+  );
+
+  return true;
+}
+
+export function exportPayrollJournalToCsv(
+  records: AttendanceRecord[],
+  employees: Employee[],
+  dateRange: DateRange,
+  options?: PayrollExportOptions,
+): boolean {
+  const report = buildReportForExport(records, employees, dateRange, options);
+  if (!report) return false;
+
+  const payrollAccounting =
+    options?.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING;
+
+  downloadCsv(
+    `payroll-journal-${report.periodStart}_${report.periodEnd}.csv`,
+    buildJournalCsvLines(report, payrollAccounting),
+  );
 
   return true;
 }

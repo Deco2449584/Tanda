@@ -1,6 +1,7 @@
 export const ADMIN_MODULE_KEYS = [
   'dashboard',
   'attendance',
+  'payroll',
   'schedule',
   'employees',
   'announcements',
@@ -16,6 +17,7 @@ export type AdminModuleKey = (typeof ADMIN_MODULE_KEYS)[number];
 
 export const ADMIN_EDIT_MODULE_KEYS = [
   'attendance',
+  'payroll',
   'schedule',
   'employees',
   'leaveRequests',
@@ -31,6 +33,7 @@ export type AdminEditModuleKey = (typeof ADMIN_EDIT_MODULE_KEYS)[number];
 export const ADMIN_MODULE_ACTIONS = {
   employees: ['create', 'update', 'delete', 'invite'] as const,
   attendance: ['create', 'update', 'delete'] as const,
+  payroll: ['export'] as const,
   schedule: ['create', 'update', 'delete'] as const,
   leaveRequests: ['manage', 'update', 'delete'] as const,
   announcements: ['publish', 'update', 'delete'] as const,

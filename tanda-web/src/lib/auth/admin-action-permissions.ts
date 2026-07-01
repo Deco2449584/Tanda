@@ -26,6 +26,9 @@ export const ADMIN_ACTION_LABELS: {
     update: 'Edit records',
     delete: 'Delete records',
   },
+  payroll: {
+    export: 'Export payroll reports (CSV)',
+  },
   schedule: {
     create: 'Assign shifts',
     update: 'Edit shifts',

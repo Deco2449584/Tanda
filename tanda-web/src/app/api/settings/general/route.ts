@@ -71,6 +71,9 @@ export async function PUT(request: Request) {
               .filter(Boolean),
           }
         : {}),
+      ...(body.payrollAccounting
+        ? { payrollAccounting: body.payrollAccounting }
+        : {}),
     };
 
     const wasEnabled = existingPushEnabled;

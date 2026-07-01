@@ -5,9 +5,11 @@ import {
   DEFAULT_ATTENDANCE_POLICY,
   DEFAULT_ATTENDANCE_RESTRICTIONS,
   DEFAULT_COMPANY_SETTINGS,
+  DEFAULT_PAYROLL_ACCOUNTING,
   type AttendanceBreakSettings,
   type AttendancePolicySettings,
   type AttendanceRestrictionsSettings,
+  type PayrollAccountingSettings,
   type CompanySettings,
 } from '@/lib/types/company-settings';
 import { db } from '@/lib/firebase';
@@ -96,6 +98,39 @@ function mapHelpTutorialCategories(
   return values.length > 0 ? values : undefined;
 }
 
+function mapPayrollAccounting(
+  data: Record<string, unknown>,
+): PayrollAccountingSettings {
+  const raw = data.payrollAccounting;
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_PAYROLL_ACCOUNTING;
+  }
+
+  const value = raw as Record<string, unknown>;
+  return {
+    wagesExpenseAccountCode:
+      typeof value.wagesExpenseAccountCode === 'string' &&
+      value.wagesExpenseAccountCode.trim()
+        ? value.wagesExpenseAccountCode.trim()
+        : DEFAULT_PAYROLL_ACCOUNTING.wagesExpenseAccountCode,
+    wagesExpenseAccountName:
+      typeof value.wagesExpenseAccountName === 'string' &&
+      value.wagesExpenseAccountName.trim()
+        ? value.wagesExpenseAccountName.trim()
+        : DEFAULT_PAYROLL_ACCOUNTING.wagesExpenseAccountName,
+    wagesPayableAccountCode:
+      typeof value.wagesPayableAccountCode === 'string' &&
+      value.wagesPayableAccountCode.trim()
+        ? value.wagesPayableAccountCode.trim()
+        : DEFAULT_PAYROLL_ACCOUNTING.wagesPayableAccountCode,
+    wagesPayableAccountName:
+      typeof value.wagesPayableAccountName === 'string' &&
+      value.wagesPayableAccountName.trim()
+        ? value.wagesPayableAccountName.trim()
+        : DEFAULT_PAYROLL_ACCOUNTING.wagesPayableAccountName,
+  };
+}
+
 function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
   return {
     timeZone:
@@ -123,6 +158,7 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
         ? data.shiftEmailNotificationsEnabled
         : DEFAULT_COMPANY_SETTINGS.shiftEmailNotificationsEnabled,
     helpTutorialCategories: mapHelpTutorialCategories(data),
+    payrollAccounting: mapPayrollAccounting(data),
   };
 }
 
@@ -164,6 +200,7 @@ export async function saveCompanySettings(
       ...(settings.helpTutorialCategories?.length
         ? { helpTutorialCategories: settings.helpTutorialCategories }
         : {}),
+      payrollAccounting: settings.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING,
     },
     { merge: true },
   );

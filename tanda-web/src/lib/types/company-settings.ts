@@ -21,6 +21,13 @@ export interface AttendanceRestrictionsSettings {
   blockUnscheduledShift: boolean;
 }
 
+export interface PayrollAccountingSettings {
+  wagesExpenseAccountCode: string;
+  wagesExpenseAccountName: string;
+  wagesPayableAccountCode: string;
+  wagesPayableAccountName: string;
+}
+
 export interface CompanySettings {
   timeZone: string;
   currency: string;
@@ -35,6 +42,8 @@ export interface CompanySettings {
   shiftEmailNotificationsEnabled?: boolean;
   /** Custom help tutorial video categories (merged with defaults and in-use values). */
   helpTutorialCategories?: string[];
+  /** Account codes used in payroll journal CSV exports. */
+  payrollAccounting?: PayrollAccountingSettings;
 }
 
 export const DEFAULT_ATTENDANCE_POLICY: AttendancePolicySettings = {
@@ -54,6 +63,13 @@ export const DEFAULT_ATTENDANCE_RESTRICTIONS: AttendanceRestrictionsSettings = {
   blockUnscheduledShift: false,
 };
 
+export const DEFAULT_PAYROLL_ACCOUNTING: PayrollAccountingSettings = {
+  wagesExpenseAccountCode: '6100',
+  wagesExpenseAccountName: 'Wages expense',
+  wagesPayableAccountCode: '2100',
+  wagesPayableAccountName: 'Wages payable',
+};
+
 export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   timeZone: 'Australia/Sydney',
   currency: 'AUD',
@@ -62,4 +78,5 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   attendanceRestrictions: DEFAULT_ATTENDANCE_RESTRICTIONS,
   pushNotificationsEnabled: true,
   shiftEmailNotificationsEnabled: false,
+  payrollAccounting: DEFAULT_PAYROLL_ACCOUNTING,
 };
