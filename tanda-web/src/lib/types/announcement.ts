@@ -1,12 +1,13 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type AnnouncementAudience = 'all' | 'department' | 'location';
+export type AnnouncementAudience = 'all' | 'department' | 'location' | 'selected';
 
 export interface AnnouncementFirestore {
   title: string;
   body: string;
   audience: AnnouncementAudience;
   audienceValue?: string;
+  recipientEmails?: string[];
   recipientCount: number;
   emailSentCount: number;
   notificationCount: number;
@@ -22,6 +23,7 @@ export interface Announcement {
   body: string;
   audience: AnnouncementAudience;
   audienceValue?: string;
+  recipientEmails?: string[];
   recipientCount: number;
   emailSentCount: number;
   notificationCount: number;
@@ -36,4 +38,5 @@ export interface BroadcastAnnouncementInput {
   body: string;
   audience: AnnouncementAudience;
   audienceValue?: string;
+  recipientEmails?: string[];
 }

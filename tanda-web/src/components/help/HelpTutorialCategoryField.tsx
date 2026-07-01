@@ -56,13 +56,13 @@ export function HelpTutorialCategoryField({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <label className="mb-1.5 block text-xs font-medium text-muted">Category</label>
       <select
         value={value}
         disabled={disabled || categories.length === 0}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+        className="w-full min-w-0 rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
       >
         {categories.length === 0 ? (
           <option value="">No categories yet</option>

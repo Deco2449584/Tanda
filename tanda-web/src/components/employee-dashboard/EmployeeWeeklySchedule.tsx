@@ -58,8 +58,8 @@ export function EmployeeWeeklySchedule({
     (loading ? 'Loading…' : `${scheduledCount} shift${scheduledCount === 1 ? '' : 's'} this week`);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border/90 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 shadow-lg shadow-black/20">
-      <div className="relative border-b border-border/80 bg-surface-raised/50 px-4 py-4 md:px-5">
+    <section className="overflow-hidden rounded-xl border border-border bg-surface-raised shadow-[var(--shadow-card)] backdrop-blur-sm">
+      <div className="relative border-b border-border bg-surface-raised px-4 py-4 md:px-5">
         {collapsible && onToggleCollapse ? (
           <button
             type="button"
@@ -134,11 +134,11 @@ export function EmployeeWeeklySchedule({
                   return (
                     <article
                       key={day.date}
-                      className={`flex min-w-[88px] flex-col rounded-xl border border-dashed border-border bg-surface-base/50 p-3 md:min-w-0 ${
+                      className={`flex min-w-[88px] flex-col rounded-xl border border-dashed border-border bg-surface-base p-3 md:min-w-0 ${
                         isPast ? 'opacity-55' : ''
                       } ${
                         isToday
-                          ? 'ring-2 ring-zinc-500/50 ring-offset-2 ring-offset-zinc-950'
+                          ? 'ring-2 ring-border-strong ring-offset-2 ring-offset-surface-raised'
                           : ''
                       }`}
                     >
@@ -202,7 +202,7 @@ export function EmployeeWeeklySchedule({
               })}
             </div>
 
-            <div className="flex flex-wrap gap-3 border-t border-border/80 px-4 py-3 text-[10px] font-medium uppercase tracking-wide text-subtle md:px-5">
+            <div className="flex flex-wrap gap-3 border-t border-border px-4 py-3 text-[10px] font-medium uppercase tracking-wide text-subtle md:px-5">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-primary/80" />
                 Scheduled

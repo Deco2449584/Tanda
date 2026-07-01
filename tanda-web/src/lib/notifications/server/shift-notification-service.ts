@@ -8,12 +8,15 @@ import {
 } from '@/lib/notifications/build-shift-notification';
 import { isNotificationChannelEnabled } from '@/lib/notifications/notification-channels';
 import { getNotificationChannelsForEmail } from '@/lib/notifications/server/notification-preferences';
-import { isPushConfigured } from '@/lib/notifications/vapid';
 import { sendPushNotification } from '@/lib/notifications/send-push';
-import { isSystemPushEnabled } from '@/lib/notifications/server/system-push';
+import { isPushConfigured } from '@/lib/notifications/vapid';
+import { sendShiftEmail } from '@/lib/email/send-shift-email';
+import { isResendConfigured } from '@/lib/email/send-announcement-email';
+import { isShiftEmailEnabled, isSystemPushEnabled } from '@/lib/notifications/server/system-push';
 
 export async function upsertEmployeeShiftNotification(input: {
   recipientEmail: string;
+  employeeName?: string;
   employeeDocId?: string;
   type: EmployeeShiftAlertType;
   shiftId: string;
@@ -21,10 +24,10 @@ export async function upsertEmployeeShiftNotification(input: {
   startTime?: string;
   endTime?: string;
   pushSubscription?: string | null;
-}): Promise<{ inApp: boolean; push: boolean }> {
+}): Promise<{ inApp: boolean; push: boolean; email: boolean }> {
   const recipientEmail = input.recipientEmail.trim().toLowerCase();
   if (!recipientEmail || !input.shiftId.trim()) {
-    return { inApp: false, push: false };
+    return { inApp: false, push: false, email: false };
   }
 
   const content = buildShiftNotificationContent({
@@ -37,7 +40,7 @@ export async function upsertEmployeeShiftNotification(input: {
 
   const channels = await getNotificationChannelsForEmail(recipientEmail);
   if (!isNotificationChannelEnabled(channels, content.type)) {
-    return { inApp: false, push: false };
+    return { inApp: false, push: false, email: false };
   }
 
   const docId = buildShiftNotificationDocId(
@@ -49,7 +52,22 @@ export async function upsertEmployeeShiftNotification(input: {
   const existing = await ref.get();
 
   if (existing.exists && existing.data()?.dismissed !== true) {
-    return { inApp: true, push: false };
+    let email = false;
+    if ((await isShiftEmailEnabled()) && isResendConfigured()) {
+      try {
+        email = await sendShiftEmail({
+          email: recipientEmail,
+          name: input.employeeName ?? '',
+          type: input.type,
+          date: input.date,
+          startTime: input.startTime,
+          endTime: input.endTime,
+        });
+      } catch (error) {
+        console.error('sendShiftEmail (existing notification)', error);
+      }
+    }
+    return { inApp: true, push: false, email };
   }
 
   await ref.set(
@@ -94,5 +112,21 @@ export async function upsertEmployeeShiftNotification(input: {
     }
   }
 
-  return { inApp: true, push };
+  let email = false;
+  if ((await isShiftEmailEnabled()) && isResendConfigured()) {
+    try {
+      email = await sendShiftEmail({
+        email: recipientEmail,
+        name: input.employeeName ?? '',
+        type: input.type,
+        date: input.date,
+        startTime: input.startTime,
+        endTime: input.endTime,
+      });
+    } catch (error) {
+      console.error('sendShiftEmail', error);
+    }
+  }
+
+  return { inApp: true, push, email };
 }

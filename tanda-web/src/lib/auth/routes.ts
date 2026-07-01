@@ -25,7 +25,7 @@ export function isRouteAllowedForEmployee(pathname: string): boolean {
   if (isSharedStaffRoute(pathname)) {
     return true;
   }
-  if (/^\/announcements\/[^/]+$/.test(pathname)) {
+  if (pathname === '/announcements' || pathname.startsWith('/announcements/')) {
     return true;
   }
 

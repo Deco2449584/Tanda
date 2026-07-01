@@ -63,8 +63,12 @@ export async function POST(request: Request) {
         ? employeeData.pushSubscription
         : null;
 
+    const employeeName =
+      typeof employeeData.name === 'string' ? employeeData.name : '';
+
     const result = await upsertEmployeeShiftNotification({
       recipientEmail,
+      employeeName,
       employeeDocId: employeeDoc.id,
       type: body.type,
       shiftId,
@@ -78,6 +82,7 @@ export async function POST(request: Request) {
       ok: true,
       inApp: result.inApp,
       push: result.push,
+      email: result.email,
     });
   } catch (error) {
     console.error('POST /api/notifications/shift', error);

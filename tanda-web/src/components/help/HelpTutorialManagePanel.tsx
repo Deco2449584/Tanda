@@ -224,8 +224,8 @@ export function HelpTutorialManagePanel({
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="md:col-span-2">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2">
+          <div className="min-w-0 md:col-span-2">
             <label className="mb-1.5 block text-xs font-medium text-muted">Title</label>
             <input
               type="text"
@@ -234,18 +234,18 @@ export function HelpTutorialManagePanel({
               value={title}
               disabled={saving}
               onChange={(event) => setTitle(event.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full min-w-0 rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div className="min-w-0 md:col-span-2">
             <label className="mb-1.5 block text-xs font-medium text-muted">Description</label>
             <textarea
               rows={2}
               value={description}
               disabled={saving}
               onChange={(event) => setDescription(event.target.value)}
-              className="w-full resize-y rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full min-w-0 resize-y rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
           </div>
 
@@ -258,7 +258,7 @@ export function HelpTutorialManagePanel({
             onError={onError}
           />
 
-          <div>
+          <div className="min-w-0">
             <label className="mb-1.5 block text-xs font-medium text-muted">Sort order</label>
             <input
               type="number"
@@ -266,11 +266,11 @@ export function HelpTutorialManagePanel({
               value={sortOrder}
               disabled={saving}
               onChange={(event) => setSortOrder(Number(event.target.value) || 0)}
-              className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full min-w-0 rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label className="mb-1.5 block text-xs font-medium text-muted">Audience</label>
             <select
               value={audience}
@@ -279,7 +279,7 @@ export function HelpTutorialManagePanel({
                 setAudience(event.target.value as HelpTutorialAudience);
                 setAudienceValue('');
               }}
-              className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full min-w-0 rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             >
               {HELP_TUTORIAL_AUDIENCES.map((item) => (
                 <option key={item} value={item}>
@@ -290,13 +290,13 @@ export function HelpTutorialManagePanel({
           </div>
 
           {audience === 'department' ? (
-            <div>
+            <div className="min-w-0">
               <label className="mb-1.5 block text-xs font-medium text-muted">Department</label>
               <select
                 value={audienceValue}
                 disabled={saving}
                 onChange={(event) => setAudienceValue(event.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+                className="w-full min-w-0 rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
               >
                 <option value="">Select…</option>
                 {departments.map((item) => (
@@ -309,13 +309,13 @@ export function HelpTutorialManagePanel({
           ) : null}
 
           {audience === 'location' ? (
-            <div>
+            <div className="min-w-0">
               <label className="mb-1.5 block text-xs font-medium text-muted">Location</label>
               <select
                 value={audienceValue}
                 disabled={saving}
                 onChange={(event) => setAudienceValue(event.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+                className="w-full min-w-0 rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
               >
                 <option value="">Select…</option>
                 {locations.map((location) => (
@@ -349,11 +349,13 @@ export function HelpTutorialManagePanel({
             </div>
           ) : null}
 
-          <div className="md:col-span-2">
+          <div className="min-w-0 md:col-span-2">
             <label className="mb-1.5 block text-xs font-medium text-muted">Video (max 100 MB)</label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border-strong px-3 py-3 text-xs text-muted transition hover:border-primary/40 hover:text-foreground">
-              <Upload className="h-4 w-4" />
-              {videoFile ? videoFile.name : 'Choose MP4, WebM or MOV'}
+            <label className="flex min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border-strong px-3 py-3 text-xs text-muted transition hover:border-primary/40 hover:text-foreground">
+              <Upload className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate">
+                {videoFile ? videoFile.name : 'Choose MP4, WebM or MOV'}
+              </span>
               <input
                 ref={fileRef}
                 type="file"
@@ -406,9 +408,9 @@ export function HelpTutorialManagePanel({
                 key={tutorial.id}
                 className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border bg-surface-raised p-4"
               >
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{tutorial.title}</p>
-                  <p className="mt-1 text-xs text-subtle">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{tutorial.title}</p>
+                  <p className="mt-1 break-words text-xs text-subtle">
                     {tutorial.category} · {AUDIENCE_LABELS[tutorial.audience as HelpTutorialAudience] ?? tutorial.audience}
                     {tutorial.audienceValue ? ` · ${tutorial.audienceValue}` : ''}
                   </p>

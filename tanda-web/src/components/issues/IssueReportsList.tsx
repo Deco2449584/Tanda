@@ -1,5 +1,6 @@
 'use client';
 
+import { IssueReportAttachment } from '@/components/issues/IssueReportAttachment';
 import {
   formatIssueReportWhen,
   ISSUE_STATUS_CLASSES,
@@ -55,14 +56,11 @@ export function IssueReportsList({ reports, loading }: IssueReportsListProps) {
           </div>
           <p className="mt-3 whitespace-pre-wrap text-sm text-muted">{report.description}</p>
           {report.attachmentUrl ? (
-            <a
-              href={report.attachmentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-block text-xs font-medium text-primary hover:underline"
-            >
-              View attachment
-            </a>
+            <IssueReportAttachment
+              reportId={report.id}
+              url={report.attachmentUrl}
+              alt={report.subject}
+            />
           ) : null}
           {report.adminNotes ? (
             <div className="mt-3 rounded-lg border border-border bg-surface-base/60 px-3 py-2">

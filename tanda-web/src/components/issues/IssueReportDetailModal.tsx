@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2, Pencil, Trash2, X } from 'lucide-react';
+import { IssueReportAttachment } from '@/components/issues/IssueReportAttachment';
 import {
   formatIssueReportWhen,
   ISSUE_STATUS_CLASSES,
@@ -127,14 +128,11 @@ export function IssueReportDetailModal({
         </div>
 
         {report.attachmentUrl ? (
-          <a
-            href={report.attachmentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex text-sm font-medium text-primary hover:underline"
-          >
-            View attachment
-          </a>
+          <IssueReportAttachment
+            reportId={report.id}
+            url={report.attachmentUrl}
+            alt={report.subject}
+          />
         ) : null}
 
         {report.resolvedAt ? (

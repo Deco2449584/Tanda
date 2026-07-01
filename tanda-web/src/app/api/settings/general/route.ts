@@ -43,6 +43,15 @@ export async function PUT(request: Request) {
       pushNotificationsEnabled = body.pushNotificationsEnabled;
     }
 
+    const existingShiftEmailEnabled = before?.shiftEmailNotificationsEnabled === true;
+    let shiftEmailNotificationsEnabled = existingShiftEmailEnabled;
+    if (
+      typeof body.shiftEmailNotificationsEnabled === 'boolean' &&
+      isMasterRole(adminRole)
+    ) {
+      shiftEmailNotificationsEnabled = body.shiftEmailNotificationsEnabled;
+    }
+
     const payload = {
       timeZone: body.timeZone,
       currency: body.currency,
@@ -53,6 +62,7 @@ export async function PUT(request: Request) {
         ? { defaultDepartmentName: body.defaultDepartmentName }
         : {}),
       pushNotificationsEnabled,
+      shiftEmailNotificationsEnabled,
       ...(Array.isArray(body.helpTutorialCategories)
         ? {
             helpTutorialCategories: body.helpTutorialCategories

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, CalendarClock, Clock, LogOut, Palmtree, UserX, X } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import {
   useAdminNotificationBadge,
@@ -20,13 +20,7 @@ import {
 } from '@/lib/notifications/notification-channels';
 import { subscribeToNotificationChannels } from '@/lib/notifications/employee-notification-preferences';
 
-const ICON_BY_ID: Record<string, typeof Palmtree> = {
-  leave_pending: Palmtree,
-  missing_checkin: Clock,
-  no_show_today: UserX,
-  late_today: CalendarClock,
-  forgotten_checkout: LogOut,
-};
+import { getAdminAlertVisual } from '@/lib/notifications/notification-visuals';
 
 interface AdminNotificationsMenuProps {
   enabled: boolean;
@@ -186,7 +180,7 @@ function NotificationRow({
   onNavigate: () => void;
   onDismiss: () => void;
 }) {
-  const Icon = ICON_BY_ID[item.id] ?? Bell;
+  const { icon: Icon, badgeClass } = getAdminAlertVisual(item.id);
 
   return (
     <li className="group flex items-stretch">
@@ -196,7 +190,7 @@ function NotificationRow({
         onClick={onNavigate}
         className="flex min-w-0 flex-1 gap-3 px-4 py-3 transition-colors hover:bg-surface-hover/60"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${badgeClass}`}>
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">

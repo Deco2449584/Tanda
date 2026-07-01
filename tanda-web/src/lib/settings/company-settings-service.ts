@@ -118,6 +118,10 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
       typeof data.pushNotificationsEnabled === 'boolean'
         ? data.pushNotificationsEnabled
         : DEFAULT_COMPANY_SETTINGS.pushNotificationsEnabled,
+    shiftEmailNotificationsEnabled:
+      typeof data.shiftEmailNotificationsEnabled === 'boolean'
+        ? data.shiftEmailNotificationsEnabled
+        : DEFAULT_COMPANY_SETTINGS.shiftEmailNotificationsEnabled,
     helpTutorialCategories: mapHelpTutorialCategories(data),
   };
 }
@@ -156,6 +160,7 @@ export async function saveCompanySettings(
         : {}),
       pushNotificationsEnabled:
         settings.pushNotificationsEnabled !== false,
+      shiftEmailNotificationsEnabled: settings.shiftEmailNotificationsEnabled === true,
       ...(settings.helpTutorialCategories?.length
         ? { helpTutorialCategories: settings.helpTutorialCategories }
         : {}),

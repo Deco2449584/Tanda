@@ -11,8 +11,22 @@ import type {
 } from '@/lib/types/announcement';
 
 function parseAudience(value: unknown): AnnouncementAudience {
-  if (value === 'department' || value === 'location') return value;
+  if (
+    value === 'department' ||
+    value === 'location' ||
+    value === 'selected'
+  ) {
+    return value;
+  }
   return 'all';
+}
+
+function parseRecipientEmails(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .filter((email): email is string => typeof email === 'string')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 export async function GET(request: Request) {
@@ -50,6 +64,7 @@ export async function POST(request: Request) {
         body: body.body ?? '',
         audience: parseAudience(body.audience),
         audienceValue: body.audienceValue,
+        recipientEmails: parseRecipientEmails(body.recipientEmails),
       },
       createdByEmail: admin.email,
       createdByName: body.createdByName,

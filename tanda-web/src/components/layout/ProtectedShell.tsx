@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { LoadingSplash } from '@/components/ui/LoadingSplash';
@@ -135,7 +136,9 @@ function ProtectedLayoutContent({
   }, [pathname]);
 
   const layout = (
-    <div className="flex h-screen overflow-hidden bg-surface-base">
+    <>
+      <PushNotificationSetup />
+      <div className="flex h-screen overflow-hidden bg-surface-base">
       <Sidebar
         role={role}
         mobileOpen={sidebarOpen}
@@ -146,6 +149,7 @@ function ProtectedLayoutContent({
         <main className="relative z-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
+    </>
   );
 
   if (isAdminAreaRole(role)) {

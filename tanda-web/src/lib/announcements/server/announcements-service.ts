@@ -51,7 +51,17 @@ function truncatePreview(body: string, maxLength = 160): string {
 async function loadActiveRecipients(input: {
   audience: AnnouncementAudience;
   audienceValue?: string;
+  recipientEmails?: string[];
 }): Promise<RecipientEmployee[]> {
+  const selectedEmails =
+    input.audience === 'selected'
+      ? new Set(
+          (input.recipientEmails ?? [])
+            .map((email) => normalizeEmail(email))
+            .filter(Boolean),
+        )
+      : null;
+
   const snapshot = await getAdminFirestore().collection(COLLECTIONS.EMPLOYEES).get();
 
   return snapshot.docs
@@ -67,12 +77,12 @@ async function loadActiveRecipients(input: {
       const locationId =
         typeof data.locationId === 'string' ? data.locationId.trim() : '';
 
-      if (input.audience === 'department') {
+      if (input.audience === 'selected') {
+        if (!selectedEmails?.has(email)) return null;
+      } else if (input.audience === 'department') {
         const target = input.audienceValue?.trim() ?? '';
         if (!target || department !== target) return null;
-      }
-
-      if (input.audience === 'location') {
+      } else if (input.audience === 'location') {
         const target = input.audienceValue?.trim() ?? '';
         if (!target || locationId !== target) return null;
       }
@@ -91,6 +101,64 @@ async function loadActiveRecipients(input: {
       return recipient;
     })
     .filter((recipient): recipient is RecipientEmployee => recipient !== null);
+}
+
+interface EmployeeAudienceProfile {
+  email: string;
+  active: boolean;
+  department: string;
+  locationId: string;
+}
+
+async function getEmployeeAudienceProfile(
+  employeeEmail: string,
+): Promise<EmployeeAudienceProfile | null> {
+  const email = normalizeEmail(employeeEmail);
+  if (!email) return null;
+
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.EMPLOYEES)
+    .where('email', '==', email)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+
+  const data = snapshot.docs[0].data();
+  return {
+    email,
+    active: data.active !== false,
+    department: typeof data.department === 'string' ? data.department.trim() : '',
+    locationId: typeof data.locationId === 'string' ? data.locationId.trim() : '',
+  };
+}
+
+export function employeeMatchesAnnouncementAudience(
+  employee: EmployeeAudienceProfile,
+  announcement: Pick<Announcement, 'audience' | 'audienceValue' | 'recipientEmails'>,
+): boolean {
+  if (!employee.active) return false;
+
+  if (announcement.audience === 'all') {
+    return true;
+  }
+
+  if (announcement.audience === 'selected') {
+    const emails = announcement.recipientEmails ?? [];
+    return emails.some((email) => normalizeEmail(email) === employee.email);
+  }
+
+  if (announcement.audience === 'department') {
+    const target = announcement.audienceValue?.trim() ?? '';
+    return Boolean(target) && employee.department === target;
+  }
+
+  if (announcement.audience === 'location') {
+    const target = announcement.audienceValue?.trim() ?? '';
+    return Boolean(target) && employee.locationId === target;
+  }
+
+  return false;
 }
 
 export async function broadcastAnnouncement(input: {
@@ -117,9 +185,19 @@ export async function broadcastAnnouncement(input: {
     throw new Error('Select a department or location for this audience.');
   }
 
+  if (input.payload.audience === 'selected') {
+    const selectedCount =
+      input.payload.recipientEmails?.map((email) => normalizeEmail(email)).filter(Boolean)
+        .length ?? 0;
+    if (selectedCount === 0) {
+      throw new Error('Select at least one employee.');
+    }
+  }
+
   const recipients = await loadActiveRecipients({
     audience: input.payload.audience,
     audienceValue: input.payload.audienceValue,
+    recipientEmails: input.payload.recipientEmails,
   });
 
   if (recipients.length === 0) {
@@ -129,7 +207,7 @@ export async function broadcastAnnouncement(input: {
   const db = getAdminFirestore();
   const announcementRef = db.collection(COLLECTIONS.ANNOUNCEMENTS).doc();
   const announcementId = announcementRef.id;
-  const href = `/announcements/${announcementId}`;
+  const href = `/announcements#announcement-${announcementId}`;
   const preview = truncatePreview(body);
   const resendEnabled = isResendConfigured();
   const pushEnabled = isPushConfigured() && (await isSystemPushEnabled());
@@ -211,6 +289,11 @@ export async function broadcastAnnouncement(input: {
     ...(input.payload.audienceValue?.trim()
       ? { audienceValue: input.payload.audienceValue.trim() }
       : {}),
+    ...(input.payload.audience === 'selected'
+      ? {
+          recipientEmails: recipients.map((recipient) => recipient.email),
+        }
+      : {}),
     recipientCount: recipients.length,
     emailSentCount,
     notificationCount,
@@ -234,6 +317,19 @@ export async function listAnnouncements(limit = 50): Promise<Announcement[]> {
   return snapshot.docs.map((doc) => mapAnnouncementDoc(doc.id, doc.data()));
 }
 
+export async function listAnnouncementsForEmployee(
+  employeeEmail: string,
+  limit = 100,
+): Promise<Announcement[]> {
+  const profile = await getEmployeeAudienceProfile(employeeEmail);
+  if (!profile) return [];
+
+  const announcements = await listAnnouncements(limit);
+  return announcements.filter((announcement) =>
+    employeeMatchesAnnouncementAudience(profile, announcement),
+  );
+}
+
 export async function getAnnouncementById(id: string): Promise<Announcement | null> {
   const snapshot = await getAdminFirestore()
     .collection(COLLECTIONS.ANNOUNCEMENTS)
@@ -248,16 +344,15 @@ export async function employeeCanReadAnnouncement(
   announcementId: string,
   employeeEmail: string,
 ): Promise<boolean> {
-  const email = normalizeEmail(employeeEmail);
-  const notificationId = buildAnnouncementNotificationDocId(email, announcementId);
-  const snapshot = await getAdminFirestore()
-    .collection(COLLECTIONS.NOTIFICATIONS)
-    .doc(notificationId)
-    .get();
+  const announcement = await getAnnouncementById(announcementId);
+  if (!announcement) return false;
 
-  return snapshot.exists;
+  const profile = await getEmployeeAudienceProfile(employeeEmail);
+  if (!profile) return false;
+
+  return employeeMatchesAnnouncementAudience(profile, announcement);
 }
 
 export function getAnnouncementPublicUrl(announcementId: string): string {
-  return `${getAppBaseUrl()}/announcements/${announcementId}`;
+  return `${getAppBaseUrl()}/announcements#announcement-${announcementId}`;
 }

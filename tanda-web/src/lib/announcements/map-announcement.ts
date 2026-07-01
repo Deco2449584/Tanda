@@ -25,9 +25,14 @@ export function mapAnnouncementDoc(
         ? 'department'
         : data.audience === 'location'
           ? 'location'
-          : 'all',
+          : data.audience === 'selected'
+            ? 'selected'
+            : 'all',
     audienceValue:
       typeof data.audienceValue === 'string' ? data.audienceValue : undefined,
+    recipientEmails: Array.isArray(data.recipientEmails)
+      ? data.recipientEmails.filter((email): email is string => typeof email === 'string')
+      : undefined,
     recipientCount:
       typeof data.recipientCount === 'number' ? data.recipientCount : 0,
     emailSentCount:

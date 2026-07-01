@@ -73,9 +73,9 @@ export function HelpTutorialsViewer({
     <div className="space-y-6">
       {activeTutorial ? (
         <section className="rounded-2xl border border-border bg-surface-raised p-4 md:p-5">
-          <h2 className="text-base font-semibold text-foreground">{activeTutorial.title}</h2>
+          <h2 className="truncate text-base font-semibold text-foreground">{activeTutorial.title}</h2>
           {activeTutorial.description ? (
-            <p className="mt-1 text-sm text-muted">{activeTutorial.description}</p>
+            <p className="mt-1 line-clamp-3 text-sm text-muted">{activeTutorial.description}</p>
           ) : null}
           <div className="mt-4 overflow-hidden rounded-xl border border-border bg-black">
             <video
@@ -97,7 +97,7 @@ export function HelpTutorialsViewer({
 
         return (
           <section key={category}>
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-subtle">
+            <h3 className="mb-3 truncate text-xs font-semibold uppercase tracking-wider text-subtle">
               {category}
             </h3>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -116,9 +116,9 @@ export function HelpTutorialsViewer({
                           : 'border-border bg-surface-raised hover:border-border-strong'
                       }`}
                     >
-                      <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
                         <Play className="h-4 w-4 shrink-0 text-primary" />
-                        {tutorial.title}
+                        <span className="truncate">{tutorial.title}</span>
                       </span>
                       {tutorial.description ? (
                         <span className="mt-1 line-clamp-2 text-xs text-muted">

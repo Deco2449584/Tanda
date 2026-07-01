@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Megaphone } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { isAdminAreaRole } from '@/lib/auth/roles';
@@ -21,8 +21,24 @@ function formatDate(timestamp: number): string {
 
 export default function AnnouncementDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { role } = useAuthRole();
   const announcementId = params.id;
+  const isAdmin = isAdminAreaRole(role ?? 'empleado');
+
+  useEffect(() => {
+    if (!announcementId || isAdmin) return;
+    router.replace(`/announcements#announcement-${announcementId}`);
+  }, [announcementId, isAdmin, router]);
+
+  if (!isAdmin) {
+    return <LoadingIndicator message="Opening announcement…" />;
+  }
+
+  return <AdminAnnouncementDetail announcementId={announcementId} />;
+}
+
+function AdminAnnouncementDetail({ announcementId }: { announcementId: string }) {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +81,7 @@ export default function AnnouncementDetailPage() {
   return (
     <PageContent className="mx-auto max-w-2xl space-y-5">
       <Link
-        href={isAdminAreaRole(role ?? 'empleado') ? '/announcements' : '/employee-dashboard'}
+        href="/announcements"
         className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

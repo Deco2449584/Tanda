@@ -510,6 +510,20 @@ export async function submitJustification(input: {
     submittedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
+
+  const shiftId = typeof data.shiftId === 'string' ? data.shiftId.trim() : '';
+  if (shiftId) {
+    const notificationType = type === 'no_show' ? 'no_show' : 'justification_required';
+    const notificationId = buildAttendanceNotificationDocId(
+      input.employeeEmail,
+      notificationType,
+      shiftId,
+    );
+    await getAdminFirestore()
+      .collection(COLLECTIONS.NOTIFICATIONS)
+      .doc(notificationId)
+      .set({ dismissed: true, read: true }, { merge: true });
+  }
 }
 
 export async function reviewJustification(input: {

@@ -97,6 +97,7 @@ const employeeNavGroups: NavGroup[] = [
   {
     title: 'Support',
     items: [
+      { label: 'Announcements', href: '/announcements', icon: Megaphone },
       { label: 'Help', href: '/help', icon: HelpCircle },
       { label: 'Report issue', href: '/report-issue', icon: Flag },
     ],

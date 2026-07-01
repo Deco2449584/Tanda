@@ -21,6 +21,19 @@ export async function isSystemPushEnabled(): Promise<boolean> {
   return DEFAULT_COMPANY_SETTINGS.pushNotificationsEnabled !== false;
 }
 
+export async function isShiftEmailEnabled(): Promise<boolean> {
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.SETTINGS)
+    .doc('general')
+    .get();
+
+  if (!snapshot.exists) {
+    return DEFAULT_COMPANY_SETTINGS.shiftEmailNotificationsEnabled === true;
+  }
+
+  return snapshot.data()?.shiftEmailNotificationsEnabled === true;
+}
+
 export async function clearAllEmployeePushSubscriptions(): Promise<number> {
   const firestore = getAdminFirestore();
   const snapshot = await firestore.collection(COLLECTIONS.EMPLOYEES).get();

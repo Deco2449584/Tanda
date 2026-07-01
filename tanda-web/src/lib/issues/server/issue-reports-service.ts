@@ -151,3 +151,13 @@ export async function deleteIssueReport(id: string): Promise<void> {
   }
   await ref.delete();
 }
+
+export async function getIssueReportById(id: string): Promise<IssueReport | null> {
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.ISSUE_REPORTS)
+    .doc(id.trim())
+    .get();
+
+  if (!snapshot.exists) return null;
+  return mapIssueReportDoc(snapshot.id, snapshot.data() ?? {});
+}

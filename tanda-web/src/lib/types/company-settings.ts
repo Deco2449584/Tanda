@@ -31,6 +31,8 @@ export interface CompanySettings {
   attendanceRestrictions: AttendanceRestrictionsSettings;
   /** When false, no browser push is sent company-wide. Master-only setting. */
   pushNotificationsEnabled?: boolean;
+  /** When true, shift assignment/cancellation emails are sent (Resend). Master-only setting. */
+  shiftEmailNotificationsEnabled?: boolean;
   /** Custom help tutorial video categories (merged with defaults and in-use values). */
   helpTutorialCategories?: string[];
 }
@@ -59,4 +61,5 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   attendancePolicy: DEFAULT_ATTENDANCE_POLICY,
   attendanceRestrictions: DEFAULT_ATTENDANCE_RESTRICTIONS,
   pushNotificationsEnabled: true,
+  shiftEmailNotificationsEnabled: false,
 };

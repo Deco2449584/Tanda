@@ -12,6 +12,11 @@ function formatAudienceLabel(announcement: Announcement): string {
   if (announcement.audience === 'location') {
     return announcement.audienceValue ? `Location filter` : 'Location';
   }
+  if (announcement.audience === 'selected') {
+    const count =
+      announcement.recipientEmails?.length ?? announcement.recipientCount ?? 0;
+    return `Selected employees (${count})`;
+  }
   return 'All employees';
 }
 

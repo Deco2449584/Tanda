@@ -27,7 +27,7 @@ export async function sendAnnouncementEmail(
 
   const appUrl = getAppBaseUrl();
   const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('light');
-  const announcementUrl = `${appUrl}/announcements/${input.announcementId}`;
+  const announcementUrl = `${appUrl}/announcements#announcement-${input.announcementId}`;
 
   const emailContent = {
     email: input.email,

@@ -37,6 +37,7 @@ export function NotificationsSettingsTab() {
   } = usePushNotifications();
 
   const systemPushEnabled = settings.pushNotificationsEnabled !== false;
+  const shiftEmailEnabled = settings.shiftEmailNotificationsEnabled === true;
 
   useEffect(() => {
     if (!email) return;
@@ -67,6 +68,20 @@ export function NotificationsSettingsTab() {
       });
     } catch (error) {
       console.error('handleSystemPushToggle', error);
+    } finally {
+      setSystemPushBusy(false);
+    }
+  }
+
+  async function handleShiftEmailToggle() {
+    setSystemPushBusy(true);
+    try {
+      await saveSettings({
+        ...settings,
+        shiftEmailNotificationsEnabled: !shiftEmailEnabled,
+      });
+    } catch (error) {
+      console.error('handleShiftEmailToggle', error);
     } finally {
       setSystemPushBusy(false);
     }
@@ -114,6 +129,33 @@ export function NotificationsSettingsTab() {
               : systemPushEnabled
                 ? 'Disable push system-wide'
                 : 'Enable push system-wide'}
+          </button>
+        </div>
+      ) : null}
+
+      {isMaster ? (
+        <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+          <p className="text-sm font-medium text-foreground">Shift schedule emails</p>
+          <p className="mt-1 text-xs text-subtle">
+            When enabled, employees receive an email when a shift is assigned or
+            cancelled (if Resend is configured and they have schedule notifications on).
+          </p>
+
+          <button
+            type="button"
+            disabled={systemPushBusy || savingSettings}
+            onClick={() => void handleShiftEmailToggle()}
+            className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60 ${
+              shiftEmailEnabled
+                ? 'border border-border-strong text-muted transition-colors hover:bg-surface-hover hover:text-foreground'
+                : 'bg-primary text-white hover:opacity-90'
+            }`}
+          >
+            {systemPushBusy || savingSettings
+              ? 'Updating…'
+              : shiftEmailEnabled
+                ? 'Disable shift emails'
+                : 'Enable shift emails'}
           </button>
         </div>
       ) : null}

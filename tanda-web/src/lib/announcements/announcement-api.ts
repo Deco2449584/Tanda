@@ -14,6 +14,18 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
+export async function fetchMyAnnouncements(): Promise<Announcement[]> {
+  const headers = await getAuthHeaders();
+  const response = await fetch('/api/announcements/mine', { headers });
+
+  if (!response.ok) {
+    throw new Error('Could not load announcements.');
+  }
+
+  const data = (await response.json()) as { announcements: Announcement[] };
+  return data.announcements;
+}
+
 export async function fetchAnnouncements(): Promise<Announcement[]> {
   const headers = await getAuthHeaders();
   const response = await fetch('/api/announcements', { headers });

@@ -88,3 +88,45 @@ export async function deleteIssueReportRequest(id: string): Promise<void> {
     throw new Error(data?.error ?? 'Could not delete issue report.');
   }
 }
+
+function parseDownloadFileName(contentDisposition: string | null): string | null {
+  if (!contentDisposition) return null;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const plainMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] ?? null;
+}
+
+export async function downloadIssueReportAttachment(reportId: string): Promise<void> {
+  const user = auth?.currentUser;
+  if (!user) throw new Error('You must be signed in.');
+
+  const token = await user.getIdToken();
+  const response = await fetch(
+    `/api/issue-reports/${encodeURIComponent(reportId)}/attachment/download`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? 'Could not download image.');
+  }
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download =
+    parseDownloadFileName(response.headers.get('Content-Disposition')) ??
+    'issue-attachment.webp';
+  link.click();
+  URL.revokeObjectURL(blobUrl);
+}

@@ -31,6 +31,7 @@ import {
   loadEmployeeShiftAlerts,
 } from '@/lib/notifications/employee-shift-alerts';
 import { mapNotificationDoc } from '@/lib/notifications/map-notification';
+import { isAttentionRequiredNotification } from '@/lib/notifications/notification-attention';
 import { normalizeNotificationEmail } from '@/lib/notifications/normalize-email';
 import type { AppNotification } from '@/lib/types/notification';
 
@@ -181,9 +182,17 @@ export async function dismissAllEmployeeNotifications(
   if (snapshot.empty) return;
 
   const batch = writeBatch(db);
+  let hasUpdates = false;
   snapshot.docs.forEach((document) => {
+    const data = document.data();
+    const type = typeof data.type === 'string' ? data.type : '';
+    if (isAttentionRequiredNotification(type as AppNotification['type'])) {
+      return;
+    }
     batch.update(document.ref, { dismissed: true, read: true });
+    hasUpdates = true;
   });
+  if (!hasUpdates) return;
   await batch.commit();
 }
 
