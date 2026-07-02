@@ -22,7 +22,7 @@ export function getShiftConfirmationChipClass(
 ): string {
   switch (status) {
     case 'confirmed':
-      return 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30';
+      return 'bg-sky-500/15 text-sky-300 ring-1 ring-sky-500/35';
     case 'declined':
       return 'bg-red-500/15 text-red-300 ring-1 ring-red-500/30';
     case 'pending':
@@ -38,7 +38,7 @@ export function getScheduledShiftConfirmationPillClass(
 ): string {
   switch (status) {
     case 'confirmed':
-      return 'border-emerald-500/45 bg-emerald-500/15 text-emerald-300';
+      return 'border-sky-500/50 bg-sky-500/15 text-sky-300';
     case 'declined':
       return 'border-red-500/45 bg-red-500/15 text-red-300';
     case 'pending':
@@ -72,7 +72,7 @@ export const SHIFT_CONFIRMATION_LEGEND = [
   {
     status: 'confirmed' as const,
     label: 'Confirmed by employee',
-    chip: 'border-emerald-500/45 bg-emerald-500/15 text-emerald-300',
+    chip: 'border-sky-500/50 bg-sky-500/15 text-sky-300',
   },
   {
     status: 'declined' as const,
