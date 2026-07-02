@@ -115,7 +115,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [kioskPassword, setKioskPassword] = useState('');
   const [kioskPasswordConfirm, setKioskPasswordConfirm] = useState('');
   const [error, setError] = useState('');
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const isBusy = isUploading || isSubmitting || isResendingInvite;
   const isKiosk = isKioskAccessRole(accessRole);
@@ -235,7 +234,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    setSaveMessage(null);
 
     if (!db) {
       setError('Firebase is not available.');
@@ -451,7 +449,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         });
 
         await refreshEmployees();
-        setSaveMessage('Employee updated successfully.');
       } else {
         const payload = buildEmployeeCreatePayload({
           form: normalizedForm,
@@ -500,10 +497,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           employeeDocId: docRef.id,
           summary: `Created employee ${form.name.trim()} (${employeeCode})`,
         });
-      }
 
-      if (isEditMode) {
-        return;
+        await refreshEmployees();
       }
 
       onSuccess();
@@ -1007,7 +1002,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         </>
       ) : null}
 
-      {saveMessage ? <FormAlert variant="success">{saveMessage}</FormAlert> : null}
       {error ? <FormAlert variant="error">{error}</FormAlert> : null}
 
       <FormActions
