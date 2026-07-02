@@ -9,8 +9,8 @@ import {
   formatShiftTimeRangeShort,
   type WeekDay,
 } from '@/lib/schedule/week';
+import { getScheduledShiftConfirmationPillClass } from '@/lib/schedule/schedule-legend';
 import {
-  getScheduledShiftConfirmationPillClass,
   getShiftConfirmationLabel,
   getShiftConfirmationShortCode,
 } from '@/lib/shifts/shift-confirmation';
@@ -93,11 +93,11 @@ function MobileDayCell({
 
   const cellSizeClass = 'h-[2.85rem] min-h-[2.85rem] w-full';
   const confirmationCode =
-    primaryShift?.status === 'scheduled' && primaryShift.confirmationStatus
+    primaryShift?.status === 'scheduled'
       ? getShiftConfirmationShortCode(primaryShift.confirmationStatus)
       : '';
   const confirmationLabel =
-    primaryShift?.status === 'scheduled' && primaryShift.confirmationStatus
+    primaryShift?.status === 'scheduled'
       ? getShiftConfirmationLabel(primaryShift.confirmationStatus)
       : '';
 

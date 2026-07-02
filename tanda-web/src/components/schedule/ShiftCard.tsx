@@ -1,8 +1,14 @@
-﻿import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
+﻿import { AlertCircle, Check, HelpCircle, Trash2, UserCheck, UserX } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { ShiftConfirmationBadge } from '@/components/shifts/ShiftConfirmationActions';
 import {
+  getScheduledShiftCardContainerClass,
+  getScheduledShiftCompactContainerClass,
   getScheduledShiftConfirmationPillClass,
+  getScheduledShiftIconClass,
+  resolveShiftConfirmationStatus,
+} from '@/lib/schedule/schedule-legend';
+import {
   getShiftConfirmationLabel,
   getShiftConfirmationShortCode,
 } from '@/lib/shifts/shift-confirmation';
@@ -20,14 +26,6 @@ interface ShiftCardProps {
 }
 
 const statusStyles = {
-  scheduled: {
-    container: 'border-l-4 border-primary bg-surface-overlay/90',
-    compactContainer: 'border-l-2 border-primary bg-surface-overlay/90',
-    text: 'text-foreground',
-    subtext: 'text-muted',
-    icon: Clock,
-    iconClass: 'text-primary',
-  },
   completed: {
     container: 'border-l-4 border-emerald-500 bg-surface-overlay/90',
     compactContainer: 'border-l-2 border-emerald-500 bg-surface-overlay/90',
@@ -46,6 +44,38 @@ const statusStyles = {
   },
 } as const;
 
+const SCHEDULED_ICONS = {
+  pending: HelpCircle,
+  confirmed: UserCheck,
+  declined: UserX,
+} as const;
+
+function getShiftPresentation(shift: Shift) {
+  if (shift.status === 'scheduled') {
+    const confirmation = resolveShiftConfirmationStatus(shift.confirmationStatus);
+    return {
+      container: getScheduledShiftCardContainerClass(shift.confirmationStatus),
+      compactContainer: getScheduledShiftCompactContainerClass(shift.confirmationStatus),
+      pillClass: getScheduledShiftConfirmationPillClass(shift.confirmationStatus),
+      text: 'text-foreground',
+      subtext: 'text-muted',
+      icon: SCHEDULED_ICONS[confirmation],
+      iconClass: getScheduledShiftIconClass(shift.confirmationStatus),
+    };
+  }
+
+  const styles = statusStyles[shift.status];
+  return {
+    container: styles.container,
+    compactContainer: styles.compactContainer,
+    pillClass: '',
+    text: styles.text,
+    subtext: styles.subtext,
+    icon: styles.icon,
+    iconClass: styles.iconClass,
+  };
+}
+
 export function ShiftCard({
   shift,
   employeeName,
@@ -54,37 +84,34 @@ export function ShiftCard({
   onDelete,
   compact = false,
 }: ShiftCardProps) {
-  const styles = statusStyles[shift.status];
-  const Icon = styles.icon;
+  const presentation = getShiftPresentation(shift);
+  const Icon = presentation.icon;
   const timeRange = `${formatTimeLabel(shift.startTime)} - ${formatTimeLabel(shift.endTime)}`;
   const locationLabel = formatShiftLocationLabel(shift);
+  const confirmationLabel =
+    shift.status === 'scheduled'
+      ? getShiftConfirmationLabel(shift.confirmationStatus)
+      : '';
+  const confirmationCode =
+    shift.status === 'scheduled'
+      ? getShiftConfirmationShortCode(shift.confirmationStatus)
+      : '';
 
   if (compact) {
-    const confirmationClass =
-      shift.status === 'scheduled' && shift.confirmationStatus
-        ? getScheduledShiftConfirmationPillClass(shift.confirmationStatus)
-        : '';
-    const confirmationCode =
-      shift.status === 'scheduled' && shift.confirmationStatus
-        ? getShiftConfirmationShortCode(shift.confirmationStatus)
-        : '';
-    const confirmationLabel =
-      shift.status === 'scheduled' && shift.confirmationStatus
-        ? getShiftConfirmationLabel(shift.confirmationStatus)
-        : '';
-
     return (
       <div
         className={`rounded border px-1 py-0.5 ${
-          confirmationClass || styles.compactContainer
+          shift.status === 'scheduled'
+            ? presentation.pillClass
+            : presentation.compactContainer
         }`}
         title={confirmationLabel || undefined}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-0.5">
-          <p className={`truncate text-[9px] font-semibold leading-tight ${styles.text}`}>
+          <p className={`truncate text-[9px] font-semibold leading-tight ${presentation.text}`}>
             {formatShiftTimeRangeShort(shift.startTime, shift.endTime)}
-            {confirmationCode ? (
+            {shift.status === 'scheduled' ? (
               <span className="ml-0.5 opacity-90">{confirmationCode}</span>
             ) : null}
           </p>
@@ -101,7 +128,7 @@ export function ShiftCard({
               <Trash2 className="h-2.5 w-2.5" />
             </button>
           ) : (
-            <Icon className={`h-2.5 w-2.5 shrink-0 ${styles.iconClass}`} />
+            <Icon className={`h-2.5 w-2.5 shrink-0 ${presentation.iconClass}`} />
           )}
         </div>
       </div>
@@ -125,39 +152,39 @@ export function ShiftCard({
           onEdit(shift);
         }
       }}
-      className={`relative rounded-lg p-2.5 backdrop-blur-sm ${styles.container} ${
+      className={`relative rounded-lg p-2.5 backdrop-blur-sm ${presentation.container} ${
         onEdit ? 'cursor-pointer transition hover:brightness-110 focus:outline-none focus:ring-1 focus:ring-primary/50' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className={`text-xs font-semibold ${styles.text}`}>{timeRange}</p>
+          <p className={`text-xs font-semibold ${presentation.text}`}>{timeRange}</p>
           {locationLabel ? (
-            <p className={`mt-0.5 text-[10px] ${styles.subtext}`}>{locationLabel}</p>
+            <p className={`mt-0.5 text-[10px] ${presentation.subtext}`}>{locationLabel}</p>
           ) : null}
           {shift.status === 'scheduled' && (
-            <p className={`mt-1 text-[10px] ${styles.subtext}`}>
+            <p className={`mt-1 text-[10px] ${presentation.subtext}`}>
               Scheduled clock-in {formatTimeLabel(shift.startTime)}
             </p>
           )}
-          {shift.status === 'scheduled' && shift.confirmationStatus ? (
+          {shift.status === 'scheduled' ? (
             <div className="mt-1.5">
               <ShiftConfirmationBadge shift={shift} />
               {shift.confirmationStatus === 'declined' && shift.confirmationNote ? (
-                <p className={`mt-1 text-[10px] ${styles.subtext}`}>
+                <p className={`mt-1 text-[10px] ${presentation.subtext}`}>
                   {shift.confirmationNote}
                 </p>
               ) : null}
             </div>
           ) : null}
           {shift.status === 'completed' && (
-            <p className={`mt-1 text-[10px] ${styles.subtext}`}>
+            <p className={`mt-1 text-[10px] ${presentation.subtext}`}>
               Clock-in {formatTimeLabel(shift.startTime)} — Clock-out{' '}
               {formatTimeLabel(shift.endTime)}
             </p>
           )}
           {shift.status === 'absent' && (
-            <p className={`mt-1 text-[10px] font-medium ${styles.subtext}`}>
+            <p className={`mt-1 text-[10px] font-medium ${presentation.subtext}`}>
               {shift.note || 'Absent (Medical leave)'}
             </p>
           )}
@@ -177,7 +204,7 @@ export function ShiftCard({
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
-          <Icon className={`h-3.5 w-3.5 ${styles.iconClass}`} />
+          <Icon className={`h-3.5 w-3.5 ${presentation.iconClass}`} />
         </div>
       </div>
 
