@@ -79,6 +79,29 @@ export function buildEmployeeCreatePayload(input: {
   return payload;
 }
 
+/** Update payload — must not touch kiosk punch fields (`lastAction`, `lastTimestampServer`). */
+export function buildEmployeeUpdatePayload(input: {
+  form: CreateEmployeeFormValues;
+  active: boolean;
+  kioskEnabled: boolean;
+  photoUrl?: string;
+  passport?: { url: string; fileName: string };
+  visa?: { url: string; fileName: string };
+}): Record<string, unknown> {
+  const payload = buildEmployeeCreatePayload({
+    form: input.form,
+    photoUrl: input.photoUrl,
+    passport: input.passport,
+    visa: input.visa,
+  });
+
+  delete payload.lastAction;
+  payload.active = input.active;
+  payload.kioskEnabled = input.kioskEnabled;
+
+  return payload;
+}
+
 export const initialCreateEmployeeForm: CreateEmployeeFormValues = {
   employeeId: '',
   name: '',

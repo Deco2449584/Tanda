@@ -31,6 +31,7 @@ import {
 import { COLLECTIONS } from '@/lib/constants';
 import {
   buildEmployeeCreatePayload,
+  buildEmployeeUpdatePayload,
   initialCreateEmployeeForm,
 } from '@/lib/employees/build-create-payload';
 import {
@@ -92,7 +93,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const isEditMode = Boolean(employee);
   const { activeLocations } = useLocations();
   const { settings } = useCompanySettings();
-  const { employees, loading: employeesLoading } = useEmployees();
+  const { employees, loading: employeesLoading, refresh: refreshEmployees } = useEmployees();
   const { isMaster, canPerformAction } = useAdminAccess();
   const canInviteEmployees = canPerformAction('employees', 'invite');
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
@@ -114,6 +115,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [kioskPassword, setKioskPassword] = useState('');
   const [kioskPasswordConfirm, setKioskPasswordConfirm] = useState('');
   const [error, setError] = useState('');
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const isBusy = isUploading || isSubmitting || isResendingInvite;
   const isKiosk = isKioskAccessRole(accessRole);
@@ -233,6 +235,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setSaveMessage(null);
 
     if (!db) {
       setError('Firebase is not available.');
@@ -366,15 +369,14 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       };
 
       if (isEditMode && employee) {
-        const payload: Record<string, unknown> = buildEmployeeCreatePayload({
+        const payload: Record<string, unknown> = buildEmployeeUpdatePayload({
           form: normalizedForm,
+          active,
+          kioskEnabled: isKiosk ? false : kioskEnabled,
           photoUrl: photoUrl || undefined,
           passport: isKiosk ? undefined : passport,
           visa: isKiosk ? undefined : visa,
         });
-
-        payload.active = active;
-        payload.kioskEnabled = isKiosk ? false : kioskEnabled;
 
         if (!normalizedForm.locationId?.trim()) payload.locationId = deleteField();
         if (!normalizedForm.locationGroupId?.trim()) payload.locationGroupId = deleteField();
@@ -447,6 +449,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           employeeDocId: employee.id,
           summary: `Updated employee ${form.name.trim()} (${employeeCode})`,
         });
+
+        await refreshEmployees();
+        setSaveMessage('Employee updated successfully.');
       } else {
         const payload = buildEmployeeCreatePayload({
           form: normalizedForm,
@@ -497,14 +502,24 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         });
       }
 
+      if (isEditMode) {
+        return;
+      }
+
       onSuccess();
     } catch (submitError) {
+      const rawMessage =
+        submitError instanceof Error ? submitError.message : 'Unknown error';
+      const permissionDenied =
+        rawMessage.includes('permission') || rawMessage.includes('Permission');
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : isUploading
-            ? 'Could not upload a file. Please try again.'
-            : `Could not ${isEditMode ? 'update' : 'save'} the employee. Please try again.`,
+        permissionDenied
+          ? 'Could not save: insufficient Firestore permissions. If this persists after updating rules, contact support.'
+          : submitError instanceof Error
+            ? rawMessage
+            : isUploading
+              ? 'Could not upload a file. Please try again.'
+              : `Could not ${isEditMode ? 'update' : 'save'} the employee. Please try again.`,
       );
     } finally {
       setIsUploading(false);
@@ -992,6 +1007,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         </>
       ) : null}
 
+      {saveMessage ? <FormAlert variant="success">{saveMessage}</FormAlert> : null}
       {error ? <FormAlert variant="error">{error}</FormAlert> : null}
 
       <FormActions
