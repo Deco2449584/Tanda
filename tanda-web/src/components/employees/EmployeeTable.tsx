@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
+import { DeleteEmployeeConfirmModal } from '@/components/employees/DeleteEmployeeConfirmModal';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
@@ -12,6 +13,7 @@ import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-a
 import { recordEmployeeAuditEvent } from '@/lib/audit/audit-logs-client';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
+import { useEmployees } from '@/providers/EmployeesProvider';
 import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
 
@@ -64,7 +66,10 @@ export function EmployeeTable({
 }: EmployeeTableProps) {
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
+  const { refresh: refreshEmployees } = useEmployees();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Employee | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const filteredEmployees = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -83,20 +88,28 @@ export function EmployeeTable({
     });
   }, [employees, groups, locations, searchQuery]);
 
-  async function handleDelete(employee: Employee) {
-    if (!db) return;
-
+  function requestDelete(employee: Employee) {
     if (isProtectedAdminEmployee(employee)) {
       window.alert('Administrator accounts cannot be deleted from staff management.');
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${employee.name}? This action cannot be undone.`,
-    );
-    if (!confirmed) return;
+    setDeleteError(null);
+    setPendingDelete(employee);
+  }
+
+  function cancelDelete() {
+    if (deletingId) return;
+    setPendingDelete(null);
+    setDeleteError(null);
+  }
+
+  async function handleConfirmDelete() {
+    const employee = pendingDelete;
+    if (!db || !employee) return;
 
     setDeletingId(employee.id);
+    setDeleteError(null);
 
     try {
       await requestSyncEmployeeAuth(employee.id, 'delete');
@@ -106,8 +119,10 @@ export function EmployeeTable({
         employeeDocId: employee.id,
         summary: `Deleted employee ${employee.name} (${employee.employeeId})`,
       });
+      await refreshEmployees();
+      setPendingDelete(null);
     } catch (error) {
-      window.alert(
+      setDeleteError(
         error instanceof Error
           ? error.message
           : 'Could not delete the employee. Please try again.',
@@ -208,7 +223,7 @@ export function EmployeeTable({
                         {canDelete ? (
                           <button
                             type="button"
-                            onClick={() => handleDelete(employee)}
+                            onClick={() => requestDelete(employee)}
                             disabled={deletingId === employee.id || isAdminAccount}
                             title={
                               isAdminAccount
@@ -285,7 +300,7 @@ export function EmployeeTable({
                         {canDelete ? (
                           <button
                             type="button"
-                            onClick={() => handleDelete(employee)}
+                            onClick={() => requestDelete(employee)}
                             disabled={deletingId === employee.id || isAdminAccount}
                             title={
                               isAdminAccount
@@ -307,6 +322,14 @@ export function EmployeeTable({
           })
         )}
       </ul>
+
+      <DeleteEmployeeConfirmModal
+        employee={pendingDelete}
+        loading={Boolean(deletingId)}
+        error={deleteError}
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }
