@@ -183,6 +183,11 @@ export function AssignShiftModal({
     const selectedLocation = locations.find((location) => location.id === locationId);
 
     const employeeDepartment = selectedEmployee.department?.trim() ?? '';
+    const locationLabel = selectedLocation
+      ? selectedLocation.city
+        ? `${selectedLocation.name} (${selectedLocation.city})`
+        : selectedLocation.name
+      : '';
 
     setIsSubmitting(true);
 
@@ -215,6 +220,7 @@ export function AssignShiftModal({
           startTime,
           endTime,
           department: employeeDepartment,
+          locationLabel,
         });
 
         void recordShiftAuditEvent({
@@ -234,6 +240,7 @@ export function AssignShiftModal({
           startTime,
           endTime,
           department: employeeDepartment,
+          locationLabel,
         });
 
         void recordShiftAuditEvent({

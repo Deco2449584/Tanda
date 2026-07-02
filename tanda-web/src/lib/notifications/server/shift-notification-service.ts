@@ -23,6 +23,8 @@ export async function upsertEmployeeShiftNotification(input: {
   date: string;
   startTime?: string;
   endTime?: string;
+  department?: string;
+  locationLabel?: string;
   pushSubscription?: string | null;
 }): Promise<{ inApp: boolean; push: boolean; email: boolean }> {
   const recipientEmail = input.recipientEmail.trim().toLowerCase();
@@ -62,6 +64,8 @@ export async function upsertEmployeeShiftNotification(input: {
           date: input.date,
           startTime: input.startTime,
           endTime: input.endTime,
+          department: input.department,
+          locationLabel: input.locationLabel,
         });
       } catch (error) {
         console.error('sendShiftEmail (existing notification)', error);
@@ -122,6 +126,8 @@ export async function upsertEmployeeShiftNotification(input: {
         date: input.date,
         startTime: input.startTime,
         endTime: input.endTime,
+        department: input.department,
+        locationLabel: input.locationLabel,
       });
     } catch (error) {
       console.error('sendShiftEmail', error);

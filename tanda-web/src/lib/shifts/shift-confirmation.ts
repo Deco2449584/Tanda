@@ -31,3 +31,52 @@ export function getShiftConfirmationChipClass(
       return '';
   }
 }
+
+/** Compact pill styles for schedule grid / mobile when shift is still scheduled. */
+export function getScheduledShiftConfirmationPillClass(
+  status: ShiftConfirmationStatus | undefined,
+): string {
+  switch (status) {
+    case 'confirmed':
+      return 'border-emerald-500/45 bg-emerald-500/15 text-emerald-300';
+    case 'declined':
+      return 'border-red-500/45 bg-red-500/15 text-red-300';
+    case 'pending':
+      return 'border-amber-500/45 bg-amber-500/15 text-amber-200';
+    default:
+      return 'border-primary/35 bg-primary/15 text-primary';
+  }
+}
+
+export function getShiftConfirmationShortCode(
+  status: ShiftConfirmationStatus | undefined,
+): string {
+  switch (status) {
+    case 'confirmed':
+      return '✓';
+    case 'declined':
+      return '✗';
+    case 'pending':
+      return '…';
+    default:
+      return '';
+  }
+}
+
+export const SHIFT_CONFIRMATION_LEGEND = [
+  {
+    status: 'pending' as const,
+    label: 'Awaiting confirmation',
+    chip: 'border-amber-500/45 bg-amber-500/15 text-amber-200',
+  },
+  {
+    status: 'confirmed' as const,
+    label: 'Confirmed by employee',
+    chip: 'border-emerald-500/45 bg-emerald-500/15 text-emerald-300',
+  },
+  {
+    status: 'declined' as const,
+    label: 'Cannot attend',
+    chip: 'border-red-500/45 bg-red-500/15 text-red-300',
+  },
+] as const;

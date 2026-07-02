@@ -12,6 +12,7 @@ import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfir
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
+import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
 import { normalizeInputDate, isOnOrAfterToday } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
@@ -93,6 +94,7 @@ export function ScheduleGrid({
         startTime: shift.startTime,
         endTime: shift.endTime,
         department: shift.department,
+        locationLabel: formatShiftLocationLabel(shift) || undefined,
       });
 
       void recordShiftAuditEvent({

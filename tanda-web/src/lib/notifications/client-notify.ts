@@ -8,6 +8,7 @@ export interface ShiftNotificationInput {
   startTime?: string;
   endTime?: string;
   department?: string;
+  locationLabel?: string;
 }
 
 /** Fire-and-forget shift notification (in-app tray + optional push). */

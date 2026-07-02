@@ -1,4 +1,5 @@
-import { AlertCircle, Check, Clock } from 'lucide-react';
+import { AlertCircle, Check, Clock, HelpCircle, UserCheck, UserX } from 'lucide-react';
+import { SHIFT_CONFIRMATION_LEGEND } from '@/lib/shifts/shift-confirmation';
 import type { ShiftStatus } from '@/lib/types/shift';
 
 const LEGEND_ITEMS: {
@@ -52,6 +53,30 @@ export function ScheduleStatusLegend({ className = '' }: ScheduleStatusLegendPro
         <span className="min-w-0 text-[10px] leading-snug text-subtle">
           Based on assigned shifts and attendance records
         </span>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/60 pt-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
+          Employee confirmation
+        </span>
+        {SHIFT_CONFIRMATION_LEGEND.map(({ status, label, chip }) => {
+          const Icon =
+            status === 'confirmed'
+              ? UserCheck
+              : status === 'declined'
+                ? UserX
+                : HelpCircle;
+
+          return (
+            <span
+              key={status}
+              className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${chip}`}
+            >
+              <Icon className="h-3 w-3 shrink-0" aria-hidden />
+              {label}
+            </span>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,4 +1,9 @@
-import { getAppBaseUrl } from '@/lib/app-url';
+import { getAppBaseUrl, getAppLogoUrl } from '@/lib/app-url';
+import {
+  buildShiftAssignmentEmailHtml,
+  buildShiftAssignmentEmailSubject,
+  buildShiftAssignmentEmailText,
+} from '@/lib/email/shift-assignment-email-html';
 import { isResendConfigured } from '@/lib/email/send-announcement-email';
 import type { EmployeeShiftAlertType } from '@/lib/notifications/build-shift-notification';
 
@@ -9,42 +14,8 @@ export interface SendShiftEmailInput {
   date: string;
   startTime?: string;
   endTime?: string;
-}
-
-function buildShiftEmailContent(input: SendShiftEmailInput): {
-  subject: string;
-  text: string;
-  html: string;
-} {
-  const timeRange =
-    input.startTime && input.endTime
-      ? `${input.startTime}–${input.endTime}`
-      : input.startTime || input.endTime || '';
-  const detail = [input.date, timeRange].filter(Boolean).join(' · ');
-  const scheduleUrl = `${getAppBaseUrl()}/my-schedule`;
-  const greeting = input.name.trim() ? `Hi ${input.name.trim()},` : 'Hi,';
-
-  if (input.type === 'cancelled') {
-    const subject = 'Shift cancelled';
-    const bodyLine = detail
-      ? `Your shift on ${detail} was cancelled.`
-      : 'One of your shifts was cancelled.';
-    return {
-      subject,
-      text: `${greeting}\n\n${bodyLine}\n\nView your schedule: ${scheduleUrl}`,
-      html: `<p>${greeting}</p><p>${bodyLine}</p><p><a href="${scheduleUrl}">View your schedule</a></p>`,
-    };
-  }
-
-  const subject = 'New shift assigned';
-  const bodyLine = detail
-    ? `You have a new shift on ${detail}.`
-    : 'You have a new shift on your schedule.';
-  return {
-    subject,
-    text: `${greeting}\n\n${bodyLine}\n\nView your schedule: ${scheduleUrl}`,
-    html: `<p>${greeting}</p><p>${bodyLine}</p><p><a href="${scheduleUrl}">View your schedule</a></p>`,
-  };
+  locationLabel?: string;
+  department?: string;
 }
 
 export async function sendShiftEmail(input: SendShiftEmailInput): Promise<boolean> {
@@ -54,7 +25,23 @@ export async function sendShiftEmail(input: SendShiftEmailInput): Promise<boolea
   const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (!apiKey || !from) return false;
 
-  const { subject, text, html } = buildShiftEmailContent(input);
+  const appUrl = getAppBaseUrl();
+  const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('light');
+  const scheduleUrl = `${appUrl}/my-schedule`;
+
+  const emailContent = {
+    email: input.email,
+    name: input.name,
+    type: input.type,
+    date: input.date,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    locationLabel: input.locationLabel,
+    department: input.department,
+    scheduleUrl,
+    appUrl,
+    logoUrl,
+  };
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -65,9 +52,9 @@ export async function sendShiftEmail(input: SendShiftEmailInput): Promise<boolea
     body: JSON.stringify({
       from,
       to: [input.email.trim().toLowerCase()],
-      subject,
-      text,
-      html,
+      subject: buildShiftAssignmentEmailSubject(emailContent),
+      text: buildShiftAssignmentEmailText(emailContent),
+      html: buildShiftAssignmentEmailHtml(emailContent),
     }),
   });
 

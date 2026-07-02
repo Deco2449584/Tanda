@@ -14,6 +14,8 @@ interface ShiftNotificationBody {
   date?: string;
   startTime?: string;
   endTime?: string;
+  department?: string;
+  locationLabel?: string;
 }
 
 export async function POST(request: Request) {
@@ -75,6 +77,8 @@ export async function POST(request: Request) {
       date: body.date?.trim() ?? '',
       startTime: body.startTime?.trim(),
       endTime: body.endTime?.trim(),
+      department: body.department?.trim(),
+      locationLabel: body.locationLabel?.trim(),
       pushSubscription,
     });
 

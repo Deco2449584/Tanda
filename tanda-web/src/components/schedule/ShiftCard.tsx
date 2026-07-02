@@ -1,6 +1,11 @@
 ﻿import { AlertCircle, Check, Clock, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { ShiftConfirmationBadge } from '@/components/shifts/ShiftConfirmationActions';
+import {
+  getScheduledShiftConfirmationPillClass,
+  getShiftConfirmationLabel,
+  getShiftConfirmationShortCode,
+} from '@/lib/shifts/shift-confirmation';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShiftTimeRangeShort, formatTimeLabel } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
@@ -55,14 +60,33 @@ export function ShiftCard({
   const locationLabel = formatShiftLocationLabel(shift);
 
   if (compact) {
+    const confirmationClass =
+      shift.status === 'scheduled' && shift.confirmationStatus
+        ? getScheduledShiftConfirmationPillClass(shift.confirmationStatus)
+        : '';
+    const confirmationCode =
+      shift.status === 'scheduled' && shift.confirmationStatus
+        ? getShiftConfirmationShortCode(shift.confirmationStatus)
+        : '';
+    const confirmationLabel =
+      shift.status === 'scheduled' && shift.confirmationStatus
+        ? getShiftConfirmationLabel(shift.confirmationStatus)
+        : '';
+
     return (
       <div
-        className={`rounded px-1 py-0.5 ${styles.compactContainer}`}
+        className={`rounded border px-1 py-0.5 ${
+          confirmationClass || styles.compactContainer
+        }`}
+        title={confirmationLabel || undefined}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-0.5">
           <p className={`truncate text-[9px] font-semibold leading-tight ${styles.text}`}>
             {formatShiftTimeRangeShort(shift.startTime, shift.endTime)}
+            {confirmationCode ? (
+              <span className="ml-0.5 opacity-90">{confirmationCode}</span>
+            ) : null}
           </p>
           {onDelete ? (
             <button

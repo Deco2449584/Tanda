@@ -9,6 +9,11 @@ import {
   formatShiftTimeRangeShort,
   type WeekDay,
 } from '@/lib/schedule/week';
+import {
+  getScheduledShiftConfirmationPillClass,
+  getShiftConfirmationLabel,
+  getShiftConfirmationShortCode,
+} from '@/lib/shifts/shift-confirmation';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
 
@@ -27,14 +32,19 @@ function shiftKey(employeeId: string, date: string) {
   return `${employeeId}__${date}`;
 }
 
-const SHIFT_PILL_CLASS: Record<Shift['status'], string> = {
-  scheduled:
-    'border-primary/35 bg-primary/15 text-primary',
+const SHIFT_PILL_CLASS: Record<Exclude<Shift['status'], 'scheduled'>, string> = {
   completed:
     'border-emerald-500/35 bg-emerald-500/10 text-emerald-400',
   absent:
     'border-orange-500/35 bg-orange-500/10 text-orange-400',
 };
+
+function getShiftPillClass(shift: Shift): string {
+  if (shift.status === 'scheduled') {
+    return getScheduledShiftConfirmationPillClass(shift.confirmationStatus);
+  }
+  return SHIFT_PILL_CLASS[shift.status];
+}
 
 function dayNumberFromDate(date: string): number {
   return Number(date.slice(8, 10));
@@ -82,11 +92,24 @@ function MobileDayCell({
   }
 
   const cellSizeClass = 'h-[2.85rem] min-h-[2.85rem] w-full';
+  const confirmationCode =
+    primaryShift?.status === 'scheduled' && primaryShift.confirmationStatus
+      ? getShiftConfirmationShortCode(primaryShift.confirmationStatus)
+      : '';
+  const confirmationLabel =
+    primaryShift?.status === 'scheduled' && primaryShift.confirmationStatus
+      ? getShiftConfirmationLabel(primaryShift.confirmationStatus)
+      : '';
 
   return (
     <div
       role={canSchedule ? 'button' : undefined}
       tabIndex={canSchedule ? 0 : undefined}
+      aria-label={
+        hasShift && primaryShift && confirmationLabel
+          ? `${formatShiftTimeRangeShort(primaryShift.startTime, primaryShift.endTime)}, ${confirmationLabel}`
+          : undefined
+      }
       onClick={handleActivate}
       onKeyDown={handleCellKeyDown}
       className={`relative flex ${cellSizeClass} flex-col items-center justify-center rounded-lg border transition-colors ${
@@ -97,7 +120,7 @@ function MobileDayCell({
         today && hasShift ? 'ring-1 ring-primary/45' : ''
       } ${
         hasShift && primaryShift
-          ? SHIFT_PILL_CLASS[primaryShift.status]
+          ? getShiftPillClass(primaryShift)
           : 'border-dashed border-border-strong/70 bg-surface-base/40 hover:border-zinc-500 hover:bg-surface-raised'
       }`}
     >
@@ -109,6 +132,14 @@ function MobileDayCell({
               primaryShift.endTime,
             )}
           </span>
+          {confirmationCode ? (
+            <span
+              className="mt-0.5 text-[8px] font-bold leading-none"
+              title={confirmationLabel}
+            >
+              {confirmationCode}
+            </span>
+          ) : null}
           {shifts.length > 1 ? (
             <span className="mt-0.5 text-[8px] font-medium opacity-80">
               +{shifts.length - 1}
