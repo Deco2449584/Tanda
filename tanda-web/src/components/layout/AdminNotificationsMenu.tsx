@@ -5,21 +5,26 @@ import Link from 'next/link';
 import { Bell, X } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import {
-  useAdminNotificationBadge,
   useAdminNotifications,
   type AdminNotificationItem,
 } from '@/hooks/useAdminNotifications';
 import {
-  dismissAdminAlertKeys,
-  subscribeToDismissedAdminAlertKeys,
+  dismissAdminAlerts,
+  subscribeToDismissedAdminAlerts,
 } from '@/lib/notifications/admin-notification-preferences';
 import { isInformationalAdminAlert } from '@/lib/notifications/admin-alert-metadata';
 import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
+import {
+  computeAdminBadgeCount,
+  filterVisibleAdminAlerts,
+  type DismissedAdminAlertsMap,
+} from '@/lib/notifications/admin-notification-dismiss';
 import {
   mapNotificationChannels,
   type NotificationChannelPreferences,
 } from '@/lib/notifications/notification-channels';
 import { subscribeToNotificationChannels } from '@/lib/notifications/employee-notification-preferences';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
 
 import { getAdminAlertVisual } from '@/lib/notifications/notification-visuals';
 
@@ -29,7 +34,7 @@ interface AdminNotificationsMenuProps {
 
 export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps) {
   const [open, setOpen] = useState(false);
-  const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<DismissedAdminAlertsMap>({});
   const [channels, setChannels] = useState<NotificationChannelPreferences>(
     mapNotificationChannels(null),
   );
@@ -38,14 +43,19 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
   const { user } = useAuthRole();
   const userEmail = user?.email ?? '';
 
-  const { items: allItems, loading } = useAdminNotifications(
-    enabled && open,
+  const { items: allItems, loading, timeZone } = useAdminNotifications(enabled);
+  const todayKey = toInputDateInTimeZone(timeZone);
+
+  const channelFilteredItems = useMemo(
+    () => filterAdminNotificationsByChannels(allItems, channels),
+    [allItems, channels],
   );
 
-  const channelFilteredItems = filterAdminNotificationsByChannels(allItems, channels);
-  const visibleItems = channelFilteredItems.filter(
-    (item) => !dismissedKeys.includes(item.id),
+  const visibleItems = useMemo(
+    () => filterVisibleAdminAlerts(channelFilteredItems, dismissedAlerts, todayKey),
+    [channelFilteredItems, dismissedAlerts, todayKey],
   );
+
   const actionableItems = useMemo(
     () => visibleItems.filter((item) => item.requiresAction),
     [visibleItems],
@@ -55,21 +65,20 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
     [visibleItems],
   );
   const hasActionableItems = actionableItems.length > 0;
-  const actionableCount = actionableItems.reduce((sum, item) => sum + item.count, 0);
-
-  const badgeCount = useAdminNotificationBadge(enabled && !open, dismissedKeys, channels);
-  const displayCount = open ? actionableCount : badgeCount;
+  const badgeCount = computeAdminBadgeCount(visibleItems);
+  const actionableBadgeCount = computeAdminBadgeCount(actionableItems);
 
   useEffect(() => {
     if (!enabled || !userEmail) {
-      setDismissedKeys([]);
+      setDismissedAlerts({});
       setChannels(mapNotificationChannels(null));
       return;
     }
 
-    const unsubscribeDismissed = subscribeToDismissedAdminAlertKeys(
+    const unsubscribeDismissed = subscribeToDismissedAdminAlerts(
       userEmail,
-      setDismissedKeys,
+      todayKey,
+      setDismissedAlerts,
     );
     const unsubscribeChannels = subscribeToNotificationChannels(userEmail, setChannels);
 
@@ -77,7 +86,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
       unsubscribeDismissed();
       unsubscribeChannels();
     };
-  }, [enabled, userEmail]);
+  }, [enabled, todayKey, userEmail]);
 
   useEffect(() => {
     if (!open) {
@@ -89,15 +98,21 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
       return;
     }
 
-    const informationalIds = informationalItems.map((item) => item.id);
-    if (informationalIds.length === 0) {
+    if (informationalItems.length === 0) {
       informationalDismissedForOpenRef.current = true;
       return;
     }
 
     informationalDismissedForOpenRef.current = true;
-    void dismissAdminAlertKeys(userEmail, informationalIds);
-  }, [informationalItems, loading, open, userEmail]);
+    void dismissAdminAlerts(
+      userEmail,
+      informationalItems.map((item) => ({
+        id: item.id,
+        count: item.count,
+        dateKey: todayKey,
+      })),
+    );
+  }, [informationalItems, loading, open, todayKey, userEmail]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -116,16 +131,26 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  async function handleDismissItem(itemId: string) {
-    if (!userEmail || isInformationalAdminAlert(itemId)) return;
-    await dismissAdminAlertKeys(userEmail, [itemId]);
+  async function handleDismissItem(item: AdminNotificationItem) {
+    if (!userEmail || isInformationalAdminAlert(item.id)) return;
+
+    await dismissAdminAlerts(userEmail, [
+      {
+        id: item.id,
+        count: item.count,
+      },
+    ]);
   }
 
   async function handleClearActionable() {
     if (!userEmail || actionableItems.length === 0) return;
-    await dismissAdminAlertKeys(
+
+    await dismissAdminAlerts(
       userEmail,
-      actionableItems.map((item) => item.id),
+      actionableItems.map((item) => ({
+        id: item.id,
+        count: item.count,
+      })),
     );
   }
 
@@ -142,9 +167,9 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
         aria-haspopup="menu"
       >
         <Bell className="h-5 w-5" />
-        {displayCount > 0 ? (
+        {badgeCount > 0 ? (
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-zinc-950 md:ring-[#0a0a0a]">
-            {displayCount > 9 ? '9+' : displayCount}
+            {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         ) : null}
       </button>
@@ -161,16 +186,14 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
                 <p className="mt-0.5 text-xs text-subtle">
                   {loading
                     ? 'Updating…'
-                    : open
-                      ? hasActionableItems
-                        ? `${actionableCount} need${actionableCount === 1 ? 's' : ''} action`
-                        : 'No actions pending'
-                      : displayCount === 0
-                        ? 'No alerts right now'
-                        : `${displayCount} alert${displayCount === 1 ? '' : 's'}`}
+                    : hasActionableItems
+                      ? `${actionableBadgeCount} need${actionableBadgeCount === 1 ? 's' : ''} action`
+                      : badgeCount > 0
+                        ? `${badgeCount} informational alert${badgeCount === 1 ? '' : 's'}`
+                        : 'No alerts right now'}
                 </p>
               </div>
-              {open && hasActionableItems ? (
+              {hasActionableItems ? (
                 <button
                   type="button"
                   onClick={() => void handleClearActionable()}
@@ -179,7 +202,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
                 >
                   Clear
                 </button>
-              ) : open && !loading && !hasActionableItems ? (
+              ) : !loading ? (
                 <span className="shrink-0 text-[10px] text-subtle">All caught up</span>
               ) : null}
             </div>
@@ -198,7 +221,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
                   key={item.id}
                   item={item}
                   onNavigate={() => setOpen(false)}
-                  onDismiss={() => void handleDismissItem(item.id)}
+                  onDismiss={() => void handleDismissItem(item)}
                 />
               ))}
             </ul>

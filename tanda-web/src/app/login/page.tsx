@@ -100,7 +100,7 @@ function LoginPageContent() {
       setError(message);
     } else if (sessionSuperseded) {
       setError(
-        'Your account was signed in on another device. Sign in again to continue here.',
+        'Your account was signed in on another browser. Sign in again to continue here.',
       );
     }
   }, [sessionSuperseded]);

@@ -1,42 +1,62 @@
-import { doc, getDoc, onSnapshot, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  type Unsubscribe,
+} from 'firebase/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import {
+  type DismissedAdminAlertsMap,
+  parseDismissedAdminAlerts,
+} from '@/lib/notifications/admin-notification-dismiss';
 import {
   normalizeNotificationEmail,
   notificationPreferencesDocId,
 } from '@/lib/notifications/normalize-email';
 
-export async function getDismissedAdminAlertKeys(
-  recipientEmail: string,
-): Promise<string[]> {
-  if (!db) return [];
+export interface AdminAlertDismissInput {
+  id: string;
+  count: number;
+  dateKey?: string;
+}
 
-  const email = normalizeNotificationEmail(recipientEmail);
-  if (!email) return [];
+async function readPreferencesDoc(email: string) {
+  if (!db) return null;
 
   const snapshot = await getDoc(
     doc(db, COLLECTIONS.NOTIFICATION_PREFERENCES, notificationPreferencesDocId(email)),
   );
 
-  if (!snapshot.exists()) return [];
-
-  const data = snapshot.data();
-  const keys = data.dismissedAdminAlertKeys;
-  return Array.isArray(keys) ? keys.filter((key) => typeof key === 'string') : [];
+  return snapshot.exists() ? snapshot.data() : null;
 }
 
-export function subscribeToDismissedAdminAlertKeys(
+export async function getDismissedAdminAlerts(
   recipientEmail: string,
-  onChange: (keys: string[]) => void,
+  todayKey: string,
+): Promise<DismissedAdminAlertsMap> {
+  const email = normalizeNotificationEmail(recipientEmail);
+  if (!email) return {};
+
+  const data = await readPreferencesDoc(email);
+  return parseDismissedAdminAlerts(data ?? undefined, todayKey);
+}
+
+export function subscribeToDismissedAdminAlerts(
+  recipientEmail: string,
+  todayKey: string,
+  onChange: (dismissed: DismissedAdminAlertsMap) => void,
 ): Unsubscribe {
   if (!db) {
-    onChange([]);
+    onChange({});
     return () => undefined;
   }
 
   const email = normalizeNotificationEmail(recipientEmail);
   if (!email) {
-    onChange([]);
+    onChange({});
     return () => undefined;
   }
 
@@ -50,40 +70,78 @@ export function subscribeToDismissedAdminAlertKeys(
     ref,
     (snapshot) => {
       if (!snapshot.exists()) {
-        onChange([]);
+        onChange({});
         return;
       }
 
-      const keys = snapshot.data().dismissedAdminAlertKeys;
-      onChange(Array.isArray(keys) ? keys.filter((key) => typeof key === 'string') : []);
+      onChange(parseDismissedAdminAlerts(snapshot.data(), todayKey));
     },
     (error) => {
-      console.error('subscribeToDismissedAdminAlertKeys', error);
-      onChange([]);
+      console.error('subscribeToDismissedAdminAlerts', error);
+      onChange({});
     },
   );
 }
 
-export async function dismissAdminAlertKeys(
+export async function dismissAdminAlerts(
   recipientEmail: string,
-  alertKeys: string[],
+  alerts: AdminAlertDismissInput[],
 ): Promise<void> {
-  if (!db || alertKeys.length === 0) return;
+  if (!db || alerts.length === 0) return;
 
   const email = normalizeNotificationEmail(recipientEmail);
   if (!email) return;
 
-  const existing = await getDismissedAdminAlertKeys(email);
-  const merged = Array.from(new Set([...existing, ...alertKeys]));
+  const todayKey =
+    alerts.find((alert) => alert.dateKey)?.dateKey ??
+    alerts[0]?.dateKey ??
+    undefined;
+
+  const existing = await getDismissedAdminAlerts(
+    email,
+    todayKey ?? new Date().toISOString().slice(0, 10),
+  );
+  const merged: DismissedAdminAlertsMap = { ...existing };
+
+  for (const alert of alerts) {
+    const previous = merged[alert.id];
+    const nextSnapshot = {
+      count: Math.max(previous?.count ?? 0, alert.count),
+      ...(alert.dateKey ? { dateKey: alert.dateKey } : {}),
+    };
+
+    if (previous?.dateKey && !nextSnapshot.dateKey) {
+      nextSnapshot.dateKey = previous.dateKey;
+    }
+
+    merged[alert.id] = nextSnapshot;
+  }
 
   await setDoc(
     doc(db, COLLECTIONS.NOTIFICATION_PREFERENCES, notificationPreferencesDocId(email)),
     {
       recipientEmail: email,
-      dismissedAdminAlertKeys: merged,
+      dismissedAdminAlerts: merged,
+      dismissedAdminAlertKeys: [],
       updatedAt: serverTimestamp(),
     },
     { merge: true },
+  );
+}
+
+/** @deprecated Use dismissAdminAlerts with count snapshots. */
+export async function dismissAdminAlertKeys(
+  recipientEmail: string,
+  alertKeys: string[],
+): Promise<void> {
+  if (alertKeys.length === 0) return;
+
+  await dismissAdminAlerts(
+    recipientEmail,
+    alertKeys.map((id) => ({
+      id,
+      count: Number.MAX_SAFE_INTEGER,
+    })),
   );
 }
 
@@ -97,6 +155,7 @@ export async function clearDismissedAdminAlertKeys(recipientEmail: string): Prom
     doc(db, COLLECTIONS.NOTIFICATION_PREFERENCES, notificationPreferencesDocId(email)),
     {
       recipientEmail: email,
+      dismissedAdminAlerts: {},
       dismissedAdminAlertKeys: [],
       updatedAt: serverTimestamp(),
     },

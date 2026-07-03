@@ -42,6 +42,13 @@ export interface AppNotification {
 export interface NotificationPreferencesFirestore {
   recipientEmail: string;
   dismissedAdminAlertKeys?: string[];
+  dismissedAdminAlerts?: Record<
+    string,
+    {
+      count: number;
+      dateKey?: string;
+    }
+  >;
   channels?: Partial<NotificationChannelPreferences>;
   updatedAt: Timestamp;
 }

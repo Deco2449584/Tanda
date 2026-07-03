@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Timestamp,
   collection,
@@ -36,12 +36,7 @@ import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
-import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
 import { adminAlertRequiresAction } from '@/lib/notifications/admin-alert-metadata';
-import {
-  mapNotificationChannels,
-  type NotificationChannelPreferences,
-} from '@/lib/notifications/notification-channels';
 
 export interface AdminNotificationItem {
   id: string;
@@ -55,7 +50,7 @@ export interface AdminNotificationItem {
 
 const ATTENDANCE_LOOKBACK_DAYS = 14;
 const ATTENDANCE_FETCH_LIMIT = 2000;
-const BADGE_POLL_INTERVAL_MS = 5 * 60 * 1000;
+const BADGE_POLL_INTERVAL_MS = 60 * 1000;
 const MAX_DETAIL_LINES = 4;
 
 function getRecentAttendanceRange() {
@@ -358,6 +353,42 @@ export function useAdminNotifications(enabled: boolean) {
     new Map(),
   );
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async (options?: { silent?: boolean }) => {
+    if (!enabled || !db) {
+      setLeaveRequests([]);
+      setShifts([]);
+      setAttendanceRecords([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
+    if (!options?.silent) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+
+    try {
+      const data = await fetchAdminNotificationData();
+      setLeaveRequests(data.leaveRequests);
+      setShifts(data.shifts);
+      setAttendanceRecords(data.attendanceRecords);
+      setAttendancePolicy(data.attendancePolicy);
+      setTimeZone(data.timeZone);
+      setEmployeeNameByCode(data.employeeNameByCode);
+    } catch (error) {
+      console.error('useAdminNotifications', error);
+      setLeaveRequests([]);
+      setShifts([]);
+      setAttendanceRecords([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled || !db) {
@@ -365,40 +396,36 @@ export function useAdminNotifications(enabled: boolean) {
       setShifts([]);
       setAttendanceRecords([]);
       setLoading(false);
+      setRefreshing(false);
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
 
     void (async () => {
-      try {
-        const data = await fetchAdminNotificationData();
-
-        if (cancelled) return;
-        setLeaveRequests(data.leaveRequests);
-        setShifts(data.shifts);
-        setAttendanceRecords(data.attendanceRecords);
-        setAttendancePolicy(data.attendancePolicy);
-        setTimeZone(data.timeZone);
-        setEmployeeNameByCode(data.employeeNameByCode);
-      } catch (error) {
-        console.error('useAdminNotifications', error);
-        if (cancelled) return;
-        setLeaveRequests([]);
-        setShifts([]);
-        setAttendanceRecords([]);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+      await loadData();
+      if (cancelled) return;
     })();
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void loadData({ silent: true });
+    }, BADGE_POLL_INTERVAL_MS);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadData({ silent: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [enabled]);
+  }, [enabled, loadData]);
 
   const items = useMemo<AdminNotificationItem[]>(() => {
     if (!enabled) return [];
@@ -426,55 +453,5 @@ export function useAdminNotifications(enabled: boolean) {
     [items],
   );
 
-  return { items, totalCount, loading };
-}
-
-export function useAdminNotificationBadge(
-  enabled: boolean,
-  dismissedAlertKeys: string[] = [],
-  channels: NotificationChannelPreferences = mapNotificationChannels(null),
-) {
-  const [totalCount, setTotalCount] = useState(0);
-  const dismissedSerialized = JSON.stringify(dismissedAlertKeys);
-  const channelsSerialized = JSON.stringify(channels);
-
-  useEffect(() => {
-    if (!enabled || !db) {
-      setTotalCount(0);
-      return;
-    }
-
-    let cancelled = false;
-    const dismissed = new Set(JSON.parse(dismissedSerialized) as string[]);
-    const channelPrefs = JSON.parse(channelsSerialized) as NotificationChannelPreferences;
-
-    async function pollBadge() {
-      try {
-        const data = await fetchAdminNotificationData();
-        if (!cancelled) {
-          const count = filterAdminNotificationsByChannels(
-            buildNotificationItems(data),
-            channelPrefs,
-          )
-            .filter((item) => !dismissed.has(item.id))
-            .reduce((sum, item) => sum + item.count, 0);
-          setTotalCount(count);
-        }
-      } catch (error) {
-        console.error('useAdminNotificationBadge', error);
-      }
-    }
-
-    void pollBadge();
-    const intervalId = window.setInterval(() => {
-      void pollBadge();
-    }, BADGE_POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [channelsSerialized, dismissedSerialized, enabled]);
-
-  return totalCount;
+  return { items, totalCount, loading, refreshing, timeZone, refresh: loadData };
 }
