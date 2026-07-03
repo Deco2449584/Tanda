@@ -17,7 +17,15 @@ import {
   fetchEmployeeSessionForEmail,
   getEmployeeSessionBlockMessage,
 } from '@/lib/auth/employee-session';
-import { getHomeRouteForRole } from '@/lib/auth/roles';
+import { getHomeRouteForRole, isKioskRole } from '@/lib/auth/roles';
+import {
+  claimAuthSession,
+  releaseOwnedAuthSession,
+} from '@/lib/auth/auth-session-client';
+import {
+  consumeAuthSessionMessage,
+  setStoredAuthSessionId,
+} from '@/lib/auth/auth-session-storage';
 import { auth } from '@/lib/firebase';
 import { releaseKioskSession } from '@/lib/kiosk/clear-kiosk-session';
 import { Button } from '@/components/ui/Button';
@@ -84,6 +92,18 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const passwordJustSet = searchParams.get('passwordSet') === '1';
+  const sessionSuperseded = searchParams.get('session') === 'superseded';
+
+  useEffect(() => {
+    const message = consumeAuthSessionMessage();
+    if (message) {
+      setError(message);
+    } else if (sessionSuperseded) {
+      setError(
+        'Your account was signed in on another device. Sign in again to continue here.',
+      );
+    }
+  }, [sessionSuperseded]);
 
   useEffect(() => {
     if (authLoading || !user || !role) return;
@@ -106,9 +126,16 @@ function LoginPageContent() {
 
       if (blockMessage) {
         await releaseKioskSession();
+        await releaseOwnedAuthSession();
         await signOut(auth);
         setError(blockMessage);
         return;
+      }
+
+      if (!isKioskRole(session.role)) {
+        const sessionId = crypto.randomUUID();
+        setStoredAuthSessionId(sessionId);
+        await claimAuthSession(sessionId);
       }
 
       router.push(getHomeRouteForRole(session.role));

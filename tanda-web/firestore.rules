@@ -307,6 +307,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // 19. Sesión activa por usuario (lectura propia; escritura solo Admin SDK)
+    match /auth_sessions/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
     // Bloqueo de seguridad global por defecto
     match /{document=**} {
       allow read, write: if false;

@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -15,6 +16,17 @@ import {
   fetchEmployeeSessionForEmail,
   getEmployeeSessionBlockMessage,
 } from '@/lib/auth/employee-session';
+import {
+  claimAuthSession,
+  releaseOwnedAuthSession,
+  subscribeToAuthSession,
+} from '@/lib/auth/auth-session-client';
+import {
+  createAndStoreAuthSessionId,
+  getStoredAuthSessionId,
+  setAuthSessionMessage,
+} from '@/lib/auth/auth-session-storage';
+import { isKioskRole } from '@/lib/auth/roles';
 import type { UserRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
 import { disconnectKioskDeviceSession } from '@/lib/kiosk/disconnect-kiosk-device';
@@ -36,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const sessionSupersededRef = useRef(false);
 
   useEffect(() => {
     if (!auth) {
@@ -99,6 +112,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!auth || !user?.uid || role === null || isKioskRole(role)) {
+      sessionSupersededRef.current = false;
+      return;
+    }
+
+    let cancelled = false;
+    let unsubscribeSession: (() => void) | null = null;
+    sessionSupersededRef.current = false;
+
+    const handleSupersededSession = async () => {
+      if (!auth || sessionSupersededRef.current) return;
+      sessionSupersededRef.current = true;
+
+      setAuthSessionMessage(
+        'Your account was signed in on another device. Sign in again to continue here.',
+      );
+
+      setUser(null);
+      setRole(null);
+      setLoading(true);
+
+      try {
+        await releaseKioskSession();
+        await signOut(auth);
+        router.replace('/login?session=superseded');
+      } catch {
+        window.location.assign('/login?session=superseded');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void (async () => {
+      let sessionId = getStoredAuthSessionId();
+      if (!sessionId) {
+        sessionId = createAndStoreAuthSessionId();
+        try {
+          await claimAuthSession(sessionId);
+        } catch (error) {
+          console.error('AuthProvider claim session', error);
+        }
+      }
+
+      if (cancelled) return;
+
+      unsubscribeSession = subscribeToAuthSession(user.uid, (remoteSessionId) => {
+        const localSessionId = getStoredAuthSessionId();
+        if (!remoteSessionId || !localSessionId) return;
+        if (remoteSessionId !== localSessionId) {
+          void handleSupersededSession();
+        }
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubscribeSession?.();
+    };
+  }, [router, role, user?.uid]);
+
   const signOutUser = useCallback(async () => {
     if (!auth || signingOut) return;
 
@@ -110,6 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await disconnectKioskDeviceSession();
       await releaseKioskSession();
+      await releaseOwnedAuthSession();
       await signOut(auth);
       router.replace('/login');
     } catch {

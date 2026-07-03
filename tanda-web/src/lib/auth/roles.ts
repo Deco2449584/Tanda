@@ -8,6 +8,10 @@ export function isMasterRole(role: UserRole): boolean {
   return role === 'master';
 }
 
+export function isKioskRole(role: UserRole): boolean {
+  return role === 'kiosk';
+}
+
 export function getHomeRouteForRole(role: UserRole): string {
   if (isAdminAreaRole(role)) return '/dashboard';
   if (role === 'kiosk') return '/kiosk';

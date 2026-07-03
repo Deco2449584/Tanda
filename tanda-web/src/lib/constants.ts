@@ -18,6 +18,7 @@ export const COLLECTIONS = {
   SETTINGS: 'settings',
   ISSUE_REPORTS: 'issue_reports',
   HELP_TUTORIALS: 'help_tutorials',
+  AUTH_SESSIONS: 'auth_sessions',
 } as const;
 
 export const TIMEZONE_OPTIONS = [
