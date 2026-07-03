@@ -22,7 +22,8 @@ import {
   subscribeToAuthSession,
 } from '@/lib/auth/auth-session-client';
 import {
-  createAndStoreAuthSessionId,
+  clearSessionTakeover,
+  getSessionTakeover,
   getStoredAuthSessionId,
   setAuthSessionMessage,
 } from '@/lib/auth/auth-session-storage';
@@ -135,13 +136,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSessionSupersededOpen(true);
     };
 
-    const ensureSessionClaimed = async () => {
+    const ensureExistingSessionClaimed = async () => {
       if (cancelled || sessionSupersededRef.current) return;
 
-      let sessionId = getStoredAuthSessionId();
-      if (!sessionId) {
-        sessionId = createAndStoreAuthSessionId();
-      }
+      const sessionId = getStoredAuthSessionId();
+      if (!sessionId) return;
 
       try {
         await claimAuthSession(sessionId);
@@ -154,15 +153,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled || sessionSupersededRef.current) return;
 
       const localSessionId = getStoredAuthSessionId();
+      const takeoverId = getSessionTakeover();
 
       if (!remoteSessionId) {
-        if (!localSessionId) {
-          void ensureSessionClaimed();
+        if (localSessionId) {
+          void ensureExistingSessionClaimed();
         }
         return;
       }
 
-      if (!localSessionId || remoteSessionId !== localSessionId) {
+      if (localSessionId && remoteSessionId === localSessionId) {
+        clearSessionTakeover();
+        return;
+      }
+
+      if (localSessionId && remoteSessionId !== localSessionId) {
+        if (takeoverId === localSessionId) {
+          return;
+        }
         showSessionConflict();
       }
     });

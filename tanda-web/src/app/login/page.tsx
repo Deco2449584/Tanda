@@ -23,7 +23,9 @@ import {
   releaseOwnedAuthSession,
 } from '@/lib/auth/auth-session-client';
 import {
+  clearSessionTakeover,
   consumeAuthSessionMessage,
+  markSessionTakeover,
   setStoredAuthSessionId,
 } from '@/lib/auth/auth-session-storage';
 import { auth } from '@/lib/firebase';
@@ -134,8 +136,13 @@ function LoginPageContent() {
 
       if (!isKioskRole(session.role)) {
         const sessionId = crypto.randomUUID();
+        markSessionTakeover(sessionId);
         setStoredAuthSessionId(sessionId);
-        await claimAuthSession(sessionId);
+        try {
+          await claimAuthSession(sessionId);
+        } finally {
+          clearSessionTakeover();
+        }
       }
 
       router.push(getHomeRouteForRole(session.role));
