@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, X } from 'lucide-react';
 import { useAuthRole } from '@/hooks/useAuthRole';
@@ -13,6 +13,7 @@ import {
   dismissAdminAlertKeys,
   subscribeToDismissedAdminAlertKeys,
 } from '@/lib/notifications/admin-notification-preferences';
+import { isInformationalAdminAlert } from '@/lib/notifications/admin-alert-metadata';
 import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
 import {
   mapNotificationChannels,
@@ -33,10 +34,11 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
     mapNotificationChannels(null),
   );
   const containerRef = useRef<HTMLDivElement>(null);
+  const informationalDismissedForOpenRef = useRef(false);
   const { user } = useAuthRole();
   const userEmail = user?.email ?? '';
 
-  const { items: allItems, totalCount: allCount, loading } = useAdminNotifications(
+  const { items: allItems, loading } = useAdminNotifications(
     enabled && open,
   );
 
@@ -44,10 +46,19 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
   const visibleItems = channelFilteredItems.filter(
     (item) => !dismissedKeys.includes(item.id),
   );
-  const visibleCount = visibleItems.reduce((sum, item) => sum + item.count, 0);
+  const actionableItems = useMemo(
+    () => visibleItems.filter((item) => item.requiresAction),
+    [visibleItems],
+  );
+  const informationalItems = useMemo(
+    () => visibleItems.filter((item) => !item.requiresAction),
+    [visibleItems],
+  );
+  const hasActionableItems = actionableItems.length > 0;
+  const actionableCount = actionableItems.reduce((sum, item) => sum + item.count, 0);
 
   const badgeCount = useAdminNotificationBadge(enabled && !open, dismissedKeys, channels);
-  const displayCount = open ? visibleCount : badgeCount;
+  const displayCount = open ? actionableCount : badgeCount;
 
   useEffect(() => {
     if (!enabled || !userEmail) {
@@ -69,6 +80,26 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
   }, [enabled, userEmail]);
 
   useEffect(() => {
+    if (!open) {
+      informationalDismissedForOpenRef.current = false;
+      return;
+    }
+
+    if (!userEmail || loading || informationalDismissedForOpenRef.current) {
+      return;
+    }
+
+    const informationalIds = informationalItems.map((item) => item.id);
+    if (informationalIds.length === 0) {
+      informationalDismissedForOpenRef.current = true;
+      return;
+    }
+
+    informationalDismissedForOpenRef.current = true;
+    void dismissAdminAlertKeys(userEmail, informationalIds);
+  }, [informationalItems, loading, open, userEmail]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         containerRef.current &&
@@ -86,15 +117,15 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
   }, [open]);
 
   async function handleDismissItem(itemId: string) {
-    if (!userEmail) return;
+    if (!userEmail || isInformationalAdminAlert(itemId)) return;
     await dismissAdminAlertKeys(userEmail, [itemId]);
   }
 
-  async function handleClearAll() {
-    if (!userEmail || visibleItems.length === 0) return;
+  async function handleClearActionable() {
+    if (!userEmail || actionableItems.length === 0) return;
     await dismissAdminAlertKeys(
       userEmail,
-      visibleItems.map((item) => item.id),
+      actionableItems.map((item) => item.id),
     );
   }
 
@@ -130,32 +161,39 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
                 <p className="mt-0.5 text-xs text-subtle">
                   {loading
                     ? 'Updating…'
-                    : displayCount === 0
-                      ? 'No alerts right now'
-                      : `${displayCount} alert${displayCount === 1 ? '' : 's'}`}
+                    : open
+                      ? hasActionableItems
+                        ? `${actionableCount} need${actionableCount === 1 ? 's' : ''} action`
+                        : 'No actions pending'
+                      : displayCount === 0
+                        ? 'No alerts right now'
+                        : `${displayCount} alert${displayCount === 1 ? '' : 's'}`}
                 </p>
               </div>
-              {visibleItems.length > 0 ? (
+              {open && hasActionableItems ? (
                 <button
                   type="button"
-                  onClick={() => void handleClearAll()}
+                  onClick={() => void handleClearActionable()}
                   className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-hover/60 hover:text-foreground"
+                  title="Dismiss action items you have already handled"
                 >
                   Clear
                 </button>
+              ) : open && !loading && !hasActionableItems ? (
+                <span className="shrink-0 text-[10px] text-subtle">All caught up</span>
               ) : null}
             </div>
           </div>
 
           {loading ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">Loading…</p>
-          ) : visibleItems.length === 0 ? (
+          ) : !hasActionableItems ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">
-              You are all caught up.
+              Nothing needs your action right now.
             </p>
           ) : (
-            <ul className="max-h-72 overflow-y-auto py-1">
-              {visibleItems.map((item) => (
+            <ul className="max-h-72 overflow-y-auto bg-surface-raised py-1 pr-1 scrollbar-thin">
+              {actionableItems.map((item) => (
                 <NotificationRow
                   key={item.id}
                   item={item}

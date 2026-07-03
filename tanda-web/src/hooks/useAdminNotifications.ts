@@ -37,6 +37,7 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
 import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
+import { adminAlertRequiresAction } from '@/lib/notifications/admin-alert-metadata';
 import {
   mapNotificationChannels,
   type NotificationChannelPreferences,
@@ -49,6 +50,7 @@ export interface AdminNotificationItem {
   details: string[];
   href: string;
   count: number;
+  requiresAction: boolean;
 }
 
 const ATTENDANCE_LOOKBACK_DAYS = 14;
@@ -260,6 +262,7 @@ function buildNotificationItems(
       details,
       href: '/leave-requests',
       count: pendingLeaves.length,
+      requiresAction: adminAlertRequiresAction('leave_pending'),
     });
   }
 
@@ -275,6 +278,7 @@ function buildNotificationItems(
       details,
       href: '/schedule?alert=missing_checkin',
       count: missingShiftList.length,
+      requiresAction: adminAlertRequiresAction('missing_checkin'),
     });
   }
 
@@ -290,6 +294,7 @@ function buildNotificationItems(
       details,
       href: '/schedule?alert=no_show',
       count: noShowShiftList.length,
+      requiresAction: adminAlertRequiresAction('no_show_today'),
     });
   }
 
@@ -309,6 +314,7 @@ function buildNotificationItems(
       details,
       href: `/attendance?range=today&date=${todayKey}`,
       count: lateArrivals.length,
+      requiresAction: adminAlertRequiresAction('late_today'),
     });
   }
 
@@ -331,6 +337,7 @@ function buildNotificationItems(
       details,
       href: '/attendance?filter=forgotten',
       count: forgottenCheckIns.length,
+      requiresAction: adminAlertRequiresAction('forgotten_checkout'),
     });
   }
 
