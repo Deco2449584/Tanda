@@ -82,6 +82,28 @@ export function KioskDevicesTab({ onToast }: KioskDevicesTabProps) {
       .finally(() => setLoading(false));
   }, [loadDevices, onToast]);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void loadDevices().catch(() => {
+        // Keep the current list if a background refresh fails.
+      });
+    }, 30_000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadDevices().catch(() => undefined);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [loadDevices]);
+
   const activeLocations = useMemo(
     () => locations.filter((location) => location.active),
     [locations],

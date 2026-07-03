@@ -1,9 +1,10 @@
 ﻿'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   collection,
-  getDocs,
+  onSnapshot,
   orderBy,
   query,
   where,
@@ -17,7 +18,6 @@ import { ScheduleMonthCalendar } from '@/components/schedule/ScheduleMonthCalend
 import { WeekRangePicker } from '@/components/schedule/WeekRangePicker';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { RefreshButton } from '@/components/ui/RefreshButton';
 import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
@@ -42,6 +42,8 @@ import type { AssignShiftInput, Shift } from '@/lib/types/shift';
 type ViewMode = 'weekly' | 'monthly';
 
 export default function SchedulePage() {
+  const searchParams = useSearchParams();
+  const scheduleAlert = searchParams.get('alert');
   const { canPerformAction } = useAdminAccess();
   const canAssignShifts = canPerformAction('schedule', 'create');
   const canUpdateShifts = canPerformAction('schedule', 'update');
@@ -63,11 +65,19 @@ export default function SchedulePage() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignData, setAssignData] = useState<AssignShiftInput | null>(null);
   const [useWeekRange, setUseWeekRange] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const initialLoadDoneRef = useRef(false);
 
   const week = useMemo(() => buildWeekRange(weekReference), [weekReference]);
   const month = useMemo(() => buildMonthCalendar(monthReference), [monthReference]);
+
+  useEffect(() => {
+    if (scheduleAlert === 'missing_checkin' || scheduleAlert === 'no_show') {
+      const today = new Date();
+      setWeekReference(today);
+      setMonthReference(today);
+      setViewMode('weekly');
+    }
+  }, [scheduleAlert]);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
@@ -80,7 +90,12 @@ export default function SchedulePage() {
   const rangeStart = useWeekRange ? week.start : month.start;
   const rangeEnd = useWeekRange ? week.end : month.end;
 
-  const loadScheduleData = useCallback(async () => {
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    setLoading(true);
+  }, [rangeEnd, rangeStart]);
+
+  useEffect(() => {
     if (!db) {
       setLoading(false);
       return;
@@ -88,56 +103,77 @@ export default function SchedulePage() {
 
     if (!initialLoadDoneRef.current) {
       setLoading(true);
-    } else {
-      setRefreshing(true);
     }
 
-    try {
-      const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds({
-        start: rangeStart,
-        end: rangeEnd,
-      });
+    const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds({
+      start: rangeStart,
+      end: rangeEnd,
+    });
 
-      const [shiftsSnapshot, attendanceSnapshot] = await Promise.all([
-        getDocs(
-          query(
-            collection(db, COLLECTIONS.SHIFTS),
-            where('date', '>=', rangeStart),
-            where('date', '<=', rangeEnd),
-            orderBy('date', 'asc'),
-          ),
-        ),
-        getDocs(
-          query(
-            collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-            where('timestampServer', '>=', attendanceStart),
-            where('timestampServer', '<=', attendanceEnd),
-            orderBy('timestampServer', 'asc'),
-          ),
-        ),
-      ]);
+    const shiftsQuery = query(
+      collection(db, COLLECTIONS.SHIFTS),
+      where('date', '>=', rangeStart),
+      where('date', '<=', rangeEnd),
+      orderBy('date', 'asc'),
+    );
 
-      setShifts(
-        shiftsSnapshot.docs.map((document) =>
-          mapShiftDoc(document.id, document.data()),
-        ),
-      );
-      setAttendanceRecords(
-        attendanceSnapshot.docs.map((document) =>
-          mapAttendanceDoc(document.id, document.data()),
-        ),
-      );
-    } finally {
+    const attendanceQuery = query(
+      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+      where('timestampServer', '>=', attendanceStart),
+      where('timestampServer', '<=', attendanceEnd),
+      orderBy('timestampServer', 'asc'),
+    );
+
+    let shiftsReady = false;
+    let attendanceReady = false;
+
+    const markReady = () => {
+      if (!shiftsReady || !attendanceReady) return;
       setLoading(false);
-      setRefreshing(false);
       initialLoadDoneRef.current = true;
-    }
-  }, [rangeEnd, rangeStart]);
+    };
 
-  useEffect(() => {
-    initialLoadDoneRef.current = false;
-    void loadScheduleData();
-  }, [loadScheduleData]);
+    const unsubscribeShifts = onSnapshot(
+      shiftsQuery,
+      (snapshot) => {
+        setShifts(
+          snapshot.docs.map((document) =>
+            mapShiftDoc(document.id, document.data()),
+          ),
+        );
+        shiftsReady = true;
+        markReady();
+      },
+      (error) => {
+        console.error('Error loading shifts:', error);
+        shiftsReady = true;
+        markReady();
+      },
+    );
+
+    const unsubscribeAttendance = onSnapshot(
+      attendanceQuery,
+      (snapshot) => {
+        setAttendanceRecords(
+          snapshot.docs.map((document) =>
+            mapAttendanceDoc(document.id, document.data()),
+          ),
+        );
+        attendanceReady = true;
+        markReady();
+      },
+      (error) => {
+        console.error('Error loading schedule attendance:', error);
+        attendanceReady = true;
+        markReady();
+      },
+    );
+
+    return () => {
+      unsubscribeShifts();
+      unsubscribeAttendance();
+    };
+  }, [rangeEnd, rangeStart]);
 
   const pageLoading = loading || employeesLoading;
 
@@ -249,6 +285,9 @@ export default function SchedulePage() {
       loading={pageLoading}
       onCellClick={handleCellClick}
       onShiftClick={handleShiftClick}
+      onShiftDeleted={(shiftId) =>
+        setShifts((current) => current.filter((shift) => shift.id !== shiftId))
+      }
       canAssignShifts={canAssignShifts}
       canUpdateShifts={canUpdateShifts}
       canDeleteShifts={canDeleteShifts}
@@ -260,14 +299,20 @@ export default function SchedulePage() {
       <PageHeader
         title="Scheduling and rosters (Agenda)"
         description="Weekly schedule"
-        actions={
-          <RefreshButton
-            onClick={loadScheduleData}
-            refreshing={refreshing}
-            disabled={pageLoading}
-          />
-        }
       />
+
+      {scheduleAlert === 'missing_checkin' ? (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+          Showing today&apos;s roster. Shifts highlighted as absent or without check-in
+          need follow-up.
+        </p>
+      ) : null}
+      {scheduleAlert === 'no_show' ? (
+        <p className="rounded-xl border border-red-500/30 bg-red-950/30 px-4 py-3 text-sm text-red-100">
+          Showing today&apos;s roster. Employees past the no-show window appear as
+          absent on their shifts.
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-2.5 md:hidden">
         <WeekRangePicker
@@ -445,7 +490,6 @@ export default function SchedulePage() {
         onClose={() => {
           setAssignModalOpen(false);
           setAssignData(null);
-          void loadScheduleData();
         }}
       />
     </PageContent>

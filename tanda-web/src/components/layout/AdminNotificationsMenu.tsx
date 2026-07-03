@@ -203,6 +203,18 @@ function NotificationRow({
           <span className="mt-0.5 block text-xs leading-snug text-subtle">
             {item.description}
           </span>
+          {item.details.length > 0 ? (
+            <span className="mt-1.5 block space-y-0.5">
+              {item.details.map((line) => (
+                <span
+                  key={line}
+                  className="block truncate text-[11px] leading-snug text-muted"
+                >
+                  {line}
+                </span>
+              ))}
+            </span>
+          ) : null}
         </span>
       </Link>
       <button

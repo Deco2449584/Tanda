@@ -1,10 +1,11 @@
 ﻿'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   collection,
-  getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   where,
@@ -16,7 +17,6 @@ import { AttendanceToolbarButton } from '@/components/attendance/AttendanceToolb
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
 import { AddManualRecordModal } from '@/components/attendance/AddManualRecordModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
-import { RefreshButton } from '@/components/ui/RefreshButton';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import {
   getDefaultDateRange,
@@ -33,7 +33,9 @@ import {
   buildDepartmentFilterOptions,
   filterEmployeesByDepartment,
 } from '@/lib/employees/department-filter-options';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
+import { isForgottenCheckIn } from '@/lib/attendance/work-sessions';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { PageContent } from '@/components/ui/PageContent';
@@ -43,6 +45,7 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 
 export default function AttendancePage() {
+  const searchParams = useSearchParams();
   const { settings } = useCompanySettings();
   const { canPerformAction } = useAdminAccess();
   const canCreateAttendance = canPerformAction('attendance', 'create');
@@ -64,10 +67,31 @@ export default function AttendancePage() {
   const [manualCheckoutRecord, setManualCheckoutRecord] =
     useState<AttendanceRecord | null>(null);
   const [manualRecordOpen, setManualRecordOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const initialLoadDoneRef = useRef(false);
+  const [forgottenOnly, setForgottenOnly] = useState(false);
 
-  const loadRecords = useCallback(async () => {
+  useEffect(() => {
+    const range = searchParams.get('range');
+    const date = searchParams.get('date');
+    const filter = searchParams.get('filter');
+
+    if (range === 'today') {
+      const today =
+        date && /^\d{4}-\d{2}-\d{2}$/.test(date)
+          ? date
+          : toInputDateInTimeZone(settings.timeZone);
+      setDateRange({ start: today, end: today });
+    }
+
+    setForgottenOnly(filter === 'forgotten');
+  }, [searchParams, settings.timeZone]);
+
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    setLoading(true);
+  }, [dateRange]);
+
+  useEffect(() => {
     if (!db) {
       setLoading(false);
       return;
@@ -75,39 +99,36 @@ export default function AttendancePage() {
 
     if (!initialLoadDoneRef.current) {
       setLoading(true);
-    } else {
-      setRefreshing(true);
     }
 
-    try {
-      const { start, end } = toFirestoreRangeBounds(dateRange);
-      const snapshot = await getDocs(
-        query(
-          collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-          where('timestampServer', '>=', start),
-          where('timestampServer', '<=', end),
-          orderBy('timestampServer', 'desc'),
-          limit(5000),
-        ),
-      );
-      setRecords(
-        snapshot.docs.map((document) =>
-          mapAttendanceDoc(document.id, document.data()),
-        ),
-      );
-    } catch (error) {
-      console.error('Error loading attendance records:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      initialLoadDoneRef.current = true;
-    }
+    const { start, end } = toFirestoreRangeBounds(dateRange);
+    const recordsQuery = query(
+      collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
+      where('timestampServer', '>=', start),
+      where('timestampServer', '<=', end),
+      orderBy('timestampServer', 'desc'),
+      limit(5000),
+    );
+
+    const unsubscribe = onSnapshot(
+      recordsQuery,
+      (snapshot) => {
+        setRecords(
+          snapshot.docs.map((document) =>
+            mapAttendanceDoc(document.id, document.data()),
+          ),
+        );
+        setLoading(false);
+        initialLoadDoneRef.current = true;
+      },
+      (error) => {
+        console.error('Error loading attendance records:', error);
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
   }, [dateRange]);
-
-  useEffect(() => {
-    initialLoadDoneRef.current = false;
-    void loadRecords();
-  }, [loadRecords]);
 
   const pageLoading = loading || employeesLoading;
 
@@ -152,9 +173,23 @@ export default function AttendancePage() {
   );
 
   const locationFilteredRecords = useMemo(() => {
-    if (departmentFilter === 'all' && locationFilter === 'all') return records;
-    return records.filter((record) => allowedEmployeeIds.has(record.employeeId));
-  }, [allowedEmployeeIds, departmentFilter, locationFilter, records]);
+    let base =
+      departmentFilter === 'all' && locationFilter === 'all'
+        ? records
+        : records.filter((record) => allowedEmployeeIds.has(record.employeeId));
+
+    if (forgottenOnly) {
+      base = base.filter((record) => isForgottenCheckIn(record, records));
+    }
+
+    return base;
+  }, [
+    allowedEmployeeIds,
+    departmentFilter,
+    forgottenOnly,
+    locationFilter,
+    records,
+  ]);
 
   const employeeCodes = useMemo(() => {
     const map: Record<string, string> = {};
@@ -204,12 +239,6 @@ export default function AttendancePage() {
         onSearchQueryChange={setSearchQuery}
         actions={
           <>
-            <RefreshButton
-              onClick={loadRecords}
-              refreshing={refreshing}
-              disabled={pageLoading}
-            />
-
             {canCreateAttendance ? (
               <AttendanceToolbarButton
                 onClick={() => setManualRecordOpen(true)}

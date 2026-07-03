@@ -159,11 +159,13 @@ export function isForgottenCheckIn(
 }
 
 export function countForgottenCheckIns(records: AttendanceRecord[]): number {
+  return listForgottenCheckIns(records).length;
+}
+
+export function listForgottenCheckIns(records: AttendanceRecord[]): AttendanceRecord[] {
   const checkIns = records.filter((record) => record.type === 'check_in');
 
-  return checkIns.filter((checkIn) =>
-    isForgottenCheckIn(checkIn, records),
-  ).length;
+  return checkIns.filter((checkIn) => isForgottenCheckIn(checkIn, records));
 }
 
 function completeSessionsInRange(

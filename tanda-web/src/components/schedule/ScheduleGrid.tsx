@@ -26,6 +26,7 @@ interface ScheduleGridProps {
   loading: boolean;
   onCellClick: (employee: Employee, date: string) => void;
   onShiftClick?: (shift: Shift, employee: Employee) => void;
+  onShiftDeleted?: (shiftId: string) => void;
   canAssignShifts?: boolean;
   canUpdateShifts?: boolean;
   canDeleteShifts?: boolean;
@@ -42,6 +43,7 @@ export function ScheduleGrid({
   loading,
   onCellClick,
   onShiftClick,
+  onShiftDeleted,
   canAssignShifts = true,
   canUpdateShifts = true,
   canDeleteShifts = true,
@@ -85,6 +87,8 @@ export function ScheduleGrid({
       const { shift } = pendingDelete;
 
       await deleteDoc(doc(db, COLLECTIONS.SHIFTS, shift.id));
+
+      onShiftDeleted?.(shift.id);
 
       void notifyShiftChange({
         type: 'cancelled',

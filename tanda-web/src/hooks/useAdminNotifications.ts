@@ -12,15 +12,15 @@ import {
   query,
   where,
 } from 'firebase/firestore';
+import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
 import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
-import { countForgottenCheckIns } from '@/lib/attendance/work-sessions';
+import { listForgottenCheckIns } from '@/lib/attendance/work-sessions';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import {
-  computeLateAlerts,
-  computeMissingCheckInsToday,
-  computeNoShowsToday,
-  countPendingLeaveRequests,
   filterTodayShifts,
+  listLateArrivalShifts,
+  listMissingCheckInShifts,
+  listNoShowShifts,
 } from '@/lib/dashboard/compute-metrics';
 import { COLLECTIONS } from '@/lib/constants';
 import { toInputDateInTimeZone } from '@/lib/dates/timezone';
@@ -46,6 +46,7 @@ export interface AdminNotificationItem {
   id: string;
   title: string;
   description: string;
+  details: string[];
   href: string;
   count: number;
 }
@@ -53,6 +54,7 @@ export interface AdminNotificationItem {
 const ATTENDANCE_LOOKBACK_DAYS = 14;
 const ATTENDANCE_FETCH_LIMIT = 2000;
 const BADGE_POLL_INTERVAL_MS = 5 * 60 * 1000;
+const MAX_DETAIL_LINES = 4;
 
 function getRecentAttendanceRange() {
   const end = new Date();
@@ -71,6 +73,7 @@ interface AdminNotificationData {
   attendanceRecords: AttendanceRecord[];
   attendancePolicy: AttendancePolicySettings;
   timeZone: string;
+  employeeNameByCode: Map<string, string>;
 }
 
 async function loadAttendancePolicy(): Promise<{
@@ -117,12 +120,33 @@ async function loadAttendancePolicy(): Promise<{
   };
 }
 
+async function loadEmployeeNameMap(): Promise<Map<string, string>> {
+  if (!db) return new Map();
+
+  const snapshot = await getDocs(collection(db, COLLECTIONS.EMPLOYEES));
+  const map = new Map<string, string>();
+
+  snapshot.docs.forEach((document) => {
+    const data = document.data();
+    const code = typeof data.employeeId === 'string' ? data.employeeId.trim() : '';
+    const name = typeof data.name === 'string' ? data.name.trim() : '';
+    if (code && name) {
+      map.set(code, name);
+    }
+  });
+
+  return map;
+}
+
 async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
   if (!db) {
     throw new Error('Firestore is not available.');
   }
 
-  const { attendancePolicy, timeZone } = await loadAttendancePolicy();
+  const [{ attendancePolicy, timeZone }, employeeNameByCode] = await Promise.all([
+    loadAttendancePolicy(),
+    loadEmployeeNameMap(),
+  ]);
   const today = toInputDateInTimeZone(timeZone);
   const { start, end } = getRecentAttendanceRange();
 
@@ -159,7 +183,23 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     ),
     attendancePolicy,
     timeZone,
+    employeeNameByCode,
   };
+}
+
+function employeeLabel(employeeId: string, nameByCode: Map<string, string>): string {
+  return nameByCode.get(employeeId) ?? `ID ${employeeId}`;
+}
+
+function shiftDetailLine(shift: Shift, nameByCode: Map<string, string>): string {
+  return `${employeeLabel(shift.employeeId, nameByCode)} · shift ${shift.startTime}–${shift.endTime}`;
+}
+
+function summarizeDetailLines(lines: string[]): string[] {
+  if (lines.length <= MAX_DETAIL_LINES) return lines;
+  const visible = lines.slice(0, MAX_DETAIL_LINES);
+  visible.push(`+${lines.length - MAX_DETAIL_LINES} more`);
+  return visible;
 }
 
 function buildNotificationItems(
@@ -183,69 +223,114 @@ function buildNotificationItems(
     );
   });
 
-  const pendingLeaves = countPendingLeaveRequests(data.leaveRequests);
-  const lateToday = computeLateAlerts(todayShifts, todayAttendance, metricsOptions);
-  const missingCheckIns = computeMissingCheckInsToday(
+  const pendingLeaves = data.leaveRequests.filter(
+    (request) => request.status === 'Pending',
+  );
+  const missingShiftList = listMissingCheckInShifts(
     todayShifts,
     todayAttendance,
     metricsOptions,
   );
-  const noShowsToday = computeNoShowsToday(
+  const noShowShiftList = listNoShowShifts(
     todayShifts,
     todayAttendance,
     metricsOptions,
   );
-  const forgottenCheckouts = countForgottenCheckIns(data.attendanceRecords);
+  const lateArrivals = listLateArrivalShifts(
+    todayShifts,
+    todayAttendance,
+    metricsOptions,
+  );
+  const forgottenCheckIns = listForgottenCheckIns(data.attendanceRecords);
 
   const list: AdminNotificationItem[] = [];
 
-  if (pendingLeaves > 0) {
+  if (pendingLeaves.length > 0) {
+    const details = summarizeDetailLines(
+      pendingLeaves.map((request) => {
+        const name = employeeLabel(request.employeeId, data.employeeNameByCode);
+        return `${name} · ${request.startDate} → ${request.endDate} (${request.type})`;
+      }),
+    );
+
     list.push({
       id: 'leave_pending',
       title: 'Pending leave requests',
-      description: `${pendingLeaves} request${pendingLeaves === 1 ? '' : 's'} awaiting approval`,
+      description: `${pendingLeaves.length} request${pendingLeaves.length === 1 ? '' : 's'} awaiting approval`,
+      details,
       href: '/leave-requests',
-      count: pendingLeaves,
+      count: pendingLeaves.length,
     });
   }
 
-  if (missingCheckIns > 0) {
+  if (missingShiftList.length > 0) {
+    const details = summarizeDetailLines(
+      missingShiftList.map((shift) => shiftDetailLine(shift, data.employeeNameByCode)),
+    );
+
     list.push({
       id: 'missing_checkin',
       title: 'Missing check-ins today',
-      description: `${missingCheckIns} scheduled shift${missingCheckIns === 1 ? '' : 's'} past grace without check-in`,
-      href: '/attendance',
-      count: missingCheckIns,
+      description: `${missingShiftList.length} scheduled shift${missingShiftList.length === 1 ? '' : 's'} past grace without check-in`,
+      details,
+      href: '/schedule?alert=missing_checkin',
+      count: missingShiftList.length,
     });
   }
 
-  if (noShowsToday > 0) {
+  if (noShowShiftList.length > 0) {
+    const details = summarizeDetailLines(
+      noShowShiftList.map((shift) => shiftDetailLine(shift, data.employeeNameByCode)),
+    );
+
     list.push({
       id: 'no_show_today',
       title: 'No-shows today',
-      description: `${noShowsToday} employee${noShowsToday === 1 ? '' : 's'} did not check in within the no-show window`,
-      href: '/attendance',
-      count: noShowsToday,
+      description: `${noShowShiftList.length} employee${noShowShiftList.length === 1 ? '' : 's'} did not check in within the no-show window`,
+      details,
+      href: '/schedule?alert=no_show',
+      count: noShowShiftList.length,
     });
   }
 
-  if (lateToday > 0) {
+  if (lateArrivals.length > 0) {
+    const details = summarizeDetailLines(
+      lateArrivals.map(({ shift, checkIn }) => {
+        const name = employeeLabel(shift.employeeId, data.employeeNameByCode);
+        const time = formatRecordTime(checkIn.timestampServer);
+        return `${name} · shift ${shift.startTime}, checked in ${time}`;
+      }),
+    );
+
     list.push({
       id: 'late_today',
       title: 'Late arrivals today',
-      description: `${lateToday} employee${lateToday === 1 ? '' : 's'} checked in after the grace period`,
-      href: '/attendance',
-      count: lateToday,
+      description: `${lateArrivals.length} employee${lateArrivals.length === 1 ? '' : 's'} checked in after the grace period`,
+      details,
+      href: `/attendance?range=today&date=${todayKey}`,
+      count: lateArrivals.length,
     });
   }
 
-  if (forgottenCheckouts > 0) {
+  if (forgottenCheckIns.length > 0) {
+    const details = summarizeDetailLines(
+      forgottenCheckIns.map((checkIn) => {
+        const name =
+          checkIn.employeeNameSnapshot ||
+          employeeLabel(checkIn.employeeId, data.employeeNameByCode);
+        const date = formatRecordDate(checkIn.timestampServer);
+        const time = formatRecordTime(checkIn.timestampServer);
+        return `${name} · check-in ${date} ${time}`;
+      }),
+    );
+
     list.push({
       id: 'forgotten_checkout',
       title: 'Forgotten check-outs',
-      description: `${forgottenCheckouts} open check-in${forgottenCheckouts === 1 ? '' : 's'} need a manual check-out`,
-      href: '/attendance',
-      count: forgottenCheckouts,
+      description: `${forgottenCheckIns.length} open check-in${forgottenCheckIns.length === 1 ? '' : 's'} need a manual check-out`,
+      details,
+      href: '/attendance?filter=forgotten',
+      count: forgottenCheckIns.length,
     });
   }
 
@@ -262,6 +347,9 @@ export function useAdminNotifications(enabled: boolean) {
     DEFAULT_ATTENDANCE_POLICY,
   );
   const [timeZone, setTimeZone] = useState(DEFAULT_COMPANY_SETTINGS.timeZone);
+  const [employeeNameByCode, setEmployeeNameByCode] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -286,6 +374,7 @@ export function useAdminNotifications(enabled: boolean) {
         setAttendanceRecords(data.attendanceRecords);
         setAttendancePolicy(data.attendancePolicy);
         setTimeZone(data.timeZone);
+        setEmployeeNameByCode(data.employeeNameByCode);
       } catch (error) {
         console.error('useAdminNotifications', error);
         if (cancelled) return;
@@ -313,10 +402,12 @@ export function useAdminNotifications(enabled: boolean) {
       attendanceRecords,
       attendancePolicy,
       timeZone,
+      employeeNameByCode,
     });
   }, [
     attendancePolicy,
     attendanceRecords,
+    employeeNameByCode,
     enabled,
     leaveRequests,
     shifts,

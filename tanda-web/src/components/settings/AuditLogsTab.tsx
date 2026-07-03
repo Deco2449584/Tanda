@@ -5,6 +5,7 @@ import { ChevronDown, Download, ScrollText } from 'lucide-react';
 import { AuditLogDetailModal } from '@/components/settings/AuditLogDetailModal';
 import { AuditLogsTable } from '@/components/settings/AuditLogsTable';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+import { RefreshButton } from '@/components/ui/RefreshButton';
 import {
   downloadAuditLogsCsv,
   fetchAuditLogs,
@@ -55,6 +56,7 @@ export function AuditLogsTab() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -83,6 +85,31 @@ export function AuditLogsTab() {
 
   useEffect(() => {
     void loadLogs();
+  }, [loadLogs]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void loadLogs();
+    }, 30_000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadLogs();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [loadLogs]);
+
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    void loadLogs().finally(() => setRefreshing(false));
   }, [loadLogs]);
 
   async function handleExport() {
@@ -125,15 +152,22 @@ export function AuditLogsTab() {
             </p>
           </div>
 
-          <button
-            type="button"
-            disabled={exporting || loading}
-            onClick={() => void handleExport()}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border-strong px-4 text-sm font-semibold text-foreground transition hover:bg-surface-hover disabled:opacity-60"
-          >
-            <Download className="h-4 w-4" />
-            {exporting ? 'Exporting…' : 'Export CSV'}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <RefreshButton
+              onClick={handleManualRefresh}
+              refreshing={refreshing}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              disabled={exporting || loading}
+              onClick={() => void handleExport()}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border-strong px-4 text-sm font-semibold text-foreground transition hover:bg-surface-hover disabled:opacity-60"
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? 'Exporting…' : 'Export CSV'}
+            </button>
+          </div>
         </div>
       </div>
 

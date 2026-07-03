@@ -139,6 +139,31 @@ export function computeMissingCheckInsToday(
   }).length;
 }
 
+export function listMissingCheckInShifts(
+  todayShifts: Shift[],
+  todayRecords: AttendanceRecord[],
+  options?: AttendanceMetricsOptions,
+): Shift[] {
+  const { policy, timeZone, now } = resolveMetricsOptions(options);
+  const nowMinutes = getMinutesInTimeZone(timeZone, now);
+
+  const checkedInToday = new Set(
+    todayRecords
+      .filter((record) => record.type === 'check_in')
+      .map((record) => record.employeeId),
+  );
+
+  return todayShifts.filter((shift) => {
+    const hasCheckIn = checkedInToday.has(shift.employeeId);
+    return isMissingCheckIn(
+      timeToMinutes(shift.startTime),
+      nowMinutes,
+      hasCheckIn,
+      policy,
+    );
+  });
+}
+
 export function computeNoShowsToday(
   todayShifts: Shift[],
   todayRecords: AttendanceRecord[],
@@ -162,6 +187,55 @@ export function computeNoShowsToday(
       policy,
     );
   }).length;
+}
+
+export function listNoShowShifts(
+  todayShifts: Shift[],
+  todayRecords: AttendanceRecord[],
+  options?: AttendanceMetricsOptions,
+): Shift[] {
+  const { policy, timeZone, now } = resolveMetricsOptions(options);
+  const nowMinutes = getMinutesInTimeZone(timeZone, now);
+
+  const checkedInToday = new Set(
+    todayRecords
+      .filter((record) => record.type === 'check_in')
+      .map((record) => record.employeeId),
+  );
+
+  return todayShifts.filter((shift) => {
+    const hasCheckIn = checkedInToday.has(shift.employeeId);
+    return isNoShow(
+      timeToMinutes(shift.startTime),
+      nowMinutes,
+      hasCheckIn,
+      policy,
+    );
+  });
+}
+
+export function listLateArrivalShifts(
+  todayShifts: Shift[],
+  todayCheckIns: AttendanceRecord[],
+  options?: AttendanceMetricsOptions,
+): Array<{ shift: Shift; checkIn: AttendanceRecord }> {
+  const { policy, timeZone } = resolveMetricsOptions(options);
+  const checkInByEmployee = buildEarliestCheckInMap(todayCheckIns);
+  const results: Array<{ shift: Shift; checkIn: AttendanceRecord }> = [];
+
+  todayShifts.forEach((shift) => {
+    const checkIn = checkInByEmployee.get(shift.employeeId);
+    if (!checkIn?.timestampServer) return;
+
+    const shiftStart = timeToMinutes(shift.startTime);
+    const checkInTime = timestampToMinutesInTimeZone(checkIn.timestampServer, timeZone);
+
+    if (isCheckInLate(checkInTime, shiftStart, policy)) {
+      results.push({ shift, checkIn });
+    }
+  });
+
+  return results;
 }
 
 export function buildShiftLoadByDepartment(todayShifts: Shift[]): ShiftLoadDatum[] {
