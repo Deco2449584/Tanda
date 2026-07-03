@@ -12,7 +12,6 @@ import {
   dismissAdminAlerts,
   subscribeToDismissedAdminAlerts,
 } from '@/lib/notifications/admin-notification-preferences';
-import { isInformationalAdminAlert } from '@/lib/notifications/admin-alert-metadata';
 import { filterAdminNotificationsByChannels } from '@/lib/notifications/admin-alert-channels';
 import {
   computeAdminBadgeCount,
@@ -34,6 +33,7 @@ interface AdminNotificationsMenuProps {
 
 export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps) {
   const [open, setOpen] = useState(false);
+  const [openTrayItems, setOpenTrayItems] = useState<AdminNotificationItem[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<DismissedAdminAlertsMap>({});
   const [channels, setChannels] = useState<NotificationChannelPreferences>(
     mapNotificationChannels(null),
@@ -56,17 +56,13 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
     [channelFilteredItems, dismissedAlerts, todayKey],
   );
 
-  const actionableItems = useMemo(
-    () => visibleItems.filter((item) => item.requiresAction),
-    [visibleItems],
+  const actionableTrayItems = useMemo(
+    () => openTrayItems.filter((item) => item.requiresAction),
+    [openTrayItems],
   );
-  const informationalItems = useMemo(
-    () => visibleItems.filter((item) => !item.requiresAction),
-    [visibleItems],
-  );
-  const hasActionableItems = actionableItems.length > 0;
+  const hasActionableTrayItems = actionableTrayItems.length > 0;
   const badgeCount = computeAdminBadgeCount(visibleItems);
-  const actionableBadgeCount = computeAdminBadgeCount(actionableItems);
+  const openTrayBadgeCount = computeAdminBadgeCount(openTrayItems);
 
   useEffect(() => {
     if (!enabled || !userEmail) {
@@ -90,14 +86,30 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
 
   useEffect(() => {
     if (!open) {
+      setOpenTrayItems([]);
       informationalDismissedForOpenRef.current = false;
       return;
     }
 
-    if (!userEmail || loading || informationalDismissedForOpenRef.current) {
+    if (loading) return;
+
+    setOpenTrayItems((current) => {
+      if (current.length > 0) return current;
+      return visibleItems;
+    });
+  }, [loading, open, visibleItems]);
+
+  useEffect(() => {
+    if (!open || !userEmail || loading || informationalDismissedForOpenRef.current) {
       return;
     }
 
+    if (openTrayItems.length === 0) {
+      informationalDismissedForOpenRef.current = true;
+      return;
+    }
+
+    const informationalItems = openTrayItems.filter((item) => !item.requiresAction);
     if (informationalItems.length === 0) {
       informationalDismissedForOpenRef.current = true;
       return;
@@ -112,7 +124,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
         dateKey: todayKey,
       })),
     );
-  }, [informationalItems, loading, open, todayKey, userEmail]);
+  }, [loading, open, openTrayItems, todayKey, userEmail]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -132,7 +144,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
   }, [open]);
 
   async function handleDismissItem(item: AdminNotificationItem) {
-    if (!userEmail || isInformationalAdminAlert(item.id)) return;
+    if (!userEmail || !item.requiresAction) return;
 
     await dismissAdminAlerts(userEmail, [
       {
@@ -140,18 +152,38 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
         count: item.count,
       },
     ]);
+
+    setOpenTrayItems((current) => current.filter((entry) => entry.id !== item.id));
   }
 
   async function handleClearActionable() {
-    if (!userEmail || actionableItems.length === 0) return;
+    if (!userEmail || actionableTrayItems.length === 0) return;
 
     await dismissAdminAlerts(
       userEmail,
-      actionableItems.map((item) => ({
+      actionableTrayItems.map((item) => ({
         id: item.id,
         count: item.count,
       })),
     );
+
+    setOpenTrayItems((current) => current.filter((item) => !item.requiresAction));
+  }
+
+  function traySummaryLabel(): string {
+    if (loading) return 'Updating…';
+    if (openTrayItems.length === 0) return 'No alerts right now';
+
+    const actionableCount = computeAdminBadgeCount(actionableTrayItems);
+    const informationalCount = openTrayItems.length - actionableTrayItems.length;
+
+    if (hasActionableTrayItems && informationalCount > 0) {
+      return `${actionableCount} need action · ${informationalCount} informational`;
+    }
+    if (hasActionableTrayItems) {
+      return `${actionableCount} need${actionableCount === 1 ? 's' : ''} action`;
+    }
+    return `${informationalCount} informational alert${informationalCount === 1 ? '' : 's'}`;
   }
 
   if (!enabled) return null;
@@ -167,9 +199,13 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
         aria-haspopup="menu"
       >
         <Bell className="h-5 w-5" />
-        {badgeCount > 0 ? (
+        {(open ? openTrayBadgeCount : badgeCount) > 0 ? (
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-zinc-950 md:ring-[#0a0a0a]">
-            {badgeCount > 9 ? '9+' : badgeCount}
+            {(open ? openTrayBadgeCount : badgeCount) > 9
+              ? '9+'
+              : open
+                ? openTrayBadgeCount
+                : badgeCount}
           </span>
         ) : null}
       </button>
@@ -183,17 +219,9 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-white">Notifications</p>
-                <p className="mt-0.5 text-xs text-subtle">
-                  {loading
-                    ? 'Updating…'
-                    : hasActionableItems
-                      ? `${actionableBadgeCount} need${actionableBadgeCount === 1 ? 's' : ''} action`
-                      : badgeCount > 0
-                        ? `${badgeCount} informational alert${badgeCount === 1 ? '' : 's'}`
-                        : 'No alerts right now'}
-                </p>
+                <p className="mt-0.5 text-xs text-subtle">{traySummaryLabel()}</p>
               </div>
-              {hasActionableItems ? (
+              {hasActionableTrayItems ? (
                 <button
                   type="button"
                   onClick={() => void handleClearActionable()}
@@ -202,7 +230,7 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
                 >
                   Clear
                 </button>
-              ) : !loading ? (
+              ) : !loading && openTrayItems.length === 0 ? (
                 <span className="shrink-0 text-[10px] text-subtle">All caught up</span>
               ) : null}
             </div>
@@ -210,18 +238,22 @@ export function AdminNotificationsMenu({ enabled }: AdminNotificationsMenuProps)
 
           {loading ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">Loading…</p>
-          ) : !hasActionableItems ? (
+          ) : openTrayItems.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">
-              Nothing needs your action right now.
+              You are all caught up.
             </p>
           ) : (
             <ul className="max-h-72 overflow-y-auto bg-surface-raised py-1 pr-1 scrollbar-thin">
-              {actionableItems.map((item) => (
+              {openTrayItems.map((item) => (
                 <NotificationRow
                   key={item.id}
                   item={item}
                   onNavigate={() => setOpen(false)}
-                  onDismiss={() => void handleDismissItem(item)}
+                  onDismiss={
+                    item.requiresAction
+                      ? () => void handleDismissItem(item)
+                      : undefined
+                  }
                 />
               ))}
             </ul>
@@ -239,7 +271,7 @@ function NotificationRow({
 }: {
   item: AdminNotificationItem;
   onNavigate: () => void;
-  onDismiss: () => void;
+  onDismiss?: () => void;
 }) {
   const { icon: Icon, badgeClass } = getAdminAlertVisual(item.id);
 
@@ -278,14 +310,16 @@ function NotificationRow({
           ) : null}
         </span>
       </Link>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="shrink-0 px-3 text-subtle opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-        aria-label={`Dismiss ${item.title}`}
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+      {onDismiss ? (
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="shrink-0 px-3 text-subtle opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+          aria-label={`Dismiss ${item.title}`}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
     </li>
   );
 }
