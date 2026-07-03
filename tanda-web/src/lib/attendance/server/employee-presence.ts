@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
+import type { AttendanceRecord } from '@/lib/types/attendance';
 import {
   deriveEmployeePresence,
   presenceVersionFromEmployeeData,
@@ -22,6 +23,18 @@ function lookbackTimestamp(): Timestamp {
 export async function loadEmployeeAttendanceActionRecords(
   employeeCode: string,
 ): Promise<AttendanceActionRecord[]> {
+  const records = await loadEmployeeAttendanceRecords(employeeCode);
+  return records
+    .filter((record) => record.timestampServer != null)
+    .map((record) => ({
+      type: record.type,
+      timestampMs: record.timestampServer!.toMillis(),
+    }));
+}
+
+export async function loadEmployeeAttendanceRecords(
+  employeeCode: string,
+): Promise<AttendanceRecord[]> {
   const snapshot = await getAdminFirestore()
     .collection(COLLECTIONS.ATTENDANCE_RECORDS)
     .where('employeeId', '==', employeeCode.trim())
@@ -30,11 +43,7 @@ export async function loadEmployeeAttendanceActionRecords(
 
   return snapshot.docs
     .map((document) => mapAttendanceDoc(document.id, document.data()))
-    .filter((record) => record.timestampServer != null)
-    .map((record) => ({
-      type: record.type,
-      timestampMs: record.timestampServer!.toMillis(),
-    }));
+    .filter((record) => record.timestampServer != null);
 }
 
 export async function resolveNextAttendanceAction(

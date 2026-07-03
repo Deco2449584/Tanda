@@ -1,9 +1,14 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
   loadEmployeeAttendanceActionRecords,
+  loadEmployeeAttendanceRecords,
   presenceVersionFromEmployeeData,
   reconcileEmployeePresence,
 } from '@/lib/attendance/server/employee-presence';
+import {
+  findOpenCheckInRecord,
+  validateCheckoutSameLocationAsCheckIn,
+} from '@/lib/attendance/server/open-attendance-session';
 import { evaluateLateCheckIn } from '@/lib/attendance/server/attendance-alerts-service';
 import {
   logAttendanceRestrictionBlocked,
@@ -20,6 +25,7 @@ import {
   isValidLongitude,
   reverseGeocode,
 } from '@/lib/geo/reverse-geocode';
+import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { canEmployeePunchAtKiosk } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
 import { findKioskDeviceByToken } from '@/lib/kiosk/server/kiosk-devices-service';
@@ -45,15 +51,53 @@ export async function lookupKioskEmployee(input: {
   );
 
   const employeeCode = employee.data.employeeId as string;
-  const [settings, records] = await Promise.all([
+
+  const [settings, records, fullRecords] = await Promise.all([
     loadCompanySettingsAdmin(),
     loadEmployeeAttendanceActionRecords(employeeCode),
+    loadEmployeeAttendanceRecords(employeeCode),
   ]);
 
   const actionType = resolveAttendanceAction({
     records,
     timeZone: settings.timeZone,
   });
+
+  if (actionType === 'check_in') {
+    const violation = await validateEmployeeCheckInRestrictions({
+      employeeId: employeeCode,
+      punchAt: new Date(),
+    });
+
+    if (violation) {
+      await logAttendanceRestrictionBlocked({
+        actorEmail: device.createdBy ?? device.ownerEmail ?? 'kiosk@device',
+        employeeId: employeeCode,
+        employeeName: employee.data.name as string,
+        channel: 'kiosk',
+        violation,
+        punchAt: new Date(),
+        metadata: {
+          kioskDeviceId: device.id,
+          kioskDeviceName: device.name,
+          phase: 'lookup',
+        },
+      });
+      throw new KioskPunchError(violation.message, 403);
+    }
+  }
+
+  if (actionType === 'check_out') {
+    const openCheckIn = findOpenCheckInRecord(fullRecords, settings.timeZone);
+    const locationViolation = validateCheckoutSameLocationAsCheckIn({
+      openCheckIn,
+      kioskLocationId: device.locationId!,
+    });
+
+    if (locationViolation) {
+      throw new KioskPunchError(locationViolation.message, 403);
+    }
+  }
 
   return {
     employeeDocId: employee.id,
@@ -92,8 +136,9 @@ export async function recordKioskPunch(input: {
   let recordedAt = new Date().toISOString();
 
   for (let attempt = 0; attempt < PUNCH_MAX_ATTEMPTS; attempt += 1) {
-    const [records, employeeSnapshot] = await Promise.all([
+    const [records, fullRecords, employeeSnapshot] = await Promise.all([
       loadEmployeeAttendanceActionRecords(employeeCode),
+      loadEmployeeAttendanceRecords(employeeCode),
       getAdminFirestore().collection(COLLECTIONS.EMPLOYEES).doc(employeeDocId).get(),
     ]);
 
@@ -126,6 +171,18 @@ export async function recordKioskPunch(input: {
           },
         });
         throw new KioskPunchError(violation.message, 403);
+      }
+    }
+
+    if (actionType === 'check_out') {
+      const openCheckIn = findOpenCheckInRecord(fullRecords, timeZone);
+      const locationViolation = validateCheckoutSameLocationAsCheckIn({
+        openCheckIn,
+        kioskLocationId: device.locationId!,
+      });
+
+      if (locationViolation) {
+        throw new KioskPunchError(locationViolation.message, 403);
       }
     }
 
