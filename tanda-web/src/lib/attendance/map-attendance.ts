@@ -14,7 +14,14 @@ export function mapAttendanceDoc(
       typeof record.employeeEmailSnapshot === 'string'
         ? record.employeeEmailSnapshot
         : undefined,
-    type: record.type === 'check_out' ? 'check_out' : 'check_in',
+    type:
+      record.type === 'check_out'
+        ? 'check_out'
+        : record.type === 'break_start'
+          ? 'break_start'
+          : record.type === 'break_end'
+            ? 'break_end'
+            : 'check_in',
     timestampServer: record.timestampServer ?? null,
     photoUrl: typeof record.photoUrl === 'string' ? record.photoUrl : '',
     photoPath: typeof record.photoPath === 'string' ? record.photoPath : undefined,

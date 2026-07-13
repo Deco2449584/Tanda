@@ -58,14 +58,14 @@ service cloud.firestore {
         ) &&
         (
           !('lastAction' in request.resource.data) ||
-          request.resource.data.lastAction in ['check_in', 'check_out', 'none']
+          request.resource.data.lastAction in ['check_in', 'check_out', 'break_start', 'break_end', 'none']
         );
 
       // Tablet: solo lastAction + lastTimestampServer
       allow update: if
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['lastAction', 'lastTimestampServer']) &&
-        request.resource.data.lastAction in ['check_in', 'check_out', 'none'];
+        request.resource.data.lastAction in ['check_in', 'check_out', 'break_start', 'break_end', 'none'];
 
       // Web admin: edición completa del empleado
       allow update: if
@@ -147,7 +147,7 @@ service cloud.firestore {
         request.resource.data.employeeId is string &&
         request.resource.data.employeeNameSnapshot is string &&
         request.resource.data.employeeEmailSnapshot is string &&
-        request.resource.data.type in ['check_in', 'check_out'] &&
+        request.resource.data.type in ['check_in', 'check_out', 'break_start', 'break_end'] &&
         request.resource.data.source in [
           'expo-app',
           'web-admin-manual-checkout',

@@ -7,6 +7,7 @@ import {
   resolveAttendanceAction,
   type AttendanceActionRecord,
 } from '@/lib/attendance/resolve-attendance-action';
+import type { AttendanceType } from '@/lib/types/attendance';
 import { loadCompanySettingsAdmin } from '@/lib/attendance/server/validate-attendance-restrictions';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
@@ -48,7 +49,7 @@ export async function loadEmployeeAttendanceRecords(
 
 export async function resolveNextAttendanceAction(
   employeeCode: string,
-): Promise<'check_in' | 'check_out'> {
+): Promise<AttendanceType> {
   const [settings, records] = await Promise.all([
     loadCompanySettingsAdmin(),
     loadEmployeeAttendanceActionRecords(employeeCode),

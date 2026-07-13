@@ -13,6 +13,7 @@ export async function POST(request: Request) {
       employeePin?: string;
       photoPath?: string;
       photoUrl?: string;
+      actionType?: string;
       latitude?: number;
       longitude?: number;
       geoAccuracy?: number;
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
     const employeePin = body.employeePin?.trim() ?? '';
     const photoPath = body.photoPath?.trim() ?? '';
     const photoUrl = body.photoUrl?.trim() ?? '';
+    const actionType =
+      body.actionType === 'check_in' ||
+      body.actionType === 'check_out' ||
+      body.actionType === 'break_start' ||
+      body.actionType === 'break_end'
+        ? body.actionType
+        : undefined;
 
     if (!photoPath || !photoUrl) {
       return NextResponse.json({ error: 'Photo is required.' }, { status: 400 });
@@ -32,6 +40,7 @@ export async function POST(request: Request) {
       employeePin,
       photoPath,
       photoUrl,
+      actionType,
       latitude: body.latitude,
       longitude: body.longitude,
       geoAccuracy: body.geoAccuracy,

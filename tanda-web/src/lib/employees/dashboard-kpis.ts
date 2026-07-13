@@ -29,7 +29,8 @@ import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 export function computeActiveStaffKpi(employees: Employee[]): ActiveStaffKpi {
   const activeEmployees = employees.filter((employee) => employee.active);
   const checkedIn = activeEmployees.filter(
-    (employee) => employee.lastAction === 'check_in',
+    (employee) =>
+      employee.lastAction === 'check_in' || employee.lastAction === 'break_start',
   );
 
   return {

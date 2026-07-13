@@ -63,6 +63,10 @@ export async function loadCompanySettingsAdmin(): Promise<CompanySettings> {
             typeof (breakRaw as Record<string, unknown>).minShiftHours === 'number'
               ? ((breakRaw as Record<string, unknown>).minShiftHours as number)
               : DEFAULT_COMPANY_SETTINGS.attendanceBreak.minShiftHours,
+          deductBreakOverage:
+            typeof (breakRaw as Record<string, unknown>).deductBreakOverage === 'boolean'
+              ? ((breakRaw as Record<string, unknown>).deductBreakOverage as boolean)
+              : DEFAULT_COMPANY_SETTINGS.attendanceBreak.deductBreakOverage,
         }
       : DEFAULT_COMPANY_SETTINGS.attendanceBreak;
 

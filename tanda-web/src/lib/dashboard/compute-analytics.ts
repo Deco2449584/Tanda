@@ -544,7 +544,8 @@ export function computeDashboardAnalytics(
   );
 
   const checkedIn = filteredEmployees.filter(
-    (employee) => employee.lastAction === 'check_in',
+    (employee) =>
+      employee.lastAction === 'check_in' || employee.lastAction === 'break_start',
   );
 
   return {

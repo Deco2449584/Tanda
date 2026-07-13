@@ -199,6 +199,8 @@ export function AddManualRecordModal({
             >
               <option value="check_in">Check-in</option>
               <option value="check_out">Check-out</option>
+              <option value="break_start">Break start</option>
+              <option value="break_end">Break end</option>
             </select>
           </div>
 

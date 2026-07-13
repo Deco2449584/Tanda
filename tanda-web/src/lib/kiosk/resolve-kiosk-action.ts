@@ -25,7 +25,8 @@ export function resolveKioskAction(
   const at = options?.at ?? new Date();
   const today = timeZone ? toInputDateInTimeZone(timeZone, at) : toInputDate(at);
 
-  if (lastAction !== 'check_in') {
+  const onShift = lastAction === 'check_in' || lastAction === 'break_start';
+  if (!onShift) {
     return 'check_in';
   }
 
@@ -51,7 +52,7 @@ export function resolveKioskActionWithRecords(input: {
   at?: Date;
   lastAction?: string;
   lastTimestampServer?: TimestampLike;
-}): 'check_in' | 'check_out' {
+}): 'check_in' | 'check_out' | 'break_start' | 'break_end' {
   if (input.records.length > 0) {
     return resolveAttendanceAction({
       records: input.records,

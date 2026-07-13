@@ -302,9 +302,55 @@ export function AttendanceSettingsTab({
           </div>
         </div>
 
+        <button
+          type="button"
+          role="switch"
+          aria-checked={attendanceBreak.deductBreakOverage}
+          disabled={!attendanceBreak.enabled}
+          onClick={() =>
+            onChange({
+              ...draft,
+              attendanceBreak: {
+                ...attendanceBreak,
+                deductBreakOverage: !attendanceBreak.deductBreakOverage,
+              },
+            })
+          }
+          className={`flex w-full items-center justify-between gap-4 rounded-xl border px-4 py-3.5 text-left transition ${
+            !attendanceBreak.enabled
+              ? 'pointer-events-none opacity-40'
+              : attendanceBreak.deductBreakOverage
+                ? 'border-amber-500/40 bg-amber-500/10'
+                : 'border-border bg-surface-base/50 hover:border-border-strong'
+          }`}
+        >
+          <div>
+            <p className="text-sm font-medium text-white">
+              Deduct break overage from paid hours
+            </p>
+            <p className="mt-0.5 text-xs text-subtle">
+              Off = informational only (track excess minutes). On = subtract minutes
+              beyond the allowed break from billable hours. Incomplete breaks are never
+              deducted.
+            </p>
+          </div>
+          <span
+            className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+              attendanceBreak.deductBreakOverage ? 'bg-amber-500' : 'bg-zinc-700'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition ${
+                attendanceBreak.deductBreakOverage ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </span>
+        </button>
+
         <p className="rounded-lg border border-border/80 bg-surface-base/40 px-3 py-2 text-xs text-subtle">
+          Duration minutes is the allowed break margin for kiosk Start/End break punches.
           When editing a check-out, admins can mark that the employee did not take a break
-          so the deduction is skipped for that session.
+          so the fixed unpaid deduction is skipped for that session.
         </p>
       </div>
 

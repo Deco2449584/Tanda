@@ -8,6 +8,7 @@ import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
 import { KioskAlert } from '@/components/kiosk/KioskAlert';
+import { KioskActionChooser } from '@/components/kiosk/KioskActionChooser';
 import {
   KioskSuccessModal,
   type KioskSuccessData,
@@ -15,8 +16,9 @@ import {
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { kioskDeviceHeaders } from '@/lib/kiosk/device-token';
 import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
+import type { AttendanceType } from '@/lib/types/attendance';
 
-type KioskStep = 'pin' | 'camera' | 'success';
+type KioskStep = 'pin' | 'choose' | 'camera' | 'success';
 
 const PIN_LENGTH = 4;
 const SUCCESS_AUTO_RESET_MS = 2600;
@@ -24,7 +26,8 @@ const SUCCESS_AUTO_RESET_MS = 2600;
 interface KioskSession {
   employeeId: string;
   employeeName: string;
-  actionType: 'check_in' | 'check_out';
+  actionType: AttendanceType;
+  allowedActions: AttendanceType[];
 }
 
 interface KioskScreenProps {
@@ -99,7 +102,8 @@ export function KioskScreen({
           | {
               employeeId: string;
               employeeName: string;
-              actionType: 'check_in' | 'check_out';
+              actionType: AttendanceType;
+              allowedActions?: AttendanceType[];
               error?: string;
             }
           | null;
@@ -110,12 +114,25 @@ export function KioskScreen({
           return;
         }
 
-        setSession({
+        const allowedActions =
+          Array.isArray(data.allowedActions) && data.allowedActions.length > 0
+            ? data.allowedActions
+            : [data.actionType];
+
+        const nextSession: KioskSession = {
           employeeId: data.employeeId,
           employeeName: data.employeeName,
           actionType: data.actionType,
-        });
-        setStep('camera');
+          allowedActions,
+        };
+
+        setSession(nextSession);
+
+        if (allowedActions.length > 1) {
+          setStep('choose');
+        } else {
+          setStep('camera');
+        }
       } catch (error) {
         console.error('Kiosk PIN validation failed:', error);
         showError('Could not validate PIN. Please try again.');
@@ -144,7 +161,7 @@ export function KioskScreen({
       imageBlob: Blob;
       employeeId: string;
       employeePin: string;
-      actionType: 'check_in' | 'check_out';
+      actionType: AttendanceType;
     }) => {
       void (async () => {
         try {
@@ -166,6 +183,7 @@ export function KioskScreen({
               employeePin: params.employeePin,
               photoPath,
               photoUrl,
+              actionType: params.actionType,
               ...(geo
                 ? {
                     latitude: geo.latitude,
@@ -203,7 +221,6 @@ export function KioskScreen({
       return;
     }
 
-    // Optimistic: show success immediately, upload + record in the background.
     setSuccessData({
       employeeName: session.employeeName,
       actionType: session.actionType,
@@ -287,6 +304,20 @@ export function KioskScreen({
                 className="mb-[clamp(1rem,3vh,1.5rem)] h-auto w-[min(88vw,20rem)] max-h-[clamp(5.5rem,14vh,9rem)] shrink-0 object-contain drop-shadow-lg"
               />
             )}
+
+            {step === 'choose' && session ? (
+              <KioskActionChooser
+                employeeName={session.employeeName}
+                allowedActions={session.allowedActions}
+                onSelect={(actionType) => {
+                  setSession((current) =>
+                    current ? { ...current, actionType } : current,
+                  );
+                  setStep('camera');
+                }}
+                onCancel={resetToPin}
+              />
+            ) : null}
 
             {step === 'camera' && session && (
               <KioskCamera

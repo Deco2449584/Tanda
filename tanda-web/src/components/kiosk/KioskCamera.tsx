@@ -4,9 +4,11 @@ import { useCallback, useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { optimizeImageForUpload } from '@/utils/imageOptimizer';
+import { formatKioskActionLabel } from '@/lib/kiosk/kiosk-action-labels';
+import type { AttendanceType } from '@/lib/types/attendance';
 
 interface KioskCameraProps {
-  actionType: 'check_in' | 'check_out';
+  actionType: AttendanceType;
   employeeName: string;
   processing: boolean;
   onCapture: (imageFile: File, previewUrl: string) => void;
@@ -47,7 +49,7 @@ export function KioskCamera({
   const webcamRef = useRef<Webcam>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const actionLabel = actionType === 'check_out' ? 'Clock Out' : 'Clock In';
+  const actionLabel = formatKioskActionLabel(actionType);
 
   const handleCapture = useCallback(async () => {
     if (processing) return;

@@ -1,6 +1,10 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type AttendanceType = 'check_in' | 'check_out';
+export type AttendanceType =
+  | 'check_in'
+  | 'check_out'
+  | 'break_start'
+  | 'break_end';
 
 export interface AttendanceRecordFirestore {
   employeeId: string;

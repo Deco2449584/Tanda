@@ -4,6 +4,8 @@ import type { AttendanceType } from '@/lib/types/attendance';
 export function formatAttendanceType(type: AttendanceType | string): string {
   if (type === 'check_in') return 'Check-in';
   if (type === 'check_out') return 'Check-out';
+  if (type === 'break_start') return 'Break start';
+  if (type === 'break_end') return 'Break end';
   return type;
 }
 

@@ -55,6 +55,10 @@ function mapAttendanceBreak(data: Record<string, unknown>): AttendanceBreakSetti
       typeof breakData.minShiftHours === 'number' && breakData.minShiftHours > 0
         ? breakData.minShiftHours
         : DEFAULT_ATTENDANCE_BREAK.minShiftHours,
+    deductBreakOverage:
+      typeof breakData.deductBreakOverage === 'boolean'
+        ? breakData.deductBreakOverage
+        : DEFAULT_ATTENDANCE_BREAK.deductBreakOverage,
   };
 }
 

@@ -16,7 +16,9 @@ import {
   validateEmployeeCheckInRestrictions,
 } from '@/lib/attendance/server/validate-attendance-restrictions';
 import {
-  resolveAttendanceAction,
+  isAttendanceType,
+  resolveAllowedAttendanceActions,
+  resolveAttendanceState,
 } from '@/lib/attendance/resolve-attendance-action';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
@@ -25,17 +27,20 @@ import {
   isValidLongitude,
   reverseGeocode,
 } from '@/lib/geo/reverse-geocode';
-import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { canEmployeePunchAtKiosk } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
 import { findKioskDeviceByToken } from '@/lib/kiosk/server/kiosk-devices-service';
+import type { AttendanceType } from '@/lib/types/attendance';
+import type { AttendanceWorkState } from '@/lib/attendance/resolve-attendance-action';
 
 export interface KioskLookupResult {
   employeeDocId: string;
   employeeId: string;
   employeeName: string;
   employeeEmail: string;
-  actionType: 'check_in' | 'check_out';
+  actionType: AttendanceType;
+  allowedActions: AttendanceType[];
+  state: AttendanceWorkState;
 }
 
 const PUNCH_MAX_ATTEMPTS = 3;
@@ -58,12 +63,17 @@ export async function lookupKioskEmployee(input: {
     loadEmployeeAttendanceRecords(employeeCode),
   ]);
 
-  const actionType = resolveAttendanceAction({
+  const state = resolveAttendanceState({
     records,
     timeZone: settings.timeZone,
   });
+  const allowedActions = resolveAllowedAttendanceActions({
+    records,
+    timeZone: settings.timeZone,
+  });
+  const actionType = allowedActions[0] ?? 'check_in';
 
-  if (actionType === 'check_in') {
+  if (allowedActions.includes('check_in')) {
     const violation = await validateEmployeeCheckInRestrictions({
       employeeId: employeeCode,
       punchAt: new Date(),
@@ -87,7 +97,7 @@ export async function lookupKioskEmployee(input: {
     }
   }
 
-  if (actionType === 'check_out') {
+  if (allowedActions.includes('check_out')) {
     const openCheckIn = findOpenCheckInRecord(fullRecords, settings.timeZone);
     const locationViolation = validateCheckoutSameLocationAsCheckIn({
       openCheckIn,
@@ -105,6 +115,8 @@ export async function lookupKioskEmployee(input: {
     employeeName: employee.data.name as string,
     employeeEmail: employee.data.email as string,
     actionType,
+    allowedActions,
+    state,
   };
 }
 
@@ -113,6 +125,7 @@ export async function recordKioskPunch(input: {
   employeePin: string;
   photoPath: string;
   photoUrl: string;
+  actionType?: AttendanceType;
   latitude?: number;
   longitude?: number;
   geoAccuracy?: number;
@@ -132,7 +145,9 @@ export async function recordKioskPunch(input: {
   const settings = await loadCompanySettingsAdmin();
   const timeZone = settings.timeZone;
 
-  let actionType: 'check_in' | 'check_out' = 'check_in';
+  let actionType: AttendanceType = 'check_in';
+  let allowedActions: AttendanceType[] = ['check_in'];
+  let state: AttendanceWorkState = 'off_duty';
   let recordedAt = new Date().toISOString();
 
   for (let attempt = 0; attempt < PUNCH_MAX_ATTEMPTS; attempt += 1) {
@@ -148,7 +163,25 @@ export async function recordKioskPunch(input: {
 
     const employeeData = employeeSnapshot.data() ?? {};
     const expectedVersion = presenceVersionFromEmployeeData(employeeData);
-    actionType = resolveAttendanceAction({ records, timeZone });
+    state = resolveAttendanceState({ records, timeZone });
+    allowedActions = resolveAllowedAttendanceActions({ records, timeZone });
+
+    if (input.actionType && isAttendanceType(input.actionType)) {
+      if (!allowedActions.includes(input.actionType)) {
+        throw new KioskPunchError(
+          'That action is not available right now. Enter your PIN again.',
+          409,
+        );
+      }
+      actionType = input.actionType;
+    } else if (allowedActions.length === 1) {
+      actionType = allowedActions[0]!;
+    } else {
+      throw new KioskPunchError(
+        'Choose Start break, End break, or Clock out, then try again.',
+        400,
+      );
+    }
 
     if (actionType === 'check_in') {
       const punchAt = new Date();
@@ -226,8 +259,8 @@ export async function recordKioskPunch(input: {
           throw new KioskPunchConflictError();
         }
 
-        const currentAction = resolveAttendanceAction({ records, timeZone });
-        if (currentAction !== actionType) {
+        const currentAllowed = resolveAllowedAttendanceActions({ records, timeZone });
+        if (!currentAllowed.includes(actionType)) {
           throw new KioskPunchConflictError();
         }
 
@@ -291,6 +324,8 @@ export async function recordKioskPunch(input: {
     employeeName,
     employeeEmail,
     actionType,
+    allowedActions,
+    state,
     recordedAt,
   };
 }

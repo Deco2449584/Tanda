@@ -4,6 +4,11 @@ export interface AttendanceBreakSettings {
   enabled: boolean;
   durationMinutes: number;
   minShiftHours: number;
+  /**
+   * When true, minutes beyond the allowed break margin (from break_start/break_end)
+   * are deducted from billable hours. Default false = informational only.
+   */
+  deductBreakOverage: boolean;
 }
 
 export interface AttendancePolicySettings {
@@ -55,6 +60,7 @@ export const DEFAULT_ATTENDANCE_BREAK: AttendanceBreakSettings = {
   enabled: true,
   durationMinutes: 30,
   minShiftHours: 6,
+  deductBreakOverage: false,
 };
 
 export const DEFAULT_ATTENDANCE_RESTRICTIONS: AttendanceRestrictionsSettings = {
