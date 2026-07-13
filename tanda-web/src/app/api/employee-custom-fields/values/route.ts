@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { canPerformAction } from '@/lib/auth/admin-action-permissions';
 import { loadAdminAccessFromRequest } from '@/lib/auth/load-admin-access';
 import { loadEmployeeContext } from '@/lib/auth/load-employee-context';
+import { COLLECTIONS } from '@/lib/constants';
 import {
   listEmployeeCustomFieldValues,
   upsertEmployeeCustomFieldValues,
 } from '@/lib/employees/server/employee-custom-fields-admin';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 import type { UpsertEmployeeCustomFieldValueInput } from '@/lib/types/employee-custom-field';
 
 export async function GET(request: Request) {
@@ -83,6 +85,20 @@ export async function PUT(request: Request) {
       employeeDocId = employee.employeeDocId;
       updatedByUid = employee.uid;
       updatedByEmail = employee.email;
+
+      const employeeSnap = await getAdminFirestore()
+        .collection(COLLECTIONS.EMPLOYEES)
+        .doc(employee.employeeDocId)
+        .get();
+      if (employeeSnap.data()?.personalProfileStatus === 'Approved') {
+        return NextResponse.json(
+          {
+            error:
+              'Your profile is already approved and cannot be edited. Contact an administrator if changes are needed.',
+          },
+          { status: 403 },
+        );
+      }
     } else {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }

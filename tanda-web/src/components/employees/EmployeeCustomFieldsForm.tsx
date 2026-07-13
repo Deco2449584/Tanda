@@ -53,6 +53,7 @@ interface EmployeeCustomFieldsFormProps {
   fields: EmployeeCustomField[];
   values: EmployeeCustomFieldValue[];
   disabled?: boolean;
+  readOnly?: boolean;
   idPrefix?: string;
   draftsRef?: MutableRefObject<Record<string, CustomFieldDraft>>;
 }
@@ -61,6 +62,7 @@ export function EmployeeCustomFieldsForm({
   fields,
   values,
   disabled = false,
+  readOnly = false,
   idPrefix = 'custom',
   draftsRef,
 }: EmployeeCustomFieldsFormProps) {
@@ -69,6 +71,7 @@ export function EmployeeCustomFieldsForm({
   );
   const internalRef = useRef(drafts);
   const targetRef = draftsRef ?? internalRef;
+  const fieldsLocked = disabled || readOnly;
 
   const fieldKey = useMemo(
     () =>
@@ -139,7 +142,8 @@ export function EmployeeCustomFieldsForm({
                     onChange={(event) =>
                       patchDraft(field.id, { valueText: event.target.value })
                     }
-                    disabled={disabled}
+                    disabled={fieldsLocked}
+                    readOnly={readOnly}
                     className={formInputClass}
                   />
                 </FormField>
@@ -159,7 +163,8 @@ export function EmployeeCustomFieldsForm({
                     onChange={(event) =>
                       patchDraft(field.id, { valueNumber: event.target.value })
                     }
-                    disabled={disabled}
+                    disabled={fieldsLocked}
+                    readOnly={readOnly}
                     className={formInputClass}
                   />
                 </FormField>
@@ -173,7 +178,8 @@ export function EmployeeCustomFieldsForm({
                   currentFileUrl={draft.url}
                   selectedFile={draft.file}
                   onFileChange={(file) => patchDraft(field.id, { file })}
-                  disabled={disabled}
+                  disabled={fieldsLocked}
+                  readOnly={readOnly}
                 />
               ) : null}
             </div>

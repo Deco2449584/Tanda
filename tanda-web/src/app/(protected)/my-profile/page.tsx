@@ -180,6 +180,12 @@ export default function MyProfilePage() {
     event.preventDefault();
     if (!employee || customFields.length === 0) return;
 
+    if (
+      normalizePersonalProfileStatus(employee.personalProfileStatus) === 'Approved'
+    ) {
+      return;
+    }
+
     setCustomError('');
     setCustomSuccess('');
     setIsSavingCustom(true);
@@ -228,12 +234,12 @@ export default function MyProfilePage() {
               </div>
               {isReadOnly ? (
                 <p className="text-xs text-subtle">
-                  Your identity profile is approved. You can still update additional
-                  information below if your organisation requests it.
+                  Your profile is approved. You can view your details here; contact an
+                  administrator if something needs to change.
                 </p>
               ) : (
                 <p className="text-xs text-subtle">
-                  Complete your personal details and upload passport and visa documents,
+                  Complete your personal details, passport/visa, and any additional fields,
                   then submit for admin approval.
                 </p>
               )}
@@ -282,7 +288,8 @@ export default function MyProfilePage() {
               <EmployeeCustomFieldsForm
                 fields={customFields}
                 values={customValues}
-                disabled={isSavingCustom}
+                disabled={isSavingCustom || isReadOnly}
+                readOnly={isReadOnly}
                 idPrefix="my-custom"
                 draftsRef={customDraftsRef}
               />
@@ -290,13 +297,15 @@ export default function MyProfilePage() {
               {customSuccess ? (
                 <FormAlert variant="success">{customSuccess}</FormAlert>
               ) : null}
-              <FormActions
-                submitLabel={
-                  isSavingCustom ? 'Saving…' : 'Save additional information'
-                }
-                disabled={isSavingCustom}
-                hideCancel
-              />
+              {!isReadOnly ? (
+                <FormActions
+                  submitLabel={
+                    isSavingCustom ? 'Saving…' : 'Save additional information'
+                  }
+                  disabled={isSavingCustom}
+                  hideCancel
+                />
+              ) : null}
             </form>
           ) : null}
         </>
