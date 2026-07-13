@@ -12,6 +12,7 @@ import { LocationsTab } from '@/components/settings/LocationsTab';
 import { DepartmentsTab } from '@/components/settings/DepartmentsTab';
 import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
 import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
+import { EmployeeCustomFieldsTab } from '@/components/settings/EmployeeCustomFieldsTab';
 import { NotificationsSettingsTab } from '@/components/settings/NotificationsSettingsTab';
 import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
@@ -41,13 +42,15 @@ type SettingsTab =
   | 'locations'
   | 'departments'
   | 'locationGroups'
-  | 'kioskDevices';
+  | 'kioskDevices'
+  | 'employeeFields';
 
 const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey }[] = [
   { id: 'localization', label: 'Localization', section: 'localization' },
   { id: 'attendance', label: 'Time & attendance', section: 'attendance' },
   { id: 'notifications', label: 'Notifications', section: 'notifications' },
   { id: 'accessRoles', label: 'Access roles' },
+  { id: 'employeeFields', label: 'Employee fields' },
   { id: 'auditLogs', label: 'Audit logs' },
   { id: 'profile', label: 'User profile' },
   { id: 'locations', label: 'Locations', section: 'locations' },
@@ -86,7 +89,12 @@ export default function SettingsPage() {
   const tabs = useMemo(
     () =>
       ADMIN_TABS.filter((tab) => {
-        if (tab.id === 'data' || tab.id === 'accessRoles' || tab.id === 'auditLogs') {
+        if (
+          tab.id === 'data' ||
+          tab.id === 'accessRoles' ||
+          tab.id === 'auditLogs' ||
+          tab.id === 'employeeFields'
+        ) {
           return isMaster;
         }
         if (tab.id === 'profile') {
@@ -207,6 +215,9 @@ export default function SettingsPage() {
           )}
           {activeTab === 'notifications' && <NotificationsSettingsTab />}
           {activeTab === 'accessRoles' && isMaster && <AdminRolesTab />}
+          {activeTab === 'employeeFields' && isMaster && (
+            <EmployeeCustomFieldsTab onToast={showToast} />
+          )}
           {activeTab === 'auditLogs' && isMaster && <AuditLogsTab />}
           {activeTab === 'profile' && (
             <AdminProfileTab

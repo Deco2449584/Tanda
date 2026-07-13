@@ -19,6 +19,8 @@ export const COLLECTIONS = {
   ISSUE_REPORTS: 'issue_reports',
   HELP_TUTORIALS: 'help_tutorials',
   AUTH_SESSIONS: 'auth_sessions',
+  EMPLOYEE_CUSTOM_FIELDS: 'employee_custom_fields',
+  EMPLOYEE_CUSTOM_FIELD_VALUES: 'employee_custom_field_values',
 } as const;
 
 export const TIMEZONE_OPTIONS = [

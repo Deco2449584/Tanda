@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { addDoc, collection, deleteField, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 import {
@@ -19,6 +19,11 @@ import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLoca
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeeDepartmentSelect } from '@/components/employees/EmployeeDepartmentSelect';
 import { EmployeePersonalFields } from '@/components/employees/EmployeePersonalFields';
+import {
+  EmployeeCustomFieldsForm,
+  buildCustomFieldValuePayloads,
+  type CustomFieldDraft,
+} from '@/components/employees/EmployeeCustomFieldsForm';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
 import {
@@ -31,7 +36,16 @@ import {
   formInputClass,
 } from '@/components/employees/employee-form-ui';
 import { reviewEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
+import {
+  fetchEmployeeCustomFieldValues,
+  fetchEmployeeCustomFields,
+  saveEmployeeCustomFieldValuesRequest,
+} from '@/lib/employees/employee-custom-fields-api';
 import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile-status';
+import type {
+  EmployeeCustomField,
+  EmployeeCustomFieldValue,
+} from '@/lib/types/employee-custom-field';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   buildEmployeeCreatePayload,
@@ -122,6 +136,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [kioskPassword, setKioskPassword] = useState('');
   const [kioskPasswordConfirm, setKioskPasswordConfirm] = useState('');
   const [error, setError] = useState('');
+  const [customFields, setCustomFields] = useState<EmployeeCustomField[]>([]);
+  const [customValues, setCustomValues] = useState<EmployeeCustomFieldValue[]>([]);
+  const customDraftsRef = useRef<Record<string, CustomFieldDraft>>({});
 
   const isBusy = isUploading || isSubmitting || isResendingInvite || isReviewingProfile;
   const isKiosk = isKioskAccessRole(accessRole);
@@ -165,6 +182,37 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     setKioskPassword('');
     setKioskPasswordConfirm('');
   }, [employee]);
+
+  useEffect(() => {
+    if (!employee || isKiosk) {
+      setCustomFields([]);
+      setCustomValues([]);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [fields, values] = await Promise.all([
+          fetchEmployeeCustomFields(),
+          fetchEmployeeCustomFieldValues(employee.id),
+        ]);
+        if (!cancelled) {
+          setCustomFields(fields);
+          setCustomValues(values);
+        }
+      } catch {
+        if (!cancelled) {
+          setCustomFields([]);
+          setCustomValues([]);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [employee, isKiosk]);
 
   function applySuggestedEmployeeId() {
     try {
@@ -457,6 +505,18 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           employeeDocId: employee.id,
           summary: `Updated employee ${form.name.trim()} (${employeeCode})`,
         });
+
+        if (!isKiosk && customFields.length > 0) {
+          const customPayloads = await buildCustomFieldValuePayloads({
+            fields: customFields,
+            drafts: customDraftsRef.current,
+            employeeCode,
+          });
+          await saveEmployeeCustomFieldValuesRequest({
+            employeeDocId: employee.id,
+            values: customPayloads,
+          });
+        }
 
         await refreshEmployees();
       } else {
@@ -919,7 +979,18 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           ) : null}
 
           {isEditMode ? (
-            personalFields
+            <>
+              {personalFields}
+              {customFields.length > 0 ? (
+                <EmployeeCustomFieldsForm
+                  fields={customFields}
+                  values={customValues}
+                  disabled={isBusy}
+                  idPrefix="admin-custom"
+                  draftsRef={customDraftsRef}
+                />
+              ) : null}
+            </>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border/80 bg-surface-raised/40">
               <button
