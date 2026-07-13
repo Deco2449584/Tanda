@@ -60,7 +60,7 @@ service firebase.storage {
       allow list, delete: if request.auth != null;
     }
 
-    // Employee identity documents (passport, visa) from the web admin
+    // Employee identity documents (passport, visa) — admins and the signed-in employee
     match /employee_documents/{employeeCode}/{docType}/{fileName} {
       allow read: if request.auth != null;
       allow write: if

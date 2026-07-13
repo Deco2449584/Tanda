@@ -4,6 +4,7 @@ import {
   CalendarX,
   Clock,
   FileWarning,
+  IdCard,
   LogOut,
   Megaphone,
   Palmtree,
@@ -52,6 +53,10 @@ const ADMIN_ALERT_VISUALS: Record<string, NotificationVisualStyle> = {
   leave_pending: {
     icon: Palmtree,
     badgeClass: 'bg-emerald-500/15 text-emerald-300',
+  },
+  profile_pending: {
+    icon: IdCard,
+    badgeClass: 'bg-sky-500/15 text-sky-300',
   },
   missing_checkin: {
     icon: Clock,

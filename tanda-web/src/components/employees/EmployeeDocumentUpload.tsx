@@ -7,8 +7,10 @@ interface EmployeeDocumentUploadProps {
   description?: string;
   selectedFile: File | null;
   currentFileName?: string;
+  currentFileUrl?: string;
   onFileChange: (file: File | null) => void;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export function EmployeeDocumentUpload({
@@ -16,8 +18,10 @@ export function EmployeeDocumentUpload({
   description,
   selectedFile,
   currentFileName,
+  currentFileUrl,
   onFileChange,
   disabled = false,
+  readOnly = false,
 }: EmployeeDocumentUploadProps) {
   const displayName = selectedFile?.name ?? currentFileName;
 
@@ -29,29 +33,43 @@ export function EmployeeDocumentUpload({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground">{label}</p>
-          {description ? (
+          {description && !readOnly ? (
             <p className="mt-0.5 text-xs text-subtle">{description}</p>
           ) : null}
           {displayName ? (
-            <p className="mt-2 truncate text-xs text-muted">Selected: {displayName}</p>
+            <p className="mt-2 truncate text-xs text-muted">
+              {readOnly ? displayName : `Selected: ${displayName}`}
+            </p>
           ) : (
             <p className="mt-2 text-xs text-subtle">No file attached yet.</p>
           )}
-          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-surface-hover has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
-            <Upload className="h-3.5 w-3.5" />
-            Choose file
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              disabled={disabled}
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                onFileChange(file);
-                event.target.value = '';
-              }}
-            />
-          </label>
+          {currentFileUrl && !selectedFile ? (
+            <a
+              href={currentFileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+            >
+              {readOnly ? 'Open file' : 'Open current file'}
+            </a>
+          ) : null}
+          {!readOnly ? (
+            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-surface-hover has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
+              <Upload className="h-3.5 w-3.5" />
+              Choose file
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                disabled={disabled}
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  onFileChange(file);
+                  event.target.value = '';
+                }}
+              />
+            </label>
+          ) : null}
         </div>
       </div>
     </div>

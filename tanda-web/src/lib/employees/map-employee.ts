@@ -1,8 +1,23 @@
-import type { Employee, EmployeeFirestore } from '@/lib/types/employee';
+import type {
+  Employee,
+  EmployeeFirestore,
+  PersonalProfileStatus,
+} from '@/lib/types/employee';
+import { PERSONAL_PROFILE_STATUSES } from '@/lib/types/employee';
 import { mapModulePermissions } from '@/lib/auth/admin-permissions';
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function mapPersonalProfileStatus(value: unknown): PersonalProfileStatus {
+  if (
+    typeof value === 'string' &&
+    (PERSONAL_PROFILE_STATUSES as readonly string[]).includes(value)
+  ) {
+    return value as PersonalProfileStatus;
+  }
+  return 'none';
 }
 
 export function mapEmployeeDoc(
@@ -54,5 +69,11 @@ export function mapEmployeeDoc(
     endDate: optionalString(employee.endDate),
     authUid: optionalString(employee.authUid),
     inviteSentAt: employee.inviteSentAt,
+    personalProfileStatus: mapPersonalProfileStatus(employee.personalProfileStatus),
+    personalProfileSubmittedAt: employee.personalProfileSubmittedAt,
+    personalProfileReviewedAt: employee.personalProfileReviewedAt,
+    personalProfileRejectionReason: optionalString(
+      employee.personalProfileRejectionReason,
+    ),
   };
 }

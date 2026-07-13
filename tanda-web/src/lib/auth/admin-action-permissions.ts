@@ -20,6 +20,7 @@ export const ADMIN_ACTION_LABELS: {
     update: 'Edit employees',
     delete: 'Delete employees',
     invite: 'Send invite emails',
+    reviewProfile: 'Approve / reject personal profiles',
   },
   attendance: {
     create: 'Add manual records',

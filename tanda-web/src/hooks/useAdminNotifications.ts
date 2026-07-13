@@ -66,6 +66,7 @@ function getRecentAttendanceRange() {
 
 interface AdminNotificationData {
   leaveRequests: LeaveRequest[];
+  pendingProfiles: { employeeId: string; name: string }[];
   shifts: Shift[];
   attendanceRecords: AttendanceRecord[];
   attendancePolicy: AttendancePolicySettings;
@@ -117,11 +118,17 @@ async function loadAttendancePolicy(): Promise<{
   };
 }
 
-async function loadEmployeeNameMap(): Promise<Map<string, string>> {
-  if (!db) return new Map();
+async function loadEmployeeNameMap(): Promise<{
+  employeeNameByCode: Map<string, string>;
+  pendingProfiles: { employeeId: string; name: string }[];
+}> {
+  if (!db) {
+    return { employeeNameByCode: new Map(), pendingProfiles: [] };
+  }
 
   const snapshot = await getDocs(collection(db, COLLECTIONS.EMPLOYEES));
   const map = new Map<string, string>();
+  const pendingProfiles: { employeeId: string; name: string }[] = [];
 
   snapshot.docs.forEach((document) => {
     const data = document.data();
@@ -130,9 +137,17 @@ async function loadEmployeeNameMap(): Promise<Map<string, string>> {
     if (code && name) {
       map.set(code, name);
     }
+
+    const role =
+      typeof data.role === 'string' ? data.role.trim().toLowerCase() : 'empleado';
+    if (role === 'kiosk' || role === 'master') return;
+
+    if (data.personalProfileStatus === 'Pending' && code) {
+      pendingProfiles.push({ employeeId: code, name: name || code });
+    }
   });
 
-  return map;
+  return { employeeNameByCode: map, pendingProfiles };
 }
 
 async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
@@ -140,10 +155,8 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     throw new Error('Firestore is not available.');
   }
 
-  const [{ attendancePolicy, timeZone }, employeeNameByCode] = await Promise.all([
-    loadAttendancePolicy(),
-    loadEmployeeNameMap(),
-  ]);
+  const [{ attendancePolicy, timeZone }, { employeeNameByCode, pendingProfiles }] =
+    await Promise.all([loadAttendancePolicy(), loadEmployeeNameMap()]);
   const today = toInputDateInTimeZone(timeZone);
   const { start, end } = getRecentAttendanceRange();
 
@@ -172,6 +185,7 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
     leaveRequests: leaveSnapshot.docs.map((document) =>
       mapLeaveRequestDoc(document.id, document.data()),
     ),
+    pendingProfiles,
     shifts: shiftsSnapshot.docs.map((document) =>
       mapShiftDoc(document.id, document.data()),
     ),
@@ -261,6 +275,24 @@ function buildNotificationItems(
     });
   }
 
+  if (data.pendingProfiles.length > 0) {
+    const details = summarizeDetailLines(
+      data.pendingProfiles.map(
+        (profile) => `${profile.name} · ID ${profile.employeeId}`,
+      ),
+    );
+
+    list.push({
+      id: 'profile_pending',
+      title: 'Pending personal profiles',
+      description: `${data.pendingProfiles.length} profile${data.pendingProfiles.length === 1 ? '' : 's'} awaiting review`,
+      details,
+      href: '/employees/profiles?status=pending',
+      count: data.pendingProfiles.length,
+      requiresAction: adminAlertRequiresAction('profile_pending'),
+    });
+  }
+
   if (missingShiftList.length > 0) {
     const details = summarizeDetailLines(
       missingShiftList.map((shift) => shiftDetailLine(shift, data.employeeNameByCode)),
@@ -341,6 +373,9 @@ function buildNotificationItems(
 
 export function useAdminNotifications(enabled: boolean) {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [pendingProfiles, setPendingProfiles] = useState<
+    { employeeId: string; name: string }[]
+  >([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
     [],
@@ -358,6 +393,7 @@ export function useAdminNotifications(enabled: boolean) {
   const loadData = useCallback(async (options?: { silent?: boolean }) => {
     if (!enabled || !db) {
       setLeaveRequests([]);
+      setPendingProfiles([]);
       setShifts([]);
       setAttendanceRecords([]);
       setLoading(false);
@@ -374,6 +410,7 @@ export function useAdminNotifications(enabled: boolean) {
     try {
       const data = await fetchAdminNotificationData();
       setLeaveRequests(data.leaveRequests);
+      setPendingProfiles(data.pendingProfiles);
       setShifts(data.shifts);
       setAttendanceRecords(data.attendanceRecords);
       setAttendancePolicy(data.attendancePolicy);
@@ -382,6 +419,7 @@ export function useAdminNotifications(enabled: boolean) {
     } catch (error) {
       console.error('useAdminNotifications', error);
       setLeaveRequests([]);
+      setPendingProfiles([]);
       setShifts([]);
       setAttendanceRecords([]);
     } finally {
@@ -393,6 +431,7 @@ export function useAdminNotifications(enabled: boolean) {
   useEffect(() => {
     if (!enabled || !db) {
       setLeaveRequests([]);
+      setPendingProfiles([]);
       setShifts([]);
       setAttendanceRecords([]);
       setLoading(false);
@@ -432,6 +471,7 @@ export function useAdminNotifications(enabled: boolean) {
 
     return buildNotificationItems({
       leaveRequests,
+      pendingProfiles,
       shifts,
       attendanceRecords,
       attendancePolicy,
@@ -444,6 +484,7 @@ export function useAdminNotifications(enabled: boolean) {
     employeeNameByCode,
     enabled,
     leaveRequests,
+    pendingProfiles,
     shifts,
     timeZone,
   ]);

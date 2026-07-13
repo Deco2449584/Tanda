@@ -5,6 +5,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { Pencil, Trash2 } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { DeleteEmployeeConfirmModal } from '@/components/employees/DeleteEmployeeConfirmModal';
+import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
@@ -205,7 +206,12 @@ export function EmployeeTable({
                     {getEmployeeLocationLabel(employee, locations, groups)}
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusBadge active={employee.active} />
+                    <div className="flex flex-col items-start gap-1.5">
+                      <StatusBadge active={employee.active} />
+                      {employee.personalProfileStatus === 'Pending' ? (
+                        <PersonalProfileStatusBadge status="Pending" compact />
+                      ) : null}
+                    </div>
                   </td>
                   {showActions ? (
                     <td className="px-4 py-3.5">
@@ -284,6 +290,9 @@ export function EmployeeTable({
 
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <StatusBadge active={employee.active} compact />
+                    {employee.personalProfileStatus === 'Pending' ? (
+                      <PersonalProfileStatusBadge status="Pending" compact />
+                    ) : null}
 
                     {showActions ? (
                       <div className="flex items-center gap-0.5">

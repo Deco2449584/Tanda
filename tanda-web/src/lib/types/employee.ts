@@ -1,6 +1,15 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 
+export const PERSONAL_PROFILE_STATUSES = [
+  'none',
+  'Pending',
+  'Approved',
+  'Rejected',
+] as const;
+
+export type PersonalProfileStatus = (typeof PERSONAL_PROFILE_STATUSES)[number];
+
 /** Optional personal and immigration details stored on the employee record. */
 export interface EmployeePersonalDetails {
   phone?: string;
@@ -51,6 +60,11 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   pushSubscription?: string;
   notificationsEnabledAt?: Timestamp;
   inviteSentAt?: Timestamp;
+  /** Employee-submitted personal profile review status. */
+  personalProfileStatus?: PersonalProfileStatus;
+  personalProfileSubmittedAt?: Timestamp;
+  personalProfileReviewedAt?: Timestamp;
+  personalProfileRejectionReason?: string;
 }
 
 export interface Employee extends EmployeeFirestore {

@@ -12,6 +12,7 @@ import {
   Clock,
   Flag,
   HelpCircle,
+  IdCard,
   LayoutDashboard,
   Megaphone,
   MonitorSmartphone,
@@ -57,6 +58,7 @@ const adminNavGroups: NavGroup[] = [
     title: 'People',
     items: [
       { label: 'Employees', href: '/employees', icon: Users },
+      { label: 'Personal profiles', href: '/employees/profiles', icon: IdCard },
       { label: 'Announcements', href: '/announcements', icon: Megaphone },
       { label: 'Leave requests', href: '/leave-requests', icon: ShieldCheck },
     ],
@@ -94,6 +96,7 @@ const employeeNavGroups: NavGroup[] = [
       { label: 'My records', href: '/my-records', icon: ClipboardList },
       { label: 'My schedule', href: '/my-schedule', icon: CalendarDays },
       { label: 'My leave', href: '/my-requests', icon: ShieldCheck },
+      { label: 'My profile', href: '/my-profile', icon: IdCard },
     ],
   },
   {

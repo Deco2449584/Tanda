@@ -5,12 +5,12 @@ import { addDoc, collection, deleteField, doc, serverTimestamp, updateDoc } from
 import type { Timestamp } from 'firebase/firestore';
 import {
   Briefcase,
-  FileText,
+  Check,
+  ChevronDown,
   Mail,
   RefreshCw,
-  UserRound,
+  X,
 } from 'lucide-react';
-import { EmployeeDocumentUpload } from '@/components/employees/EmployeeDocumentUpload';
 import {
   EmployeeAccessRoleSection,
   isKioskAccessRole,
@@ -18,7 +18,9 @@ import {
 import { EmployeeLocationGroupSelect } from '@/components/employees/EmployeeLocationGroupSelect';
 import { EmployeeLocationSelect } from '@/components/employees/EmployeeLocationSelect';
 import { EmployeeDepartmentSelect } from '@/components/employees/EmployeeDepartmentSelect';
+import { EmployeePersonalFields } from '@/components/employees/EmployeePersonalFields';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
+import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
 import {
   FormActions,
   FormAlert,
@@ -28,6 +30,8 @@ import {
   FormToggle,
   formInputClass,
 } from '@/components/employees/employee-form-ui';
+import { reviewEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
+import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile-status';
 import { COLLECTIONS } from '@/lib/constants';
 import {
   buildEmployeeCreatePayload,
@@ -96,6 +100,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const { employees, loading: employeesLoading, refresh: refreshEmployees } = useEmployees();
   const { isMaster, canPerformAction } = useAdminAccess();
   const canInviteEmployees = canPerformAction('employees', 'invite');
+  const canReviewProfile = canPerformAction('employees', 'reviewProfile');
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
   const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
   const [adminRoleId, setAdminRoleId] = useState('');
@@ -108,16 +113,19 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [visaFile, setVisaFile] = useState<File | null>(null);
+  const [personalOpen, setPersonalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResendingInvite, setIsResendingInvite] = useState(false);
+  const [isReviewingProfile, setIsReviewingProfile] = useState(false);
   const [inviteMessage, setInviteMessage] = useState('');
   const [kioskPassword, setKioskPassword] = useState('');
   const [kioskPasswordConfirm, setKioskPasswordConfirm] = useState('');
   const [error, setError] = useState('');
 
-  const isBusy = isUploading || isSubmitting || isResendingInvite;
+  const isBusy = isUploading || isSubmitting || isResendingInvite || isReviewingProfile;
   const isKiosk = isKioskAccessRole(accessRole);
+  const profileStatus = normalizePersonalProfileStatus(employee?.personalProfileStatus);
 
   function patchForm(patch: Partial<CreateEmployeeFormValues>) {
     setForm((current) => ({ ...current, ...patch }));
@@ -134,6 +142,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       setPhotoFile(null);
       setPassportFile(null);
       setVisaFile(null);
+      setPersonalOpen(false);
       setError('');
       setInviteMessage('');
       setKioskPassword('');
@@ -150,6 +159,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     setPhotoFile(null);
     setPassportFile(null);
     setVisaFile(null);
+    setPersonalOpen(true);
     setError('');
     setInviteMessage('');
     setKioskPassword('');
@@ -528,6 +538,53 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     return isEditMode ? 'Save changes' : isKiosk ? 'Create kiosk account' : 'Create employee';
   }
 
+  async function handleReviewProfile(status: 'Approved' | 'Rejected') {
+    if (!employee) return;
+
+    let rejectionReason: string | undefined;
+    if (status === 'Rejected') {
+      const reason = window.prompt('Reason for rejection:');
+      if (reason === null) return;
+      rejectionReason = reason.trim();
+      if (!rejectionReason) {
+        window.alert('A rejection reason is required.');
+        return;
+      }
+    }
+
+    setIsReviewingProfile(true);
+    setError('');
+    try {
+      await reviewEmployeeProfileRequest(employee.id, status, rejectionReason);
+      await refreshEmployees();
+      onSuccess();
+    } catch (reviewError) {
+      setError(
+        reviewError instanceof Error
+          ? reviewError.message
+          : 'Could not review personal profile.',
+      );
+    } finally {
+      setIsReviewingProfile(false);
+    }
+  }
+
+  const personalFields = (
+    <EmployeePersonalFields
+      form={form}
+      onChange={patchForm}
+      disabled={isBusy}
+      passportFile={passportFile}
+      visaFile={visaFile}
+      onPassportFileChange={setPassportFile}
+      onVisaFileChange={setVisaFile}
+      currentPassportFileName={employee?.passportFileName}
+      currentVisaFileName={employee?.visaFileName}
+      currentPassportUrl={employee?.passportUrl}
+      currentVisaUrl={employee?.visaUrl}
+    />
+  );
+
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
       <FormSection
@@ -824,182 +881,68 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       </FormSection>
 
       {!isKiosk ? (
-        <>
-          <FormSection
-            title="Personal details"
-            description="Contact information and home address for the employee file."
-            icon={UserRound}
-          >
-            <FormGrid>
-              <FormField label="Phone" htmlFor="emp-phone">
-                <input
-                  id="emp-phone"
-                  type="tel"
-                  value={form.phone ?? ''}
-                  onChange={(event) => patchForm({ phone: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                  placeholder="+61 400 000 000"
-                />
-              </FormField>
+        <div className="space-y-6">
+          {isEditMode && employee ? (
+            <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-surface-raised/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm font-medium text-foreground">Personal profile</p>
+                <PersonalProfileStatusBadge status={profileStatus} />
+              </div>
+              {canReviewProfile && profileStatus === 'Pending' ? (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => void handleReviewProfile('Approved')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20 disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => void handleReviewProfile('Rejected')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Reject
+                  </button>
+                </div>
+              ) : null}
+              {profileStatus === 'Rejected' && employee.personalProfileRejectionReason ? (
+                <p className="w-full text-xs text-red-300/90 sm:basis-full">
+                  Rejection reason: {employee.personalProfileRejectionReason}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
-              <FormField label="Date of birth" htmlFor="emp-dob">
-                <input
-                  id="emp-dob"
-                  type="date"
-                  value={form.dateOfBirth ?? ''}
-                  onChange={(event) => patchForm({ dateOfBirth: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
+          {isEditMode ? (
+            personalFields
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-border/80 bg-surface-raised/40">
+              <button
+                type="button"
+                onClick={() => setPersonalOpen((open) => !open)}
+                className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-surface-hover/40"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Personal details (optional)
+                  </p>
+                  <p className="mt-0.5 text-xs text-subtle">
+                    Employees can complete passport and visa details later from My profile.
+                  </p>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted transition ${personalOpen ? 'rotate-180' : ''}`}
                 />
-              </FormField>
-
-              <FormField label="Address line 1" htmlFor="emp-address-1" className="md:col-span-2">
-                <input
-                  id="emp-address-1"
-                  type="text"
-                  value={form.addressLine1 ?? ''}
-                  onChange={(event) => patchForm({ addressLine1: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                  placeholder="Street and number"
-                />
-              </FormField>
-
-              <FormField label="Address line 2" htmlFor="emp-address-2" className="md:col-span-2">
-                <input
-                  id="emp-address-2"
-                  type="text"
-                  value={form.addressLine2 ?? ''}
-                  onChange={(event) => patchForm({ addressLine2: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                  placeholder="Unit, building, etc."
-                />
-              </FormField>
-
-              <FormField label="City" htmlFor="emp-city">
-                <input
-                  id="emp-city"
-                  type="text"
-                  value={form.city ?? ''}
-                  onChange={(event) => patchForm({ city: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-
-              <FormField label="State / region" htmlFor="emp-state">
-                <input
-                  id="emp-state"
-                  type="text"
-                  value={form.state ?? ''}
-                  onChange={(event) => patchForm({ state: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-
-              <FormField label="Postcode" htmlFor="emp-postcode">
-                <input
-                  id="emp-postcode"
-                  type="text"
-                  value={form.postcode ?? ''}
-                  onChange={(event) => patchForm({ postcode: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-
-              <FormField label="Country" htmlFor="emp-country">
-                <input
-                  id="emp-country"
-                  type="text"
-                  value={form.country ?? ''}
-                  onChange={(event) => patchForm({ country: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-
-              <FormField label="Emergency contact" htmlFor="emp-emergency-name">
-                <input
-                  id="emp-emergency-name"
-                  type="text"
-                  value={form.emergencyContactName ?? ''}
-                  onChange={(event) =>
-                    patchForm({ emergencyContactName: event.target.value })
-                  }
-                  disabled={isBusy}
-                  className={formInputClass}
-                  placeholder="Contact name"
-                />
-              </FormField>
-
-              <FormField label="Emergency phone" htmlFor="emp-emergency-phone">
-                <input
-                  id="emp-emergency-phone"
-                  type="tel"
-                  value={form.emergencyContactPhone ?? ''}
-                  onChange={(event) =>
-                    patchForm({ emergencyContactPhone: event.target.value })
-                  }
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-            </FormGrid>
-          </FormSection>
-
-          <FormSection
-            title="Identity documents"
-            description="Attach passport and visa files. Images or PDF up to 10 MB."
-            icon={FileText}
-          >
-            <FormGrid>
-              <FormField label="Passport number" htmlFor="emp-passport-number">
-                <input
-                  id="emp-passport-number"
-                  type="text"
-                  value={form.passportNumber ?? ''}
-                  onChange={(event) => patchForm({ passportNumber: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-
-              <FormField label="Visa expiry" htmlFor="emp-visa-expiry">
-                <input
-                  id="emp-visa-expiry"
-                  type="date"
-                  value={form.visaExpiry ?? ''}
-                  onChange={(event) => patchForm({ visaExpiry: event.target.value })}
-                  disabled={isBusy}
-                  className={formInputClass}
-                />
-              </FormField>
-            </FormGrid>
-
-            <FormGrid>
-              <EmployeeDocumentUpload
-                label="Passport"
-                description="Scan or photo of the passport identity page."
-                currentFileName={employee?.passportFileName}
-                selectedFile={passportFile}
-                onFileChange={setPassportFile}
-                disabled={isBusy}
-              />
-              <EmployeeDocumentUpload
-                label="Visa"
-                description="Work visa or residency document."
-                currentFileName={employee?.visaFileName}
-                selectedFile={visaFile}
-                onFileChange={setVisaFile}
-                disabled={isBusy}
-              />
-            </FormGrid>
-          </FormSection>
-        </>
+              </button>
+              {personalOpen ? <div className="space-y-6 border-t border-border/60 p-5">{personalFields}</div> : null}
+            </div>
+          )}
+        </div>
       ) : null}
 
       {error ? <FormAlert variant="error">{error}</FormAlert> : null}

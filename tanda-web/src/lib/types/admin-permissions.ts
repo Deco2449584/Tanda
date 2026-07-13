@@ -31,7 +31,7 @@ export type AdminEditModuleKey = (typeof ADMIN_EDIT_MODULE_KEYS)[number];
 
 /** Granular write permissions per module (stored in Firestore). */
 export const ADMIN_MODULE_ACTIONS = {
-  employees: ['create', 'update', 'delete', 'invite'] as const,
+  employees: ['create', 'update', 'delete', 'invite', 'reviewProfile'] as const,
   attendance: ['create', 'update', 'delete'] as const,
   payroll: ['export'] as const,
   schedule: ['create', 'update', 'delete'] as const,

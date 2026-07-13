@@ -62,7 +62,13 @@ export default function EmployeesPage() {
           <div />
         )}
 
-        <div className="flex w-full flex-col gap-3 sm:max-w-md sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-3 sm:max-w-lg sm:flex-row sm:items-center">
+          <Link
+            href="/employees/profiles?status=pending"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-muted transition hover:bg-surface-hover hover:text-foreground"
+          >
+            Review profiles
+          </Link>
           <div className="relative w-full sm:w-44 sm:shrink-0">
             <Users
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"

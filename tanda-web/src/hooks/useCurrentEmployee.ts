@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   collection,
   getDocs,
@@ -17,6 +17,11 @@ export function useCurrentEmployee(userEmail: string | null | undefined) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const refresh = useCallback(() => {
+    setReloadToken((token) => token + 1);
+  }, []);
 
   useEffect(() => {
     if (!userEmail) {
@@ -60,7 +65,7 @@ export function useCurrentEmployee(userEmail: string | null | undefined) {
       .finally(() => {
         setLoading(false);
       });
-  }, [userEmail]);
+  }, [userEmail, reloadToken]);
 
-  return { employee, loading, error };
+  return { employee, loading, error, refresh };
 }

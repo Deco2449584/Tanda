@@ -2,6 +2,7 @@
 const ADMIN_ALERTS_REQUIRING_ACTION = new Set([
   'leave_pending',
   'forgotten_checkout',
+  'profile_pending',
 ]);
 
 export function adminAlertRequiresAction(alertId: string): boolean {

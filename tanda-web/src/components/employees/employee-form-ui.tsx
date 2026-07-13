@@ -142,22 +142,26 @@ export function FormActions({
   submitLabel,
   cancelLabel = 'Cancel',
   disabled,
+  hideCancel = false,
 }: {
-  onCancel: () => void;
+  onCancel?: () => void;
   submitLabel: string;
   cancelLabel?: string;
   disabled?: boolean;
+  hideCancel?: boolean;
 }) {
   return (
     <div className="sticky bottom-0 z-10 -mx-1 flex flex-col-reverse gap-3 rounded-2xl border border-border/80 bg-surface-raised/95 p-4 shadow-lg backdrop-blur-md sm:flex-row sm:justify-end">
-      <button
-        type="button"
-        onClick={onCancel}
-        disabled={disabled}
-        className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong px-5 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
-      >
-        {cancelLabel}
-      </button>
+      {!hideCancel && onCancel ? (
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong px-5 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+        >
+          {cancelLabel}
+        </button>
+      ) : null}
       <button
         type="submit"
         disabled={disabled}
