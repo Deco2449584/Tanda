@@ -353,17 +353,6 @@ export function AttendanceSettingsTab({
           so the fixed unpaid deduction is skipped for that session.
         </p>
       </div>
-
-      {onSave ? (
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="mt-6 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save attendance rules'}
-        </button>
-      ) : null}
     </section>
 
     <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
@@ -463,6 +452,25 @@ export function AttendanceSettingsTab({
         </label>
       </div>
     </section>
+
+    {onSave ? (
+      <div className="sticky bottom-0 z-10 -mx-1 border-t border-border bg-surface-base/95 px-1 py-4 backdrop-blur supports-[backdrop-filter]:bg-surface-base/80">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-subtle">
+            Saves check-in restrictions, late/no-show policy, unpaid breaks, and payroll
+            accounting.
+          </p>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="shrink-0 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-[12rem]"
+          >
+            {saving ? 'Saving…' : 'Save attendance rules'}
+          </button>
+        </div>
+      </div>
+    ) : null}
     </div>
   );
 }
