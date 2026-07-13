@@ -17,6 +17,7 @@ import {
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
+import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
 
 export interface PayrollReportRow {
   employeeId: string;
@@ -125,7 +126,7 @@ export function buildPayrollReport(
   const attendanceBreak = options?.attendanceBreak ?? DEFAULT_ATTENDANCE_BREAK;
 
   const activeEmployees = employees
-    .filter((employee) => employee.active)
+    .filter(isPayrollEligibleEmployee)
     .sort((a, b) => a.name.localeCompare(b.name, 'en'));
 
   const recordsByEmployee = new Map<string, AttendanceRecord[]>();

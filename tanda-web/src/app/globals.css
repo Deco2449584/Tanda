@@ -7,18 +7,18 @@
   --surface-overlay: #3a3a3a;
   --surface-hover: #3a3a3a;
 
-  --border-default: rgba(203, 203, 203, 0.12);
-  --border-strong: rgba(203, 203, 203, 0.2);
+  --border-default: rgba(203, 203, 203, 0.16);
+  --border-strong: rgba(203, 203, 203, 0.28);
 
-  --text-primary: #f5f5f5;
-  --text-secondary: #cbcbcb;
-  --text-muted: #606060;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d4;
+  --text-muted: #b0b0b0;
 
   --accent: #f51ea0;
   --accent-muted: rgba(245, 30, 160, 0.14);
   --brand-primary: var(--accent);
-  --accent-secondary: #606060;
-  --accent-secondary-muted: rgba(96, 96, 96, 0.2);
+  --accent-secondary: #8a8a8a;
+  --accent-secondary-muted: rgba(138, 138, 138, 0.22);
 
   --success: #34d399;
   --warning: #fbbf24;
@@ -61,7 +61,7 @@ body {
   background: var(--surface-base);
   color: var(--text-primary);
   font-family: var(--font-poppins), system-ui, sans-serif;
-  font-weight: 300;
+  font-weight: 400;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
