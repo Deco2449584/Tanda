@@ -61,6 +61,24 @@ export interface StaffPayRates {
   cells?: PayRateCells;
 }
 
+export interface RateTemplate {
+  id: string;
+  name: string;
+  employmentTypeId?: string;
+  cells?: PayRateCells;
+  minPayHours?: number | null;
+}
+
+export interface AccountingReportPreset {
+  name: string;
+  view: string;
+  groupBy: string;
+  locationId: string;
+  employeeDocId: string;
+  department: string;
+  employmentTypeId: string;
+}
+
 export interface SiteBilling {
   effectiveFrom?: string;
   timeBands?: PayTimeBand[];
@@ -75,6 +93,7 @@ export interface PayRules {
   nearestMinutes?: number;
   unscheduledLocation: 'employee';
   payApprovedLeave: boolean;
+  paidLeaveHoursPerDay?: number;
   timeBands: PayTimeBand[];
   dayTypes: PayDayType[];
   overtimeRules: PayOvertimeRule[];
@@ -84,6 +103,10 @@ export interface PayRules {
   publicHolidays: PayPublicHoliday[];
   allowances: PayAllowance[];
   employmentTypes: PayEmploymentType[];
+  defaultPayCells?: PayRateCells;
+  defaultChargeCells?: PayRateCells;
+  rateTemplates?: RateTemplate[];
+  reportPresets?: AccountingReportPreset[];
 }
 
 export function rateCellKey(dayTypeId: string, bandId: string): string {

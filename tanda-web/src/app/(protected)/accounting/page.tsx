@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AccountingClosePanel } from '@/components/accounting/AccountingClosePanel';
 import { AccountingRatesPanel } from '@/components/accounting/AccountingRatesPanel';
 import { AccountingReportsPanel } from '@/components/accounting/AccountingReportsPanel';
 import { AccountingRulesPanel } from '@/components/accounting/AccountingRulesPanel';
@@ -12,11 +13,12 @@ import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 
-type AccountingTab = 'rules' | 'rates' | 'reports';
+type AccountingTab = 'close' | 'rules' | 'rates' | 'reports';
 
 const TABS: Array<{ id: AccountingTab; label: string }> = [
-  { id: 'rules', label: 'Rules' },
+  { id: 'close', label: 'Close' },
   { id: 'rates', label: 'Rates' },
+  { id: 'rules', label: 'Rules' },
   { id: 'reports', label: 'Reports' },
 ];
 
@@ -28,14 +30,14 @@ export default function AccountingPage() {
   const { settings, refresh: refreshSettings } = useCompanySettings();
   const { employees, refresh: refreshEmployees } = useEmployees();
   const { locations, refresh: refreshLocations } = useLocations();
-  const [tab, setTab] = useState<AccountingTab>('reports');
+  const [tab, setTab] = useState<AccountingTab>('close');
   const rules = settings.payRules ?? DEFAULT_PAY_RULES;
 
   return (
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
         title="Accounting"
-        description="Award rules, staff and site rates, and pay vs charge reports. Payroll uses the same engine."
+        description="Close the week, check exceptions, then export journal and charge packs. Payroll uses the same figures."
       />
 
       <div className="flex flex-wrap gap-2">
@@ -55,9 +57,24 @@ export default function AccountingPage() {
         ))}
       </div>
 
+      {tab === 'close' ? (
+        <AccountingClosePanel
+          rules={rules}
+          timeZone={settings.timeZone}
+          currency={settings.currency}
+          attendanceBreak={settings.attendanceBreak}
+          employees={employees}
+          locations={locations}
+          canExport={canExport}
+          canLock={canExport || canEditRules}
+          canUnlock={canEditRules}
+        />
+      ) : null}
+
       {tab === 'rules' ? (
         <AccountingRulesPanel
           rules={rules}
+          locations={locations}
           canEdit={canEditRules}
           onSaved={() => refreshSettings()}
         />
@@ -69,8 +86,10 @@ export default function AccountingPage() {
           employees={employees}
           locations={locations}
           canEdit={canEditRates}
+          canEditRules={canEditRules}
           onStaffSaved={refreshEmployees}
           onSiteSaved={refreshLocations}
+          onRulesSaved={refreshSettings}
         />
       ) : null}
 
@@ -83,6 +102,8 @@ export default function AccountingPage() {
           employees={employees}
           locations={locations}
           canExport={canExport}
+          canEditRules={canEditRules}
+          onPresetsSaved={refreshSettings}
         />
       ) : null}
     </PageContent>

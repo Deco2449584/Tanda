@@ -30,6 +30,11 @@ export function mapLocationDoc(
     code,
     active: record.active !== false,
     billing: mapSiteBilling(record.billing),
+    billingHistory: Array.isArray(record.billingHistory)
+      ? record.billingHistory
+          .map((item) => mapSiteBilling(item))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      : undefined,
     createdAt: timestampToIso(record.createdAt),
   };
 }

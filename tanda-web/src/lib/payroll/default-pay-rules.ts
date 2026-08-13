@@ -7,6 +7,7 @@ export const DEFAULT_PAY_RULES: PayRules = {
   nearestMinutes: 15,
   unscheduledLocation: 'employee',
   payApprovedLeave: false,
+  paidLeaveHoursPerDay: 8,
   timeBands: [
     { id: 'early_morning', name: 'Early morning', from: '00:00', to: '06:00' },
     { id: 'afternoon', name: 'Afternoon', from: '18:00', to: '24:00' },

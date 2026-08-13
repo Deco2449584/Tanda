@@ -11,6 +11,7 @@ import type {
   PayRateCells,
   PayRules,
   PayTimeBand,
+  RateTemplate,
   SiteBilling,
   StaffPayRates,
 } from '@/lib/types/pay-rules';
@@ -162,6 +163,21 @@ export function mapSiteBilling(raw: unknown): SiteBilling | undefined {
   };
 }
 
+function mapRateTemplate(raw: unknown): RateTemplate | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const item = raw as Record<string, unknown>;
+  const id = asString(item.id);
+  const name = asString(item.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    employmentTypeId: asString(item.employmentTypeId),
+    cells: mapPayRateCells(item.cells),
+    minPayHours: item.minPayHours === null ? null : asNumber(item.minPayHours),
+  };
+}
+
 export function mapPayRules(
   raw: unknown,
   payrollAccounting?: {
@@ -251,6 +267,8 @@ export function mapPayRules(
     nearestMinutes: asNumber(data.nearestMinutes) ?? defaults.nearestMinutes,
     unscheduledLocation: 'employee',
     payApprovedLeave: asBool(data.payApprovedLeave) ?? defaults.payApprovedLeave,
+    paidLeaveHoursPerDay:
+      asNumber(data.paidLeaveHoursPerDay) ?? defaults.paidLeaveHoursPerDay ?? 8,
     timeBands: timeBands.length > 0 ? timeBands : defaults.timeBands,
     dayTypes: dayTypes.length > 0 ? dayTypes : defaults.dayTypes,
     overtimeRules,
@@ -261,5 +279,26 @@ export function mapPayRules(
     allowances,
     employmentTypes:
       employmentTypes.length > 0 ? employmentTypes : defaults.employmentTypes,
+    defaultPayCells: mapPayRateCells(data.defaultPayCells) ?? defaults.defaultPayCells,
+    defaultChargeCells:
+      mapPayRateCells(data.defaultChargeCells) ?? defaults.defaultChargeCells,
+    rateTemplates: Array.isArray(data.rateTemplates)
+      ? data.rateTemplates
+          .map(mapRateTemplate)
+          .filter((item): item is RateTemplate => Boolean(item))
+      : defaults.rateTemplates ?? [],
+    reportPresets: Array.isArray(data.reportPresets)
+      ? data.reportPresets
+          .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+          .map((item) => ({
+            name: asString(item.name) ?? 'Preset',
+            view: asString(item.view) ?? 'pay',
+            groupBy: asString(item.groupBy) ?? 'staff',
+            locationId: asString(item.locationId) ?? '',
+            employeeDocId: asString(item.employeeDocId) ?? '',
+            department: asString(item.department) ?? '',
+            employmentTypeId: asString(item.employmentTypeId) ?? '',
+          }))
+      : defaults.reportPresets ?? [],
   };
 }

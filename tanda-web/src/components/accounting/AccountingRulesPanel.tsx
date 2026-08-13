@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { savePayRulesRequest } from '@/lib/accounting/accounting-api';
+import { validatePayRules } from '@/lib/payroll/validate-pay-rules';
+import type { Location } from '@/lib/types/location';
 import type { PayRules } from '@/lib/types/pay-rules';
 
 const inputClass =
@@ -23,11 +25,17 @@ const WEEKDAYS = [
 
 interface AccountingRulesPanelProps {
   rules: PayRules;
+  locations: Location[];
   canEdit: boolean;
   onSaved: (rules: PayRules) => Promise<void> | void;
 }
 
-export function AccountingRulesPanel({ rules, canEdit, onSaved }: AccountingRulesPanelProps) {
+export function AccountingRulesPanel({
+  rules,
+  locations,
+  canEdit,
+  onSaved,
+}: AccountingRulesPanelProps) {
   const [draft, setDraft] = useState<PayRules>(rules);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +46,11 @@ export function AccountingRulesPanel({ rules, canEdit, onSaved }: AccountingRule
 
   async function handleSave() {
     if (!canEdit) return;
+    const issues = validatePayRules(draft);
+    if (issues.length > 0) {
+      setError(issues.join(' '));
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -133,6 +146,38 @@ export function AccountingRulesPanel({ rules, canEdit, onSaved }: AccountingRule
               className={inputClass}
             />
           </label>
+          <label className="flex items-end gap-2 pb-2">
+            <input
+              type="checkbox"
+              disabled={!canEdit}
+              checked={draft.payApprovedLeave}
+              onChange={(event) =>
+                setDraft({ ...draft, payApprovedLeave: event.target.checked })
+              }
+            />
+            <span className="text-sm text-muted">Pay approved leave in the award</span>
+          </label>
+          {draft.payApprovedLeave ? (
+            <label className="block">
+              <span className="mb-1 block text-xs text-subtle">
+                Paid leave hours per day (0 = off)
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                disabled={!canEdit}
+                value={draft.paidLeaveHoursPerDay ?? 8}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    paidLeaveHoursPerDay: Number(event.target.value) || 0,
+                  })
+                }
+                className={inputClass}
+              />
+            </label>
+          ) : null}
           <label className="block">
             <span className="mb-1 block text-xs text-subtle">Minimum applies per</span>
             <select
@@ -333,7 +378,9 @@ export function AccountingRulesPanel({ rules, canEdit, onSaved }: AccountingRule
 
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h2 className="text-sm font-semibold text-white">Overtime</h2>
-        <p className="mt-1 text-xs text-subtle">Set threshold to 0 to turn a rule off.</p>
+        <p className="mt-1 text-xs text-subtle">
+          Set the threshold to 0 to turn a rule off. Daily overtime is marked first, then weekly.
+        </p>
         <div className="mt-4 space-y-3">
           {draft.overtimeRules.map((rule, index) => (
             <div key={rule.id} className="grid gap-2 sm:grid-cols-3">
@@ -433,25 +480,183 @@ export function AccountingRulesPanel({ rules, canEdit, onSaved }: AccountingRule
             <p className="text-sm text-subtle">No holidays configured.</p>
           ) : (
             draft.publicHolidays.map((holiday, index) => (
-              <div key={`${holiday.date}-${index}`} className="flex gap-2">
+              <div key={`${holiday.date}-${index}`} className="space-y-2 rounded-xl border border-border/60 p-3">
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    disabled={!canEdit}
+                    value={holiday.date}
+                    onChange={(event) => {
+                      const publicHolidays = [...draft.publicHolidays];
+                      publicHolidays[index] = { ...holiday, date: event.target.value };
+                      setDraft({ ...draft, publicHolidays });
+                    }}
+                    className={inputClass}
+                  />
+                  {canEdit ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          publicHolidays: draft.publicHolidays.filter(
+                            (_, itemIndex) => itemIndex !== index,
+                          ),
+                        })
+                      }
+                      className="text-xs text-rose-400 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-subtle">
+                  Sites (none selected = all sites)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {locations.map((location) => {
+                    const selected =
+                      holiday.locationIds?.includes(location.id) === true;
+                    return (
+                      <button
+                        key={location.id}
+                        type="button"
+                        disabled={!canEdit}
+                        onClick={() => {
+                          const current = holiday.locationIds ?? [];
+                          const locationIds = selected
+                            ? current.filter((id) => id !== location.id)
+                            : [...current, location.id];
+                          const publicHolidays = [...draft.publicHolidays];
+                          publicHolidays[index] = { ...holiday, locationIds };
+                          setDraft({ ...draft, publicHolidays });
+                        }}
+                        className={`rounded-lg border px-2 py-1 text-xs ${
+                          selected
+                            ? 'border-primary/50 bg-primary/15 text-primary'
+                            : 'border-border text-muted'
+                        }`}
+                      >
+                        {location.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Allowances</h2>
+            <p className="mt-1 text-xs text-subtle">
+              Flat amounts on pay, charge, or both. Per hour uses paid hours; per session is once.
+            </p>
+          </div>
+          {canEdit ? (
+            <button
+              type="button"
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  allowances: [
+                    ...draft.allowances,
+                    {
+                      id: newId('allw'),
+                      name: 'New allowance',
+                      amount: 0,
+                      per: 'hour',
+                      side: 'pay',
+                    },
+                  ],
+                })
+              }
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Add allowance
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-4 space-y-3">
+          {draft.allowances.length === 0 ? (
+            <p className="text-sm text-subtle">No allowances.</p>
+          ) : (
+            draft.allowances.map((allowance, index) => (
+              <div key={allowance.id} className="grid gap-2 sm:grid-cols-5">
                 <input
-                  type="date"
                   disabled={!canEdit}
-                  value={holiday.date}
+                  value={allowance.name}
                   onChange={(event) => {
-                    const publicHolidays = [...draft.publicHolidays];
-                    publicHolidays[index] = { ...holiday, date: event.target.value };
-                    setDraft({ ...draft, publicHolidays });
+                    const allowances = [...draft.allowances];
+                    allowances[index] = { ...allowance, name: event.target.value };
+                    setDraft({ ...draft, allowances });
                   }}
                   className={inputClass}
+                  placeholder="Name"
                 />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  disabled={!canEdit}
+                  value={allowance.amount}
+                  onChange={(event) => {
+                    const allowances = [...draft.allowances];
+                    allowances[index] = {
+                      ...allowance,
+                      amount: Number(event.target.value) || 0,
+                    };
+                    setDraft({ ...draft, allowances });
+                  }}
+                  className={inputClass}
+                  placeholder="$"
+                />
+                <select
+                  disabled={!canEdit}
+                  value={allowance.per}
+                  onChange={(event) => {
+                    const allowances = [...draft.allowances];
+                    allowances[index] = {
+                      ...allowance,
+                      per: event.target.value === 'session' ? 'session' : 'hour',
+                    };
+                    setDraft({ ...draft, allowances });
+                  }}
+                  className={inputClass}
+                >
+                  <option value="hour">Per hour</option>
+                  <option value="session">Per session</option>
+                </select>
+                <select
+                  disabled={!canEdit}
+                  value={allowance.side}
+                  onChange={(event) => {
+                    const allowances = [...draft.allowances];
+                    allowances[index] = {
+                      ...allowance,
+                      side:
+                        event.target.value === 'charge' || event.target.value === 'both'
+                          ? event.target.value
+                          : 'pay',
+                    };
+                    setDraft({ ...draft, allowances });
+                  }}
+                  className={inputClass}
+                >
+                  <option value="pay">Pay</option>
+                  <option value="charge">Charge</option>
+                  <option value="both">Pay and charge</option>
+                </select>
                 {canEdit ? (
                   <button
                     type="button"
                     onClick={() =>
                       setDraft({
                         ...draft,
-                        publicHolidays: draft.publicHolidays.filter((_, itemIndex) => itemIndex !== index),
+                        allowances: draft.allowances.filter((item) => item.id !== allowance.id),
                       })
                     }
                     className="text-xs text-rose-400 hover:underline"
@@ -548,6 +753,24 @@ export function AccountingRulesPanel({ rules, canEdit, onSaved }: AccountingRule
                 }}
                 className={inputClass}
                 placeholder="Payable name"
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                disabled={!canEdit}
+                value={type.superPercent ?? ''}
+                placeholder="Super % (memo)"
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  const employmentTypes = [...draft.employmentTypes];
+                  employmentTypes[index] = {
+                    ...type,
+                    superPercent: raw === '' ? undefined : Number(raw) || 0,
+                  };
+                  setDraft({ ...draft, employmentTypes });
+                }}
+                className={inputClass}
               />
               {canEdit && draft.employmentTypes.length > 1 ? (
                 <button

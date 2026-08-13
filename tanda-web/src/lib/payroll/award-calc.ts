@@ -2,6 +2,7 @@ import { toInputDateInTimeZone, getMinutesInTimeZone } from '@/lib/dates/timezon
 import type { WorkSession } from '@/lib/attendance/work-sessions';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
+import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
 import {
   BASE_BAND_ID,
@@ -13,6 +14,7 @@ import {
   type PayRules,
   type PayTimeBand,
   type SiteBilling,
+  type StaffPayRates,
 } from '@/lib/types/pay-rules';
 
 export interface AwardSlice {
@@ -35,11 +37,16 @@ export interface AwardSlice {
   chargeRate: number;
   payAmount: number;
   chargeAmount: number;
+  usedFallbackRate?: boolean;
 }
 
 export interface AwardSessionLine {
   sessionKey: string;
   employeeDocId: string;
+  employeeId: string;
+  employeeName: string;
+  locationId?: string;
+  locationName: string;
   date: string;
   clockHours: number;
   billableHours: number;
@@ -47,12 +54,45 @@ export interface AwardSessionLine {
   chargeHours: number;
   payAmount: number;
   chargeAmount: number;
+  minPayApplied: boolean;
+  minChargeApplied: boolean;
+  usedFallbackRate: boolean;
+  hasOvertime: boolean;
+  missingSiteChargeCard?: boolean;
+  isLeave?: boolean;
+}
+
+export interface AwardIncompleteSession {
+  sessionKey: string;
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  status: string;
+}
+
+export type AwardExceptionKind =
+  | 'incomplete'
+  | 'min_pay'
+  | 'min_charge'
+  | 'overtime'
+  | 'fallback_rate'
+  | 'missing_site_card';
+
+export interface AwardException {
+  kind: AwardExceptionKind;
+  sessionKey: string;
+  employeeDocId?: string;
+  employeeName: string;
+  date: string;
+  locationName?: string;
+  detail: string;
 }
 
 export interface AwardReport {
   slices: AwardSlice[];
   sessions: AwardSessionLine[];
   incompleteSessions: number;
+  incomplete: AwardIncompleteSession[];
   totals: {
     payHours: number;
     chargeHours: number;
@@ -172,6 +212,29 @@ function lookupCell(
     cells[rateCellKey('weekday', bandId)] ??
     cells[rateCellKey('weekday', BASE_BAND_ID)]
   );
+}
+
+function pickCard<T extends { effectiveFrom?: string }>(
+  current: T | undefined,
+  history: T[] | undefined,
+  date: string,
+): T | undefined {
+  const cards = [...(history ?? []), ...(current ? [current] : [])].filter((card) =>
+    cardActive(card.effectiveFrom, date),
+  );
+  if (cards.length === 0) return undefined;
+  return cards.sort((a, b) => (b.effectiveFrom ?? '').localeCompare(a.effectiveFrom ?? ''))[0];
+}
+
+function eachIsoDate(start: string, end: string): string[] {
+  const dates: string[] = [];
+  const cursor = new Date(`${start}T12:00:00Z`);
+  const last = new Date(`${end}T12:00:00Z`);
+  while (cursor.getTime() <= last.getTime()) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
 }
 
 function resolveRate(cell: PayRateCell | undefined, baseRate: number): number {
@@ -374,8 +437,10 @@ interface SessionMeta {
   clockHours: number;
   billableHours: number;
   billing: SiteBilling | undefined;
+  payRates: StaffPayRates | undefined;
   minPay: number;
   minCharge: number;
+  hasSiteChargeCard: boolean;
 }
 
 function emptyTotals() {
@@ -390,6 +455,7 @@ export function buildAwardReport(input: {
   sessions: WorkSession[];
   shifts?: Shift[];
   dateRange?: AwardDateRange;
+  leaveRequests?: LeaveRequest[];
 }): AwardReport {
   const { rules, timeZone, employees, locations, sessions } = input;
   const shifts = input.shifts ?? [];
@@ -403,7 +469,7 @@ export function buildAwardReport(input: {
   const paySlices: WorkSlice[] = [];
   const chargeSlices: WorkSlice[] = [];
   const metas = new Map<string, SessionMeta>();
-  let incompleteSessions = 0;
+  const incomplete: AwardIncompleteSession[] = [];
 
   for (const session of sessions) {
     const start = session.checkIn.timestampServer?.toDate();
@@ -411,7 +477,13 @@ export function buildAwardReport(input: {
     const sessionDate = toInputDateInTimeZone(timeZone, start);
     if (!inRange(sessionDate, input.dateRange)) continue;
     if (session.status !== 'complete' || !session.checkOut) {
-      incompleteSessions += 1;
+      incomplete.push({
+        sessionKey: session.checkIn.id,
+        employeeId: session.checkIn.employeeId,
+        employeeName: session.checkIn.employeeNameSnapshot || session.checkIn.employeeId,
+        date: sessionDate,
+        status: session.status,
+      });
     }
   }
 
@@ -432,20 +504,18 @@ export function buildAwardReport(input: {
       shifts,
     });
     const location = locationById.get(locationId);
-    const billing = cardActive(location?.billing?.effectiveFrom, sessionDate)
-      ? location?.billing
-      : undefined;
+    const billing = pickCard(location?.billing, location?.billingHistory, sessionDate);
     const bands = billing?.timeBands?.length ? billing.timeBands : rules.timeBands;
 
     const clockHours = (end.getTime() - start.getTime()) / 3_600_000;
     const billable = session.billableHours ?? clockHours;
     const factor = clockHours > 0 ? billable / clockHours : 1;
     const sessionKey = session.checkIn.id;
-    const ratesActive = cardActive(employee.payRates?.effectiveFrom, sessionDate);
+    const payRates = pickCard(employee.payRates, employee.payRateHistory, sessionDate);
 
     const minPay =
       firstNumber(
-        ratesActive ? employee.payRates?.minPayHours : undefined,
+        payRates?.minPayHours,
         billing?.minPayHours,
         rules.minPayHours,
       ) ?? 0;
@@ -469,8 +539,10 @@ export function buildAwardReport(input: {
       clockHours,
       billableHours: billable,
       billing,
+      payRates,
       minPay,
       minCharge,
+      hasSiteChargeCard: Boolean(billing?.cells && Object.keys(billing.cells).length > 0),
     });
 
     paySlices.push(...clock.map((slice) => ({ ...slice })));
@@ -579,8 +651,9 @@ export function buildAwardReport(input: {
     const dayType = resolveDayType(rules, slice.date, slice.weekday, slice.locationId);
     const bandId = slice.overtime ? OVERTIME_BAND_ID : slice.bandId;
     const hours = roundHours(slice.hours, rules);
-    const ratesActive = cardActive(meta.employee.payRates?.effectiveFrom, slice.date);
-    const cell = lookupCell(ratesActive ? meta.employee.payRates?.cells : undefined, dayType.id, bandId);
+    const staffCell = lookupCell(meta.payRates?.cells, dayType.id, bandId);
+    const companyCell = lookupCell(rules.defaultPayCells, dayType.id, bandId);
+    const cell = staffCell ?? companyCell;
     const rate = resolveRate(cell, meta.employee.hourlyRate || 0);
     const amount = roundMoney(hours * rate);
     const row = ensureSlice(slice, meta, dayType.id, bandId);
@@ -589,6 +662,7 @@ export function buildAwardReport(input: {
     row.payHours = roundHours(row.payHours + hours, rules);
     row.payRate = rate;
     row.payAmount = roundMoney(row.payAmount + amount);
+    if (!cell) row.usedFallbackRate = true;
   }
 
   for (const slice of chargeMarked) {
@@ -598,11 +672,14 @@ export function buildAwardReport(input: {
     const bandId = slice.overtime ? OVERTIME_BAND_ID : slice.bandId;
     const hours = roundHours(slice.hours, rules);
     const basePay = meta.employee.hourlyRate || 0;
+    const siteCell = lookupCell(meta.billing?.cells, dayType.id, bandId);
+    const companyCharge = lookupCell(rules.defaultChargeCells, dayType.id, bandId);
     const weekdayBase = resolveRate(
-      lookupCell(meta.billing?.cells, 'weekday', BASE_BAND_ID),
+      lookupCell(meta.billing?.cells, 'weekday', BASE_BAND_ID) ??
+        lookupCell(rules.defaultChargeCells, 'weekday', BASE_BAND_ID),
       basePay,
     );
-    const cell = lookupCell(meta.billing?.cells, dayType.id, bandId);
+    const cell = siteCell ?? companyCharge;
     const rate = resolveRate(cell, weekdayBase || basePay);
     const amount = roundMoney(hours * rate);
     const row = ensureSlice(slice, meta, dayType.id, bandId);
@@ -637,6 +714,10 @@ export function buildAwardReport(input: {
     sessionLines.push({
       sessionKey: meta.sessionKey,
       employeeDocId: meta.employee.id,
+      employeeId: meta.employee.employeeId,
+      employeeName: meta.employee.name,
+      locationId: meta.locationId,
+      locationName: meta.locationName,
       date: meta.sessionDate,
       clockHours: roundHours(meta.clockHours, rules),
       billableHours: roundHours(meta.billableHours, rules),
@@ -644,7 +725,82 @@ export function buildAwardReport(input: {
       chargeHours: roundHours(chargeHours, rules),
       payAmount: roundMoney(payAmount),
       chargeAmount: roundMoney(chargeAmount),
+      minPayApplied: meta.minPay > 0 && payHours > meta.billableHours + 0.001,
+      minChargeApplied: meta.minCharge > 0 && chargeHours > meta.billableHours + 0.001,
+      usedFallbackRate: sessionPriced.some((slice) => slice.usedFallbackRate),
+      hasOvertime: sessionPriced.some((slice) => slice.overtime),
+      missingSiteChargeCard: !meta.hasSiteChargeCard,
     });
+  }
+
+  if (rules.payApprovedLeave) {
+    const hoursPerDay = rules.paidLeaveHoursPerDay ?? 8;
+    if (hoursPerDay > 0) {
+      for (const leave of input.leaveRequests ?? []) {
+        if (leave.status !== 'Approved') continue;
+        const employee = employeeByCode.get(leave.employeeId);
+        if (!employee) continue;
+        const dates = eachIsoDate(leave.startDate, leave.endDate).filter((date) =>
+          inRange(date, input.dateRange),
+        );
+        for (const date of dates) {
+          const weekday = weekdayOfIsoDate(date);
+          const locationId = employee.locationId ?? '';
+          const dayType = resolveDayType(rules, date, weekday, locationId);
+          const payRates = pickCard(employee.payRates, employee.payRateHistory, date);
+          const cell =
+            lookupCell(payRates?.cells, dayType.id, BASE_BAND_ID) ??
+            lookupCell(rules.defaultPayCells, dayType.id, BASE_BAND_ID);
+          const hours = roundHours(hoursPerDay, rules);
+          const rate = resolveRate(cell, employee.hourlyRate || 0);
+          const amount = roundMoney(hours * rate);
+          const sessionKey = `leave-${leave.id}-${date}`;
+          const location = locationById.get(locationId);
+          priced.set(`${sessionKey}|${date}|${dayType.id}|${BASE_BAND_ID}`, {
+            employeeDocId: employee.id,
+            employeeId: employee.employeeId,
+            employeeName: employee.name,
+            department: employee.department,
+            employmentTypeId: employee.employmentTypeId || 'employee',
+            locationId,
+            locationName: location?.name ?? '',
+            date,
+            sessionKey,
+            dayTypeId: dayType.id,
+            bandId: BASE_BAND_ID,
+            overtime: false,
+            hours,
+            payHours: hours,
+            chargeHours: 0,
+            payRate: rate,
+            chargeRate: 0,
+            payAmount: amount,
+            chargeAmount: 0,
+            usedFallbackRate: !cell,
+          });
+          sessionLines.push({
+            sessionKey,
+            employeeDocId: employee.id,
+            employeeId: employee.employeeId,
+            employeeName: employee.name,
+            locationId,
+            locationName: location?.name ?? '',
+            date,
+            clockHours: 0,
+            billableHours: hours,
+            payHours: hours,
+            chargeHours: 0,
+            payAmount: amount,
+            chargeAmount: 0,
+            minPayApplied: false,
+            minChargeApplied: false,
+            usedFallbackRate: !cell,
+            hasOvertime: false,
+            isLeave: true,
+          });
+        }
+      }
+    }
   }
 
   const sessionTotals = sessionLines.reduce((acc, line) => {
@@ -662,7 +818,8 @@ export function buildAwardReport(input: {
       return a.employeeName.localeCompare(b.employeeName);
     }),
     sessions: sessionLines.sort((a, b) => a.date.localeCompare(b.date)),
-    incompleteSessions,
+    incompleteSessions: incomplete.length,
+    incomplete,
     totals: {
       payHours: roundHours(sessionTotals.payHours, rules),
       chargeHours: roundHours(sessionTotals.chargeHours, rules),
@@ -766,4 +923,89 @@ export function filterAwardSlices(
     }
     return true;
   });
+}
+
+export function buildAwardExceptions(report: AwardReport): AwardException[] {
+  const exceptions: AwardException[] = [];
+
+  for (const item of report.incomplete) {
+    exceptions.push({
+      kind: 'incomplete',
+      sessionKey: item.sessionKey,
+      employeeName: item.employeeName,
+      date: item.date,
+      detail: 'No check-out — excluded from pay and charge',
+    });
+  }
+
+  for (const line of report.sessions) {
+    if (line.isLeave) continue;
+    if (line.minPayApplied) {
+      exceptions.push({
+        kind: 'min_pay',
+        sessionKey: line.sessionKey,
+        employeeDocId: line.employeeDocId,
+        employeeName: line.employeeName,
+        date: line.date,
+        locationName: line.locationName,
+        detail: `Paid ${line.payHours.toFixed(2)}h (clock ${line.clockHours.toFixed(2)}h, billable ${line.billableHours.toFixed(2)}h)`,
+      });
+    }
+    if (line.minChargeApplied) {
+      exceptions.push({
+        kind: 'min_charge',
+        sessionKey: line.sessionKey,
+        employeeDocId: line.employeeDocId,
+        employeeName: line.employeeName,
+        date: line.date,
+        locationName: line.locationName,
+        detail: `Charged ${line.chargeHours.toFixed(2)}h (billable ${line.billableHours.toFixed(2)}h)`,
+      });
+    }
+    if (line.hasOvertime) {
+      exceptions.push({
+        kind: 'overtime',
+        sessionKey: line.sessionKey,
+        employeeDocId: line.employeeDocId,
+        employeeName: line.employeeName,
+        date: line.date,
+        locationName: line.locationName,
+        detail: 'Includes overtime hours',
+      });
+    }
+    if (line.usedFallbackRate) {
+      exceptions.push({
+        kind: 'fallback_rate',
+        sessionKey: line.sessionKey,
+        employeeDocId: line.employeeDocId,
+        employeeName: line.employeeName,
+        date: line.date,
+        locationName: line.locationName,
+        detail: 'Used base hourly rate (no award cell)',
+      });
+    }
+    if (line.missingSiteChargeCard) {
+      exceptions.push({
+        kind: 'missing_site_card',
+        sessionKey: line.sessionKey,
+        employeeDocId: line.employeeDocId,
+        employeeName: line.employeeName,
+        date: line.date,
+        locationName: line.locationName,
+        detail: `${line.locationName || 'Site'} has no charge rate card`,
+      });
+    }
+  }
+
+  return exceptions.sort((a, b) => a.date.localeCompare(b.date) || a.employeeName.localeCompare(b.employeeName));
+}
+
+export function bandDisplayName(rules: PayRules, bandId: string): string {
+  if (bandId === BASE_BAND_ID) return 'Base';
+  if (bandId === OVERTIME_BAND_ID) return 'Overtime';
+  return rules.timeBands.find((band) => band.id === bandId)?.name ?? bandId;
+}
+
+export function dayTypeDisplayName(rules: PayRules, dayTypeId: string): string {
+  return rules.dayTypes.find((type) => type.id === dayTypeId)?.name ?? dayTypeId;
 }

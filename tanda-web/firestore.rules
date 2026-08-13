@@ -313,6 +313,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // 19b. Cierre de periodo contable — solo Admin SDK (API routes)
+    match /accounting_period_locks/{lockId} {
+      allow read, write: if false;
+    }
+
     // 20. Campos personalizados de empleado — solo Admin SDK (API routes)
     match /employee_custom_fields/{fieldId} {
       allow read, write: if false;

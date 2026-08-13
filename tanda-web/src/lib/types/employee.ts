@@ -48,6 +48,7 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   /** Catalogue id from payRules.employmentTypes. */
   employmentTypeId?: string;
   payRates?: StaffPayRates;
+  payRateHistory?: StaffPayRates[];
   active: boolean;
   /** ISO date (YYYY-MM-DD) when the employee started. */
   startDate?: string;

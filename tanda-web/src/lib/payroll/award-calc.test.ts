@@ -5,7 +5,7 @@ import type { WorkSession } from '../attendance/work-sessions';
 import type { Employee } from '../types/employee';
 import type { Location } from '../types/location';
 import { DEFAULT_PAY_RULES } from './default-pay-rules';
-import { buildAwardReport } from './award-calc';
+import { buildAwardExceptions, buildAwardReport } from './award-calc';
 import type { PayRules } from '../types/pay-rules';
 
 function fakeTs(iso: string): Timestamp {
@@ -161,3 +161,69 @@ test('weekly OT applies across sessions without double counting daily OT', () =>
     .reduce((sum, slice) => sum + slice.payHours, 0);
   assert.equal(otHours, 6);
 });
+
+test('min pay flag and fallback rate are exposed on the session', () => {
+  const report = run({
+    sessions: [session('2026-08-08T02:00:00+10:00', '2026-08-08T04:00:00+10:00', 2)],
+  });
+  assert.equal(report.sessions[0]?.minPayApplied, true);
+  assert.equal(report.sessions[0]?.minChargeApplied, true);
+  assert.equal(report.sessions[0]?.usedFallbackRate, true);
+  const exceptions = buildAwardExceptions(report);
+  assert.ok(exceptions.some((item) => item.kind === 'min_pay'));
+  assert.ok(exceptions.some((item) => item.kind === 'fallback_rate'));
+});
+
+test('incomplete sessions are listed not just counted', () => {
+  const open: WorkSession = {
+    ...session('2026-08-10T08:00:00+10:00', '2026-08-10T09:00:00+10:00', 1),
+    checkOut: null,
+    hours: null,
+    billableHours: null,
+    status: 'forgotten',
+  };
+  const report = run({ sessions: [open] });
+  assert.equal(report.incompleteSessions, 1);
+  assert.equal(report.incomplete[0]?.employeeName, 'Alex');
+  assert.equal(report.sessions.length, 0);
+});
+
+test('company default pay cells apply before hourlyRate', () => {
+  const report = run({
+    rules: {
+      ...DEFAULT_PAY_RULES,
+      minPayHours: 0,
+      minChargeHours: 0,
+      defaultPayCells: { 'saturday:early_morning': { rate: 40 } },
+    },
+    sessions: [session('2026-08-08T02:00:00+10:00', '2026-08-08T03:00:00+10:00', 1)],
+  });
+  assert.equal(report.totals.payAmount, 40);
+  assert.equal(report.sessions[0]?.usedFallbackRate, false);
+});
+
+test('approved leave is paid when payApprovedLeave is on', () => {
+  const report = buildAwardReport({
+    rules: { ...DEFAULT_PAY_RULES, payApprovedLeave: true, paidLeaveHoursPerDay: 8, minPayHours: 0, minChargeHours: 0 },
+    timeZone: 'Australia/Sydney',
+    employees: [employee()],
+    locations: [location()],
+    sessions: [],
+    dateRange: { start: '2026-08-10', end: '2026-08-12' },
+    leaveRequests: [
+      {
+        id: 'lv1',
+        employeeId: 'E1',
+        startDate: '2026-08-11',
+        endDate: '2026-08-11',
+        type: 'Vacation',
+        justification: 'test',
+        status: 'Approved',
+      },
+    ],
+  });
+  assert.equal(report.sessions[0]?.isLeave, true);
+  assert.equal(report.sessions[0]?.payHours, 8);
+  assert.equal(report.totals.payAmount, 200);
+});
+

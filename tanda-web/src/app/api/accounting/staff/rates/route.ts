@@ -7,10 +7,7 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 import { mapStaffPayRates } from '@/lib/payroll/map-pay-rules';
 import { baseHourlyRateFromCells } from '@/lib/payroll/rate-matrix';
 
-export async function PUT(
-  request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: Request) {
   try {
     const auth = await loadAdminAccessFromRequest(request);
     if (!auth) {
@@ -24,18 +21,18 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
-    const { id } = await context.params;
     const body = (await request.json()) as {
+      ids?: unknown;
       employmentTypeId?: unknown;
       payRates?: unknown;
       hourlyRate?: unknown;
-      payRateHistory?: unknown;
     };
 
-    const docRef = getAdminFirestore().collection(COLLECTIONS.EMPLOYEES).doc(id);
-    const snapshot = await docRef.get();
-    if (!snapshot.exists) {
-      return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
+    const ids = Array.isArray(body.ids)
+      ? body.ids.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()))
+      : [];
+    if (ids.length === 0) {
+      return NextResponse.json({ error: 'Select at least one employee.' }, { status: 400 });
     }
 
     const payRates = mapStaffPayRates(body.payRates);
@@ -45,37 +42,41 @@ export async function PUT(
       typeof body.hourlyRate === 'number' && Number.isFinite(body.hourlyRate)
         ? body.hourlyRate
         : undefined;
-    const hourlyRate =
-      hourlyFromBody ??
-      baseHourlyRateFromCells(
-        payRates?.cells,
-        typeof snapshot.data()?.hourlyRate === 'number' ? snapshot.data()!.hourlyRate : 0,
-      );
 
-    const payload: Record<string, unknown> = {
-      hourlyRate,
-    };
-    if (employmentTypeId) payload.employmentTypeId = employmentTypeId;
-    if (payRates) payload.payRates = payRates;
-    if (Array.isArray(body.payRateHistory)) {
-      payload.payRateHistory = body.payRateHistory
-        .map((item) => mapStaffPayRates(item))
-        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    const db = getAdminFirestore();
+    const batch = db.batch();
+    let updated = 0;
+
+    for (const id of ids) {
+      const docRef = db.collection(COLLECTIONS.EMPLOYEES).doc(id);
+      const snapshot = await docRef.get();
+      if (!snapshot.exists) continue;
+      const hourlyRate =
+        hourlyFromBody ??
+        baseHourlyRateFromCells(
+          payRates?.cells,
+          typeof snapshot.data()?.hourlyRate === 'number' ? snapshot.data()!.hourlyRate : 0,
+        );
+      const payload: Record<string, unknown> = { hourlyRate };
+      if (employmentTypeId) payload.employmentTypeId = employmentTypeId;
+      if (payRates) payload.payRates = payRates;
+      batch.set(docRef, payload, { merge: true });
+      updated += 1;
     }
 
-    await docRef.set(payload, { merge: true });
+    await batch.commit();
 
     await recordAuditFromRequest(request, auth.user, {
       action: 'employee.updated',
       entityType: 'employee',
-      entityId: id,
-      summary: 'Updated staff pay rates',
-      after: payload,
+      entityId: ids.join(','),
+      summary: `Applied pay rates to ${updated} staff`,
+      after: { ids, employmentTypeId, hourlyRate: hourlyFromBody },
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, updated });
   } catch (error) {
-    console.error('PUT /api/accounting/staff/[id]/rates', error);
-    return NextResponse.json({ error: 'Could not save staff rates.' }, { status: 500 });
+    console.error('POST /api/accounting/staff/rates', error);
+    return NextResponse.json({ error: 'Could not apply staff rates.' }, { status: 500 });
   }
 }

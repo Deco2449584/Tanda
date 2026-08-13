@@ -12,6 +12,7 @@ import {
 } from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
+import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Location } from '@/lib/types/location';
 import type { Shift } from '@/lib/types/shift';
 import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
@@ -109,6 +110,7 @@ export function buildPayrollReport(
     payrollAccounting?: PayrollAccountingSettings;
     timeZone?: string;
     shifts?: Shift[];
+    leaveRequests?: LeaveRequest[];
   },
 ): PayrollReport {
   const companyName = options?.companyName ?? COMPANY_NAME;
@@ -137,6 +139,7 @@ export function buildPayrollReport(
     sessions,
     shifts: options?.shifts,
     dateRange,
+    leaveRequests: options?.leaveRequests,
   });
 
   const payByEmployee = new Map<string, { hours: number; pay: number; location: string }>();

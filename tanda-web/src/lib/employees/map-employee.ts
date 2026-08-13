@@ -47,6 +47,11 @@ export function mapEmployeeDoc(
     hourlyRate: typeof employee.hourlyRate === 'number' ? employee.hourlyRate : 0,
     employmentTypeId: optionalString(employee.employmentTypeId),
     payRates: mapStaffPayRates(employee.payRates),
+    payRateHistory: Array.isArray(employee.payRateHistory)
+      ? employee.payRateHistory
+          .map((item) => mapStaffPayRates(item))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      : undefined,
     active: employee.active ?? false,
     kioskEnabled: employee.kioskEnabled === true,
     lastAction: employee.lastAction ?? 'none',

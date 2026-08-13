@@ -152,8 +152,9 @@ export default function PayrollPage() {
       payRules: settings.payRules,
       timeZone: settings.timeZone,
       shifts,
+      leaveRequests,
     }),
-    [settings, locations, shifts],
+    [settings, locations, shifts, leaveRequests],
   );
 
   const report = useMemo<PayrollReport | null>(() => {

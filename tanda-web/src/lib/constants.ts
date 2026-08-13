@@ -16,6 +16,7 @@ export const COLLECTIONS = {
   ADMIN_ROLES: 'admin_roles',
   AUDIT_LOGS: 'audit_logs',
   SETTINGS: 'settings',
+  ACCOUNTING_PERIOD_LOCKS: 'accounting_period_locks',
   ISSUE_REPORTS: 'issue_reports',
   HELP_TUTORIALS: 'help_tutorials',
   AUTH_SESSIONS: 'auth_sessions',

@@ -5,6 +5,7 @@ import { buildWorkSessionsFromRecords } from '@/lib/attendance/work-sessions';
 import { COLLECTIONS } from '@/lib/constants';
 import { mapEmployeeDoc } from '@/lib/employees/map-employee';
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
 import { mapLocationDoc } from '@/lib/locations/map-location';
 import {
   buildAwardReport,
@@ -81,6 +82,10 @@ export async function GET(request: Request) {
     );
 
     const sessions = buildWorkSessionsFromRecords(records);
+    const leaveSnap = await db.collection(COLLECTIONS.LEAVE_REQUESTS).get();
+    const leaveRequests = leaveSnap.docs.map((doc) =>
+      mapLeaveRequestDoc(doc.id, doc.data() as Record<string, unknown>),
+    );
     const report = buildAwardReport({
       rules,
       timeZone,
@@ -89,6 +94,7 @@ export async function GET(request: Request) {
       sessions,
       shifts,
       dateRange: { start, end },
+      leaveRequests,
     });
 
     const slices = filterAwardSlices(report.slices, {

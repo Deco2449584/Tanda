@@ -14,7 +14,7 @@ export async function PUT(
     if (!auth.ok) return auth.response;
 
     const { id } = await context.params;
-    const body = (await request.json()) as { billing?: unknown };
+    const body = (await request.json()) as { billing?: unknown; billingHistory?: unknown };
     const billing = mapSiteBilling(body.billing) ?? {};
 
     const docRef = getAdminFirestore().collection(COLLECTIONS.LOCATIONS).doc(id);
@@ -23,7 +23,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Location not found.' }, { status: 404 });
     }
 
-    await docRef.set({ billing }, { merge: true });
+    const payload: Record<string, unknown> = { billing };
+    if (Array.isArray(body.billingHistory)) {
+      payload.billingHistory = body.billingHistory
+        .map((item) => mapSiteBilling(item))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    }
+
+    await docRef.set(payload, { merge: true });
 
     await recordAuditFromRequest(request, auth.user, {
       action: 'settings.changed',

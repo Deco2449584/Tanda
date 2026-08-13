@@ -7,6 +7,7 @@ export interface LocationFirestore {
   code?: string;
   active: boolean;
   billing?: SiteBilling;
+  billingHistory?: SiteBilling[];
   createdAt?: Timestamp;
 }
 
@@ -17,6 +18,7 @@ export interface Location {
   code?: string;
   active: boolean;
   billing?: SiteBilling;
+  billingHistory?: SiteBilling[];
   createdAt?: string;
 }
 

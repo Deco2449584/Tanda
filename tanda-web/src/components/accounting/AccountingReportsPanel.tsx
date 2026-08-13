@@ -1,41 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { useMemo, useState } from 'react';
 import {
   PayrollPeriodFilterBar,
   type PayrollPeriodPreset,
 } from '@/components/payroll/PayrollPeriodFilterBar';
+import { useAccountingPeriod } from '@/hooks/useAccountingPeriod';
+import { savePayRulesRequest } from '@/lib/accounting/accounting-api';
 import {
   formatPayPeriodLabel,
   getLastWeekRange,
-  toFirestoreRangeBounds,
   type DateRange,
 } from '@/lib/attendance/date-range';
-import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
-import { buildWorkSessionsFromRecords } from '@/lib/attendance/work-sessions';
-import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
 import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
 import {
+  bandDisplayName,
   buildAwardReport,
+  dayTypeDisplayName,
   filterAwardSlices,
   groupAwardSlices,
   type AwardSlice,
 } from '@/lib/payroll/award-calc';
 import {
+  buildAccountingJournalRows,
+  buildSiteChargePacks,
   exportAccountingViewToCsv,
   type AccountingGroupBy,
+  type AccountingJournalRow,
   type AccountingReportView,
+  type SiteChargePack,
 } from '@/lib/payroll/award-export';
-import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
-import type { PayRules } from '@/lib/types/pay-rules';
-import type { Shift } from '@/lib/types/shift';
+import type { AccountingReportPreset, PayRules } from '@/lib/types/pay-rules';
 
 const inputClass =
   'w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary';
@@ -46,6 +46,7 @@ const VIEWS: Array<{ id: AccountingReportView; label: string }> = [
   { id: 'margin', label: 'Margin' },
   { id: 'timesheet', label: 'Timesheet' },
   { id: 'journal', label: 'Journal' },
+  { id: 'chargePack', label: 'Charge pack' },
 ];
 
 const GROUPS: Array<{ id: AccountingGroupBy; label: string }> = [
@@ -56,8 +57,6 @@ const GROUPS: Array<{ id: AccountingGroupBy; label: string }> = [
   { id: 'employmentType', label: 'Employment type' },
 ];
 
-const PRESET_KEY = 'tanda.accounting.reportPresets';
-
 interface AccountingReportsPanelProps {
   rules: PayRules;
   timeZone: string;
@@ -66,6 +65,8 @@ interface AccountingReportsPanelProps {
   employees: Employee[];
   locations: Location[];
   canExport: boolean;
+  canEditRules: boolean;
+  onPresetsSaved: () => Promise<void> | void;
 }
 
 export function AccountingReportsPanel({
@@ -76,6 +77,8 @@ export function AccountingReportsPanel({
   employees,
   locations,
   canExport,
+  canEditRules,
+  onPresetsSaved,
 }: AccountingReportsPanelProps) {
   const [dateRange, setDateRange] = useState<DateRange>(() => getLastWeekRange());
   const [preset, setPreset] = useState<PayrollPeriodPreset>('last-week');
@@ -85,50 +88,15 @@ export function AccountingReportsPanel({
   const [employeeDocId, setEmployeeDocId] = useState('');
   const [department, setDepartment] = useState('');
   const [employmentTypeId, setEmploymentTypeId] = useState('');
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [sessions, setSessions] = useState<ReturnType<typeof buildWorkSessionsFromRecords>>([]);
-  const [presets, setPresets] = useState<ReturnType<typeof readPresets>>([]);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [savingPreset, setSavingPreset] = useState(false);
 
-  const loadPeriod = useCallback(async () => {
-    if (!db) return;
-    const { start, end } = toFirestoreRangeBounds(dateRange);
-    const [attendanceSnapshot, shiftsSnapshot] = await Promise.all([
-      getDocs(
-        query(
-          collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
-          where('timestampServer', '>=', start),
-          where('timestampServer', '<=', end),
-          orderBy('timestampServer', 'desc'),
-          limit(5000),
-        ),
-      ),
-      getDocs(
-        query(
-          collection(db, COLLECTIONS.SHIFTS),
-          where('date', '>=', dateRange.start),
-          where('date', '<=', dateRange.end),
-        ),
-      ),
-    ]);
-    const records = attendanceSnapshot.docs.map((doc) =>
-      mapAttendanceDoc(doc.id, doc.data()),
-    );
-    setSessions(buildWorkSessionsFromRecords(records, attendanceBreak));
-    setShifts(shiftsSnapshot.docs.map((doc) => mapShiftDoc(doc.id, doc.data())));
-  }, [dateRange, attendanceBreak]);
-
-  useEffect(() => {
-    void loadPeriod();
-  }, [loadPeriod]);
-
-  useEffect(() => {
-    setPresets(readPresets());
-  }, []);
-
-  const staff = useMemo(
-    () => employees.filter(isPayrollEligibleEmployee),
-    [employees],
+  const { sessions, shifts, leaveRequests, lock, loading } = useAccountingPeriod(
+    dateRange,
+    attendanceBreak,
   );
+
+  const staff = useMemo(() => employees.filter(isPayrollEligibleEmployee), [employees]);
   const departments = useMemo(
     () =>
       [...new Set(staff.map((item) => item.department).filter(Boolean))].sort((a, b) =>
@@ -137,7 +105,7 @@ export function AccountingReportsPanel({
     [staff],
   );
 
-  const report = useMemo(
+  const liveReport = useMemo(
     () =>
       buildAwardReport({
         rules,
@@ -147,9 +115,11 @@ export function AccountingReportsPanel({
         sessions,
         shifts,
         dateRange,
+        leaveRequests,
       }),
-    [rules, timeZone, staff, locations, sessions, shifts, dateRange],
+    [rules, timeZone, staff, locations, sessions, shifts, dateRange, leaveRequests],
   );
+  const report = lock?.snapshot ?? liveReport;
 
   const slices = useMemo(
     () =>
@@ -163,7 +133,22 @@ export function AccountingReportsPanel({
   );
 
   const grouped = useMemo(() => groupAwardSlices(slices, groupBy), [slices, groupBy]);
+  const journalRows = useMemo(
+    () =>
+      buildAccountingJournalRows({
+        report: { ...report, slices },
+        rules,
+        periodLabel: formatPayPeriodLabel(dateRange),
+        periodEnd: dateRange.end,
+      }),
+    [report, slices, rules, dateRange],
+  );
+  const packs = useMemo(
+    () => buildSiteChargePacks({ report: { ...report, slices }, rules }),
+    [report, slices, rules],
+  );
   const periodLabel = formatPayPeriodLabel(dateRange);
+  const presets = rules.reportPresets ?? [];
 
   function handleExport() {
     if (!canExport) return;
@@ -180,21 +165,38 @@ export function AccountingReportsPanel({
     });
   }
 
-  function savePreset() {
+  async function savePreset() {
+    if (!canEditRules) return;
     const name = window.prompt('Preset name');
     if (!name?.trim()) return;
-    const existing = readPresets();
-    existing.push({
-      name: name.trim(),
-      view,
-      groupBy,
-      locationId,
-      employeeDocId,
-      department,
-      employmentTypeId,
-    });
-    window.localStorage.setItem(PRESET_KEY, JSON.stringify(existing));
-    setPresets(existing);
+    setSavingPreset(true);
+    try {
+      const next: AccountingReportPreset[] = [
+        ...presets.filter((item) => item.name !== name.trim()),
+        {
+          name: name.trim(),
+          view,
+          groupBy,
+          locationId,
+          employeeDocId,
+          department,
+          employmentTypeId,
+        },
+      ];
+      await savePayRulesRequest({ ...rules, reportPresets: next });
+      await onPresetsSaved();
+    } finally {
+      setSavingPreset(false);
+    }
+  }
+
+  function applyPreset(item: AccountingReportPreset) {
+    setView((item.view as AccountingReportView) || 'pay');
+    setGroupBy((item.groupBy as AccountingGroupBy) || 'staff');
+    setLocationId(item.locationId);
+    setEmployeeDocId(item.employeeDocId);
+    setDepartment(item.department);
+    setEmploymentTypeId(item.employmentTypeId);
   }
 
   return (
@@ -205,6 +207,13 @@ export function AccountingReportsPanel({
         preset={preset}
         onPresetChange={setPreset}
       />
+
+      {lock ? (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-100">
+          Week closed — figures frozen. Use Close to reopen.
+        </p>
+      ) : null}
+      {loading ? <p className="text-sm text-subtle">Loading period…</p> : null}
 
       <div className="flex flex-wrap gap-2">
         {VIEWS.map((item) => (
@@ -223,67 +232,109 @@ export function AccountingReportsPanel({
         ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <select
-          value={groupBy}
-          onChange={(event) => setGroupBy(event.target.value as AccountingGroupBy)}
-          className={inputClass}
-        >
-          {GROUPS.map((item) => (
-            <option key={item.id} value={item.id}>
-              Group by {item.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={locationId}
-          onChange={(event) => setLocationId(event.target.value)}
-          className={inputClass}
-        >
-          <option value="">All sites</option>
-          {locations.map((location) => (
-            <option key={location.id} value={location.id}>
-              {location.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={employeeDocId}
-          onChange={(event) => setEmployeeDocId(event.target.value)}
-          className={inputClass}
-        >
-          <option value="">All staff</option>
-          {staff.map((employee) => (
-            <option key={employee.id} value={employee.id}>
-              {employee.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={department}
-          onChange={(event) => setDepartment(event.target.value)}
-          className={inputClass}
-        >
-          <option value="">All departments</option>
-          {departments.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <select
-          value={employmentTypeId}
-          onChange={(event) => setEmploymentTypeId(event.target.value)}
-          className={inputClass}
-        >
-          <option value="">All employment types</option>
-          {rules.employmentTypes.map((type) => (
-            <option key={type.id} value={type.id}>
-              {type.label}
-            </option>
-          ))}
-        </select>
+      <div className="grid gap-3 sm:grid-cols-4">
+        <SummaryCard label="Pay" value={formatDashboardCurrency(report.totals.payAmount, currency)} />
+        <SummaryCard
+          label="Charge"
+          value={formatDashboardCurrency(report.totals.chargeAmount, currency)}
+        />
+        <SummaryCard
+          label="Margin"
+          value={formatDashboardCurrency(report.totals.margin, currency)}
+        />
+        <SummaryCard label="Incomplete" value={String(report.incompleteSessions)} />
       </div>
+
+      <details
+        open={advancedOpen}
+        onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
+        className="rounded-2xl border border-border bg-surface-raised p-4"
+      >
+        <summary className="cursor-pointer text-sm font-medium text-white">Advanced</summary>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <select
+            value={groupBy}
+            onChange={(event) => setGroupBy(event.target.value as AccountingGroupBy)}
+            className={inputClass}
+          >
+            {GROUPS.map((item) => (
+              <option key={item.id} value={item.id}>
+                Group by {item.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={locationId}
+            onChange={(event) => setLocationId(event.target.value)}
+            className={inputClass}
+          >
+            <option value="">All sites</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={employeeDocId}
+            onChange={(event) => setEmployeeDocId(event.target.value)}
+            className={inputClass}
+          >
+            <option value="">All staff</option>
+            {staff.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={department}
+            onChange={(event) => setDepartment(event.target.value)}
+            className={inputClass}
+          >
+            <option value="">All departments</option>
+            {departments.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+          <select
+            value={employmentTypeId}
+            onChange={(event) => setEmploymentTypeId(event.target.value)}
+            className={inputClass}
+          >
+            <option value="">All employment types</option>
+            {rules.employmentTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {canEditRules ? (
+            <button
+              type="button"
+              onClick={() => void savePreset()}
+              disabled={savingPreset}
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
+            >
+              {savingPreset ? 'Saving…' : 'Save preset'}
+            </button>
+          ) : null}
+          {presets.map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              onClick={() => applyPreset(item)}
+              className="rounded-lg border border-border px-3 py-2 text-xs text-muted"
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+      </details>
 
       <div className="flex flex-wrap items-center gap-2">
         {canExport ? (
@@ -295,50 +346,14 @@ export function AccountingReportsPanel({
             Download CSV
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={savePreset}
-          className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
-        >
-          Save preset
-        </button>
-        {presets.map((item) => (
-          <button
-            key={item.name}
-            type="button"
-            onClick={() => {
-              setView(item.view);
-              setGroupBy(item.groupBy);
-              setLocationId(item.locationId);
-              setEmployeeDocId(item.employeeDocId);
-              setDepartment(item.department);
-              setEmploymentTypeId(item.employmentTypeId);
-            }}
-            className="rounded-lg border border-border px-3 py-2 text-xs text-muted"
-          >
-            {item.name}
-          </button>
-        ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        <SummaryCard label="Pay" value={formatDashboardCurrency(report.totals.payAmount, currency)} />
-        <SummaryCard
-          label="Charge"
-          value={formatDashboardCurrency(report.totals.chargeAmount, currency)}
-        />
-        <SummaryCard
-          label="Margin"
-          value={formatDashboardCurrency(report.totals.margin, currency)}
-        />
-        <SummaryCard
-          label="Incomplete sessions"
-          value={String(report.incompleteSessions)}
-        />
-      </div>
-
-      {view === 'timesheet' ? (
-        <TimesheetTable slices={slices} currency={currency} />
+      {view === 'journal' ? (
+        <JournalTable rows={journalRows} currency={currency} />
+      ) : view === 'chargePack' ? (
+        <ChargePackTable packs={packs} currency={currency} />
+      ) : view === 'timesheet' ? (
+        <TimesheetTable slices={slices} currency={currency} rules={rules} />
       ) : (
         <GroupedTable
           rows={grouped}
@@ -401,7 +416,11 @@ function GroupedTable({
                 <td className="px-4 py-3 text-foreground">
                   {groupBy === 'employmentType'
                     ? rules.employmentTypes.find((type) => type.id === row.key)?.label ?? row.label
-                    : row.label}
+                    : groupBy === 'band'
+                      ? row.key.includes(':')
+                        ? `${dayTypeDisplayName(rules, row.key.split(':')[0] ?? '')} / ${bandDisplayName(rules, row.key.split(':')[1] ?? '')}`
+                        : row.label
+                      : row.label}
                 </td>
                 <td className="px-4 py-3 tabular-nums text-muted">{row[hoursKey].toFixed(2)}</td>
                 <td className="px-4 py-3 tabular-nums text-foreground">
@@ -416,7 +435,15 @@ function GroupedTable({
   );
 }
 
-function TimesheetTable({ slices, currency }: { slices: AwardSlice[]; currency: string }) {
+function TimesheetTable({
+  slices,
+  currency,
+  rules,
+}: {
+  slices: AwardSlice[];
+  currency: string;
+  rules: PayRules;
+}) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
       <div className="overflow-x-auto">
@@ -450,7 +477,8 @@ function TimesheetTable({ slices, currency }: { slices: AwardSlice[]; currency: 
                   <td className="px-4 py-3 text-foreground">{slice.employeeName}</td>
                   <td className="px-4 py-3 text-muted">{slice.locationName || '—'}</td>
                   <td className="px-4 py-3 text-muted">
-                    {slice.dayTypeId} / {slice.bandId}
+                    {dayTypeDisplayName(rules, slice.dayTypeId)} /{' '}
+                    {bandDisplayName(rules, slice.bandId)}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-muted">
                     {slice.payHours.toFixed(2)}
@@ -474,21 +502,96 @@ function TimesheetTable({ slices, currency }: { slices: AwardSlice[]; currency: 
   );
 }
 
-function readPresets(): Array<{
-  name: string;
-  view: AccountingReportView;
-  groupBy: AccountingGroupBy;
-  locationId: string;
-  employeeDocId: string;
-  department: string;
-  employmentTypeId: string;
-}> {
-  try {
-    const raw = window.localStorage.getItem(PRESET_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+function JournalTable({ rows, currency }: { rows: AccountingJournalRow[]; currency: string }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[880px] border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-primary/25 bg-primary/10">
+              <th className="px-4 py-3 font-semibold text-white">Account</th>
+              <th className="px-4 py-3 font-semibold text-white">Debit</th>
+              <th className="px-4 py-3 font-semibold text-white">Credit</th>
+              <th className="px-4 py-3 font-semibold text-white">Tracking</th>
+              <th className="px-4 py-3 font-semibold text-white">Memo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-10 text-center text-subtle">
+                  No journal lines in this period.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, index) => (
+                <tr key={`${row.accountCode}|${row.tracking}|${index}`} className="border-b border-border/50">
+                  <td className="px-4 py-3 text-foreground">
+                    <span className="font-mono text-xs text-muted">{row.accountCode}</span>
+                    <span className="ml-2">{row.accountName}</span>
+                  </td>
+                  <td className="px-4 py-3 tabular-nums text-foreground">
+                    {row.debit > 0 ? formatDashboardCurrency(row.debit, currency) : ''}
+                  </td>
+                  <td className="px-4 py-3 tabular-nums text-foreground">
+                    {row.credit > 0 ? formatDashboardCurrency(row.credit, currency) : ''}
+                  </td>
+                  <td className="px-4 py-3 text-muted">{row.tracking || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-subtle">{row.memo || '—'}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ChargePackTable({ packs, currency }: { packs: SiteChargePack[]; currency: string }) {
+  return (
+    <div className="space-y-4">
+      {packs.length === 0 ? (
+        <p className="rounded-xl border border-border px-4 py-10 text-center text-sm text-subtle">
+          No charge hours in this period.
+        </p>
+      ) : (
+        packs.map((pack) => (
+          <div key={pack.locationId} className="overflow-hidden rounded-xl border border-border bg-surface-raised">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-4 py-3">
+              <p className="font-medium text-white">{pack.locationName}</p>
+              <p className="text-sm tabular-nums text-foreground">
+                {formatDashboardCurrency(pack.amount, currency)} · {pack.hours.toFixed(2)} h
+                {pack.minHoursApplied > 0
+                  ? ` · ${pack.minHoursApplied.toFixed(2)} min hours`
+                  : ''}
+              </p>
+            </div>
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-border/60">
+                  <th className="px-4 py-2 font-medium text-muted">Day type</th>
+                  <th className="px-4 py-2 font-medium text-muted">Band</th>
+                  <th className="px-4 py-2 font-medium text-muted">Hours</th>
+                  <th className="px-4 py-2 font-medium text-muted">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pack.bands.map((band) => (
+                  <tr key={`${band.dayTypeId}:${band.bandId}`} className="border-b border-border/40">
+                    <td className="px-4 py-2 text-foreground">{band.dayTypeName}</td>
+                    <td className="px-4 py-2 text-muted">{band.bandName}</td>
+                    <td className="px-4 py-2 tabular-nums text-muted">{band.hours.toFixed(2)}</td>
+                    <td className="px-4 py-2 tabular-nums text-foreground">
+                      {formatDashboardCurrency(band.amount, currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
