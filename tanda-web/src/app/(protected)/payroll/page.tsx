@@ -54,7 +54,9 @@ import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
-import { COMPANY_NAME, DEFAULT_PAYROLL_ACCOUNTING } from '@/lib/types/company-settings';
+import type { Shift } from '@/lib/types/shift';
+import { mapShiftDoc } from '@/lib/schedule/map-shift';
+import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 export default function PayrollPage() {
   const { canPerformAction } = useAdminAccess();
@@ -67,6 +69,7 @@ export default function PayrollPage() {
   const [preset, setPreset] = useState<PayrollPeriodPreset>('last-week');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const initialLoadDoneRef = useRef(false);
@@ -85,7 +88,7 @@ export default function PayrollPage() {
 
     try {
       const { start, end } = toFirestoreRangeBounds(dateRange);
-      const [attendanceSnapshot, leaveSnapshot] = await Promise.all([
+      const [attendanceSnapshot, leaveSnapshot, shiftsSnapshot] = await Promise.all([
         getDocs(
           query(
             collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
@@ -101,6 +104,13 @@ export default function PayrollPage() {
             orderBy('createdAt', 'desc'),
           ),
         ),
+        getDocs(
+          query(
+            collection(db, COLLECTIONS.SHIFTS),
+            where('date', '>=', dateRange.start),
+            where('date', '<=', dateRange.end),
+          ),
+        ),
       ]);
 
       setRecords(
@@ -111,6 +121,11 @@ export default function PayrollPage() {
       setLeaveRequests(
         leaveSnapshot.docs.map((document) =>
           mapLeaveRequestDoc(document.id, document.data()),
+        ),
+      );
+      setShifts(
+        shiftsSnapshot.docs.map((document) =>
+          mapShiftDoc(document.id, document.data()),
         ),
       );
     } catch (error) {
@@ -133,10 +148,12 @@ export default function PayrollPage() {
       currency: settings.currency,
       attendanceBreak: settings.attendanceBreak,
       locations,
-      payrollAccounting:
-        settings.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING,
+      payrollAccounting: settings.payrollAccounting,
+      payRules: settings.payRules,
+      timeZone: settings.timeZone,
+      shifts,
     }),
-    [settings, locations],
+    [settings, locations, shifts],
   );
 
   const report = useMemo<PayrollReport | null>(() => {
@@ -267,7 +284,7 @@ export default function PayrollPage() {
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
         title="Payroll"
-        description="Weekly payroll summary and CSV exports for accounting. Gross pay is based on billable hours and hourly rates."
+        description="Weekly payroll summary and CSV exports. Gross pay uses configured award rules and staff rates."
       />
 
       <section className="space-y-4">

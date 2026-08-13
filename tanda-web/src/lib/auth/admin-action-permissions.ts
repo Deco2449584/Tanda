@@ -30,6 +30,11 @@ export const ADMIN_ACTION_LABELS: {
   payroll: {
     export: 'Export payroll reports (CSV)',
   },
+  accounting: {
+    export: 'Export accounting reports (CSV)',
+    updateRates: 'Edit staff and site rate cards',
+    updateRules: 'Edit pay rules, bands, and holidays',
+  },
   schedule: {
     create: 'Assign shifts',
     update: 'Edit shifts',
@@ -205,7 +210,12 @@ export function mapModulePermissions(
   raw: AdminModulePermissionsFirestore | null | undefined,
 ): AdminModulePermissionsFirestore {
   const modules = Object.fromEntries(
-    ADMIN_MODULE_KEYS.map((key) => [key, raw?.modules?.[key] !== false]),
+    ADMIN_MODULE_KEYS.map((key) => [
+      key,
+      key === 'accounting'
+        ? raw?.modules?.[key] === true
+        : raw?.modules?.[key] !== false,
+    ]),
   ) as Record<AdminModuleKey, boolean>;
 
   const legacyEdit = Object.fromEntries(

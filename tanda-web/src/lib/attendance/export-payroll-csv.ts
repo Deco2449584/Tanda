@@ -1,23 +1,24 @@
 import {
   buildWorkSessionsFromRecords,
   calculateWorkedDaysInRange,
-  calculateWorkedHoursInRange,
 } from '@/lib/attendance/work-sessions';
-import { formatRecordDate } from '@/lib/attendance/format';
-import { compareInputDates } from '@/lib/dates/input-date';
 import { formatPayPeriodLabel, type DateRange } from '@/lib/attendance/date-range';
 import { getSiteKeyForEmployee } from '@/lib/dashboard/filter-dashboard-data';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
 import {
   DEFAULT_ATTENDANCE_BREAK,
-  DEFAULT_PAYROLL_ACCOUNTING,
   type PayrollAccountingSettings,
 } from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
+import type { Shift } from '@/lib/types/shift';
 import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
+import { buildAwardReport, type AwardReport } from '@/lib/payroll/award-calc';
+import { buildAccountingJournalLines } from '@/lib/payroll/award-export';
+import { mapPayRules } from '@/lib/payroll/map-pay-rules';
+import type { PayRules } from '@/lib/types/pay-rules';
 
 export interface PayrollReportRow {
   employeeId: string;
@@ -45,6 +46,8 @@ export interface PayrollReport {
     grossPay: number;
   };
   incompleteSessions: number;
+  award?: AwardReport;
+  payRules?: PayRules;
 }
 
 export interface PayrollGroupReportRow {
@@ -93,23 +96,6 @@ function formatGeneratedAt(): string {
   }).format(new Date());
 }
 
-function countIncompleteSessionsInRange(
-  records: AttendanceRecord[],
-  dateRange: DateRange,
-): number {
-  const sessions = buildWorkSessionsFromRecords(records);
-
-  return sessions.filter((session) => {
-    if (session.status === 'complete') return false;
-
-    const sessionDate = formatRecordDate(session.checkIn.timestampServer);
-    return (
-      compareInputDates(sessionDate, dateRange.start) >= 0 &&
-      compareInputDates(sessionDate, dateRange.end) <= 0
-    );
-  }).length;
-}
-
 export function buildPayrollReport(
   records: AttendanceRecord[],
   employees: Employee[],
@@ -119,11 +105,17 @@ export function buildPayrollReport(
     currency?: string;
     attendanceBreak?: AttendanceBreakSettings;
     locations?: Location[];
+    payRules?: PayRules;
+    payrollAccounting?: PayrollAccountingSettings;
+    timeZone?: string;
+    shifts?: Shift[];
   },
 ): PayrollReport {
   const companyName = options?.companyName ?? COMPANY_NAME;
   const currency = options?.currency ?? 'AUD';
   const attendanceBreak = options?.attendanceBreak ?? DEFAULT_ATTENDANCE_BREAK;
+  const rules = mapPayRules(options?.payRules, options?.payrollAccounting);
+  const timeZone = options?.timeZone ?? 'Australia/Sydney';
 
   const activeEmployees = employees
     .filter(isPayrollEligibleEmployee)
@@ -136,34 +128,62 @@ export function buildPayrollReport(
     recordsByEmployee.set(record.employeeId, existing);
   });
 
+  const sessions = buildWorkSessionsFromRecords(records, attendanceBreak);
+  const award = buildAwardReport({
+    rules,
+    timeZone,
+    employees: activeEmployees,
+    locations: options?.locations ?? [],
+    sessions,
+    shifts: options?.shifts,
+    dateRange,
+  });
+
+  const payByEmployee = new Map<string, { hours: number; pay: number; location: string }>();
+  for (const line of award.sessions) {
+    const employee = activeEmployees.find((item) => item.id === line.employeeDocId);
+    if (!employee) continue;
+    const current = payByEmployee.get(employee.employeeId) ?? {
+      hours: 0,
+      pay: 0,
+      location: '',
+    };
+    current.hours = Math.round((current.hours + line.payHours) * 100) / 100;
+    current.pay = Math.round((current.pay + line.payAmount) * 100) / 100;
+    payByEmployee.set(employee.employeeId, current);
+  }
+
+  const locationByEmployee = new Map<string, string>();
+  for (const slice of award.slices) {
+    if (slice.locationName && !locationByEmployee.has(slice.employeeId)) {
+      locationByEmployee.set(slice.employeeId, slice.locationName);
+    }
+  }
+
   const rows: PayrollReportRow[] = [];
 
   activeEmployees.forEach((employee) => {
     const employeeRecords = recordsByEmployee.get(employee.employeeId) ?? [];
-    const totalHours = calculateWorkedHoursInRange(
-      employeeRecords,
-      dateRange.start,
-      dateRange.end,
-      attendanceBreak,
-    );
-
     const daysWorked = calculateWorkedDaysInRange(
       employeeRecords,
       dateRange.start,
       dateRange.end,
       attendanceBreak,
     );
+    const awardRow = payByEmployee.get(employee.employeeId);
     const hourlyRate = employee.hourlyRate ?? 0;
-    const roundedHours = Math.round(totalHours * 100) / 100;
-    const grossPay = Math.round(roundedHours * hourlyRate * 100) / 100;
+    const roundedHours = awardRow?.hours ?? 0;
+    const grossPay = awardRow?.pay ?? 0;
 
     rows.push({
       employeeId: employee.employeeId,
       name: employee.name,
       department: employee.department?.trim() || '—',
-      location: options?.locations
-        ? getSiteKeyForEmployee(employee, options.locations)
-        : '—',
+      location:
+        locationByEmployee.get(employee.employeeId) ??
+        (options?.locations
+          ? getSiteKeyForEmployee(employee, options.locations)
+          : '—'),
       hourlyRate,
       daysWorked,
       totalHours: roundedHours,
@@ -195,7 +215,9 @@ export function buildPayrollReport(
     generatedAt: formatGeneratedAt(),
     rows,
     totals,
-    incompleteSessions: countIncompleteSessionsInRange(records, dateRange),
+    incompleteSessions: award.incompleteSessions,
+    award,
+    payRules: rules,
   };
 }
 
@@ -341,77 +363,6 @@ function buildGroupCsvLines(groupReport: PayrollGroupReport): string[] {
   return lines;
 }
 
-function buildJournalCsvLines(
-  report: PayrollReport,
-  payrollAccounting: PayrollAccountingSettings,
-): string[] {
-  const locationReport = buildPayrollByLocationReport(report);
-  const journalDate = report.periodEnd;
-  const description = `Weekly payroll - ${report.periodLabel}`;
-
-  const lines: string[] = [
-    headerRow('Report', 'Payroll journal'),
-    headerRow('Company', report.companyName),
-    headerRow('Pay period', report.periodLabel),
-    headerRow('Journal date', journalDate),
-    headerRow('Generated at', report.generatedAt),
-    '',
-    [
-      csvCell('Date'),
-      csvCell('Account code'),
-      csvCell('Account name'),
-      csvCell('Description'),
-      csvCell('Debit'),
-      csvCell('Credit'),
-      csvCell('Tracking'),
-    ].join(','),
-  ];
-
-  locationReport.rows.forEach((row) => {
-    if (row.grossPay <= 0) return;
-    lines.push(
-      [
-        csvCell(journalDate),
-        csvCell(payrollAccounting.wagesExpenseAccountCode),
-        csvCell(payrollAccounting.wagesExpenseAccountName),
-        csvCell(description),
-        csvCell(row.grossPay.toFixed(2)),
-        csvCell(''),
-        csvCell(row.groupKey),
-      ].join(','),
-    );
-  });
-
-  if (report.totals.grossPay > 0) {
-    lines.push(
-      [
-        csvCell(journalDate),
-        csvCell(payrollAccounting.wagesPayableAccountCode),
-        csvCell(payrollAccounting.wagesPayableAccountName),
-        csvCell(description),
-        csvCell(''),
-        csvCell(report.totals.grossPay.toFixed(2)),
-        csvCell(''),
-      ].join(','),
-    );
-  }
-
-  lines.push('');
-  lines.push(
-    [
-      csvCell('TOTALS'),
-      csvCell(''),
-      csvCell(''),
-      csvCell(''),
-      csvCell(report.totals.grossPay.toFixed(2)),
-      csvCell(report.totals.grossPay.toFixed(2)),
-      csvCell(''),
-    ].join(','),
-  );
-
-  return lines;
-}
-
 function buildCsvLines(report: PayrollReport): string[] {
   const { currency } = report;
   const lines: string[] = [
@@ -507,6 +458,9 @@ export interface PayrollExportOptions {
   attendanceBreak?: AttendanceBreakSettings;
   locations?: Location[];
   payrollAccounting?: PayrollAccountingSettings;
+  payRules?: PayRules;
+  timeZone?: string;
+  shifts?: Shift[];
 }
 
 function buildReportForExport(
@@ -581,14 +535,18 @@ export function exportPayrollJournalToCsv(
   options?: PayrollExportOptions,
 ): boolean {
   const report = buildReportForExport(records, employees, dateRange, options);
-  if (!report) return false;
-
-  const payrollAccounting =
-    options?.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING;
+  if (!report?.award || !report.payRules) return false;
 
   downloadCsv(
     `payroll-journal-${report.periodStart}_${report.periodEnd}.csv`,
-    buildJournalCsvLines(report, payrollAccounting),
+    buildAccountingJournalLines({
+      report: report.award,
+      rules: report.payRules,
+      periodLabel: report.periodLabel,
+      periodEnd: report.periodEnd,
+      generatedAt: report.generatedAt,
+      companyName: report.companyName,
+    }),
   );
 
   return true;

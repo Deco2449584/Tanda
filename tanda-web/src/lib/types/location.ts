@@ -1,10 +1,12 @@
 import type { Timestamp } from 'firebase/firestore';
+import type { SiteBilling } from '@/lib/types/pay-rules';
 
 export interface LocationFirestore {
   name: string;
   city: string;
   code?: string;
   active: boolean;
+  billing?: SiteBilling;
   createdAt?: Timestamp;
 }
 
@@ -14,6 +16,7 @@ export interface Location {
   city: string;
   code?: string;
   active: boolean;
+  billing?: SiteBilling;
   createdAt?: string;
 }
 

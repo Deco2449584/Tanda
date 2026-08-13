@@ -1,5 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
+import type { StaffPayRates } from '@/lib/types/pay-rules';
 
 export const PERSONAL_PROFILE_STATUSES = [
   'none',
@@ -44,6 +45,9 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   locationId?: string;
   locationGroupId?: string;
   hourlyRate: number;
+  /** Catalogue id from payRules.employmentTypes. */
+  employmentTypeId?: string;
+  payRates?: StaffPayRates;
   active: boolean;
   /** ISO date (YYYY-MM-DD) when the employee started. */
   startDate?: string;
@@ -79,6 +83,8 @@ export interface CreateEmployeeInput {
   locationId?: string;
   locationGroupId?: string;
   hourlyRate: number;
+  employmentTypeId?: string;
+  payRates?: StaffPayRates;
 }
 
 export interface CreateEmployeeFormValues extends CreateEmployeeInput, EmployeePersonalDetails {

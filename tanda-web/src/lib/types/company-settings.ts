@@ -1,3 +1,5 @@
+import type { PayRules } from '@/lib/types/pay-rules';
+
 export const COMPANY_NAME = 'Continental Cargo';
 
 export interface AttendanceBreakSettings {
@@ -49,6 +51,8 @@ export interface CompanySettings {
   helpTutorialCategories?: string[];
   /** Account codes used in payroll journal CSV exports. */
   payrollAccounting?: PayrollAccountingSettings;
+  /** Award bands, OT, mins, holidays, GL by employment type. */
+  payRules?: PayRules;
 }
 
 export const DEFAULT_ATTENDANCE_POLICY: AttendancePolicySettings = {

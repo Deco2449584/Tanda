@@ -34,6 +34,7 @@ export const ADMIN_MODULE_ROUTES: Record<AdminModuleKey, string> = {
   dashboard: '/dashboard',
   attendance: '/attendance',
   payroll: '/payroll',
+  accounting: '/accounting',
   schedule: '/schedule',
   employees: '/employees',
   announcements: '/announcements',

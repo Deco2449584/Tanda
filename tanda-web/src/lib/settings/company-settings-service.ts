@@ -12,6 +12,8 @@ import {
   type PayrollAccountingSettings,
   type CompanySettings,
 } from '@/lib/types/company-settings';
+import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
+import { mapPayRules } from '@/lib/payroll/map-pay-rules';
 import { db } from '@/lib/firebase';
 
 const SETTINGS_DOC_ID = 'general';
@@ -163,18 +165,21 @@ function mapFirestoreData(data: Record<string, unknown>): CompanySettings {
         : DEFAULT_COMPANY_SETTINGS.shiftEmailNotificationsEnabled,
     helpTutorialCategories: mapHelpTutorialCategories(data),
     payrollAccounting: mapPayrollAccounting(data),
+    payRules: mapPayRules(data.payRules, mapPayrollAccounting(data)),
   };
 }
 
 export async function fetchCompanySettings(): Promise<CompanySettings> {
-  if (!db) return DEFAULT_COMPANY_SETTINGS;
+  if (!db) {
+    return { ...DEFAULT_COMPANY_SETTINGS, payRules: DEFAULT_PAY_RULES };
+  }
 
   const snapshot = await getDoc(
     doc(db, COLLECTIONS.SETTINGS, SETTINGS_DOC_ID),
   );
 
   if (!snapshot.exists()) {
-    return DEFAULT_COMPANY_SETTINGS;
+    return { ...DEFAULT_COMPANY_SETTINGS, payRules: DEFAULT_PAY_RULES };
   }
 
   return mapFirestoreData(snapshot.data() as Record<string, unknown>);
@@ -205,6 +210,7 @@ export async function saveCompanySettings(
         ? { helpTutorialCategories: settings.helpTutorialCategories }
         : {}),
       payrollAccounting: settings.payrollAccounting ?? DEFAULT_PAYROLL_ACCOUNTING,
+      ...(settings.payRules ? { payRules: settings.payRules } : {}),
     },
     { merge: true },
   );

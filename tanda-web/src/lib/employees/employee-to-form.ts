@@ -22,6 +22,8 @@ export function employeeToFormValues(employee: Employee): CreateEmployeeFormValu
     locationId: employee.locationId ?? '',
     locationGroupId: employee.locationGroupId ?? '',
     hourlyRate: employee.hourlyRate ?? 0,
+    employmentTypeId: employee.employmentTypeId ?? 'employee',
+    payRates: employee.payRates,
     startDate: employee.startDate ?? '',
     endDate: employee.endDate ?? '',
     phone: employee.phone ?? '',

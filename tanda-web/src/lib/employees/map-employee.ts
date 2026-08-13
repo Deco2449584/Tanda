@@ -5,6 +5,7 @@ import type {
 } from '@/lib/types/employee';
 import { PERSONAL_PROFILE_STATUSES } from '@/lib/types/employee';
 import { mapModulePermissions } from '@/lib/auth/admin-permissions';
+import { mapStaffPayRates } from '@/lib/payroll/map-pay-rules';
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -44,6 +45,8 @@ export function mapEmployeeDoc(
     locationId: optionalString(employee.locationId),
     locationGroupId: optionalString(employee.locationGroupId),
     hourlyRate: typeof employee.hourlyRate === 'number' ? employee.hourlyRate : 0,
+    employmentTypeId: optionalString(employee.employmentTypeId),
+    payRates: mapStaffPayRates(employee.payRates),
     active: employee.active ?? false,
     kioskEnabled: employee.kioskEnabled === true,
     lastAction: employee.lastAction ?? 'none',

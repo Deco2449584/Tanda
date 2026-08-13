@@ -19,6 +19,7 @@ const MODULE_LABELS: Record<AdminModuleKey, string> = {
   dashboard: 'Dashboard',
   attendance: 'Attendance',
   payroll: 'Payroll',
+  accounting: 'Accounting',
   schedule: 'Schedule',
   employees: 'Employees',
   announcements: 'Announcements',

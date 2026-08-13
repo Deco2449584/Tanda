@@ -11,6 +11,7 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
+import { RateMatrixEditor } from '@/components/accounting/RateMatrixEditor';
 import {
   EmployeeAccessRoleSection,
   isKioskAccessRole,
@@ -36,6 +37,9 @@ import {
   formInputClass,
 } from '@/components/employees/employee-form-ui';
 import { reviewEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
+import { saveStaffRatesRequest } from '@/lib/accounting/accounting-api';
+import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
+import { withSyncedBaseRate } from '@/lib/payroll/rate-matrix';
 import {
   fetchEmployeeCustomFieldValues,
   fetchEmployeeCustomFields,
@@ -115,6 +119,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const { isMaster, canPerformAction } = useAdminAccess();
   const canInviteEmployees = canPerformAction('employees', 'invite');
   const canReviewProfile = canPerformAction('employees', 'reviewProfile');
+  const canEditPayRates =
+    canPerformAction('employees', 'update') ||
+    canPerformAction('accounting', 'updateRates');
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
   const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
   const [adminRoleId, setAdminRoleId] = useState('');
@@ -518,6 +525,15 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           });
         }
 
+        if (!isKiosk && canEditPayRates) {
+          await saveStaffRatesRequest({
+            employeeDocId: employee.id,
+            employmentTypeId: form.employmentTypeId,
+            payRates: withSyncedBaseRate(form.payRates, normalizedForm.hourlyRate),
+            hourlyRate: normalizedForm.hourlyRate,
+          });
+        }
+
         await refreshEmployees();
       } else {
         const payload = buildEmployeeCreatePayload({
@@ -567,6 +583,15 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           employeeDocId: docRef.id,
           summary: `Created employee ${form.name.trim()} (${employeeCode})`,
         });
+
+        if (!isKiosk && canEditPayRates) {
+          await saveStaffRatesRequest({
+            employeeDocId: docRef.id,
+            employmentTypeId: form.employmentTypeId,
+            payRates: withSyncedBaseRate(form.payRates, normalizedForm.hourlyRate),
+            hourlyRate: normalizedForm.hourlyRate,
+          });
+        }
 
         await refreshEmployees();
       }
@@ -881,6 +906,36 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             </>
           ) : null}
         </FormGrid>
+
+        {!isKiosk ? (
+          <div className="mt-6 space-y-4">
+            <FormField label="Employment type" htmlFor="emp-employment-type">
+              <select
+                id="emp-employment-type"
+                value={form.employmentTypeId ?? 'employee'}
+                onChange={(event) => patchForm({ employmentTypeId: event.target.value })}
+                disabled={isBusy || !canEditPayRates}
+                className={formInputClass}
+              >
+                {(settings.payRules ?? DEFAULT_PAY_RULES).employmentTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <RateMatrixEditor
+              rules={settings.payRules ?? DEFAULT_PAY_RULES}
+              cells={form.payRates?.cells}
+              disabled={isBusy || !canEditPayRates}
+              onChange={(cells) =>
+                patchForm({
+                  payRates: { ...form.payRates, cells },
+                })
+              }
+            />
+          </div>
+        ) : null}
 
         {isEditMode && employee && canInviteEmployees && !isKiosk ? (
           <div className="rounded-xl border border-border/80 bg-surface-base/50 p-4">

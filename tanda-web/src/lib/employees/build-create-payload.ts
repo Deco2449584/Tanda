@@ -110,6 +110,7 @@ export const initialCreateEmployeeForm: CreateEmployeeFormValues = {
   locationId: '',
   locationGroupId: '',
   hourlyRate: 0,
+  employmentTypeId: 'employee',
   startDate: todayIsoDate(),
   endDate: '',
   phone: '',

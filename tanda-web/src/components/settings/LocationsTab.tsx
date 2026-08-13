@@ -3,6 +3,7 @@
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   createLocation,
@@ -11,6 +12,7 @@ import {
   updateLocation,
 } from '@/lib/locations/locations-service';
 import type { Location } from '@/lib/types/location';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useLocations } from '@/providers/LocationsProvider';
 
 interface LocationsTabProps {
@@ -27,6 +29,8 @@ const emptyEditForm: EditFormState = { name: '', city: '', code: '' };
 
 export function LocationsTab({ onToast }: LocationsTabProps) {
   const { locations, loading, refresh } = useLocations();
+  const { canAccessModule } = useAdminAccess();
+  const canOpenAccounting = canAccessModule('accounting');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [code, setCode] = useState('');
@@ -136,6 +140,14 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         <p className="mt-2 text-sm text-muted">
           Define offices or sites and assign each employee to a location. Used
           in staff management, schedule, and attendance filters.
+          {canOpenAccounting ? (
+            <>
+              {' '}
+              <Link href="/accounting" className="text-primary hover:underline">
+                Edit billing in Accounting
+              </Link>
+            </>
+          ) : null}
         </p>
       </section>
 
