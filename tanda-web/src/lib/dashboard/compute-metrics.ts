@@ -1,6 +1,7 @@
 import type { Timestamp } from 'firebase/firestore';
 import { getMinutesInTimeZone, timestampToMinutesInTimeZone } from '@/lib/dates/timezone';
 import { normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
 import {
   isCheckInLate,
   isMissingCheckIn,
@@ -42,8 +43,11 @@ export function shiftDurationHours(startTime: string, endTime: string): number {
 
 export function filterTodayShifts(
   shifts: Shift[],
-  todayKey: string = toInputDate(),
+  todayKeyOrTimeZone: string = toInputDate(),
 ): Shift[] {
+  const todayKey = todayKeyOrTimeZone.includes('/')
+    ? toInputDateInTimeZone(todayKeyOrTimeZone)
+    : todayKeyOrTimeZone;
   return shifts.filter(
     (shift) => normalizeInputDate(shift.date) === todayKey,
   );
