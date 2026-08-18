@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { RateMatrixEditor } from '@/components/accounting/RateMatrixEditor';
 import {
-  bulkSaveStaffRatesRequest,
   savePayRulesRequest,
   saveSiteBillingRequest,
   saveStaffRatesRequest,
@@ -44,6 +43,18 @@ function staffRateKind(employee: Employee, templates: RateTemplate[]): RateKind 
   return 'custom';
 }
 
+function staffInheritanceLabel(employee: Employee, templates: RateTemplate[]): string {
+  const kind = staffRateKind(employee, templates);
+  if (kind === 'none') return 'Using company default pay matrix';
+  if (kind === 'hourly') return 'Using company defaults + base hourly rate';
+  if (kind === 'template') return 'Using a copied rate card';
+  return 'Using a custom pay card';
+}
+
+function siteUsesCompanyDefaults(billing: SiteBilling | undefined): boolean {
+  return !billing?.cells && !billing?.timeBands?.length && billing?.minChargeHours == null;
+}
+
 function newId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -74,13 +85,10 @@ export function AccountingRatesPanel({
   const [siteId, setSiteId] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<StaffFilter>('all');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [copyFromId, setCopyFromId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [newCardDate, setNewCardDate] = useState('');
-  const [siteNewCardDate, setSiteNewCardDate] = useState('');
 
   const templates = rules.rateTemplates ?? [];
   const staff = useMemo(() => employees.filter(isPayrollEligibleEmployee), [employees]);
@@ -143,41 +151,6 @@ export function AccountingRatesPanel({
       });
       await onStaffSaved();
       setMessage(`Saved rates for ${selectedStaff.name}.`);
-      setNewCardDate('');
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not save staff rates.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveNewStaffCard() {
-    if (!selectedStaff || !currentStaff || !newCardDate || !canEdit) return;
-    const previous = selectedStaff.payRates;
-    const history = [...(selectedStaff.payRateHistory ?? [])];
-    if (previous && (previous.cells || previous.effectiveFrom)) {
-      history.push(previous);
-    }
-    const nextDraft = {
-      ...currentStaff,
-      payRates: { ...currentStaff.payRates, effectiveFrom: newCardDate },
-    };
-    setStaffDraft(nextDraft);
-    setSaving(true);
-    setError('');
-    setMessage('');
-    try {
-      const payRates = withSyncedBaseRate(nextDraft.payRates, nextDraft.hourlyRate);
-      await saveStaffRatesRequest({
-        employeeDocId: selectedStaff.id,
-        employmentTypeId: nextDraft.employmentTypeId,
-        payRates,
-        hourlyRate: nextDraft.hourlyRate,
-        payRateHistory: history,
-      });
-      await onStaffSaved();
-      setMessage(`Saved new rate card for ${selectedStaff.name} from ${newCardDate}.`);
-      setNewCardDate('');
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save staff rates.');
     } finally {
@@ -198,35 +171,6 @@ export function AccountingRatesPanel({
       });
       await onSiteSaved();
       setMessage(`Saved billing for ${selectedSite.name}.`);
-      setSiteNewCardDate('');
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not save site billing.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveNewSiteCard() {
-    if (!selectedSite || !siteNewCardDate || !canEdit) return;
-    const previous = selectedSite.billing;
-    const history = [...(selectedSite.billingHistory ?? [])];
-    if (previous && (previous.cells || previous.effectiveFrom || previous.timeBands)) {
-      history.push(previous);
-    }
-    const nextBilling = { ...currentSite, effectiveFrom: siteNewCardDate };
-    setSiteDraft(nextBilling);
-    setSaving(true);
-    setError('');
-    setMessage('');
-    try {
-      await saveSiteBillingRequest({
-        locationId: selectedSite.id,
-        billing: nextBilling,
-        billingHistory: history,
-      });
-      await onSiteSaved();
-      setMessage(`Saved new billing card for ${selectedSite.name} from ${siteNewCardDate}.`);
-      setSiteNewCardDate('');
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save site billing.');
     } finally {
@@ -243,70 +187,6 @@ export function AccountingRatesPanel({
       payRates: { ...(source.payRates ?? {}) },
     });
     setMessage(`Copied matrix from ${source.name}. Save to keep it.`);
-  }
-
-  async function applyToSelected() {
-    if (!currentStaff || selectedIds.length === 0 || !canEdit) return;
-    setSaving(true);
-    setError('');
-    setMessage('');
-    try {
-      const payRates = withSyncedBaseRate(currentStaff.payRates, currentStaff.hourlyRate);
-      await bulkSaveStaffRatesRequest({
-        ids: selectedIds,
-        employmentTypeId: currentStaff.employmentTypeId,
-        payRates,
-        hourlyRate: currentStaff.hourlyRate,
-      });
-      await onStaffSaved();
-      setMessage(`Applied rates to ${selectedIds.length} staff.`);
-      setSelectedIds([]);
-    } catch (applyError) {
-      setError(applyError instanceof Error ? applyError.message : 'Could not apply rates.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveAsTemplate() {
-    if (!canEditRules || !currentStaff) return;
-    const name = window.prompt('Template name');
-    if (!name?.trim()) return;
-    setSaving(true);
-    setError('');
-    try {
-      const template: RateTemplate = {
-        id: newId('tpl'),
-        name: name.trim(),
-        employmentTypeId: currentStaff.employmentTypeId,
-        cells: currentStaff.payRates.cells,
-        minPayHours: currentStaff.payRates.minPayHours,
-      };
-      await savePayRulesRequest({
-        ...rules,
-        rateTemplates: [...templates, template],
-      });
-      await onRulesSaved();
-      setMessage(`Saved template “${template.name}”.`);
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not save template.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function applyTemplate(template: RateTemplate) {
-    if (!currentStaff) return;
-    setStaffDraft({
-      ...currentStaff,
-      employmentTypeId: template.employmentTypeId || currentStaff.employmentTypeId,
-      payRates: {
-        ...currentStaff.payRates,
-        cells: template.cells,
-        minPayHours: template.minPayHours,
-      },
-    });
-    setMessage(`Loaded template “${template.name}”. Save or apply to selected.`);
   }
 
   async function saveCompanyDefaults() {
@@ -327,12 +207,6 @@ export function AccountingRatesPanel({
     } finally {
       setSaving(false);
     }
-  }
-
-  function toggleSelected(id: string) {
-    setSelectedIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
   }
 
   const counts = useMemo(() => {
@@ -388,10 +262,10 @@ export function AccountingRatesPanel({
                     key={id}
                     type="button"
                     onClick={() => setFilter(id)}
-                    className={`rounded-full border px-3 py-1 text-xs ${
+                    className={`rounded-xl border px-3 py-2 text-xs font-medium ${
                       filter === id
-                        ? 'border-primary/50 bg-primary/15 text-primary'
-                        : 'border-border text-muted'
+                        ? 'border-primary/50 bg-primary/15 text-primary shadow-[0_0_0_1px_rgba(236,72,153,0.15)]'
+                        : 'border-border bg-surface-base/40 text-muted'
                     }`}
                   >
                     {label}
@@ -400,33 +274,52 @@ export function AccountingRatesPanel({
               </div>
               <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr]">
                 <div className="space-y-2">
+                  <label className="flex items-center gap-2 rounded-lg border border-border/60 bg-surface-base/30 px-3 py-2 text-xs text-muted">
+                    <input
+                      type="checkbox"
+                      checked={filter === 'all'}
+                      onChange={(event) => {
+                        if (event.target.checked) {
+                          setFilter('all');
+                        }
+                      }}
+                    />
+                    All staff
+                  </label>
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search staff"
+                    placeholder="Search by name or ID"
                     className={inputClass}
                   />
-                  <ul className="max-h-80 overflow-y-auto rounded-xl border border-border/60">
+                  <ul className="max-h-80 overflow-y-auto space-y-2 rounded-xl border border-border/60 bg-surface-base/20 p-2">
                     {filteredStaff.map((employee) => (
-                      <li key={employee.id} className="flex items-center gap-2 px-2 py-1.5">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(employee.id)}
-                          onChange={() => toggleSelected(employee.id)}
-                        />
+                      <li key={employee.id}>
                         <button
                           type="button"
                           onClick={() => {
                             setStaffId(employee.id);
                             setStaffDraft(null);
                           }}
-                          className={`flex-1 truncate text-left text-sm ${
+                          className={`w-full rounded-xl border px-3 py-3 text-left transition ${
                             selectedStaff?.id === employee.id
-                              ? 'font-medium text-primary'
-                              : 'text-muted'
+                              ? 'border-primary/50 bg-primary/10 text-white'
+                              : 'border-border/60 bg-surface-base/30 text-muted hover:border-border hover:bg-surface-hover/40'
                           }`}
                         >
-                          {employee.name}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{employee.name}</p>
+                              <p className="mt-1 text-xs text-subtle">
+                                {employee.employeeId} · {staffInheritanceLabel(employee, templates)}
+                              </p>
+                            </div>
+                            {selectedStaff?.id === employee.id ? (
+                              <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                                Editing
+                              </span>
+                            ) : null}
+                          </div>
                         </button>
                       </li>
                     ))}
@@ -435,6 +328,23 @@ export function AccountingRatesPanel({
                 <div>
                   {currentStaff && selectedStaff ? (
                     <>
+                      <div className="mb-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
+                        <p className="text-sm font-medium text-white">Pay side</p>
+                        <p className="mt-1 text-xs text-subtle">
+                          This section controls what you pay <span className="text-foreground">{selectedStaff.name}</span>.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                            {staffInheritanceLabel(selectedStaff, templates)}
+                          </span>
+                          {currentStaff.payRates.effectiveFrom ? (
+                            <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted">
+                              Effective from {currentStaff.payRates.effectiveFrom}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
                       <div className="grid gap-4 sm:grid-cols-3">
                         <label className="block sm:col-span-1">
                           <span className="mb-1 block text-xs text-subtle">Employment type</span>
@@ -542,28 +452,13 @@ export function AccountingRatesPanel({
                         </label>
                       </div>
 
-                      {templates.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {templates.map((template) => (
-                            <button
-                              key={template.id}
-                              type="button"
-                              disabled={!canEdit}
-                              onClick={() => applyTemplate(template)}
-                              className="rounded-full border border-border px-3 py-1 text-xs text-muted"
-                            >
-                              {template.name}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-
                       <div className="mt-5">
                         <RateMatrixEditor
                           rules={rules}
                           cells={currentStaff.payRates.cells}
                           disabled={!canEdit}
                           emptyHint="Empty inherits the company default matrix, then the base hourly rate."
+                          emptyCellLabel="Default"
                           onChange={(cells) =>
                             setStaffDraft({
                               ...currentStaff,
@@ -573,58 +468,15 @@ export function AccountingRatesPanel({
                         />
                       </div>
 
-                      {(selectedStaff.payRateHistory?.length ?? 0) > 0 ? (
-                        <p className="mt-3 text-xs text-subtle">
-                          {selectedStaff.payRateHistory!.length} previous card
-                          {selectedStaff.payRateHistory!.length === 1 ? '' : 's'} kept. The engine
-                          uses the latest card whose effective date is on or before the shift.
-                        </p>
-                      ) : null}
-
                       {canEdit ? (
                         <div className="mt-4 flex flex-wrap items-end gap-2">
                           <button
                             type="button"
                             disabled={saving}
                             onClick={() => void saveStaff()}
-                            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
                           >
-                            {saving ? 'Saving…' : 'Save staff rates'}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={saving || selectedIds.length === 0}
-                            onClick={() => void applyToSelected()}
-                            className="rounded-lg border border-border px-4 py-2 text-sm text-muted disabled:opacity-50"
-                          >
-                            Apply to selected ({selectedIds.length})
-                          </button>
-                          {canEditRules ? (
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() => void saveAsTemplate()}
-                              className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
-                            >
-                              Save as template
-                            </button>
-                          ) : null}
-                          <label className="flex items-center gap-2 text-xs text-subtle">
-                            New card from
-                            <input
-                              type="date"
-                              value={newCardDate}
-                              onChange={(event) => setNewCardDate(event.target.value)}
-                              className={inputClass}
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            disabled={!newCardDate || saving}
-                            onClick={() => void saveNewStaffCard()}
-                            className="rounded-lg border border-border px-3 py-2 text-xs text-muted disabled:opacity-50"
-                          >
-                            Keep previous card
+                            {saving ? 'Saving…' : `Save rates for ${selectedStaff.name}`}
                           </button>
                         </div>
                       ) : null}
@@ -643,6 +495,25 @@ export function AccountingRatesPanel({
             <p className="text-sm text-subtle">No locations yet.</p>
           ) : (
             <>
+              <div className="mb-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
+                <p className="text-sm font-medium text-white">Charge side</p>
+                <p className="mt-1 text-xs text-subtle">
+                  This section controls what the client site pays you for worked hours at <span className="text-foreground">{selectedSite?.name}</span>.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                    {siteUsesCompanyDefaults(selectedSite?.billing)
+                      ? 'Using company default charge matrix'
+                      : 'Using a site-specific charge card'}
+                  </span>
+                  {currentSite.effectiveFrom ? (
+                    <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted">
+                      Effective from {currentSite.effectiveFrom}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-3">
                 <label className="block">
                   <span className="mb-1 block text-xs text-subtle">Site</span>
@@ -717,16 +588,10 @@ export function AccountingRatesPanel({
                   cells={currentSite.cells}
                   disabled={!canEdit}
                   emptyHint="Empty inherits the company charge matrix, then the staff weekday base."
+                  emptyCellLabel="Default"
                   onChange={(cells) => setSiteDraft({ ...currentSite, cells })}
                 />
               </div>
-
-              {(selectedSite?.billingHistory?.length ?? 0) > 0 ? (
-                <p className="mt-3 text-xs text-subtle">
-                  {selectedSite!.billingHistory!.length} previous billing card
-                  {selectedSite!.billingHistory!.length === 1 ? '' : 's'} kept.
-                </p>
-              ) : null}
 
               {canEdit ? (
                 <div className="mt-4 flex flex-wrap items-end gap-2">
@@ -737,23 +602,6 @@ export function AccountingRatesPanel({
                     className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     {saving ? 'Saving…' : 'Save site billing'}
-                  </button>
-                  <label className="flex items-center gap-2 text-xs text-subtle">
-                    New card from
-                    <input
-                      type="date"
-                      value={siteNewCardDate}
-                      onChange={(event) => setSiteNewCardDate(event.target.value)}
-                      className={inputClass}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={!siteNewCardDate || saving}
-                    onClick={() => void saveNewSiteCard()}
-                    className="rounded-lg border border-border px-3 py-2 text-xs text-muted disabled:opacity-50"
-                  >
-                    Keep previous card
                   </button>
                 </div>
               ) : null}
@@ -770,11 +618,15 @@ export function AccountingRatesPanel({
               Starting loadings (% of each person’s hourly rate). Used when staff have no cell for
               that day and band. Change the numbers to match your award.
             </p>
+            <p className="mt-2 text-xs text-primary">
+              Applies to all staff who do not have their own pay card override.
+            </p>
             <div className="mt-3">
               <RateMatrixEditor
                 rules={rules}
                 cells={companyPay ?? rules.defaultPayCells}
                 disabled={!canEditRules}
+                emptyCellLabel="Base"
                 onChange={setCompanyPay}
               />
             </div>
@@ -785,11 +637,15 @@ export function AccountingRatesPanel({
               Starting charge loadings (% of the staff hourly rate), a bit above pay so margin is
               visible. Override per site when a customer has different rates.
             </p>
+            <p className="mt-2 text-xs text-primary">
+              Applies to all sites that do not have their own charge card override.
+            </p>
             <div className="mt-3">
               <RateMatrixEditor
                 rules={rules}
                 cells={companyCharge ?? rules.defaultChargeCells}
                 disabled={!canEditRules}
+                emptyCellLabel="Base"
                 onChange={setCompanyCharge}
               />
             </div>

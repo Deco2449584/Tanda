@@ -12,6 +12,7 @@ interface RateMatrixEditorProps {
   onChange: (cells: PayRateCells) => void;
   disabled?: boolean;
   emptyHint?: string;
+  emptyCellLabel?: string;
 }
 
 export function RateMatrixEditor({
@@ -20,6 +21,7 @@ export function RateMatrixEditor({
   onChange,
   disabled,
   emptyHint = 'Empty inherits company/base rate.',
+  emptyCellLabel = 'Default',
 }: RateMatrixEditorProps) {
   const rows = rateMatrixRows(rules);
 
@@ -77,7 +79,7 @@ export function RateMatrixEditor({
                         step="0.01"
                         disabled={disabled}
                         value={value ?? ''}
-                        placeholder="—"
+                        placeholder={emptyCellLabel}
                         onChange={(event) => {
                           const raw = event.target.value;
                           if (raw === '') {

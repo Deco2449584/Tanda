@@ -7,6 +7,10 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 import { mapStaffPayRates } from '@/lib/payroll/map-pay-rules';
 import { baseHourlyRateFromCells } from '@/lib/payroll/rate-matrix';
 
+function sanitizeForFirestore<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export async function PUT(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -56,11 +60,13 @@ export async function PUT(
       hourlyRate,
     };
     if (employmentTypeId) payload.employmentTypeId = employmentTypeId;
-    if (payRates) payload.payRates = payRates;
+    if (payRates) payload.payRates = sanitizeForFirestore(payRates);
     if (Array.isArray(body.payRateHistory)) {
-      payload.payRateHistory = body.payRateHistory
-        .map((item) => mapStaffPayRates(item))
-        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+      payload.payRateHistory = sanitizeForFirestore(
+        body.payRateHistory
+          .map((item) => mapStaffPayRates(item))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+      );
     }
 
     await docRef.set(payload, { merge: true });

@@ -5,6 +5,10 @@ import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { mapSiteBilling } from '@/lib/payroll/map-pay-rules';
 
+function sanitizeForFirestore<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export async function PUT(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -15,7 +19,7 @@ export async function PUT(
 
     const { id } = await context.params;
     const body = (await request.json()) as { billing?: unknown; billingHistory?: unknown };
-    const billing = mapSiteBilling(body.billing) ?? {};
+    const billing = sanitizeForFirestore(mapSiteBilling(body.billing) ?? {});
 
     const docRef = getAdminFirestore().collection(COLLECTIONS.LOCATIONS).doc(id);
     const snapshot = await docRef.get();
@@ -25,9 +29,11 @@ export async function PUT(
 
     const payload: Record<string, unknown> = { billing };
     if (Array.isArray(body.billingHistory)) {
-      payload.billingHistory = body.billingHistory
-        .map((item) => mapSiteBilling(item))
-        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+      payload.billingHistory = sanitizeForFirestore(
+        body.billingHistory
+          .map((item) => mapSiteBilling(item))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+      );
     }
 
     await docRef.set(payload, { merge: true });

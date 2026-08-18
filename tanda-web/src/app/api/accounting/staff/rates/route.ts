@@ -7,6 +7,10 @@ import { getAdminFirestore } from '@/lib/firebase-admin';
 import { mapStaffPayRates } from '@/lib/payroll/map-pay-rules';
 import { baseHourlyRateFromCells } from '@/lib/payroll/rate-matrix';
 
+function sanitizeForFirestore<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await loadAdminAccessFromRequest(request);
@@ -59,7 +63,7 @@ export async function POST(request: Request) {
         );
       const payload: Record<string, unknown> = { hourlyRate };
       if (employmentTypeId) payload.employmentTypeId = employmentTypeId;
-      if (payRates) payload.payRates = payRates;
+      if (payRates) payload.payRates = sanitizeForFirestore(payRates);
       batch.set(docRef, payload, { merge: true });
       updated += 1;
     }

@@ -8,6 +8,10 @@ import { DEFAULT_PAYROLL_ACCOUNTING } from '@/lib/types/company-settings';
 
 const SETTINGS_DOC_ID = 'general';
 
+function sanitizeForFirestore<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export async function GET(request: Request) {
   try {
     const auth = await requireAccountingAccess(request);
@@ -38,7 +42,7 @@ export async function PUT(request: Request) {
     if (!auth.ok) return auth.response;
 
     const body = (await request.json()) as { rules?: unknown };
-    const rules = mapPayRules(body.rules);
+    const rules = sanitizeForFirestore(mapPayRules(body.rules));
 
     const docRef = getAdminFirestore().collection(COLLECTIONS.SETTINGS).doc(SETTINGS_DOC_ID);
     const beforeSnapshot = await docRef.get();
