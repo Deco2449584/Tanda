@@ -152,25 +152,21 @@ function ProtectedLayoutContent({
     </>
   );
 
-  if (isAdminAreaRole(role)) {
-    return (
-      <AdminAttendanceSync>
-        <EmployeesProvider>
-          <LocationsProvider>
-            <DepartmentsProvider>
-              <LocationGroupsProvider>{layout}</LocationGroupsProvider>
-            </DepartmentsProvider>
-          </LocationsProvider>
-        </EmployeesProvider>
-      </AdminAttendanceSync>
-    );
-  }
-
-  return (
+  const content = isAdminAreaRole(role) ? (
+    <AdminAttendanceSync>
+      <EmployeesProvider>
+        <DepartmentsProvider>
+          <LocationGroupsProvider>{layout}</LocationGroupsProvider>
+        </DepartmentsProvider>
+      </EmployeesProvider>
+    </AdminAttendanceSync>
+  ) : (
     <EmployeeNotificationsShell userEmail={user?.email}>
       {layout}
     </EmployeeNotificationsShell>
   );
+
+  return <LocationsProvider>{content}</LocationsProvider>;
 }
 
 function AdminAttendanceSync({ children }: { children: React.ReactNode }) {
