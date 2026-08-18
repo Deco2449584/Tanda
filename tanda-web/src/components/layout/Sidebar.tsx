@@ -60,7 +60,6 @@ const adminNavGroups: NavGroup[] = [
     title: 'People',
     items: [
       { label: 'Employees', href: '/employees', icon: Users },
-      { label: 'Personal profiles', href: '/employees/profiles', icon: IdCard },
       { label: 'Announcements', href: '/announcements', icon: Megaphone },
       { label: 'Leave requests', href: '/leave-requests', icon: ShieldCheck },
     ],

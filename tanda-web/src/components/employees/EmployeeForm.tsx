@@ -247,7 +247,11 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
 
     setForm((current) => {
       if (current.department.trim()) return current;
-      return { ...current, department: settings.defaultDepartmentName ?? '' };
+      const defaultDepartment = settings.defaultDepartmentName?.trim() ?? '';
+      return {
+        ...current,
+        department: defaultDepartment.toLowerCase() === 'empleado' ? '' : defaultDepartment,
+      };
     });
   }, [isEditMode, settings.defaultDepartmentName]);
 

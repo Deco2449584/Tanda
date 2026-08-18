@@ -49,7 +49,7 @@ export function EmployeeDepartmentSelect({
           </option>
         ) : null}
         {value && !options.some((item) => item.name === value) ? (
-          <option value={value}>{value} (legacy)</option>
+          <option value={value}>{value} (legacy value)</option>
         ) : null}
         {options.map((department) => (
           <option key={department.id} value={department.name}>
