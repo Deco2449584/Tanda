@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   PayrollPeriodFilterBar,
   type PayrollPeriodPreset,
@@ -263,6 +264,18 @@ export function AccountingReportsPanel({
             description="Full pay/charge/margin data grouped by your current view."
             onDownload={canExport ? handleExport : undefined}
           />
+        </div>
+        <div className="mt-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
+          <p className="text-sm font-medium text-white">Need the legacy payroll page?</p>
+          <p className="mt-1 text-xs text-subtle">
+            Payroll stays available as a secondary screen, but it is now accessed from Accounting instead of the main menu.
+          </p>
+          <Link
+            href="/payroll"
+            className="mt-3 inline-flex items-center rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/10"
+          >
+            Open payroll page
+          </Link>
         </div>
       </section>
 
