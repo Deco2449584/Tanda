@@ -86,7 +86,7 @@ export function AccountingClosePanel({
     () =>
       buildAwardReport({
         rules,
-        timeZone,
+        timeZone: timeZone,
         employees: staff,
         locations,
         sessions,

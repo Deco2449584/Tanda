@@ -110,7 +110,7 @@ export function AccountingReportsPanel({
     () =>
       buildAwardReport({
         rules,
-        timeZone,
+        timeZone: timeZone,
         employees: staff,
         locations,
         sessions,

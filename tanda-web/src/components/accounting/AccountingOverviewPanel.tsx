@@ -48,7 +48,7 @@ export function AccountingOverviewPanel({
       lock?.snapshot ??
       buildAwardReport({
         rules,
-        timeZone,
+        timeZone: timeZone,
         employees: staff,
         locations,
         sessions,

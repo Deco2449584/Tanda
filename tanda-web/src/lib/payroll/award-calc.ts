@@ -150,9 +150,9 @@ function resolveBandId(bands: PayTimeBand[], minuteOfDay: number): string {
   return match?.id ?? BASE_BAND_ID;
 }
 
-function weekdayInTimeZone(date: Date, timeZone: string): number {
+function weekdayInTimeZone(date: Date, ianaTimeZone: string): number {
   const short = new Intl.DateTimeFormat('en-US', {
-    timeZone,
+    timeZone: ianaTimeZone,
     weekday: 'short',
   }).format(date);
   return WEEKDAY_SHORT[short] ?? 0;

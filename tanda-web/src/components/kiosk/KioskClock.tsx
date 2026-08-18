@@ -8,11 +8,11 @@ const CY = 100;
 
 function formatClockTime(
   date: Date,
-  timeZone: string,
+  ianaTimeZone: string,
   options?: { showSeconds?: boolean },
 ): string {
   return date.toLocaleTimeString('en-AU', {
-    timeZone,
+    timeZone: ianaTimeZone,
     hour: 'numeric',
     minute: '2-digit',
     second: options?.showSeconds ? '2-digit' : undefined,
@@ -20,9 +20,9 @@ function formatClockTime(
   });
 }
 
-function formatClockDate(date: Date, timeZone: string): string {
+function formatClockDate(date: Date, ianaTimeZone: string): string {
   return date.toLocaleDateString('en-AU', {
-    timeZone,
+    timeZone: ianaTimeZone,
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -35,9 +35,9 @@ function timeZoneCityLabel(timeZone: string): string {
   return city.replace(/_/g, ' ').toUpperCase();
 }
 
-function getZonedTimeParts(date: Date, timeZone: string) {
+function getZonedTimeParts(date: Date, ianaTimeZone: string) {
   const formatter = new Intl.DateTimeFormat('en-AU', {
-    timeZone,
+    timeZone: ianaTimeZone,
     hour: 'numeric',
     minute: 'numeric',
     second: 'numeric',

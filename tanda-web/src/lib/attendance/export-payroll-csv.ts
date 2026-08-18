@@ -133,7 +133,7 @@ export function buildPayrollReport(
   const sessions = buildWorkSessionsFromRecords(records, attendanceBreak);
   const award = buildAwardReport({
     rules,
-    timeZone,
+    timeZone: timeZone,
     employees: activeEmployees,
     locations: options?.locations ?? [],
     sessions,

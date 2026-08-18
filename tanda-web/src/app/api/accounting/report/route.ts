@@ -88,7 +88,7 @@ export async function GET(request: Request) {
     );
     const report = buildAwardReport({
       rules,
-      timeZone,
+      timeZone: timeZone,
       employees,
       locations,
       sessions,

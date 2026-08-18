@@ -193,7 +193,7 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
       mapAttendanceDoc(document.id, document.data()),
     ),
     attendancePolicy,
-    timeZone,
+    timeZone: timeZone,
     employeeNameByCode,
   };
 }
@@ -475,7 +475,7 @@ export function useAdminNotifications(enabled: boolean) {
       shifts,
       attendanceRecords,
       attendancePolicy,
-      timeZone,
+      timeZone: timeZone,
       employeeNameByCode,
     });
   }, [
@@ -494,5 +494,5 @@ export function useAdminNotifications(enabled: boolean) {
     [items],
   );
 
-  return { items, totalCount, loading, refreshing, timeZone, refresh: loadData };
+  return { items, totalCount, loading, refreshing, timeZone: timeZone, refresh: loadData };
 }

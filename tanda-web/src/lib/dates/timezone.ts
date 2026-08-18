@@ -1,18 +1,18 @@
 /** Returns YYYY-MM-DD for a date in the given IANA timezone. */
 export function toInputDateInTimeZone(
-  timeZone: string,
+  ianaTimeZone: string,
   date: Date = new Date(),
 ): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone }).format(date);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: ianaTimeZone }).format(date);
 }
 
 /** Returns minutes since midnight for a date in the given IANA timezone. */
 export function getMinutesInTimeZone(
-  timeZone: string,
+  ianaTimeZone: string,
   date: Date = new Date(),
 ): number {
   const formatter = new Intl.DateTimeFormat('en-AU', {
-    timeZone,
+    timeZone: ianaTimeZone,
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -25,7 +25,7 @@ export function getMinutesInTimeZone(
 
 export function timestampToMinutesInTimeZone(
   timestamp: { toDate(): Date },
-  timeZone: string,
+  ianaTimeZone: string,
 ): number {
-  return getMinutesInTimeZone(timeZone, timestamp.toDate());
+  return getMinutesInTimeZone(ianaTimeZone, timestamp.toDate());
 }
