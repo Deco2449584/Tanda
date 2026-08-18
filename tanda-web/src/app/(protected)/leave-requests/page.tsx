@@ -157,7 +157,7 @@ export default function LeaveRequestsPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
-        title="Leave requests center"
+        title="Staff requests center"
         description={
           centerView === 'requests'
             ? 'Review and approve staff leave requests.'
