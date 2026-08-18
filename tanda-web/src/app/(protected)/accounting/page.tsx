@@ -2,24 +2,24 @@
 
 import { useState } from 'react';
 import { AccountingClosePanel } from '@/components/accounting/AccountingClosePanel';
+import { AccountingOverviewPanel } from '@/components/accounting/AccountingOverviewPanel';
 import { AccountingRatesPanel } from '@/components/accounting/AccountingRatesPanel';
 import { AccountingReportsPanel } from '@/components/accounting/AccountingReportsPanel';
 import { AccountingRulesPanel } from '@/components/accounting/AccountingRulesPanel';
 import { PageContent } from '@/components/ui/PageContent';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 
-type AccountingTab = 'close' | 'rules' | 'rates' | 'reports';
+type AccountingTab = 'overview' | 'setup' | 'weekly-close' | 'exports';
 
-const TABS: Array<{ id: AccountingTab; label: string }> = [
-  { id: 'close', label: 'Close' },
-  { id: 'rates', label: 'Rates' },
-  { id: 'rules', label: 'Rules' },
-  { id: 'reports', label: 'Reports' },
+const TABS: Array<{ id: AccountingTab; label: string; hint: string }> = [
+  { id: 'overview', label: 'Overview', hint: 'Status and next steps' },
+  { id: 'setup', label: 'Setup', hint: 'Rules and rate cards' },
+  { id: 'weekly-close', label: 'Weekly close', hint: 'Review and freeze' },
+  { id: 'exports', label: 'Exports', hint: 'Download files' },
 ];
 
 export default function AccountingPage() {
@@ -30,34 +30,82 @@ export default function AccountingPage() {
   const { settings, refresh: refreshSettings } = useCompanySettings();
   const { employees, refresh: refreshEmployees } = useEmployees();
   const { locations, refresh: refreshLocations } = useLocations();
-  const [tab, setTab] = useState<AccountingTab>('close');
+  const [tab, setTab] = useState<AccountingTab>('overview');
   const rules = settings.payRules ?? DEFAULT_PAY_RULES;
 
   return (
     <PageContent className="space-y-5 md:space-y-6">
-      <PageHeader
-        title="Accounting"
-        description="Close the week, check exceptions, then export journal and charge packs. Payroll uses the same figures."
-      />
+      <div>
+        <h1 className="text-xl font-bold text-white md:text-2xl">Accounting</h1>
+        <p className="mt-1 text-sm text-muted">
+          Configure pay and charge rules, review the week, then export files for your systems.
+        </p>
+      </div>
 
-      <div className="flex flex-wrap gap-2">
+      <nav className="flex flex-wrap gap-1 rounded-xl border border-border bg-surface-raised p-1">
         {TABS.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
-            className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+            className={`flex flex-col rounded-lg px-4 py-2.5 text-left transition ${
               tab === item.id
-                ? 'border-primary/50 bg-primary/15 text-primary'
-                : 'border-border bg-surface-raised text-muted hover:text-foreground'
+                ? 'bg-primary/15 text-primary'
+                : 'text-muted hover:bg-surface-hover hover:text-foreground'
             }`}
           >
-            {item.label}
+            <span className="text-sm font-semibold">{item.label}</span>
+            <span className="text-[11px] opacity-70">{item.hint}</span>
           </button>
         ))}
-      </div>
+      </nav>
 
-      {tab === 'close' ? (
+      {tab === 'overview' ? (
+        <AccountingOverviewPanel
+          rules={rules}
+          timeZone={settings.timeZone}
+          currency={settings.currency}
+          attendanceBreak={settings.attendanceBreak}
+          employees={employees}
+          locations={locations}
+          onNavigate={setTab}
+        />
+      ) : null}
+
+      {tab === 'setup' ? (
+        <div className="space-y-8">
+          <section>
+            <SectionHeader
+              title="Pay and charge rules"
+              description="Define time bands, day types, overtime thresholds, minimums, allowances, and employment types. These apply company-wide unless overridden per staff or site."
+            />
+            <AccountingRulesPanel
+              rules={rules}
+              locations={locations}
+              canEdit={canEditRules}
+              onSaved={() => refreshSettings()}
+            />
+          </section>
+          <section>
+            <SectionHeader
+              title="Rate cards"
+              description="Set company default loadings, then override per staff member (pay) or per site (charge). Staff without a card use the company defaults."
+            />
+            <AccountingRatesPanel
+              rules={rules}
+              employees={employees}
+              locations={locations}
+              canEdit={canEditRates}
+              canEditRules={canEditRules}
+              onStaffSaved={refreshEmployees}
+              onSiteSaved={refreshLocations}
+              onRulesSaved={refreshSettings}
+            />
+          </section>
+        </div>
+      ) : null}
+
+      {tab === 'weekly-close' ? (
         <AccountingClosePanel
           rules={rules}
           timeZone={settings.timeZone}
@@ -71,29 +119,7 @@ export default function AccountingPage() {
         />
       ) : null}
 
-      {tab === 'rules' ? (
-        <AccountingRulesPanel
-          rules={rules}
-          locations={locations}
-          canEdit={canEditRules}
-          onSaved={() => refreshSettings()}
-        />
-      ) : null}
-
-      {tab === 'rates' ? (
-        <AccountingRatesPanel
-          rules={rules}
-          employees={employees}
-          locations={locations}
-          canEdit={canEditRates}
-          canEditRules={canEditRules}
-          onStaffSaved={refreshEmployees}
-          onSiteSaved={refreshLocations}
-          onRulesSaved={refreshSettings}
-        />
-      ) : null}
-
-      {tab === 'reports' ? (
+      {tab === 'exports' ? (
         <AccountingReportsPanel
           rules={rules}
           timeZone={settings.timeZone}
@@ -107,5 +133,14 @@ export default function AccountingPage() {
         />
       ) : null}
     </PageContent>
+  );
+}
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-4">
+      <h2 className="text-base font-semibold text-white">{title}</h2>
+      <p className="mt-1 text-sm text-muted">{description}</p>
+    </div>
   );
 }

@@ -148,190 +148,72 @@ export function AccountingClosePanel({
 
   return (
     <div className="space-y-5">
-      <PayrollPeriodFilterBar
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        preset={preset}
-        onPresetChange={setPreset}
-      />
+      {/* Zone 1: Period + close status */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex-1">
+          <PayrollPeriodFilterBar
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            preset={preset}
+            onPresetChange={setPreset}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              frozen
+                ? 'bg-amber-500/15 text-amber-300'
+                : 'bg-emerald-500/15 text-emerald-300'
+            }`}
+          >
+            {frozen ? 'Closed' : 'Open'}
+          </span>
+        </div>
+      </div>
 
       {frozen ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          Week closed — figures frozen
-          {lock?.lockedBy ? ` by ${lock.lockedBy}` : ''}
+          <strong>Figures are frozen.</strong>{' '}
+          {lock?.lockedBy ? `Closed by ${lock.lockedBy}` : ''}
           {lock?.lockedAt
             ? ` on ${new Date(lock.lockedAt).toLocaleString('en-AU')}`
             : ''}
-          . Kiosk punches still work; they will not change these numbers until you reopen.
+          . New clock events won't change these numbers until you reopen.
         </div>
       ) : null}
 
+      {/* Zone 2: Week summary KPIs */}
       <div className="grid gap-3 sm:grid-cols-4">
-        <Kpi label="Pay" value={formatDashboardCurrency(report.totals.payAmount, currency)} />
-        <Kpi label="Charge" value={formatDashboardCurrency(report.totals.chargeAmount, currency)} />
-        <Kpi label="Margin" value={formatDashboardCurrency(report.totals.margin, currency)} />
-        <Kpi label="Exceptions" value={String(exceptions.length)} />
+        <Kpi label="Total pay" value={formatDashboardCurrency(report.totals.payAmount, currency)} hint="Staff cost" />
+        <Kpi label="Total charge" value={formatDashboardCurrency(report.totals.chargeAmount, currency)} hint="Client revenue" />
+        <Kpi label="Margin" value={formatDashboardCurrency(report.totals.margin, currency)} hint="Charge minus pay" />
+        <Kpi
+          label="Exceptions"
+          value={String(exceptions.length)}
+          hint={exceptions.length === 0 ? 'All clear' : 'Review before closing'}
+          accent={exceptions.length > 0 ? 'warning' : undefined}
+        />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setGroupBy('site')}
-          className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-            groupBy === 'site'
-              ? 'border-primary/50 bg-primary/15 text-primary'
-              : 'border-border text-muted'
-          }`}
-        >
-          By site (charge)
-        </button>
-        <button
-          type="button"
-          onClick={() => setGroupBy('staff')}
-          className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-            groupBy === 'staff'
-              ? 'border-primary/50 bg-primary/15 text-primary'
-              : 'border-border text-muted'
-          }`}
-        >
-          By staff (pay)
-        </button>
-        {canExport ? (
-          <>
-            <button
-              type="button"
-              onClick={() =>
-                exportAccountingViewToCsv({
-                  view: groupBy === 'site' ? 'charge' : 'pay',
-                  groupBy,
-                  report,
-                  slices: report.slices,
-                  rules,
-                  periodLabel,
-                  periodStart: dateRange.start,
-                  periodEnd: dateRange.end,
-                  companyName: COMPANY_NAME,
-                })
-              }
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
-            >
-              Download CSV
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                exportAccountingViewToCsv({
-                  view: 'chargePack',
-                  groupBy: 'site',
-                  report,
-                  slices: report.slices,
-                  rules,
-                  periodLabel,
-                  periodStart: dateRange.start,
-                  periodEnd: dateRange.end,
-                  companyName: COMPANY_NAME,
-                })
-              }
-              className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
-            >
-              Charge pack CSV
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                exportAccountingViewToCsv({
-                  view: 'journal',
-                  groupBy: 'staff',
-                  report,
-                  slices: report.slices,
-                  rules,
-                  periodLabel,
-                  periodStart: dateRange.start,
-                  periodEnd: dateRange.end,
-                  companyName: COMPANY_NAME,
-                })
-              }
-              className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
-            >
-              Journal CSV
-            </button>
-          </>
-        ) : null}
-        {canLock && !frozen ? (
-          <button
-            type="button"
-            disabled={busy || loading}
-            onClick={() => void handleLock()}
-            className="rounded-lg border border-amber-500/40 px-4 py-2 text-sm font-medium text-amber-200"
-          >
-            {busy ? 'Closing…' : 'Close week'}
-          </button>
-        ) : null}
-        {canUnlock && frozen ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void handleUnlock()}
-            className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
-          >
-            {busy ? 'Reopening…' : 'Reopen week'}
-          </button>
-        ) : null}
-      </div>
-
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-      {loading ? <p className="text-sm text-subtle">Loading period…</p> : null}
-
-      <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
-        <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-primary/25 bg-primary/10">
-              <th className="px-4 py-3 font-semibold text-white">
-                {groupBy === 'site' ? 'Site' : 'Staff'}
-              </th>
-              <th className="px-4 py-3 font-semibold text-white">Hours</th>
-              <th className="px-4 py-3 font-semibold text-white">Pay</th>
-              <th className="px-4 py-3 font-semibold text-white">Charge</th>
-              <th className="px-4 py-3 font-semibold text-white">Margin</th>
-            </tr>
-          </thead>
-          <tbody>
-            {grouped.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-subtle">
-                  No award hours in this period.
-                </td>
-              </tr>
-            ) : (
-              grouped.map((row) => (
-                <tr key={row.key} className="border-b border-border/50">
-                  <td className="px-4 py-3 text-foreground">{row.label}</td>
-                  <td className="px-4 py-3 tabular-nums text-muted">
-                    {(groupBy === 'site' ? row.chargeHours : row.payHours).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-foreground">
-                    {formatDashboardCurrency(row.payAmount, currency)}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-foreground">
-                    {formatDashboardCurrency(row.chargeAmount, currency)}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-foreground">
-                    {formatDashboardCurrency(row.margin, currency)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
+      {/* Zone 3: Exceptions to review (priority) */}
       <section className="rounded-2xl border border-border bg-surface-raised p-5">
-        <h2 className="text-sm font-semibold text-white">Exceptions</h2>
-        <p className="mt-1 text-xs text-subtle">Click a row to see clock vs billable vs min.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Exceptions to review</h2>
+            <p className="mt-0.5 text-xs text-subtle">
+              Resolve these before closing. Click any row for a detailed breakdown of what happened and why.
+            </p>
+          </div>
+          {exceptions.length > 0 ? (
+            <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-300">
+              {exceptions.length}
+            </span>
+          ) : null}
+        </div>
         {exceptions.length === 0 ? (
-          <p className="mt-3 text-sm text-subtle">No exceptions in this period.</p>
+          <p className="mt-4 text-sm text-subtle">No exceptions — this week looks clean.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-border/60">
+          <ul className="mt-4 divide-y divide-border/60">
             {exceptions.map((item) => (
               <li key={`${item.kind}|${item.sessionKey}|${item.detail}`}>
                 <button
@@ -356,37 +238,171 @@ export function AccountingClosePanel({
         )}
       </section>
 
-      {groupBy === 'site' && packs.length > 0 ? (
-        <section className="rounded-2xl border border-border bg-surface-raised p-5">
-          <h2 className="text-sm font-semibold text-white">Charge pack</h2>
-          <div className="mt-3 space-y-4">
-            {packs.map((pack) => (
-              <div key={pack.locationId} className="rounded-xl border border-border/60 p-3">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-sm font-medium text-white">{pack.locationName}</p>
-                  <p className="text-sm tabular-nums text-foreground">
-                    {formatDashboardCurrency(pack.amount, currency)}
-                    <span className="ml-2 text-xs text-subtle">
-                      {pack.hours.toFixed(2)} h
-                      {pack.minHoursApplied > 0
-                        ? ` · ${pack.minHoursApplied.toFixed(2)} min hours`
-                        : ''}
-                    </span>
-                  </p>
-                </div>
-                <ul className="mt-2 grid gap-1 text-xs text-muted sm:grid-cols-2">
-                  {pack.bands.map((band) => (
-                    <li key={`${band.dayTypeId}:${band.bandId}`}>
-                      {band.dayTypeName} · {band.bandName}: {band.hours.toFixed(2)} h ·{' '}
-                      {formatDashboardCurrency(band.amount, currency)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      {/* Zone 4: Totals by site/staff */}
+      <section className="rounded-2xl border border-border bg-surface-raised p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-white">Breakdown</h2>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setGroupBy('site')}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                groupBy === 'site'
+                  ? 'border-primary/50 bg-primary/15 text-primary'
+                  : 'border-border text-muted'
+              }`}
+            >
+              By site
+            </button>
+            <button
+              type="button"
+              onClick={() => setGroupBy('staff')}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                groupBy === 'staff'
+                  ? 'border-primary/50 bg-primary/15 text-primary'
+                  : 'border-border text-muted'
+              }`}
+            >
+              By staff
+            </button>
           </div>
-        </section>
-      ) : null}
+        </div>
+
+        {loading ? <p className="text-sm text-subtle">Loading period…</p> : null}
+
+        <div className="overflow-hidden rounded-xl border border-border">
+          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-primary/25 bg-primary/10">
+                <th className="px-4 py-3 font-semibold text-white">
+                  {groupBy === 'site' ? 'Site' : 'Staff'}
+                </th>
+                <th className="px-4 py-3 font-semibold text-white">Hours</th>
+                <th className="px-4 py-3 font-semibold text-white">Pay</th>
+                <th className="px-4 py-3 font-semibold text-white">Charge</th>
+                <th className="px-4 py-3 font-semibold text-white">Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grouped.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-subtle">
+                    No award hours in this period. Check that staff have clocked in, or adjust the date range.
+                  </td>
+                </tr>
+              ) : (
+                grouped.map((row) => (
+                  <tr key={row.key} className="border-b border-border/50">
+                    <td className="px-4 py-3 text-foreground">{row.label}</td>
+                    <td className="px-4 py-3 tabular-nums text-muted">
+                      {(groupBy === 'site' ? row.chargeHours : row.payHours).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-foreground">
+                      {formatDashboardCurrency(row.payAmount, currency)}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-foreground">
+                      {formatDashboardCurrency(row.chargeAmount, currency)}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-foreground">
+                      {formatDashboardCurrency(row.margin, currency)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Action bar */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface-raised p-4">
+        {canLock && !frozen ? (
+          <button
+            type="button"
+            disabled={busy || loading}
+            onClick={() => void handleLock()}
+            className="rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50"
+          >
+            {busy ? 'Closing…' : 'Close week'}
+          </button>
+        ) : null}
+        {canUnlock && frozen ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleUnlock()}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted transition hover:text-foreground"
+          >
+            {busy ? 'Reopening…' : 'Reopen week'}
+          </button>
+        ) : null}
+        {canExport ? (
+          <>
+            <button
+              type="button"
+              onClick={() =>
+                exportAccountingViewToCsv({
+                  view: 'chargePack',
+                  groupBy: 'site',
+                  report,
+                  slices: report.slices,
+                  rules,
+                  periodLabel,
+                  periodStart: dateRange.start,
+                  periodEnd: dateRange.end,
+                  companyName: COMPANY_NAME,
+                })
+              }
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
+            >
+              Export charge pack
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                exportAccountingViewToCsv({
+                  view: 'journal',
+                  groupBy: 'staff',
+                  report,
+                  slices: report.slices,
+                  rules,
+                  periodLabel,
+                  periodStart: dateRange.start,
+                  periodEnd: dateRange.end,
+                  companyName: COMPANY_NAME,
+                })
+              }
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
+            >
+              Export journal
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                exportAccountingViewToCsv({
+                  view: groupBy === 'site' ? 'charge' : 'pay',
+                  groupBy,
+                  report,
+                  slices: report.slices,
+                  rules,
+                  periodLabel,
+                  periodStart: dateRange.start,
+                  periodEnd: dateRange.end,
+                  companyName: COMPANY_NAME,
+                })
+              }
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
+            >
+              Download summary CSV
+            </button>
+          </>
+        ) : null}
+        {!canLock && !canExport ? (
+          <p className="text-sm text-subtle">You don't have permission to close or export.</p>
+        ) : null}
+      </div>
+
+      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
 
       <AwardSessionDetail
         line={selectedLine}
@@ -400,11 +416,12 @@ export function AccountingClosePanel({
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: 'warning' }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-raised px-4 py-3">
+    <div className={`rounded-xl border px-4 py-3 ${accent === 'warning' ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-surface-raised'}`}>
       <p className="text-xs text-subtle">{label}</p>
       <p className="mt-1 text-lg font-semibold text-white">{value}</p>
+      {hint ? <p className="mt-0.5 text-[11px] text-muted">{hint}</p> : null}
     </div>
   );
 }

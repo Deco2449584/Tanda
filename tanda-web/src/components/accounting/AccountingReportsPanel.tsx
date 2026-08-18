@@ -210,47 +210,92 @@ export function AccountingReportsPanel({
 
       {lock ? (
         <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-100">
-          Week closed — figures frozen. Use Close to reopen.
+          Week closed — figures frozen. Reopen from Weekly close if needed.
         </p>
       ) : null}
       {loading ? <p className="text-sm text-subtle">Loading period…</p> : null}
 
-      <div className="flex flex-wrap gap-2">
-        {VIEWS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setView(item.id)}
-            className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-              view === item.id
-                ? 'border-primary/50 bg-primary/15 text-primary'
-                : 'border-border text-muted'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {/* Export files section */}
+      <section className="rounded-2xl border border-border bg-surface-raised p-5">
+        <h2 className="text-sm font-semibold text-white">Export files</h2>
+        <p className="mt-1 text-xs text-subtle">
+          Download ready-to-use files for your accounting system. Close the week first for final numbers.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ExportCard
+            title="Journal"
+            description="Debit/credit entries by employment type for your GL."
+            onDownload={canExport ? () => {
+              setView('journal');
+              exportAccountingViewToCsv({
+                view: 'journal',
+                groupBy: 'staff',
+                report: { ...report, slices },
+                slices,
+                rules,
+                periodLabel,
+                periodStart: dateRange.start,
+                periodEnd: dateRange.end,
+                companyName: COMPANY_NAME,
+              });
+            } : undefined}
+          />
+          <ExportCard
+            title="Charge pack"
+            description="Billing breakdown per site with hours and amounts by band."
+            onDownload={canExport ? () => {
+              setView('chargePack');
+              exportAccountingViewToCsv({
+                view: 'chargePack',
+                groupBy: 'site',
+                report: { ...report, slices },
+                slices,
+                rules,
+                periodLabel,
+                periodStart: dateRange.start,
+                periodEnd: dateRange.end,
+                companyName: COMPANY_NAME,
+              });
+            } : undefined}
+          />
+          <ExportCard
+            title="Summary CSV"
+            description="Full pay/charge/margin data grouped by your current view."
+            onDownload={canExport ? handleExport : undefined}
+          />
+        </div>
+      </section>
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        <SummaryCard label="Pay" value={formatDashboardCurrency(report.totals.payAmount, currency)} />
-        <SummaryCard
-          label="Charge"
-          value={formatDashboardCurrency(report.totals.chargeAmount, currency)}
-        />
-        <SummaryCard
-          label="Margin"
-          value={formatDashboardCurrency(report.totals.margin, currency)}
-        />
-        <SummaryCard label="Incomplete" value={String(report.incompleteSessions)} />
-      </div>
-
+      {/* Advanced analysis section */}
       <details
         open={advancedOpen}
         onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
         className="rounded-2xl border border-border bg-surface-raised p-4"
       >
-        <summary className="cursor-pointer text-sm font-medium text-white">Advanced</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-white">
+          Advanced analysis & filters
+        </summary>
+        <p className="mt-1 text-xs text-subtle">
+          Filter data, change views, and save presets for recurring reports.
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {VIEWS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setView(item.id)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                view === item.id
+                  ? 'border-primary/50 bg-primary/15 text-primary'
+                  : 'border-border text-muted'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <select
             value={groupBy}
@@ -313,6 +358,15 @@ export function AccountingReportsPanel({
           </select>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          {canExport ? (
+            <button
+              type="button"
+              onClick={handleExport}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+            >
+              Download CSV
+            </button>
+          ) : null}
           {canEditRules ? (
             <button
               type="button"
@@ -336,18 +390,6 @@ export function AccountingReportsPanel({
         </div>
       </details>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {canExport ? (
-          <button
-            type="button"
-            onClick={handleExport}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
-          >
-            Download CSV
-          </button>
-        ) : null}
-      </div>
-
       {view === 'journal' ? (
         <JournalTable rows={journalRows} currency={currency} />
       ) : view === 'chargePack' ? (
@@ -367,14 +409,6 @@ export function AccountingReportsPanel({
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface-raised px-4 py-3">
-      <p className="text-xs text-subtle">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-white">{value}</p>
-    </div>
-  );
-}
 
 function GroupedTable({
   rows,
@@ -591,6 +625,34 @@ function ChargePackTable({ packs, currency }: { packs: SiteChargePack[]; currenc
             </table>
           </div>
         ))
+      )}
+    </div>
+  );
+}
+
+function ExportCard({
+  title,
+  description,
+  onDownload,
+}: {
+  title: string;
+  description: string;
+  onDownload?: () => void;
+}) {
+  return (
+    <div className="flex flex-col rounded-xl border border-border p-4">
+      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <p className="mt-1 flex-1 text-xs text-subtle">{description}</p>
+      {onDownload ? (
+        <button
+          type="button"
+          onClick={onDownload}
+          className="mt-3 self-start rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/10"
+        >
+          Download CSV
+        </button>
+      ) : (
+        <p className="mt-3 text-xs text-muted">No export permission</p>
       )}
     </div>
   );

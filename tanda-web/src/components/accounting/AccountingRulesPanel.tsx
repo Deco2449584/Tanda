@@ -65,8 +65,18 @@ export function AccountingRulesPanel({
 
   return (
     <div className="space-y-6">
+      {error ? (
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4">
+          <p className="text-sm font-medium text-rose-400">Validation error</p>
+          <p className="mt-1 text-sm text-rose-300/80">{error}</p>
+        </div>
+      ) : null}
+
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
-        <h2 className="text-sm font-semibold text-white">General</h2>
+        <h2 className="text-sm font-semibold text-white">Week rules</h2>
+        <p className="mt-1 text-xs text-subtle">
+          Configure which day the pay week starts and how hours are rounded for invoicing.
+        </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="block">
             <span className="mb-1 block text-xs text-subtle">Week starts on</span>
@@ -118,6 +128,15 @@ export function AccountingRulesPanel({
               />
             </label>
           ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+        <h2 className="text-sm font-semibold text-white">Minimums and leave</h2>
+        <p className="mt-1 text-xs text-subtle">
+          Minimum hours ensure staff are paid/charged for at least a set amount per session or day. Leave settings control whether approved leave generates award lines.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="block">
             <span className="mb-1 block text-xs text-subtle">Min pay hours (0 = off)</span>
             <input
@@ -146,38 +165,6 @@ export function AccountingRulesPanel({
               className={inputClass}
             />
           </label>
-          <label className="flex items-end gap-2 pb-2">
-            <input
-              type="checkbox"
-              disabled={!canEdit}
-              checked={draft.payApprovedLeave}
-              onChange={(event) =>
-                setDraft({ ...draft, payApprovedLeave: event.target.checked })
-              }
-            />
-            <span className="text-sm text-muted">Pay approved leave in the award</span>
-          </label>
-          {draft.payApprovedLeave ? (
-            <label className="block">
-              <span className="mb-1 block text-xs text-subtle">
-                Paid leave hours per day (0 = off)
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="0.25"
-                disabled={!canEdit}
-                value={draft.paidLeaveHoursPerDay ?? 8}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    paidLeaveHoursPerDay: Number(event.target.value) || 0,
-                  })
-                }
-                className={inputClass}
-              />
-            </label>
-          ) : null}
           <label className="block">
             <span className="mb-1 block text-xs text-subtle">Minimum applies per</span>
             <select
@@ -195,12 +182,49 @@ export function AccountingRulesPanel({
               <option value="day">Day</option>
             </select>
           </label>
+          <label className="flex items-end gap-2 pb-2">
+            <input
+              type="checkbox"
+              disabled={!canEdit}
+              checked={draft.payApprovedLeave}
+              onChange={(event) =>
+                setDraft({ ...draft, payApprovedLeave: event.target.checked })
+              }
+            />
+            <span className="text-sm text-muted">Pay approved leave in the award</span>
+          </label>
+          {draft.payApprovedLeave ? (
+            <label className="block">
+              <span className="mb-1 block text-xs text-subtle">
+                Paid leave hours per day
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                disabled={!canEdit}
+                value={draft.paidLeaveHoursPerDay ?? 8}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    paidLeaveHoursPerDay: Number(event.target.value) || 0,
+                  })
+                }
+                className={inputClass}
+              />
+            </label>
+          ) : null}
         </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-white">Time bands</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-white">Time bands</h2>
+            <p className="mt-1 text-xs text-subtle">
+              Split the day into named periods (e.g. Early morning, Day, Evening). The rate matrix uses these as columns.
+            </p>
+          </div>
           {canEdit ? (
             <button
               type="button"
@@ -276,7 +300,12 @@ export function AccountingRulesPanel({
 
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-white">Day types</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-white">Day types</h2>
+            <p className="mt-1 text-xs text-subtle">
+              Group weekdays into categories (e.g. Weekday, Saturday, Sunday). The rate matrix uses these as rows.
+            </p>
+          </div>
           {canEdit ? (
             <button
               type="button"
@@ -459,7 +488,12 @@ export function AccountingRulesPanel({
 
       <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-white">Public holidays</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-white">Public holidays</h2>
+            <p className="mt-1 text-xs text-subtle">
+              Dates that trigger the public holiday day type. Optionally restrict to specific sites.
+            </p>
+          </div>
           {canEdit ? (
             <button
               type="button"
@@ -790,8 +824,6 @@ export function AccountingRulesPanel({
           ))}
         </div>
       </section>
-
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
 
       {canEdit ? (
         <div className="flex justify-end">
