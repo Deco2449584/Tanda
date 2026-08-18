@@ -3,12 +3,16 @@
 import { useMemo, useState } from 'react';
 import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 import {
-  calculateWorkedHoursInRange,
   getMonthDateRange,
   getYearDateRange,
 } from '@/lib/attendance/work-sessions';
-import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
+import { computeAwardPay } from '@/lib/payroll/compute-award-pay';
+import type { AttendanceBreakSettings, PayrollAccountingSettings } from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
+import type { Employee } from '@/lib/types/employee';
+import type { Location } from '@/lib/types/location';
+import type { PayRules } from '@/lib/types/pay-rules';
+import type { Shift } from '@/lib/types/shift';
 
 export type HoursEarningsPeriod = 'week' | 'month' | 'year';
 
@@ -26,12 +30,18 @@ const HOUR_GOALS: Record<HoursEarningsPeriod, number> = {
 
 interface EmployeeHoursEarningsCardProps {
   records: AttendanceRecord[];
+  employee: Employee;
+  locations: Location[];
+  shifts: Shift[];
   weekStart: string;
   weekEnd: string;
   hourlyRate: number;
   currency: string;
   loading?: boolean;
   breakSettings: AttendanceBreakSettings;
+  timeZone: string;
+  payRules?: PayRules;
+  payrollAccounting?: PayrollAccountingSettings;
   embedded?: boolean;
   period?: HoursEarningsPeriod;
   onPeriodChange?: (period: HoursEarningsPeriod) => void;
@@ -70,12 +80,18 @@ export function formatHoursEarningsSummary(
 
 export function EmployeeHoursEarningsCard({
   records,
+  employee,
+  locations,
+  shifts,
   weekStart,
   weekEnd,
   hourlyRate,
   currency,
   loading = false,
   breakSettings,
+  timeZone,
+  payRules,
+  payrollAccounting,
   embedded = false,
   period: controlledPeriod,
   onPeriodChange,
@@ -93,24 +109,40 @@ export function EmployeeHoursEarningsCard({
 
   const { hours, earnings, goal, progress } = useMemo(() => {
     const range = resolveRange(period, weekStart, weekEnd);
-    const worked = calculateWorkedHoursInRange(
+    const award = computeAwardPay({
+      employees: [employee],
       records,
-      range.start,
-      range.end,
-      breakSettings,
-    );
-    const rounded = Math.round(worked * 10) / 10;
-    const gross = Math.round(rounded * hourlyRate * 100) / 100;
+      locations,
+      shifts,
+      dateRange: range,
+      payRules,
+      payrollAccounting,
+      timeZone,
+      attendanceBreak: breakSettings,
+    });
+    const rounded = Math.round(award.payHours * 10) / 10;
     const hourGoal = HOUR_GOALS[period];
     const progressPct = hourGoal > 0 ? Math.min((rounded / hourGoal) * 100, 100) : 0;
 
     return {
       hours: rounded,
-      earnings: gross,
+      earnings: Math.round(award.payAmount * 100) / 100,
       goal: hourGoal,
       progress: progressPct,
     };
-  }, [breakSettings, hourlyRate, period, records, weekEnd, weekStart]);
+  }, [
+    breakSettings,
+    employee,
+    locations,
+    payRules,
+    payrollAccounting,
+    period,
+    records,
+    shifts,
+    timeZone,
+    weekEnd,
+    weekStart,
+  ]);
 
   const periodLabel =
     period === 'week' ? 'This week' : period === 'month' ? 'This month' : 'This year';
@@ -152,7 +184,7 @@ export function EmployeeHoursEarningsCard({
                 )}
               </p>
               <p className="mt-1 text-xs text-subtle">
-                Estimated gross pay · {periodLabel.toLowerCase()}
+                Estimated gross pay using company award rules · {periodLabel.toLowerCase()}
               </p>
             </>
           ) : (

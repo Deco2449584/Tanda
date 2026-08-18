@@ -29,3 +29,53 @@ export function timestampToMinutesInTimeZone(
 ): number {
   return getMinutesInTimeZone(ianaTimeZone, timestamp.toDate());
 }
+
+/** Converts a wall-clock date+time in an IANA zone into a UTC Date. */
+export function dateFromWallClock(
+  isoDate: string,
+  timeHHmm: string,
+  ianaTimeZone: string,
+): Date {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const [rawHour, rawMinute] = timeHHmm.split(':').map(Number);
+  let hour = Number.isFinite(rawHour) ? rawHour : 0;
+  const minute = Number.isFinite(rawMinute) ? rawMinute : 0;
+  let extraDays = 0;
+  if (hour >= 24) {
+    extraDays = Math.floor(hour / 24);
+    hour %= 24;
+  }
+
+  let utcMs = Date.UTC((year ?? 1970), (month ?? 1) - 1, (day ?? 1) + extraDays, hour, minute, 0);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: ianaTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(utcMs));
+    const read = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((part) => part.type === type)?.value ?? 0);
+    const actual = Date.UTC(
+      read('year'),
+      read('month') - 1,
+      read('day'),
+      read('hour'),
+      read('minute'),
+    );
+    const desired = Date.UTC(
+      year ?? 1970,
+      (month ?? 1) - 1,
+      (day ?? 1) + extraDays,
+      hour,
+      minute,
+    );
+    utcMs += desired - actual;
+  }
+
+  return new Date(utcMs);
+}

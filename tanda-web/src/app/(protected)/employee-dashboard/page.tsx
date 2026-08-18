@@ -19,14 +19,11 @@ import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
-import {
-  calculateWorkedHoursInRange,
-  getMonthDateRange,
-  getYearDateRange,
-} from '@/lib/attendance/work-sessions';
+import { computeAwardPay } from '@/lib/payroll/compute-award-pay';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { formatTimeLabel } from '@/lib/schedule/week';
+import { useLocations } from '@/providers/LocationsProvider';
 
 function resolveHoursRange(
   period: HoursEarningsPeriod,
@@ -41,6 +38,7 @@ function resolveHoursRange(
 export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
   const { settings } = useCompanySettings();
+  const { locations } = useLocations();
   const { isSectionCollapsed, toggleSectionCollapsed } = useEmployeeOverviewLayout();
   const { employee, loading: employeeLoading, error: employeeError } =
     useCurrentEmployee(user?.email);
@@ -52,6 +50,7 @@ export default function EmployeeDashboardPage() {
   const {
     week,
     shiftsByDate,
+    allShifts,
     nextScheduledShift,
     loading: shiftsLoading,
     refreshing: shiftsRefreshing,
@@ -68,20 +67,33 @@ export default function EmployeeDashboardPage() {
   } = useEmployeeAttendance({ employeeCode, displayRange: 'all' });
 
   const hoursEarningsStats = useMemo(() => {
+    if (!employee) return { hours: 0, earnings: 0 };
     const range = resolveHoursRange(hoursPeriod, week.start, week.end);
-    const hours = calculateWorkedHoursInRange(
-      attendanceRecords,
-      range.start,
-      range.end,
-      settings.attendanceBreak,
-    );
-    const earnings = Math.round(hours * hourlyRate * 100) / 100;
-    return { hours, earnings };
+    const award = computeAwardPay({
+      employees: [employee],
+      records: attendanceRecords,
+      locations,
+      shifts: allShifts,
+      dateRange: range,
+      payRules: settings.payRules,
+      payrollAccounting: settings.payrollAccounting,
+      timeZone: settings.timeZone,
+      attendanceBreak: settings.attendanceBreak,
+    });
+    return {
+      hours: award.payHours,
+      earnings: Math.round(award.payAmount * 100) / 100,
+    };
   }, [
+    allShifts,
     attendanceRecords,
-    hourlyRate,
+    employee,
     hoursPeriod,
+    locations,
     settings.attendanceBreak,
+    settings.payRules,
+    settings.payrollAccounting,
+    settings.timeZone,
     week.end,
     week.start,
   ]);
@@ -173,12 +185,18 @@ export default function EmployeeDashboardPage() {
           >
             <EmployeeHoursEarningsCard
               records={attendanceRecords}
+              employee={employee}
+              locations={locations}
+              shifts={allShifts}
               weekStart={week.start}
               weekEnd={week.end}
               hourlyRate={hourlyRate}
               currency={settings.currency}
               loading={recordsLoading}
               breakSettings={settings.attendanceBreak}
+              timeZone={settings.timeZone}
+              payRules={settings.payRules}
+              payrollAccounting={settings.payrollAccounting}
               embedded
               period={hoursPeriod}
               onPeriodChange={setHoursPeriod}

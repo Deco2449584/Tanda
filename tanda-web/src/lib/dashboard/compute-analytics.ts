@@ -25,14 +25,20 @@ import type {
   WeeklyHoursDatum,
 } from '@/lib/dashboard/types';
 import type { AttendanceRecord } from '@/lib/types/attendance';
+import {
+  buildSessionsFromShifts,
+  computeAwardPay,
+} from '@/lib/payroll/compute-award-pay';
 import type {
   AttendanceBreakSettings,
   AttendancePolicySettings,
+  PayrollAccountingSettings,
 } from '@/lib/types/company-settings';
 import type { Employee } from '@/lib/types/employee';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Location } from '@/lib/types/location';
 import type { LocationGroup } from '@/lib/types/location-group';
+import type { PayRules } from '@/lib/types/pay-rules';
 import type { Shift } from '@/lib/types/shift';
 
 export interface DashboardAnalyticsInput {
@@ -48,6 +54,8 @@ export interface DashboardAnalyticsInput {
   attendancePolicy: AttendancePolicySettings;
   timeZone: string;
   currency: string;
+  payRules?: PayRules;
+  payrollAccounting?: PayrollAccountingSettings;
 }
 
 export interface DashboardAnalytics {
@@ -290,10 +298,16 @@ function buildAttendanceComplianceByLocation(
 function buildDailyPayrollTrend(
   employees: Employee[],
   attendance: AttendanceRecord[],
+  locations: Location[],
+  shifts: Shift[],
+  leaveRequests: LeaveRequest[],
   dateRange: DateRange,
   options: {
     currency: string;
     attendanceBreak: AttendanceBreakSettings;
+    timeZone: string;
+    payRules?: PayRules;
+    payrollAccounting?: PayrollAccountingSettings;
   },
 ): NamedValueDatum[] {
   const days = eachDayInRange(dateRange);
@@ -307,6 +321,12 @@ function buildDailyPayrollTrend(
       }, {
         currency: options.currency,
         attendanceBreak: options.attendanceBreak,
+        timeZone: options.timeZone,
+        payRules: options.payRules,
+        payrollAccounting: options.payrollAccounting,
+        locations,
+        shifts,
+        leaveRequests,
       });
 
       return {
@@ -393,14 +413,22 @@ export function computeDashboardAnalytics(
     timeZone: input.timeZone,
   };
 
+  const payrollOptions = {
+    currency: input.currency,
+    attendanceBreak: input.attendanceBreak,
+    timeZone: input.timeZone,
+    payRules: input.payRules,
+    payrollAccounting: input.payrollAccounting,
+    locations: input.locations,
+    shifts,
+    leaveRequests: input.leaveRequests,
+  };
+
   const payrollReport = buildPayrollReport(
     attendance,
     filteredEmployees,
     input.dateRange,
-    {
-      currency: input.currency,
-      attendanceBreak: input.attendanceBreak,
-    },
+    payrollOptions,
   );
 
   const employeeById = new Map(
@@ -417,16 +445,28 @@ export function computeDashboardAnalytics(
     }),
   );
 
-  const projectedPayrollByLocation = aggregateByKey(
-    shifts.map((shift) => {
-      const employee = employeesById.get(shift.employeeId);
-      if (!employee) return { key: 'Unknown', value: 0 };
-      const hours = shiftDurationHours(shift.startTime, shift.endTime);
-      return {
-        key: getSiteKeyForShift(shift, input.locations),
-        value: employee.hourlyRate * hours,
-      };
+  const projectedAward = computeAwardPay({
+    employees: filteredEmployees,
+    sessions: buildSessionsFromShifts({
+      shifts,
+      employees: filteredEmployees,
+      timeZone: input.timeZone,
+      attendanceBreak: input.attendanceBreak,
     }),
+    locations: input.locations,
+    shifts,
+    dateRange: input.dateRange,
+    payRules: input.payRules,
+    payrollAccounting: input.payrollAccounting,
+    timeZone: input.timeZone,
+    attendanceBreak: input.attendanceBreak,
+  });
+
+  const projectedPayrollByLocation = aggregateByKey(
+    projectedAward.report.slices.map((slice) => ({
+      key: slice.locationName || 'Unknown',
+      value: slice.payAmount,
+    })),
   );
 
   const hoursWorkedByLocation = aggregateByKey(
@@ -459,11 +499,11 @@ export function computeDashboardAnalytics(
   const dailyPayrollTrend = buildDailyPayrollTrend(
     filteredEmployees,
     attendance,
+    input.locations,
+    shifts,
+    input.leaveRequests,
     input.dateRange,
-    {
-      currency: input.currency,
-      attendanceBreak: input.attendanceBreak,
-    },
+    payrollOptions,
   );
 
   const days = eachDayInRange(input.dateRange);

@@ -176,6 +176,8 @@ export function DynamicDashboard({
           attendancePolicy: settings.attendancePolicy,
           timeZone: settings.timeZone,
           currency: settings.currency,
+          payRules: settings.payRules,
+          payrollAccounting: settings.payrollAccounting,
         });
       } catch (error) {
         console.error('DynamicDashboard analytics failed', {
@@ -201,6 +203,8 @@ export function DynamicDashboard({
       settings.attendanceBreak,
       settings.attendancePolicy,
       settings.currency,
+      settings.payRules,
+      settings.payrollAccounting,
       settings.timeZone,
       shifts,
     ],

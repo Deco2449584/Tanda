@@ -146,6 +146,7 @@ export function useEmployeeShifts({
   return {
     week,
     weekShifts,
+    allShifts,
     upcomingShifts,
     futureShifts,
     nextScheduledShift,
