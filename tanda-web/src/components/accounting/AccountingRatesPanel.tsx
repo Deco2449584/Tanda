@@ -767,8 +767,8 @@ export function AccountingRatesPanel({
           <div>
             <h2 className="text-sm font-semibold text-white">Default pay matrix</h2>
             <p className="mt-1 text-xs text-subtle">
-              Used when a staff member has no cell for that day and band, before falling back to
-              their hourly rate.
+              Starting loadings (% of each person’s hourly rate). Used when staff have no cell for
+              that day and band. Change the numbers to match your award.
             </p>
             <div className="mt-3">
               <RateMatrixEditor
@@ -782,7 +782,8 @@ export function AccountingRatesPanel({
           <div>
             <h2 className="text-sm font-semibold text-white">Default charge matrix</h2>
             <p className="mt-1 text-xs text-subtle">
-              Used when a site has no charge cell, before falling back to the weekday base.
+              Starting charge loadings (% of the staff hourly rate), a bit above pay so margin is
+              visible. Override per site when a customer has different rates.
             </p>
             <div className="mt-3">
               <RateMatrixEditor

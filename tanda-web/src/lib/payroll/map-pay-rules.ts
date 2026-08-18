@@ -107,7 +107,7 @@ function mapEmploymentType(
   return {
     id,
     label,
-    superPercent: asNumber(item.superPercent),
+    superPercent: asNumber(item.superPercent) ?? fallback?.superPercent,
     expenseAccountCode:
       asString(item.expenseAccountCode) ?? fallback?.expenseAccountCode,
     expenseAccountName:

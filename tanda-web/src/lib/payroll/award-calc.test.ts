@@ -66,6 +66,15 @@ function session(startIso: string, endIso: string, hours: number): WorkSession {
   };
 }
 
+function fallbackRules(overrides: Partial<PayRules> = {}): PayRules {
+  return {
+    ...DEFAULT_PAY_RULES,
+    defaultPayCells: undefined,
+    defaultChargeCells: undefined,
+    ...overrides,
+  };
+}
+
 function run(input: {
   rules?: PayRules;
   employees?: Employee[];
@@ -73,7 +82,7 @@ function run(input: {
   sessions: WorkSession[];
 }) {
   return buildAwardReport({
-    rules: input.rules ?? DEFAULT_PAY_RULES,
+    rules: input.rules ?? fallbackRules(),
     timeZone: 'Australia/Sydney',
     employees: input.employees ?? [employee()],
     locations: input.locations ?? [location()],
@@ -93,7 +102,7 @@ test('2h Saturday with 4h min pay and charge uses hourlyRate fallback', () => {
 
 test('min pay 0 and min charge 4 only inflates charge', () => {
   const report = run({
-    rules: { ...DEFAULT_PAY_RULES, minPayHours: 0, minChargeHours: 4 },
+    rules: fallbackRules({ minPayHours: 0, minChargeHours: 4 }),
     sessions: [session('2026-08-08T02:00:00+10:00', '2026-08-08T04:00:00+10:00', 2)],
   });
   assert.equal(report.sessions[0]?.payHours, 2);
@@ -116,7 +125,7 @@ test('daily OT after 8 hours marks the overflow as overtime', () => {
 
 test('band crossover splits early morning and base', () => {
   const report = run({
-    rules: { ...DEFAULT_PAY_RULES, minPayHours: 0, minChargeHours: 0 },
+    rules: fallbackRules({ minPayHours: 0, minChargeHours: 0 }),
     sessions: [session('2026-08-10T05:30:00+10:00', '2026-08-10T06:30:00+10:00', 1)],
   });
   const early = report.slices.find((slice) => slice.bandId === 'early_morning');
@@ -129,26 +138,24 @@ test('band crossover splits early morning and base', () => {
 
 test('public holiday uses the holiday day type', () => {
   const report = run({
-    rules: {
-      ...DEFAULT_PAY_RULES,
+    rules: fallbackRules({
       minPayHours: 0,
       minChargeHours: 0,
       publicHolidays: [{ date: '2026-08-10' }],
-    },
+    }),
     sessions: [session('2026-08-10T09:00:00+10:00', '2026-08-10T10:00:00+10:00', 1)],
   });
   assert.equal(report.slices[0]?.dayTypeId, 'public_holiday');
 });
 
 test('weekly OT applies across sessions without double counting daily OT', () => {
-  const rules: PayRules = {
-    ...DEFAULT_PAY_RULES,
+  const rules: PayRules = fallbackRules({
     minPayHours: 0,
     minChargeHours: 0,
     overtimeRules: [
       { id: 'ot_weekly', scope: 'weekly', thresholdHours: 10, applyTo: 'overtime' },
     ],
-  };
+  });
   const report = run({
     rules,
     sessions: [
@@ -190,12 +197,11 @@ test('incomplete sessions are listed not just counted', () => {
 
 test('company default pay cells apply before hourlyRate', () => {
   const report = run({
-    rules: {
-      ...DEFAULT_PAY_RULES,
+    rules: fallbackRules({
       minPayHours: 0,
       minChargeHours: 0,
       defaultPayCells: { 'saturday:early_morning': { rate: 40 } },
-    },
+    }),
     sessions: [session('2026-08-08T02:00:00+10:00', '2026-08-08T03:00:00+10:00', 1)],
   });
   assert.equal(report.totals.payAmount, 40);
@@ -204,7 +210,12 @@ test('company default pay cells apply before hourlyRate', () => {
 
 test('approved leave is paid when payApprovedLeave is on', () => {
   const report = buildAwardReport({
-    rules: { ...DEFAULT_PAY_RULES, payApprovedLeave: true, paidLeaveHoursPerDay: 8, minPayHours: 0, minChargeHours: 0 },
+    rules: fallbackRules({
+      payApprovedLeave: true,
+      paidLeaveHoursPerDay: 8,
+      minPayHours: 0,
+      minChargeHours: 0,
+    }),
     timeZone: 'Australia/Sydney',
     employees: [employee()],
     locations: [location()],
@@ -225,5 +236,15 @@ test('approved leave is paid when payApprovedLeave is on', () => {
   assert.equal(report.sessions[0]?.isLeave, true);
   assert.equal(report.sessions[0]?.payHours, 8);
   assert.equal(report.totals.payAmount, 200);
+});
+
+test('shipped company default loadings apply on Saturday early morning', () => {
+  const report = run({
+    rules: { ...DEFAULT_PAY_RULES, minPayHours: 0, minChargeHours: 0 },
+    sessions: [session('2026-08-08T02:00:00+10:00', '2026-08-08T03:00:00+10:00', 1)],
+  });
+  assert.equal(report.sessions[0]?.usedFallbackRate, false);
+  assert.equal(report.totals.payAmount, 43.75);
+  assert.equal(report.totals.chargeAmount, 65.63);
 });
 
