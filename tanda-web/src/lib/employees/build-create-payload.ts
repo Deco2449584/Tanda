@@ -39,6 +39,10 @@ export function buildEmployeeCreatePayload(input: {
     lastAction: 'none',
   };
 
+  if (form.allowCheckInWithoutScheduledShift) {
+    payload.allowCheckInWithoutScheduledShift = true;
+  }
+
   if (photoUrl) {
     payload.photoUrl = photoUrl;
   }
@@ -98,6 +102,8 @@ export function buildEmployeeUpdatePayload(input: {
   delete payload.lastAction;
   payload.active = input.active;
   payload.kioskEnabled = input.kioskEnabled;
+  payload.allowCheckInWithoutScheduledShift =
+    input.form.allowCheckInWithoutScheduledShift === true;
 
   return payload;
 }
@@ -111,6 +117,7 @@ export const initialCreateEmployeeForm: CreateEmployeeFormValues = {
   locationGroupId: '',
   hourlyRate: 0,
   employmentTypeId: 'employee',
+  allowCheckInWithoutScheduledShift: false,
   startDate: todayIsoDate(),
   endDate: '',
   phone: '',

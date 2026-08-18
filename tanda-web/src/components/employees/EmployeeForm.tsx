@@ -955,6 +955,17 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             ) : null}
           </div>
         ) : null}
+        {!isKiosk ? (
+          <FormToggle
+            label="Allow check-in without scheduled shift"
+            description="Use this for employees who are allowed to clock in even when they do not have a rostered shift that day."
+            checked={form.allowCheckInWithoutScheduledShift === true}
+            onChange={(checked) =>
+              patchForm({ allowCheckInWithoutScheduledShift: checked })
+            }
+            disabled={isBusy}
+          />
+        ) : null}
       </FormSection>
 
       {!isKiosk ? (

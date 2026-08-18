@@ -56,6 +56,8 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   endDate?: string;
   /** Grants access to the /kiosk check-in module from the employee's own device. */
   kioskEnabled?: boolean;
+  /** Allows kiosk check-in even if the employee has no scheduled shift that day. */
+  allowCheckInWithoutScheduledShift?: boolean;
   lastAction: string;
   lastTimestampServer?: Timestamp;
   photoUrl?: string;
@@ -86,6 +88,7 @@ export interface CreateEmployeeInput {
   hourlyRate: number;
   employmentTypeId?: string;
   payRates?: StaffPayRates;
+  allowCheckInWithoutScheduledShift?: boolean;
 }
 
 export interface CreateEmployeeFormValues extends CreateEmployeeInput, EmployeePersonalDetails {

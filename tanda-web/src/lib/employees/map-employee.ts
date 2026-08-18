@@ -54,6 +54,8 @@ export function mapEmployeeDoc(
       : undefined,
     active: employee.active ?? false,
     kioskEnabled: employee.kioskEnabled === true,
+    allowCheckInWithoutScheduledShift:
+      employee.allowCheckInWithoutScheduledShift === true,
     lastAction: employee.lastAction ?? 'none',
     lastTimestampServer: employee.lastTimestampServer,
     photoUrl: typeof employee.photoUrl === 'string' ? employee.photoUrl : '',

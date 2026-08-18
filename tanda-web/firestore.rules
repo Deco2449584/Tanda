@@ -17,6 +17,7 @@ service cloud.firestore {
           'lastTimestampServer',
           'department',
           'hourlyRate',
+          'allowCheckInWithoutScheduledShift',
           'employeeId',
           'photoUrl',
           'locationId',
@@ -47,6 +48,10 @@ service cloud.firestore {
         (
           !('kioskEnabled' in request.resource.data) ||
           request.resource.data.kioskEnabled is bool
+        ) &&
+        (
+          !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
+          request.resource.data.allowCheckInWithoutScheduledShift is bool
         ) &&
         (
           !('locationId' in request.resource.data) ||
@@ -85,6 +90,10 @@ service cloud.firestore {
           !('kioskEnabled' in request.resource.data) ||
           request.resource.data.kioskEnabled is bool
         ) &&
+        (
+          !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
+          request.resource.data.allowCheckInWithoutScheduledShift is bool
+        ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'employeeId',
           'name',
@@ -94,6 +103,7 @@ service cloud.firestore {
           'photoUrl',
           'active',
           'kioskEnabled',
+          'allowCheckInWithoutScheduledShift',
           'locationId',
           'locationGroupId',
           'phone',

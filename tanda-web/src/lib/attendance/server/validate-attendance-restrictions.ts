@@ -125,6 +125,26 @@ async function loadEmployeeShiftsOnDate(
     }));
 }
 
+async function loadEmployeeRestrictionOverrides(employeeId: string): Promise<{
+  allowCheckInWithoutScheduledShift: boolean;
+}> {
+  const snapshot = await getAdminFirestore()
+    .collection(COLLECTIONS.EMPLOYEES)
+    .where('employeeId', '==', employeeId.trim())
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return { allowCheckInWithoutScheduledShift: false };
+  }
+
+  const data = snapshot.docs[0]?.data() ?? {};
+  return {
+    allowCheckInWithoutScheduledShift:
+      data.allowCheckInWithoutScheduledShift === true,
+  };
+}
+
 export async function validateEmployeeCheckInRestrictions(input: {
   employeeId: string;
   punchAt: Date;
@@ -135,9 +155,16 @@ export async function validateEmployeeCheckInRestrictions(input: {
   const settings = await loadCompanySettingsAdmin();
   const date = toInputDateInTimeZone(settings.timeZone, input.punchAt);
   const shiftsOnDate = await loadEmployeeShiftsOnDate(input.employeeId, date);
+  const employeeOverrides = await loadEmployeeRestrictionOverrides(input.employeeId);
+  const restrictions = employeeOverrides.allowCheckInWithoutScheduledShift
+    ? {
+        ...settings.attendanceRestrictions,
+        blockUnscheduledShift: false,
+      }
+    : settings.attendanceRestrictions;
 
   return validateCheckInRestrictions({
-    restrictions: settings.attendanceRestrictions,
+    restrictions,
     timeZone: settings.timeZone,
     punchAt: input.punchAt,
     shiftsOnDate,
