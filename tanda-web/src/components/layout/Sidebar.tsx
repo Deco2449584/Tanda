@@ -48,7 +48,6 @@ const adminNavGroups: NavGroup[] = [
     title: 'Operations',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Worked shifts', href: '/worked-shifts', icon: Briefcase },
       { label: 'Accounting', href: '/accounting', icon: Landmark },
       { label: 'Attendance', href: '/attendance', icon: Clock },
       { label: 'Schedule', href: '/schedule', icon: CalendarDays },

@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   collection,
@@ -10,7 +11,7 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import { Download, Plus } from 'lucide-react';
+import { Briefcase, Download, Plus } from 'lucide-react';
 import { AttendanceFilterToolbar } from '@/components/attendance/AttendanceFilterToolbar';
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
 import { AttendanceToolbarButton } from '@/components/attendance/AttendanceToolbarButton';
@@ -239,6 +240,13 @@ export default function AttendancePage() {
         onSearchQueryChange={setSearchQuery}
         actions={
           <>
+            <Link
+              href="/worked-shifts"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface-base px-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
+            >
+              <Briefcase className="h-4 w-4" strokeWidth={2} />
+              Worked shifts
+            </Link>
             {canCreateAttendance ? (
               <AttendanceToolbarButton
                 onClick={() => setManualRecordOpen(true)}

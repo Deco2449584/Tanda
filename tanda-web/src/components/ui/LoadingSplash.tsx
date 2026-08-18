@@ -1,7 +1,18 @@
 'use client';
 
-import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { cn } from '@/lib/cn';
+
+function Spinner({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-block rounded-full border-4 border-white/10 border-t-primary animate-spin',
+        className,
+      )}
+      aria-hidden="true"
+    />
+  );
+}
 
 interface LoadingSplashProps {
   message?: string;
@@ -26,11 +37,7 @@ export function LoadingSplash({
       aria-live="polite"
       aria-busy="true"
     >
-      <CompanyLogo
-        variant="light"
-        priority
-        className="h-20 w-auto max-w-[min(100%,14rem)] animate-pulse object-contain md:h-24"
-      />
+      <Spinner className="h-14 w-14 md:h-16 md:w-16" />
       {message ? <p className="text-sm text-muted">{message}</p> : null}
     </div>
   );
@@ -53,7 +60,7 @@ export function LoadingIndicator({
       aria-live="polite"
       aria-busy="true"
     >
-      <CompanyLogo variant="light" className="h-14 w-auto max-w-[10rem] animate-pulse object-contain" />
+      <Spinner className="h-10 w-10" />
       <p className="text-sm text-muted">{message}</p>
     </div>
   );
