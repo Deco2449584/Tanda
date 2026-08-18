@@ -33,6 +33,32 @@ import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 
+function createEmptyAnalytics(currency: string): DashboardAnalytics {
+  return {
+    payrollByLocation: [],
+    projectedPayrollByLocation: [],
+    hoursWorkedByLocation: [],
+    scheduledVsActualByLocation: [],
+    dailyPayrollTrend: [],
+    weeklyHours: [],
+    shiftLoadByDepartment: [],
+    shiftsByLocation: [],
+    lateArrivalsByLocation: [],
+    noShowsByLocation: [],
+    headcountByLocation: [],
+    leaveByType: [],
+    attendanceComplianceByLocation: [],
+    payrollTotal: 0,
+    projectedPayrollTotal: 0,
+    lateAlertsTotal: 0,
+    noShowsTotal: 0,
+    pendingLeaveTotal: 0,
+    activeStaffLabel: '0/0',
+    payrollActualFormatted: formatDashboardCurrency(0, currency),
+    payrollProjectedFormatted: formatDashboardCurrency(0, currency),
+  };
+}
+
 function formatTopSlice(
   data: Array<{ name: string; value: number }>,
   formatter: (value: number) => string,
@@ -135,21 +161,35 @@ export function DynamicDashboard({
     useDashboardData(dateRange);
 
   const analytics = useMemo(
-    () =>
-      computeDashboardAnalytics({
-        employees,
-        shifts,
-        attendance,
-        leaveRequests,
-        locations,
-        groups,
-        dateRange,
-        locationFilter,
-        attendanceBreak: settings.attendanceBreak,
-        attendancePolicy: settings.attendancePolicy,
-        timeZone: settings.timeZone,
-        currency: settings.currency,
-      }),
+    () => {
+      try {
+        return computeDashboardAnalytics({
+          employees,
+          shifts,
+          attendance,
+          leaveRequests,
+          locations,
+          groups,
+          dateRange,
+          locationFilter,
+          attendanceBreak: settings.attendanceBreak,
+          attendancePolicy: settings.attendancePolicy,
+          timeZone: settings.timeZone,
+          currency: settings.currency,
+        });
+      } catch (error) {
+        console.error('DynamicDashboard analytics failed', {
+          error,
+          timeZone: settings.timeZone,
+          dateRange,
+          employees: employees.length,
+          shifts: shifts.length,
+          attendance: attendance.length,
+          leaveRequests: leaveRequests.length,
+        });
+        return createEmptyAnalytics(settings.currency);
+      }
+    },
     [
       attendance,
       dateRange,
