@@ -38,7 +38,7 @@ export default function NewEmployeePage() {
 
       <EmployeeForm
         onCancel={() => router.push('/employees')}
-        onSuccess={() => router.push('/employees')}
+        onSuccess={() => router.push('/employees?toast=created')}
       />
     </PageContent>
   );

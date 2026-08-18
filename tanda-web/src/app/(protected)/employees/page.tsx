@@ -1,13 +1,14 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Search, Users } from 'lucide-react';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { RefreshButton } from '@/components/ui/RefreshButton';
+import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import {
@@ -19,6 +20,7 @@ import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { employees, loading, refreshing, refresh } = useEmployees();
   const { canPerformAction } = useAdminAccess();
   const canCreateEmployees = canPerformAction('employees', 'create');
@@ -26,6 +28,7 @@ export default function EmployeesPage() {
   const canDeleteEmployees = canPerformAction('employees', 'delete');
   const [searchQuery, setSearchQuery] = useState('');
   const [accessFilter, setAccessFilter] = useState<EmployeeAccessFilter>('all');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const filteredEmployees = useMemo(
     () => employees.filter((employee) => matchesEmployeeAccessFilter(employee, accessFilter)),
@@ -35,6 +38,31 @@ export default function EmployeesPage() {
   function handleEdit(employee: Employee) {
     router.push(`/employees/${employee.id}/edit`);
   }
+
+  useEffect(() => {
+    const toastState = searchParams.get('toast');
+    if (!toastState) return;
+
+    const text =
+      toastState === 'created'
+        ? 'Empleado creado correctamente.'
+        : toastState === 'updated'
+          ? 'Empleado actualizado correctamente.'
+          : '';
+
+    if (!text) return;
+
+    setToast({
+      id: crypto.randomUUID(),
+      text,
+      variant: 'success',
+    });
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('toast');
+    const next = params.toString();
+    router.replace(next ? `/employees?${next}` : '/employees');
+  }, [router, searchParams]);
 
   return (
     <PageContent className="space-y-6">
@@ -117,6 +145,7 @@ export default function EmployeesPage() {
         onEdit={canUpdateEmployees ? handleEdit : undefined}
         canDelete={canDeleteEmployees}
       />
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </PageContent>
   );
 }

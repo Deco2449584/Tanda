@@ -68,7 +68,7 @@ export default function EditEmployeePage() {
         <EmployeeForm
           employee={employee}
           onCancel={() => router.push('/employees')}
-          onSuccess={() => router.push('/employees')}
+          onSuccess={() => router.push('/employees?toast=updated')}
         />
       )}
     </PageContent>

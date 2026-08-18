@@ -11,7 +11,6 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import { RateMatrixEditor } from '@/components/accounting/RateMatrixEditor';
 import {
   EmployeeAccessRoleSection,
   isKioskAccessRole,
@@ -37,9 +36,6 @@ import {
   formInputClass,
 } from '@/components/employees/employee-form-ui';
 import { reviewEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
-import { saveStaffRatesRequest } from '@/lib/accounting/accounting-api';
-import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
-import { withSyncedBaseRate } from '@/lib/payroll/rate-matrix';
 import {
   fetchEmployeeCustomFieldValues,
   fetchEmployeeCustomFields,
@@ -119,9 +115,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const { isMaster, canPerformAction } = useAdminAccess();
   const canInviteEmployees = canPerformAction('employees', 'invite');
   const canReviewProfile = canPerformAction('employees', 'reviewProfile');
-  const canEditPayRates =
-    canPerformAction('employees', 'update') ||
-    canPerformAction('accounting', 'updateRates');
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
   const [accessRole, setAccessRole] = useState<EmployeeAccessRole>('empleado');
   const [adminRoleId, setAdminRoleId] = useState('');
@@ -143,6 +136,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [kioskPassword, setKioskPassword] = useState('');
   const [kioskPasswordConfirm, setKioskPasswordConfirm] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [customFields, setCustomFields] = useState<EmployeeCustomField[]>([]);
   const [customValues, setCustomValues] = useState<EmployeeCustomFieldValue[]>([]);
   const customDraftsRef = useRef<Record<string, CustomFieldDraft>>({});
@@ -299,6 +293,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setSuccess('');
 
     if (!db) {
       setError('Firebase is not available.');
@@ -525,15 +520,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           });
         }
 
-        if (!isKiosk && canEditPayRates) {
-          await saveStaffRatesRequest({
-            employeeDocId: employee.id,
-            employmentTypeId: form.employmentTypeId,
-            payRates: withSyncedBaseRate(form.payRates, normalizedForm.hourlyRate),
-            hourlyRate: normalizedForm.hourlyRate,
-          });
-        }
-
         await refreshEmployees();
       } else {
         const payload = buildEmployeeCreatePayload({
@@ -584,24 +570,17 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           summary: `Created employee ${form.name.trim()} (${employeeCode})`,
         });
 
-        if (!isKiosk && canEditPayRates) {
-          await saveStaffRatesRequest({
-            employeeDocId: docRef.id,
-            employmentTypeId: form.employmentTypeId,
-            payRates: withSyncedBaseRate(form.payRates, normalizedForm.hourlyRate),
-            hourlyRate: normalizedForm.hourlyRate,
-          });
-        }
-
         await refreshEmployees();
       }
 
+      setSuccess(isEditMode ? 'Employee updated successfully.' : 'Employee created successfully.');
       onSuccess();
     } catch (submitError) {
       const rawMessage =
         submitError instanceof Error ? submitError.message : 'Unknown error';
       const permissionDenied =
         rawMessage.includes('permission') || rawMessage.includes('Permission');
+      setSuccess('');
       setError(
         permissionDenied
           ? 'Could not save: insufficient Firestore permissions. If this persists after updating rules, contact support.'
@@ -639,9 +618,15 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
 
     setIsReviewingProfile(true);
     setError('');
+    setSuccess('');
     try {
       await reviewEmployeeProfileRequest(employee.id, status, rejectionReason);
       await refreshEmployees();
+      setSuccess(
+        status === 'Approved'
+          ? 'Employee profile approved successfully.'
+          : 'Employee profile rejected successfully.',
+      );
       onSuccess();
     } catch (reviewError) {
       setError(
@@ -907,35 +892,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           ) : null}
         </FormGrid>
 
-        {!isKiosk ? (
-          <div className="mt-6 space-y-4">
-            <FormField label="Employment type" htmlFor="emp-employment-type">
-              <select
-                id="emp-employment-type"
-                value={form.employmentTypeId ?? 'employee'}
-                onChange={(event) => patchForm({ employmentTypeId: event.target.value })}
-                disabled={isBusy || !canEditPayRates}
-                className={formInputClass}
-              >
-                {(settings.payRules ?? DEFAULT_PAY_RULES).employmentTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-            <RateMatrixEditor
-              rules={settings.payRules ?? DEFAULT_PAY_RULES}
-              cells={form.payRates?.cells}
-              disabled={isBusy || !canEditPayRates}
-              onChange={(cells) =>
-                patchForm({
-                  payRates: { ...form.payRates, cells },
-                })
-              }
-            />
-          </div>
-        ) : null}
+        {/* Rates are handled exclusively in the Accounting module (Setup -> Rates).
+            The employee editor only manages HR/profile data. */}
 
         {isEditMode && employee && canInviteEmployees && !isKiosk ? (
           <div className="rounded-xl border border-border/80 bg-surface-base/50 p-4">
@@ -1072,6 +1030,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       ) : null}
 
       {error ? <FormAlert variant="error">{error}</FormAlert> : null}
+      {!error && success ? <FormAlert variant="success">{success}</FormAlert> : null}
 
       <FormActions
         onCancel={onCancel}
