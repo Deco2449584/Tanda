@@ -241,32 +241,33 @@ export function AccountingRatesPanel({
   }, [staff, templates]);
 
   return (
-    <div className="space-y-5">
-      <div className="flex gap-2">
+    <div className="min-w-0 space-y-5">
+      <div className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-surface-base/40 p-1 sm:flex sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0">
         {(
           [
             ['staff', 'Staff'],
             ['sites', 'Sites'],
-            ['company', 'Company defaults'],
+            ['company', 'Defaults'],
           ] as const
         ).map(([id, label]) => (
           <button
             key={id}
             type="button"
             onClick={() => setSide(id)}
-            className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+            className={`rounded-lg px-2 py-2 text-center text-xs font-medium sm:border sm:px-3 sm:text-sm ${
               side === id
-                ? 'border-primary/50 bg-primary/15 text-primary'
-                : 'border-border text-muted'
+                ? 'bg-primary/15 text-primary sm:border-primary/50'
+                : 'text-muted sm:border-border'
             }`}
           >
-            {label}
+            <span className="sm:hidden">{label}</span>
+            <span className="hidden sm:inline">{id === 'company' ? 'Company defaults' : label}</span>
           </button>
         ))}
       </div>
 
       {side === 'staff' ? (
-        <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+        <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
           {staff.length === 0 ? (
             <p className="text-sm text-subtle">No payroll-eligible employees.</p>
           ) : (
@@ -295,9 +296,26 @@ export function AccountingRatesPanel({
                   </button>
                 ))}
               </div>
-              <div className="mt-4 grid gap-4 lg:grid-cols-[220px_1fr]">
+              <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 rounded-lg border border-border/60 bg-surface-base/30 px-3 py-2 text-xs text-muted">
+                  <label className="block md:hidden">
+                    <span className="mb-1 block text-xs text-subtle">Employee</span>
+                    <select
+                      value={selectedStaff?.id ?? ''}
+                      onChange={(event) => {
+                        setStaffId(event.target.value);
+                        setStaffDraft(null);
+                      }}
+                      className={inputClass}
+                    >
+                      {filteredStaff.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="hidden items-center gap-2 rounded-lg border border-border/60 bg-surface-base/30 px-3 py-2 text-xs text-muted md:flex">
                     <input
                       type="checkbox"
                       checked={filter === 'all'}
@@ -315,7 +333,7 @@ export function AccountingRatesPanel({
                     placeholder="Search by name or ID"
                     className={inputClass}
                   />
-                  <ul className="max-h-80 overflow-y-auto space-y-2 rounded-xl border border-border/60 bg-surface-base/20 p-2">
+                  <ul className="hidden max-h-80 space-y-2 overflow-y-auto rounded-xl border border-border/60 bg-surface-base/20 p-2 md:block">
                     {filteredStaff.map((employee) => (
                       <li key={employee.id}>
                         <button
@@ -348,7 +366,7 @@ export function AccountingRatesPanel({
                     ))}
                   </ul>
                 </div>
-                <div>
+                <div className="min-w-0">
                   {currentStaff && selectedStaff ? (
                     <>
                       <div className="mb-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
@@ -446,9 +464,9 @@ export function AccountingRatesPanel({
                             className={inputClass}
                           />
                         </label>
-                        <label className="block">
+                        <label className="block sm:col-span-3 lg:col-span-1">
                           <span className="mb-1 block text-xs text-subtle">Copy from</span>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col gap-2 sm:flex-row">
                             <select
                               value={copyFromId}
                               onChange={(event) => setCopyFromId(event.target.value)}
@@ -467,7 +485,7 @@ export function AccountingRatesPanel({
                               type="button"
                               disabled={!copyFromId || !canEdit}
                               onClick={() => void copyFrom()}
-                              className="whitespace-nowrap rounded-lg border border-border px-3 text-xs text-muted"
+                              className="rounded-lg border border-border px-3 py-2 text-xs text-muted disabled:opacity-50 sm:whitespace-nowrap"
                             >
                               Copy
                             </button>
@@ -492,12 +510,12 @@ export function AccountingRatesPanel({
                       </div>
 
                       {canEdit ? (
-                        <div className="mt-4 flex flex-wrap items-end gap-2">
+                        <div className="mt-4">
                           <button
                             type="button"
                             disabled={saving}
                             onClick={() => void saveStaff()}
-                            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 sm:w-auto sm:px-6"
                           >
                             {saving ? 'Saving…' : `Save rates for ${selectedStaff.name}`}
                           </button>
@@ -513,7 +531,7 @@ export function AccountingRatesPanel({
       ) : null}
 
       {side === 'sites' ? (
-        <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+        <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
           {locations.length === 0 ? (
             <p className="text-sm text-subtle">No locations yet.</p>
           ) : (
@@ -617,12 +635,12 @@ export function AccountingRatesPanel({
               </div>
 
               {canEdit ? (
-                <div className="mt-4 flex flex-wrap items-end gap-2">
+                <div className="mt-4">
                   <button
                     type="button"
                     disabled={saving}
                     onClick={() => void saveSite()}
-                    className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
                   >
                     {saving ? 'Saving…' : 'Save site billing'}
                   </button>
@@ -634,7 +652,7 @@ export function AccountingRatesPanel({
       ) : null}
 
       {side === 'company' ? (
-        <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6 space-y-6">
+        <section className="min-w-0 space-y-6 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
           <div>
             <h2 className="text-sm font-semibold text-white">Default pay matrix</h2>
             <p className="mt-1 text-xs text-subtle">
@@ -678,7 +696,7 @@ export function AccountingRatesPanel({
               type="button"
               disabled={saving}
               onClick={() => void saveCompanyDefaults()}
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
             >
               {saving ? 'Saving…' : 'Save company defaults'}
             </button>

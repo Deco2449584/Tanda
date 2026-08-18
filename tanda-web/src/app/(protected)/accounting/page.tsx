@@ -42,20 +42,20 @@ export default function AccountingPage() {
         </p>
       </div>
 
-      <nav className="flex flex-wrap gap-1 rounded-xl border border-border bg-surface-raised p-1">
+      <nav className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-raised p-1 md:flex md:flex-wrap">
         {TABS.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
-            className={`flex flex-col rounded-lg px-4 py-2.5 text-left transition ${
+            className={`flex min-w-0 flex-col rounded-lg px-3 py-2.5 text-left transition md:px-4 ${
               tab === item.id
                 ? 'bg-primary/15 text-primary'
                 : 'text-muted hover:bg-surface-hover hover:text-foreground'
             }`}
           >
             <span className="text-sm font-semibold">{item.label}</span>
-            <span className="text-[11px] opacity-70">{item.hint}</span>
+            <span className="hidden text-[11px] opacity-70 sm:block">{item.hint}</span>
           </button>
         ))}
       </nav>
@@ -73,7 +73,7 @@ export default function AccountingPage() {
       ) : null}
 
       {tab === 'setup' ? (
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section>
             <SectionHeader
               title="Pay and charge rules"

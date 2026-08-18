@@ -19,6 +19,7 @@ import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
+import { getMonthDateRange, getYearDateRange } from '@/lib/attendance/work-sessions';
 import { computeAwardPay } from '@/lib/payroll/compute-award-pay';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
