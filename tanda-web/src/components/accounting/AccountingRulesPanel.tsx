@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FormAlert } from '@/components/employees/employee-form-ui';
+import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { savePayRulesRequest } from '@/lib/accounting/accounting-api';
 import { validatePayRules } from '@/lib/payroll/validate-pay-rules';
 import type { Location } from '@/lib/types/location';
@@ -39,6 +41,7 @@ export function AccountingRulesPanel({
   const [draft, setDraft] = useState<PayRules>(rules);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
     setDraft(rules);
@@ -56,6 +59,11 @@ export function AccountingRulesPanel({
     try {
       await savePayRulesRequest(draft);
       await onSaved(draft);
+      setToast({
+        id: `rules-saved-${Date.now()}`,
+        text: 'Rules saved successfully.',
+        variant: 'success',
+      });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save rules.');
     } finally {
@@ -837,6 +845,7 @@ export function AccountingRulesPanel({
           </button>
         </div>
       ) : null}
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

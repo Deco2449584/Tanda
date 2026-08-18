@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { FormAlert } from '@/components/employees/employee-form-ui';
+import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { RateMatrixEditor } from '@/components/accounting/RateMatrixEditor';
 import {
   savePayRulesRequest,
@@ -89,6 +91,7 @@ export function AccountingRatesPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const templates = rules.rateTemplates ?? [];
   const staff = useMemo(() => employees.filter(isPayrollEligibleEmployee), [employees]);
@@ -151,6 +154,11 @@ export function AccountingRatesPanel({
       });
       await onStaffSaved();
       setMessage(`Saved rates for ${selectedStaff.name}.`);
+      setToast({
+        id: `staff-rates-saved-${Date.now()}`,
+        text: `Saved rates for ${selectedStaff.name}.`,
+        variant: 'success',
+      });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save staff rates.');
     } finally {
@@ -171,6 +179,11 @@ export function AccountingRatesPanel({
       });
       await onSiteSaved();
       setMessage(`Saved billing for ${selectedSite.name}.`);
+      setToast({
+        id: `site-billing-saved-${Date.now()}`,
+        text: `Saved billing for ${selectedSite.name}.`,
+        variant: 'success',
+      });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save site billing.');
     } finally {
@@ -187,6 +200,11 @@ export function AccountingRatesPanel({
       payRates: { ...(source.payRates ?? {}) },
     });
     setMessage(`Copied matrix from ${source.name}. Save to keep it.`);
+    setToast({
+      id: `staff-copy-${Date.now()}`,
+      text: `Copied matrix from ${source.name}. Save to keep it.`,
+      variant: 'info',
+    });
   }
 
   async function saveCompanyDefaults() {
@@ -202,6 +220,11 @@ export function AccountingRatesPanel({
       });
       await onRulesSaved();
       setMessage('Saved company default matrices.');
+      setToast({
+        id: `company-defaults-saved-${Date.now()}`,
+        text: 'Saved company default matrices.',
+        variant: 'success',
+      });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save company defaults.');
     } finally {
@@ -665,8 +688,8 @@ export function AccountingRatesPanel({
         </section>
       ) : null}
 
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-      {message ? <p className="text-sm text-emerald-400">{message}</p> : null}
+      {error ? <FormAlert variant="error">{error}</FormAlert> : null}
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }
