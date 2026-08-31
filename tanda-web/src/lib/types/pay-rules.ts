@@ -79,6 +79,32 @@ export interface AccountingReportPreset {
   employmentTypeId: string;
 }
 
+/** How Xero Bill ContactName is filled. */
+export type XeroBillsContactMode = 'per_staff' | 'shared';
+
+/**
+ * Settings for Xero Sales Invoice + Bill CSV imports.
+ * All values are editable in Accounting → Setup; exports never hardcode business values.
+ *
+ * Description templates may include: {period}, {site}, {staff}
+ * Invoice numbers: {prefix}-{YYYYMMDD}-{suffix} where suffix is site/staff id.
+ */
+export interface XeroExportSettings {
+  salesAccountCode: string;
+  salesTaxType: string;
+  salesInvoicePrefix: string;
+  salesDescriptionTemplate: string;
+  billsTaxType: string;
+  billsInvoicePrefix: string;
+  billsDescriptionTemplate: string;
+  billsContactMode: XeroBillsContactMode;
+  /** Used when billsContactMode is "shared". */
+  billsSharedContactName: string;
+  /** Fallback expense AccountCode if an employment type has no code set. */
+  billsFallbackAccountCode: string;
+  dueDays: number;
+}
+
 export interface SiteBilling {
   effectiveFrom?: string;
   timeBands?: PayTimeBand[];
@@ -107,6 +133,7 @@ export interface PayRules {
   defaultChargeCells?: PayRateCells;
   rateTemplates?: RateTemplate[];
   reportPresets?: AccountingReportPreset[];
+  xero?: XeroExportSettings;
 }
 
 export function rateCellKey(dayTypeId: string, bandId: string): string {

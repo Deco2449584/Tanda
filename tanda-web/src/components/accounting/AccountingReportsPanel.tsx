@@ -32,6 +32,10 @@ import {
   type AccountingReportView,
   type SiteChargePack,
 } from '@/lib/payroll/award-export';
+import {
+  downloadXeroBillsCsv,
+  downloadXeroSalesInvoiceCsv,
+} from '@/lib/payroll/xero-export';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
 import type { Employee } from '@/lib/types/employee';
@@ -223,6 +227,58 @@ export function AccountingReportsPanel({
           Download ready-to-use files for your accounting system. Close the week first for final numbers.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ExportCard
+            title="Xero sales invoices"
+            description="One charge line per site for the week — matches SalesInvoiceTemplate."
+            onDownload={
+              canExport
+                ? () =>
+                    downloadXeroSalesInvoiceCsv({
+                      report: { ...report, slices },
+                      rules,
+                      periodLabel,
+                      periodStart: dateRange.start,
+                      periodEnd: dateRange.end,
+                    })
+                : undefined
+            }
+          />
+          <ExportCard
+            title="Xero bills"
+            description="One pay line per staff member for the week — matches BillTemplate."
+            onDownload={
+              canExport
+                ? () =>
+                    downloadXeroBillsCsv({
+                      slices,
+                      rules,
+                      periodLabel,
+                      periodStart: dateRange.start,
+                      periodEnd: dateRange.end,
+                    })
+                : undefined
+            }
+          />
+          <ExportCard
+            title="Client timesheet CSV"
+            description="Detailed staff / band lines for the invoice you send to clients."
+            onDownload={
+              canExport
+                ? () =>
+                    exportAccountingViewToCsv({
+                      view: 'timesheet',
+                      groupBy: 'staff',
+                      report: { ...report, slices },
+                      slices,
+                      rules,
+                      periodLabel,
+                      periodStart: dateRange.start,
+                      periodEnd: dateRange.end,
+                      companyName: COMPANY_NAME,
+                    })
+                : undefined
+            }
+          />
           <ExportCard
             title="Journal"
             description="Debit/credit entries by employment type for your GL."

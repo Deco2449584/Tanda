@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/payroll/award-calc.test.ts"
+    "test": "tsx --test src/lib/payroll/award-calc.test.ts src/lib/payroll/xero-export.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

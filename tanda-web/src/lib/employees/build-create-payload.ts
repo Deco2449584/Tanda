@@ -116,7 +116,7 @@ export const initialCreateEmployeeForm: CreateEmployeeFormValues = {
   locationId: '',
   locationGroupId: '',
   hourlyRate: 0,
-  employmentTypeId: 'employee',
+  employmentTypeId: 'full_time',
   allowCheckInWithoutScheduledShift: false,
   startDate: todayIsoDate(),
   endDate: '',

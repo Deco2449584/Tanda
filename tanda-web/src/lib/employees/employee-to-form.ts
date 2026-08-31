@@ -22,7 +22,7 @@ export function employeeToFormValues(employee: Employee): CreateEmployeeFormValu
     locationId: employee.locationId ?? '',
     locationGroupId: employee.locationGroupId ?? '',
     hourlyRate: employee.hourlyRate ?? 0,
-    employmentTypeId: employee.employmentTypeId ?? 'employee',
+    employmentTypeId: employee.employmentTypeId ?? 'full_time',
     payRates: employee.payRates,
     allowCheckInWithoutScheduledShift: employee.allowCheckInWithoutScheduledShift === true,
     startDate: employee.startDate ?? '',

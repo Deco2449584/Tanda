@@ -75,7 +75,7 @@ export const DEFAULT_ATTENDANCE_RESTRICTIONS: AttendanceRestrictionsSettings = {
 
 export const DEFAULT_PAYROLL_ACCOUNTING: PayrollAccountingSettings = {
   wagesExpenseAccountCode: '6100',
-  wagesExpenseAccountName: 'Wages expense',
+  wagesExpenseAccountName: 'Wage',
   wagesPayableAccountCode: '2100',
   wagesPayableAccountName: 'Wages payable',
 };

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { savePayRulesRequest } from '@/lib/accounting/accounting-api';
+import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
 import { validatePayRules } from '@/lib/payroll/validate-pay-rules';
 import type { Location } from '@/lib/types/location';
 import type { PayRules } from '@/lib/types/pay-rules';
@@ -794,7 +795,8 @@ export function AccountingRulesPanel({
           <div>
             <h2 className="text-sm font-semibold text-white">Employment types & GL</h2>
             <p className="mt-1 text-xs text-subtle">
-              Used on journal exports: debit the expense account and credit the payable account.
+              Used on journal and Xero bill exports: debit the expense account and credit the payable
+              account. Set Wage vs Contracting Expense codes here to match Xero.
             </p>
           </div>
           {canEdit ? (
@@ -838,7 +840,7 @@ export function AccountingRulesPanel({
                     setDraft({ ...draft, employmentTypes });
                   }}
                   className={inputClass}
-                  placeholder="Employee"
+                    placeholder="Full Time"
                 />
               </Field>
               <p className="mt-4 text-xs font-medium text-muted">Expense account (debit)</p>
@@ -866,7 +868,7 @@ export function AccountingRulesPanel({
                       setDraft({ ...draft, employmentTypes });
                     }}
                     className={inputClass}
-                    placeholder="Wages expense"
+                    placeholder="Wage"
                   />
                 </Field>
               </div>
@@ -923,6 +925,258 @@ export function AccountingRulesPanel({
               </div>
             </EditorCard>
           ))}
+        </div>
+      </section>
+
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Xero export settings</h2>
+          <p className="mt-1 text-xs text-subtle">
+            These values fill the Sales Invoice and Bill CSV columns when you export. Match them to
+            your Xero chart of accounts and tax rates — example values are shown until you change them.
+            Expense account codes for bills still come from each employment type above.
+          </p>
+        </div>
+
+        <div className="mt-4 space-y-4">
+          <EditorCard title="Sales invoices (charges to clients)">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Sales account code"
+                hint="Xero income account for labour charges (*AccountCode)"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.salesAccountCode ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        salesAccountCode: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="200"
+                />
+              </Field>
+              <Field
+                label="Sales tax type"
+                hint="Must match a TaxType name in your Xero organisation exactly"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.salesTaxType ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        salesTaxType: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="GST on Income"
+                />
+              </Field>
+              <Field
+                label="Invoice number prefix"
+                hint="Becomes PREFIX-YYYYMMDD-SITE (e.g. SI-20260308-LOC1)"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.salesInvoicePrefix ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        salesInvoicePrefix: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="SI"
+                />
+              </Field>
+              <Field label="Due days after invoice date" hint="DueDate = week end date + this many days">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  disabled={!canEdit}
+                  value={draft.xero?.dueDays ?? 14}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        dueDays: Number(event.target.value) || 0,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+            <div className="mt-3">
+              <Field
+                label="Description template"
+                hint="Placeholders: {period} = pay week label, {site} = warehouse/customer name"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.salesDescriptionTemplate ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        salesDescriptionTemplate: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="Labour charge — {period} — {site}"
+                />
+              </Field>
+            </div>
+          </EditorCard>
+
+          <EditorCard title="Bills (pays to staff / contractors)">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Bills tax type"
+                hint="Must match a TaxType name in Xero (wages are often BAS Excluded)"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.billsTaxType ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        billsTaxType: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="GST on Expenses"
+                />
+              </Field>
+              <Field
+                label="Bill number prefix"
+                hint="Becomes PREFIX-YYYYMMDD-EMPLOYEEID (e.g. BILL-20260308-E123)"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.billsInvoicePrefix ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        billsInvoicePrefix: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="BILL"
+                />
+              </Field>
+              <Field
+                label="Contact name mode"
+                hint="Who appears in *ContactName on each bill line"
+              >
+                <select
+                  disabled={!canEdit}
+                  value={draft.xero?.billsContactMode ?? 'per_staff'}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        billsContactMode:
+                          event.target.value === 'shared' ? 'shared' : 'per_staff',
+                      },
+                    })
+                  }
+                  className={inputClass}
+                >
+                  <option value="per_staff">One contact per staff member</option>
+                  <option value="shared">Single shared contact for all bills</option>
+                </select>
+              </Field>
+              <Field
+                label="Shared contact name"
+                hint="Only used when contact mode is “shared” (e.g. Payroll)"
+              >
+                <input
+                  disabled={!canEdit || draft.xero?.billsContactMode !== 'shared'}
+                  value={draft.xero?.billsSharedContactName ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        billsSharedContactName: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="Payroll"
+                />
+              </Field>
+              <Field
+                label="Fallback expense account code"
+                hint="Used if an employment type has no expense code set"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.billsFallbackAccountCode ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        billsFallbackAccountCode: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="6100"
+                />
+              </Field>
+            </div>
+            <div className="mt-3">
+              <Field
+                label="Description template"
+                hint="Placeholders: {period} = pay week label, {staff} = person name"
+              >
+                <input
+                  disabled={!canEdit}
+                  value={draft.xero?.billsDescriptionTemplate ?? ''}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        billsDescriptionTemplate: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="Wages — {period} — {staff}"
+                />
+              </Field>
+            </div>
+            <p className="mt-3 text-[11px] text-subtle">
+              Due date for bills uses the same “Due days after invoice date” as sales invoices.
+            </p>
+          </EditorCard>
         </div>
       </section>
 

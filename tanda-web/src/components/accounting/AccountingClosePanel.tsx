@@ -30,6 +30,10 @@ import {
   buildSiteChargePacks,
   exportAccountingViewToCsv,
 } from '@/lib/payroll/award-export';
+import {
+  downloadXeroBillsCsv,
+  downloadXeroSalesInvoiceCsv,
+} from '@/lib/payroll/xero-export';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
 import type { Employee } from '@/lib/types/employee';
@@ -338,6 +342,36 @@ export function AccountingClosePanel({
         ) : null}
         {canExport ? (
           <>
+            <button
+              type="button"
+              onClick={() =>
+                downloadXeroSalesInvoiceCsv({
+                  report,
+                  rules,
+                  periodLabel,
+                  periodStart: dateRange.start,
+                  periodEnd: dateRange.end,
+                })
+              }
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
+            >
+              Export Xero sales invoices
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadXeroBillsCsv({
+                  slices: report.slices,
+                  rules,
+                  periodLabel,
+                  periodStart: dateRange.start,
+                  periodEnd: dateRange.end,
+                })
+              }
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
+            >
+              Export Xero bills
+            </button>
             <button
               type="button"
               onClick={() =>

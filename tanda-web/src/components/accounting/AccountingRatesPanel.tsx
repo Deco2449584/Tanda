@@ -129,8 +129,8 @@ export function AccountingRatesPanel({
       ? staffDraft
       : selectedStaff
         ? {
-            employmentTypeId:
-              selectedStaff.employmentTypeId || rules.employmentTypes[0]?.id || 'employee',
+              employmentTypeId:
+                selectedStaff.employmentTypeId || rules.employmentTypes[0]?.id || 'full_time',
             payRates: selectedStaff.payRates ?? {},
             hourlyRate: selectedStaff.hourlyRate || 0,
           }

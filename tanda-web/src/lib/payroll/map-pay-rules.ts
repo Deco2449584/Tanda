@@ -14,6 +14,8 @@ import type {
   RateTemplate,
   SiteBilling,
   StaffPayRates,
+  XeroBillsContactMode,
+  XeroExportSettings,
 } from '@/lib/types/pay-rules';
 import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
 
@@ -178,6 +180,43 @@ function mapRateTemplate(raw: unknown): RateTemplate | null {
   };
 }
 
+/** Old catalogue before Holly's Full Time / Part Time / Casual / Contractor list. */
+function isLegacyEmploymentCatalogue(types: PayEmploymentType[]): boolean {
+  if (types.length !== 2) return false;
+  const ids = new Set(types.map((type) => type.id));
+  return ids.has('employee') && ids.has('contractor');
+}
+
+function mapXeroExportSettings(
+  raw: unknown,
+  defaults: XeroExportSettings,
+): XeroExportSettings {
+  if (!raw || typeof raw !== 'object') return { ...defaults };
+  const item = raw as Record<string, unknown>;
+  const modeRaw = asString(item.billsContactMode);
+  const billsContactMode: XeroBillsContactMode =
+    modeRaw === 'shared' ? 'shared' : 'per_staff';
+  const dueDays = asNumber(item.dueDays);
+  return {
+    salesAccountCode: asString(item.salesAccountCode) ?? defaults.salesAccountCode,
+    salesTaxType: asString(item.salesTaxType) ?? defaults.salesTaxType,
+    salesInvoicePrefix: asString(item.salesInvoicePrefix) ?? defaults.salesInvoicePrefix,
+    salesDescriptionTemplate:
+      asString(item.salesDescriptionTemplate) ?? defaults.salesDescriptionTemplate,
+    billsTaxType: asString(item.billsTaxType) ?? defaults.billsTaxType,
+    billsInvoicePrefix: asString(item.billsInvoicePrefix) ?? defaults.billsInvoicePrefix,
+    billsDescriptionTemplate:
+      asString(item.billsDescriptionTemplate) ?? defaults.billsDescriptionTemplate,
+    billsContactMode,
+    billsSharedContactName:
+      asString(item.billsSharedContactName) ?? defaults.billsSharedContactName,
+    billsFallbackAccountCode:
+      asString(item.billsFallbackAccountCode) ?? defaults.billsFallbackAccountCode,
+    dueDays:
+      typeof dueDays === 'number' && dueDays >= 0 ? Math.round(dueDays) : defaults.dueDays,
+  };
+}
+
 export function mapPayRules(
   raw: unknown,
   payrollAccounting?: {
@@ -191,15 +230,15 @@ export function mapPayRules(
   const defaults: PayRules = {
     ...DEFAULT_PAY_RULES,
     employmentTypes: DEFAULT_PAY_RULES.employmentTypes.map((type) =>
-      type.id === 'employee'
-        ? {
+      type.id === 'contractor'
+        ? type
+        : {
             ...type,
             expenseAccountCode: gl.wagesExpenseAccountCode,
-            expenseAccountName: gl.wagesExpenseAccountName,
+            expenseAccountName: gl.wagesExpenseAccountName || 'Wage',
             payableAccountCode: gl.wagesPayableAccountCode,
             payableAccountName: gl.wagesPayableAccountName,
-          }
-        : type,
+          },
     ),
   };
 
@@ -232,7 +271,7 @@ export function mapPayRules(
         .filter((item): item is PayAllowance => Boolean(item))
     : defaults.allowances;
 
-  const employmentTypes = Array.isArray(data.employmentTypes)
+  const mappedEmploymentTypes = Array.isArray(data.employmentTypes)
     ? data.employmentTypes
         .map((item) =>
           mapEmploymentType(
@@ -248,6 +287,12 @@ export function mapPayRules(
         )
         .filter((item): item is PayEmploymentType => Boolean(item))
     : defaults.employmentTypes;
+
+  const employmentTypes = isLegacyEmploymentCatalogue(mappedEmploymentTypes)
+    ? defaults.employmentTypes
+    : mappedEmploymentTypes.length > 0
+      ? mappedEmploymentTypes
+      : defaults.employmentTypes;
 
   const rounding = data.hoursRounding;
   const hoursRounding: HoursRounding =
@@ -300,5 +345,9 @@ export function mapPayRules(
             employmentTypeId: asString(item.employmentTypeId) ?? '',
           }))
       : defaults.reportPresets ?? [],
+    xero: mapXeroExportSettings(
+      data.xero,
+      defaults.xero ?? DEFAULT_PAY_RULES.xero!,
+    ),
   };
 }
