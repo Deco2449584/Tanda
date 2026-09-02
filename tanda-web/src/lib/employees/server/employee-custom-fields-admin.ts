@@ -145,7 +145,10 @@ export async function upsertEmployeeCustomFieldValues(input: {
   values: UpsertEmployeeCustomFieldValueInput[];
   updatedByUid: string;
   updatedByEmail: string;
+  /** When false, required fields may be left empty (admin HR edits). */
+  enforceRequired?: boolean;
 }): Promise<void> {
+  const enforceRequired = input.enforceRequired !== false;
   const fields = await listEmployeeCustomFields();
   const fieldById = new Map(fields.map((field) => [field.id, field]));
   const db = getAdminFirestore();
@@ -170,7 +173,7 @@ export async function upsertEmployeeCustomFieldValues(input: {
 
     if (field.type === 'text') {
       const text = optionalTrim(item.valueText);
-      if (field.required && !text) {
+      if (enforceRequired && field.required && !text) {
         throw new Error(`"${field.title}" is required.`);
       }
       payload.valueText = text ?? null;
@@ -182,7 +185,7 @@ export async function upsertEmployeeCustomFieldValues(input: {
     } else if (field.type === 'number') {
       const raw = item.valueNumber;
       const hasNumber = typeof raw === 'number' && Number.isFinite(raw);
-      if (field.required && !hasNumber) {
+      if (enforceRequired && field.required && !hasNumber) {
         throw new Error(`"${field.title}" is required.`);
       }
       payload.valueNumber = hasNumber ? raw : null;
@@ -193,7 +196,7 @@ export async function upsertEmployeeCustomFieldValues(input: {
       payload.mimeType = FieldValue.delete();
     } else {
       const url = optionalTrim(item.url);
-      if (field.required && !url) {
+      if (enforceRequired && field.required && !url) {
         throw new Error(`"${field.title}" is required.`);
       }
       payload.url = url ?? null;

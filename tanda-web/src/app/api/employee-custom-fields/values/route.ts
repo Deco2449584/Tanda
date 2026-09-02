@@ -70,6 +70,7 @@ export async function PUT(request: Request) {
     let employeeDocId = '';
     let updatedByUid = '';
     let updatedByEmail = '';
+    let enforceRequired = true;
 
     if (admin && canPerformAction(admin.access, 'employees', 'update')) {
       employeeDocId = body.employeeDocId?.trim() ?? '';
@@ -81,6 +82,7 @@ export async function PUT(request: Request) {
       }
       updatedByUid = admin.user.uid;
       updatedByEmail = admin.user.email;
+      enforceRequired = false;
     } else if (employee) {
       employeeDocId = employee.employeeDocId;
       updatedByUid = employee.uid;
@@ -108,6 +110,7 @@ export async function PUT(request: Request) {
       values,
       updatedByUid,
       updatedByEmail,
+      enforceRequired,
     });
 
     return NextResponse.json({ ok: true });
