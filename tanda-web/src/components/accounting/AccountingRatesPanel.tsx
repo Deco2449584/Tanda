@@ -4,13 +4,14 @@ import { useMemo, useState } from 'react';
 import { FormAlert } from '@/components/employees/employee-form-ui';
 import { Toast, type ToastMessage } from '@/components/ui/Toast';
 import { RateMatrixEditor } from '@/components/accounting/RateMatrixEditor';
+import { OverrideValueField } from '@/components/accounting/OverrideValueField';
 import {
   savePayRulesRequest,
   saveSiteBillingRequest,
   saveStaffRatesRequest,
 } from '@/lib/accounting/accounting-api';
 import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
-import { withSyncedBaseRate } from '@/lib/payroll/rate-matrix';
+import { withSyncedBaseRate, baseHourlyRateFromCells } from '@/lib/payroll/rate-matrix';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
 import type {
@@ -123,9 +124,11 @@ export function AccountingRatesPanel({
 
   const staffKey = selectedStaff?.id ?? '';
   const siteKey = selectedSite?.id ?? '';
+  const activeStaffId = staffId || staffKey;
+  const activeSiteId = siteId || siteKey;
 
   const currentStaff =
-    staffDraft && staffId === staffKey
+    staffDraft && activeStaffId && activeStaffId === staffKey
       ? staffDraft
       : selectedStaff
         ? {
@@ -136,7 +139,8 @@ export function AccountingRatesPanel({
           }
         : null;
 
-  const currentSite = siteDraft && siteId === siteKey ? siteDraft : selectedSite?.billing ?? {};
+  const currentSite =
+    siteDraft && activeSiteId && activeSiteId === siteKey ? siteDraft : selectedSite?.billing ?? {};
 
   async function saveStaff(history?: StaffPayRates[]) {
     if (!selectedStaff || !currentStaff || !canEdit) return;
@@ -153,6 +157,7 @@ export function AccountingRatesPanel({
         payRateHistory: history ?? selectedStaff.payRateHistory,
       });
       await onStaffSaved();
+      setStaffDraft(null);
       setMessage(`Saved rates for ${selectedStaff.name}.`);
       setToast({
         id: `staff-rates-saved-${Date.now()}`,
@@ -178,6 +183,7 @@ export function AccountingRatesPanel({
         billingHistory: history ?? selectedSite.billingHistory,
       });
       await onSiteSaved();
+      setSiteDraft(null);
       setMessage(`Saved billing for ${selectedSite.name}.`);
       setToast({
         id: `site-billing-saved-${Date.now()}`,
@@ -407,21 +413,40 @@ export function AccountingRatesPanel({
                             ))}
                           </select>
                         </label>
-                        <label className="block">
+                        <label className="block sm:col-span-2">
                           <span className="mb-1 block text-xs text-subtle">Base hourly rate ($)</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <OverrideValueField
                             disabled={!canEdit}
-                            value={currentStaff.hourlyRate || ''}
-                            onChange={(event) =>
+                            mode={currentStaff.hourlyRate > 0 ? 'custom' : 'default'}
+                            onModeChange={(mode) => {
+                              if (mode === 'default') {
+                                setStaffDraft({
+                                  ...currentStaff,
+                                  hourlyRate: 0,
+                                });
+                                return;
+                              }
+
+                              const seed =
+                                currentStaff.hourlyRate > 0
+                                  ? currentStaff.hourlyRate
+                                  : baseHourlyRateFromCells(currentStaff.payRates.cells, 0);
+
                               setStaffDraft({
                                 ...currentStaff,
-                                hourlyRate: Number(event.target.value) || 0,
+                                hourlyRate: seed,
+                              });
+                            }}
+                            value={
+                              currentStaff.hourlyRate > 0 ? currentStaff.hourlyRate : ''
+                            }
+                            onValueChange={(value) =>
+                              setStaffDraft({
+                                ...currentStaff,
+                                hourlyRate: value === null ? 0 : value,
                               })
                             }
-                            className={inputClass}
+                            placeholder="0.00"
                           />
                         </label>
                         <label className="block">
@@ -498,7 +523,8 @@ export function AccountingRatesPanel({
                           rules={rules}
                           cells={currentStaff.payRates.cells}
                           disabled={!canEdit}
-                          emptyHint="Empty inherits the company default matrix, then the base hourly rate."
+                          baseRateHint={currentStaff.hourlyRate}
+                          emptyHint="Choose Default to inherit the company matrix, or Edit to set a custom value for this band."
                           emptyCellLabel="Default"
                           onChange={(cells) =>
                             setStaffDraft({

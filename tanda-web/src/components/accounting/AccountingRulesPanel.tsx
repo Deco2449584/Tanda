@@ -141,13 +141,6 @@ export function AccountingRulesPanel({
 
   return (
     <div className="min-w-0 space-y-6">
-      {error ? (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4">
-          <p className="text-sm font-medium text-rose-400">Validation error</p>
-          <p className="mt-1 text-sm text-rose-300/80">{error}</p>
-        </div>
-      ) : null}
-
       <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
         <h2 className="text-sm font-semibold text-white">Week rules</h2>
         <p className="mt-1 text-xs text-subtle">
@@ -1181,7 +1174,7 @@ export function AccountingRulesPanel({
       </section>
 
       {canEdit ? (
-        <div className="flex sm:justify-end">
+        <div className="flex flex-col items-stretch gap-3 sm:items-end">
           <button
             type="button"
             onClick={() => void handleSave()}
@@ -1190,6 +1183,12 @@ export function AccountingRulesPanel({
           >
             {saving ? 'Saving…' : 'Save rules'}
           </button>
+          {error ? (
+            <div className="w-full rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 sm:max-w-lg">
+              <p className="text-sm font-medium text-rose-400">Validation error</p>
+              <p className="mt-1 text-sm text-rose-300/80">{error}</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <Toast toast={toast} onDismiss={() => setToast(null)} />
