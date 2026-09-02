@@ -1,6 +1,9 @@
 import type { CreateEmployeeFormValues } from '@/lib/types/employee';
 import { todayIsoDate } from '@/lib/employees/employment-dates';
 
+/** Set on create; Accounting → Rates is the only place to change it afterward. */
+export const DEFAULT_EMPLOYEE_HOURLY_RATE = 0;
+
 const PERSONAL_STRING_FIELDS = [
   'phone',
   'dateOfBirth',
@@ -33,7 +36,7 @@ export function buildEmployeeCreatePayload(input: {
     name: form.name.trim(),
     email: form.email.trim().toLowerCase(),
     department: form.department.trim(),
-    hourlyRate: form.hourlyRate,
+    hourlyRate: DEFAULT_EMPLOYEE_HOURLY_RATE,
     active: true,
     kioskEnabled: false,
     lastAction: 'none',
@@ -100,6 +103,7 @@ export function buildEmployeeUpdatePayload(input: {
   });
 
   delete payload.lastAction;
+  delete payload.hourlyRate;
   payload.active = input.active;
   payload.kioskEnabled = input.kioskEnabled;
   payload.allowCheckInWithoutScheduledShift =

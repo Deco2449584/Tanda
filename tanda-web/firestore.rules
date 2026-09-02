@@ -99,7 +99,6 @@ service cloud.firestore {
           'name',
           'email',
           'department',
-          'hourlyRate',
           'photoUrl',
           'active',
           'kioskEnabled',

@@ -336,11 +336,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       }
     }
 
-    if (!isKiosk && form.hourlyRate <= 0) {
-      setError('Hourly rate must be greater than zero.');
-      return;
-    }
-
     if (!isKiosk && activeLocations.length > 0 && !form.locationId?.trim()) {
       setError('Select a primary location for this employee.');
       return;
@@ -423,7 +418,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         employeeId: employeeCode,
         email: isKiosk ? normalizeKioskLoginEmail(form.email) : form.email.trim().toLowerCase(),
         department: isKiosk ? 'Kiosk' : form.department.trim(),
-        hourlyRate: isKiosk ? 0 : form.hourlyRate,
         startDate: isKiosk ? undefined : form.startDate,
         endDate: isKiosk ? undefined : form.endDate,
         locationId: isKiosk ? '' : form.locationId,
@@ -849,23 +843,6 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
                 disabled={isBusy}
               />
 
-              <FormField label="Hourly rate ($)" htmlFor="emp-rate" required>
-                <input
-                  id="emp-rate"
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={form.hourlyRate || ''}
-                  onChange={(event) =>
-                    patchForm({ hourlyRate: parseFloat(event.target.value) || 0 })
-                  }
-                  disabled={isBusy}
-                  className={formInputClass}
-                  placeholder="18.50"
-                />
-              </FormField>
-
               <FormField label="Start date" htmlFor="emp-start-date" required>
                 <input
                   id="emp-start-date"
@@ -896,8 +873,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           ) : null}
         </FormGrid>
 
-        {/* Rates are handled exclusively in the Accounting module (Setup -> Rates).
-            The employee editor only manages HR/profile data. */}
+        {/* Hourly rate defaults to 0 on create; only Accounting → Rates can change it. */}
 
         {isEditMode && employee && canInviteEmployees && !isKiosk ? (
           <div className="rounded-xl border border-border/80 bg-surface-base/50 p-4">
