@@ -2,15 +2,29 @@
 
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  Copy,
+  MapPin,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import {
   createLocation,
   deleteLocation,
+  regenerateLocationPin,
   setLocationActive,
   updateLocation,
 } from '@/lib/locations/locations-service';
+import {
+  generateUniquePortalPinFromList,
+  isPortalPinTaken,
+  validatePortalPinFormat,
+} from '@/lib/portal/pin';
 import type { Location } from '@/lib/types/location';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useLocations } from '@/providers/LocationsProvider';
@@ -27,6 +41,32 @@ interface EditFormState {
 
 const emptyEditForm: EditFormState = { name: '', city: '', code: '' };
 
+function PinCopyButton({
+  pin,
+  onCopied,
+  label = 'Copy PIN',
+}: {
+  pin: string;
+  onCopied: () => void;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void navigator.clipboard.writeText(pin);
+        onCopied();
+      }}
+      className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary"
+      aria-label={label}
+      title={label}
+    >
+      <Copy className="h-3.5 w-3.5" aria-hidden />
+      Copy
+    </button>
+  );
+}
+
 export function LocationsTab({ onToast }: LocationsTabProps) {
   const { locations, loading, refresh } = useLocations();
   const { canAccessModule } = useAdminAccess();
@@ -34,26 +74,81 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [code, setCode] = useState('');
+  const [pin, setPin] = useState('');
   const [saving, setSaving] = useState(false);
+  const [revealedPin, setRevealedPin] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>(emptyEditForm);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const takenPins = useMemo(
+    () =>
+      locations
+        .map((location) => location.pin)
+        .filter((value): value is string => Boolean(value)),
+    [locations],
+  );
+
+  const pinTakenInForm =
+    pin.trim().length > 0 && isPortalPinTaken(pin, locations);
+
+  function handleGeneratePin() {
+    try {
+      const nextPin = generateUniquePortalPinFromList(takenPins);
+      setPin(nextPin);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not generate PIN.';
+      onToast(message, 'error');
+    }
+  }
+
+  function copyPortalLink() {
+    const url =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/portal`
+        : '/portal';
+    void navigator.clipboard.writeText(url);
+    onToast('Portal link copied.');
+  }
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
+    setRevealedPin(null);
+
+    const pinError = validatePortalPinFormat(pin);
+    if (pinError) {
+      onToast(pinError, 'error');
+      setSaving(false);
+      return;
+    }
+
+    if (isPortalPinTaken(pin, locations)) {
+      onToast('This PIN is already in use by another client.', 'error');
+      setSaving(false);
+      return;
+    }
 
     try {
-      await createLocation({ name, city, code: code || undefined });
+      const result = await createLocation({
+        name,
+        city,
+        code: code || undefined,
+        pin,
+      });
+      setRevealedPin(result.pin);
       setName('');
       setCity('');
       setCode('');
+      setPin('');
       void refresh();
-      onToast('Location created.');
+      onToast('Client created. Share the PIN for portal access.');
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Could not create location.';
+        error instanceof Error ? error.message : 'Could not create client.';
       onToast(message, 'error');
     } finally {
       setSaving(false);
@@ -85,13 +180,29 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       });
       cancelEdit();
       void refresh();
-      onToast('Location updated.');
+      onToast('Client updated.');
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Could not update location.';
+        error instanceof Error ? error.message : 'Could not update client.';
       onToast(message, 'error');
     } finally {
       setSavingEditId(null);
+    }
+  }
+
+  async function handleRegeneratePin(location: Location) {
+    setRegeneratingId(location.id);
+    setRevealedPin(null);
+
+    try {
+      const newPin = await regenerateLocationPin(location.id);
+      setRevealedPin(newPin);
+      void refresh();
+      onToast(`New PIN generated for ${location.name}.`);
+    } catch {
+      onToast('Could not regenerate PIN.', 'error');
+    } finally {
+      setRegeneratingId(null);
     }
   }
 
@@ -105,25 +216,29 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           : `${location.name} activated.`,
       );
     } catch {
-      onToast('Could not update location status.', 'error');
+      onToast('Could not update client status.', 'error');
     }
   }
 
   async function handleDelete(location: Location) {
     const confirmed = window.confirm(
-      `Delete "${location.name}" permanently?\n\nThis cannot be undone. Employees must be reassigned first.`,
+      `Delete "${location.name}" permanently?\n\nEmployees must be reassigned first. Inspections assigned to this client will lose portal access. This cannot be undone.`,
     );
     if (!confirmed) return;
 
     setDeletingId(location.id);
 
     try {
-      await deleteLocation(location.id);
+      const detachedCount = await deleteLocation(location.id);
       void refresh();
-      onToast(`${location.name} deleted.`);
+      onToast(
+        detachedCount > 0
+          ? `${location.name} deleted. Portal access removed from ${detachedCount} inspection(s).`
+          : `${location.name} deleted.`,
+      );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Could not delete location.';
+        error instanceof Error ? error.message : 'Could not delete client.';
       onToast(message, 'error');
     } finally {
       setDeletingId(null);
@@ -131,15 +246,25 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+    <div className="min-w-0 space-y-8">
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
           <MapPin className="h-4 w-4 text-primary" aria-hidden />
-          Branch locations
+          Clients
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Define offices or sites and assign each employee to a location. Used
-          in staff management, schedule, and attendance filters.
+          Each client is a work site for staff, schedule, attendance, and billing.
+          They sign in at{' '}
+          <button
+            type="button"
+            onClick={copyPortalLink}
+            className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+          >
+            /portal
+            <Copy className="h-3.5 w-3.5" aria-hidden />
+          </button>{' '}
+          with the shipment AWB and their company PIN. PINs do not expire unless
+          you generate a new one or deactivate the client.
           {canOpenAccounting ? (
             <>
               {' '}
@@ -151,23 +276,48 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
-        <h3 className="text-sm font-semibold text-white">New location</h3>
-        <form onSubmit={(e) => void handleCreate(e)} className="mt-4 space-y-4">
-          <div>
+      {revealedPin ? (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-200">PIN (copy now)</p>
+              <p className="mt-1 font-mono text-2xl tracking-widest text-white">
+                {revealedPin}
+              </p>
+            </div>
+            <PinCopyButton
+              pin={revealedPin}
+              onCopied={() => onToast('PIN copied.')}
+              label="Copy new PIN"
+            />
+          </div>
+          <p className="mt-2 text-xs text-amber-200/80">
+            Share this PIN with the client. It also appears on their card below.
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            Then open an inspection, enable portal access, and assign this client
+            before testing at /portal.
+          </p>
+        </div>
+      ) : null}
+
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+        <h3 className="text-sm font-semibold text-white">New client</h3>
+        <form onSubmit={(e) => void handleCreate(e)} className="mt-4 min-w-0 space-y-4">
+          <div className="min-w-0">
             <label className="mb-1 block text-xs font-medium text-muted">
-              Location name
+              Client name
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              placeholder="Sydney Warehouse"
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              placeholder="JAS"
+              className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+            <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-muted">
                 City
               </label>
@@ -176,10 +326,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                 onChange={(e) => setCity(e.target.value)}
                 required
                 placeholder="Sydney"
-                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-muted">
                 Code (optional)
               </label>
@@ -187,27 +337,62 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="SYD"
-                className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+                className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
             </div>
           </div>
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-medium text-muted">
+              PIN (6–8 digits)
+            </label>
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
+              <input
+                value={pin}
+                onChange={(e) =>
+                  setPin(e.target.value.replace(/\D/g, '').slice(0, 8))
+                }
+                inputMode="numeric"
+                placeholder="Enter or generate"
+                required
+                className="w-full min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              />
+              <button
+                type="button"
+                onClick={handleGeneratePin}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary sm:w-auto"
+                title="Generate unique PIN"
+              >
+                <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                Generate PIN
+              </button>
+            </div>
+            {pinTakenInForm ? (
+              <p className="mt-1 text-xs text-amber-300">
+                This PIN is already used by another client.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-subtle">
+                Leave blank and use Generate, or type your own PIN.
+              </p>
+            )}
+          </div>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || pinTakenInForm || !pin.trim()}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            {saving ? 'Creating…' : 'Create location'}
+            {saving ? 'Creating…' : 'Create client'}
           </button>
         </form>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
-        <h3 className="text-sm font-semibold text-white">Registered locations</h3>
+      <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+        <h3 className="text-sm font-semibold text-white">Registered clients</h3>
         {loading ? (
           <LoadingIndicator />
         ) : locations.length === 0 ? (
-          <p className="mt-4 text-sm text-subtle">No locations yet.</p>
+          <p className="mt-4 text-sm text-subtle">No clients yet.</p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-800">
             {locations.map((location) => (
@@ -228,7 +413,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       <input
                         value={editForm.city}
                         onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, city: e.target.value }))
+                          setEditForm((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
                         }
                         placeholder="City"
                         className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
@@ -271,6 +459,27 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                         {location.city}
                         {location.code ? ` · ${location.code}` : ''}
                       </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted">PIN:</span>
+                        {location.pin ? (
+                          <>
+                            <span className="font-mono text-sm tracking-wider text-white">
+                              {location.pin}
+                            </span>
+                            <PinCopyButton
+                              pin={location.pin}
+                              onCopied={() =>
+                                onToast(`PIN copied for ${location.name}.`)
+                              }
+                              label={`Copy PIN for ${location.name}`}
+                            />
+                          </>
+                        ) : (
+                          <span className="text-xs text-subtle">
+                            Unknown — use New PIN to set one
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <span
@@ -289,6 +498,18 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       >
                         <Pencil className="h-3 w-3" aria-hidden />
                         Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleRegeneratePin(location)}
+                        disabled={regeneratingId === location.id}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={`h-3 w-3 ${regeneratingId === location.id ? 'animate-spin' : ''}`}
+                          aria-hidden
+                        />
+                        New PIN
                       </button>
                       <button
                         type="button"

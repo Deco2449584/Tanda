@@ -5,7 +5,6 @@ const files = [
   'src/components/schedule/ScheduleMonthCalendar.tsx',
   'src/components/leave-requests/LeaveRequestHistoryTable.tsx',
   'src/components/inspections/InspectionsPageClient.tsx',
-  'src/components/settings/PortalClientsTab.tsx',
   'src/components/settings/LocationsTab.tsx',
   'src/components/settings/KioskDevicesTab.tsx',
   'src/app/(protected)/inspections/page.tsx',

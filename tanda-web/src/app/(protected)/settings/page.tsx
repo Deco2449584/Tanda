@@ -14,7 +14,6 @@ import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
 import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
 import { EmployeeCustomFieldsTab } from '@/components/settings/EmployeeCustomFieldsTab';
 import { NotificationsSettingsTab } from '@/components/settings/NotificationsSettingsTab';
-import { PortalClientsTab } from '@/components/settings/PortalClientsTab';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -38,7 +37,6 @@ type SettingsTab =
   | 'accessRoles'
   | 'auditLogs'
   | 'data'
-  | 'portal'
   | 'locations'
   | 'departments'
   | 'locationGroups'
@@ -53,11 +51,10 @@ const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey
   { id: 'employeeFields', label: 'Employee fields' },
   { id: 'auditLogs', label: 'Audit logs' },
   { id: 'profile', label: 'User profile' },
-  { id: 'locations', label: 'Locations', section: 'locations' },
+  { id: 'locations', label: 'Clients', section: 'locations' },
   { id: 'departments', label: 'Departments', section: 'departments' },
   { id: 'locationGroups', label: 'Location groups', section: 'locationGroups' },
   { id: 'kioskDevices', label: 'Kiosk devices', section: 'kioskDevices' },
-  { id: 'portal', label: 'Portal clients', section: 'portal' },
   { id: 'data', label: 'Data cleanup' },
 ];
 
@@ -236,7 +233,6 @@ export default function SettingsPage() {
             <LocationGroupsTab onToast={showToast} />
           )}
           {activeTab === 'kioskDevices' && <KioskDevicesTab onToast={showToast} />}
-          {activeTab === 'portal' && <PortalClientsTab onToast={showToast} />}
         </div>
       )}
 

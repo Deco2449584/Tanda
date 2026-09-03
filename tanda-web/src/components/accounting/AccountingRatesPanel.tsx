@@ -252,7 +252,7 @@ export function AccountingRatesPanel({
         {(
           [
             ['staff', 'Staff'],
-            ['sites', 'Sites'],
+            ['sites', 'Clients'],
             ['company', 'Defaults'],
           ] as const
         ).map(([id, label]) => (
@@ -565,7 +565,7 @@ export function AccountingRatesPanel({
               <div className="mb-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
                 <p className="text-sm font-medium text-white">Charge side</p>
                 <p className="mt-1 text-xs text-subtle">
-                  This section controls what the client site pays you for worked hours at <span className="text-foreground">{selectedSite?.name}</span>.
+                  This section controls what the client pays you for worked hours at <span className="text-foreground">{selectedSite?.name}</span>.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
@@ -583,7 +583,7 @@ export function AccountingRatesPanel({
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs text-subtle">Site</span>
+                  <span className="mb-1 block text-xs text-subtle">Client</span>
                   <select
                     value={selectedSite?.id ?? ''}
                     onChange={(event) => {
@@ -637,7 +637,7 @@ export function AccountingRatesPanel({
 
               <div className="mt-5">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Site time bands
+                  Client time bands
                 </h3>
                 <p className="mt-1 text-xs text-subtle">
                   Leave empty to inherit company bands. Overnight bands can wrap (e.g. 22:00–06:00).
@@ -801,7 +801,7 @@ function SiteTimeBandsEditor({
           onClick={() =>
             onChange([
               ...bands,
-              { id: newId('band'), name: 'Site band', from: '00:00', to: '06:00' },
+              { id: newId('band'), name: 'Client band', from: '00:00', to: '06:00' },
             ])
           }
           className="text-xs font-medium text-primary hover:underline"

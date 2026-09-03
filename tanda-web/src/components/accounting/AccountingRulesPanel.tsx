@@ -617,7 +617,7 @@ export function AccountingRulesPanel({
                 </Field>
                 <div className="mt-3">
                   <p className="mb-1.5 text-xs font-medium text-muted">
-                    Sites <span className="font-normal text-subtle">(none selected = all sites)</span>
+                    Clients <span className="font-normal text-subtle">(none selected = all clients)</span>
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {locations.map((location) => {
@@ -1017,7 +1017,7 @@ export function AccountingRulesPanel({
             <div className="mt-3">
               <Field
                 label="Description template"
-                hint="Placeholders: {period} = pay week label, {site} = warehouse/customer name"
+                hint="Placeholders: {period} = pay week label, {site} = client name"
               >
                 <input
                   disabled={!canEdit}

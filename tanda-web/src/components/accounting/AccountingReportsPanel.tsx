@@ -56,7 +56,7 @@ const VIEWS: Array<{ id: AccountingReportView; label: string }> = [
 
 const GROUPS: Array<{ id: AccountingGroupBy; label: string }> = [
   { id: 'staff', label: 'Staff' },
-  { id: 'site', label: 'Site' },
+  { id: 'site', label: 'Client' },
   { id: 'date', label: 'Day' },
   { id: 'band', label: 'Band' },
   { id: 'employmentType', label: 'Employment type' },
@@ -555,7 +555,7 @@ function TimesheetTable({
             <tr className="border-b border-primary/25 bg-primary/10">
               <th className="px-4 py-3 font-semibold text-white">Date</th>
               <th className="px-4 py-3 font-semibold text-white">Staff</th>
-              <th className="px-4 py-3 font-semibold text-white">Site</th>
+              <th className="px-4 py-3 font-semibold text-white">Client</th>
               <th className="px-4 py-3 font-semibold text-white">Band</th>
               <th className="px-4 py-3 font-semibold text-white">Pay hrs</th>
               <th className="px-4 py-3 font-semibold text-white">Charge hrs</th>

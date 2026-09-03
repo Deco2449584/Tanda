@@ -279,7 +279,7 @@ export function AccountingClosePanel({
             <thead>
               <tr className="border-b border-primary/25 bg-primary/10">
                 <th className="px-4 py-3 font-semibold text-white">
-                  {groupBy === 'site' ? 'Site' : 'Staff'}
+                  {groupBy === 'site' ? 'Client' : 'Staff'}
                 </th>
                 <th className="px-4 py-3 font-semibold text-white">Hours</th>
                 <th className="px-4 py-3 font-semibold text-white">Pay</th>

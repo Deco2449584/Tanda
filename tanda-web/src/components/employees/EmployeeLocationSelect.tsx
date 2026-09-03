@@ -59,7 +59,7 @@ export function EmployeeLocationSelect({
               ? 'Loading locations…'
               : hasAllowedFilter
                 ? 'No locations available for this employee'
-                : 'No locations — create one in Settings'}
+                : 'No clients — create one in Settings → Clients'}
           </option>
         ) : (
           options.map((location) => (

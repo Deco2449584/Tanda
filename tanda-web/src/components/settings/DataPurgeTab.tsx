@@ -233,7 +233,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         <OptionRow
           checked={options.portalClients}
           onChange={() => toggleOption('portalClients')}
-          label="Portal clients (Firestore)"
+          label="Legacy portal_clients collection (orphaned)"
           hint="Registered forwarders / customs agencies with AWB + PIN access"
         />
         <OptionRow
@@ -317,7 +317,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
                 <p>Cargo inspections removed: {result.cargoInspectionsDeleted}</p>
               ) : null}
               {result.portalClientsDeleted > 0 ? (
-                <p>Portal clients removed: {result.portalClientsDeleted}</p>
+                <p>Legacy portal clients removed: {result.portalClientsDeleted}</p>
               ) : null}
               {result.kioskDevicesDeleted > 0 ? (
                 <p>Kiosk devices removed: {result.kioskDevicesDeleted}</p>

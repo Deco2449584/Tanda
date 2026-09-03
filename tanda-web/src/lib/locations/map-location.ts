@@ -29,6 +29,13 @@ export function mapLocationDoc(
     city: record.city?.trim() ?? '',
     code,
     active: record.active !== false,
+    pin:
+      typeof record.pin === 'string' && record.pin.trim()
+        ? record.pin.trim()
+        : undefined,
+    hasPortalPin:
+      (typeof record.pinHash === 'string' && record.pinHash.length > 0) ||
+      (typeof record.pin === 'string' && record.pin.trim().length > 0),
     billing: mapSiteBilling(record.billing),
     billingHistory: Array.isArray(record.billingHistory)
       ? record.billingHistory

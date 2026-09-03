@@ -1,7 +1,7 @@
 import { mapInspectionDoc } from '@/lib/inspections/map-inspection';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
-import { mapPortalClientDoc } from '@/lib/portal/map-portal-client';
+import { mapLocationDoc } from '@/lib/locations/map-location';
 import { normalizeAwbNumber } from '@/lib/portal/normalize-awb';
 import { verifyPortalPin } from '@/lib/portal/pin';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
@@ -43,13 +43,13 @@ export async function verifyPortalCredentials(
 
   for (const clientId of clientIds) {
     const clientDoc = await db
-      .collection(COLLECTIONS.PORTAL_CLIENTS)
+      .collection(COLLECTIONS.LOCATIONS)
       .doc(clientId)
       .get();
 
     if (!clientDoc.exists) continue;
 
-    const client = mapPortalClientDoc(clientId, clientDoc.data() ?? {});
+    const client = mapLocationDoc(clientId, clientDoc.data() ?? {});
     if (!client.active) continue;
 
     const pinHash = clientDoc.data()?.pinHash;

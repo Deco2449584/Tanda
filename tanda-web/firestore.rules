@@ -231,12 +231,12 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
 
-    // 7. Portal clientes B2B (forwarders / aduanas) — solo admin autenticado
+    // 7. Legacy portal_clients (orphaned after merge into locations) — allow cleanup
     match /portal_clients/{clientId} {
       allow read, write: if request.auth != null;
     }
 
-    // 8. Sedes / ubicaciones de empleados
+    // 8. Clients / sites (employees, schedule, billing, portal PIN)
     match /locations/{locationId} {
       allow read, write: if request.auth != null;
     }

@@ -77,8 +77,8 @@ for (const doc of inspectionsSnap.docs) {
   console.log(`  - ${doc.id}: ULD=${data.uldId} AWB="${awb}" normalized="${normalized}" clientId=${data.portalClientId ?? 'NONE'} ${match ? '← AWB MATCH' : ''}`);
 }
 
-const clientsSnap = await db.collection('portal_clients').get();
-console.log(`\nPortal clients: ${clientsSnap.size}`);
+const clientsSnap = await db.collection('locations').get();
+console.log(`\nClients (locations): ${clientsSnap.size}`);
 
 for (const doc of clientsSnap.docs) {
   const data = doc.data();
@@ -87,7 +87,7 @@ for (const doc of clientsSnap.docs) {
       ? bcrypt.compareSync(pinArg.trim(), data.pinHash)
       : null;
   console.log(
-    `  - ${doc.id}: ${data.companyName} (${data.accessCode}) active=${data.active} pinHash=${data.pinHash ? 'yes' : 'NO'}${pinOk === true ? ' ← PIN MATCH' : pinOk === false ? ' ← PIN wrong' : ''}`,
+    `  - ${doc.id}: ${data.name} (${data.code ?? 'no-code'}) active=${data.active !== false} pinHash=${data.pinHash ? 'yes' : 'NO'}${pinOk === true ? ' ← PIN MATCH' : pinOk === false ? ' ← PIN wrong' : ''}`,
   );
 }
 

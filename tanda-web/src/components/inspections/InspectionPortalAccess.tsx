@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Copy, Globe, Loader2 } from 'lucide-react';
 import { updateInspectionPortalAccess } from '@/lib/inspections/update-portal-access';
-import { fetchPortalClients } from '@/lib/portal/portal-clients-service';
+import { fetchLocations } from '@/lib/locations/locations-service';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
-import type { PortalClient } from '@/lib/types/portal-client';
+import type { Location } from '@/lib/types/location';
 
 interface InspectionPortalAccessProps {
   inspection: CargoInspection;
@@ -16,7 +16,7 @@ export function InspectionPortalAccess({
   inspection,
   onUpdated,
 }: InspectionPortalAccessProps) {
-  const [clients, setClients] = useState<PortalClient[]>([]);
+  const [clients, setClients] = useState<Location[]>([]);
   const [portalEnabled, setPortalEnabled] = useState(inspection.portalEnabled);
   const [portalClientId, setPortalClientId] = useState(
     inspection.portalClientId ?? '',
@@ -31,12 +31,14 @@ export function InspectionPortalAccess({
   }, [inspection.portalClientId, inspection.portalEnabled]);
 
   useEffect(() => {
-    void fetchPortalClients()
+    void fetchLocations()
       .then(setClients)
       .catch(() => setClients([]));
   }, []);
 
-  const activeClients = clients.filter((client) => client.active);
+  const selectableClients = clients.filter(
+    (client) => client.active && client.hasPortalPin,
+  );
 
   async function handleSave() {
     setSaving(true);
@@ -108,7 +110,7 @@ export function InspectionPortalAccess({
         {portalEnabled ? (
           <div>
             <label className="mb-1 block text-xs font-medium text-muted">
-              Portal client (forwarder)
+              Client
             </label>
             <select
               value={portalClientId}
@@ -116,15 +118,16 @@ export function InspectionPortalAccess({
               className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             >
               <option value="">Select a client…</option>
-              {activeClients.map((client) => (
+              {selectableClients.map((client) => (
                 <option key={client.id} value={client.id}>
-                  {client.companyName} ({client.accessCode})
+                  {client.name}
+                  {client.code ? ` (${client.code})` : ''}
                 </option>
               ))}
             </select>
-            {activeClients.length === 0 ? (
+            {selectableClients.length === 0 ? (
               <p className="mt-2 text-xs text-amber-400">
-                Create portal clients in Settings → Portal clients first.
+                Create a client with a PIN in Settings → Clients first.
               </p>
             ) : null}
           </div>

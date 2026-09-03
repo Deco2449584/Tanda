@@ -65,11 +65,10 @@ export const ADMIN_ACTION_LABELS: {
     viewLocalization: 'Localization tab',
     viewAttendance: 'Time & attendance tab',
     viewNotifications: 'Notifications tab',
-    viewLocations: 'Locations tab',
+    viewLocations: 'Clients tab',
     viewDepartments: 'Departments tab',
     viewLocationGroups: 'Location groups tab',
     viewKioskDevices: 'Kiosk devices tab',
-    viewPortal: 'Portal clients tab',
   },
 };
 
@@ -109,7 +108,6 @@ function applyLegacyActionFallback(
       'viewDepartments',
       'viewLocationGroups',
       'viewKioskDevices',
-      'viewPortal',
     ] as const;
     for (const key of viewKeys) {
       if (rawModule[key] === undefined) {
