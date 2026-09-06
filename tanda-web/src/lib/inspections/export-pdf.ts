@@ -135,9 +135,24 @@ function buildInspectionHtml(
       </div>`
     : '';
 
+  const locationValue =
+    typeof inspection.registeredLatitude === 'number' &&
+    typeof inspection.registeredLongitude === 'number'
+      ? `${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
+          typeof inspection.registeredAccuracyMeters === 'number'
+            ? ` (±${inspection.registeredAccuracyMeters} m)`
+            : ''
+        }`
+      : '—';
+
+  const mapsLink = inspection.registeredMapsUrl?.trim()
+    ? `<a href="${escapeAttr(inspection.registeredMapsUrl.trim())}">Open in Maps</a>`
+    : '';
+
   const dataTable = `
     <table class="data-table">
       <tbody>
+        ${tableRow('Client', inspection.clientLocationName?.trim() || '—')}
         ${tableRow('ULD ID', inspection.uldId)}
         ${tableRow('AWB Number', inspection.awbNumber)}
         ${tableRow('Conservation', getConservationLabel(inspection.conservationType))}
@@ -147,6 +162,20 @@ function buildInspectionHtml(
         ${tableRow('Has Issues', inspection.hasIssues ? 'Yes' : 'No')}
         ${tableRow('Inspector Email', inspection.createdBy)}
         ${tableRow('Inspection Date', formatInspectionDate(inspection.registeredAt))}
+        ${tableRow('Registered location', locationValue)}
+        ${
+          mapsLink
+            ? `<tr><th>Maps</th><td>${mapsLink}</td></tr>`
+            : ''
+        }
+        ${
+          inspection.registeredLocationAt
+            ? tableRow(
+                'GPS captured at',
+                formatInspectionDate(inspection.registeredLocationAt),
+              )
+            : ''
+        }
         ${inspection.updatedAt ? tableRow('Last Updated', formatInspectionDate(inspection.updatedAt)) : ''}
       </tbody>
     </table>`;
@@ -160,7 +189,7 @@ function buildInspectionHtml(
     body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #0F172A; font-size: 13px; line-height: 1.5; margin: 0; background: #fff; }
     .header { background: ${PORTAL_NAVY}; color: #fff; padding: 28px 36px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .header-brand { display: flex; align-items: center; gap: 20px; min-width: 0; }
-    .header-logo { height: 56px; width: auto; max-width: 200px; object-fit: contain; filter: brightness(0) invert(1); }
+    .header-logo { height: 56px; width: auto; max-width: 200px; object-fit: contain; }
     .header-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
     .header-meta { text-align: right; flex-shrink: 0; }
     .header-report { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.55); }

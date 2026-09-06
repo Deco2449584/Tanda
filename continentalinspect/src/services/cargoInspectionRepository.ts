@@ -57,6 +57,14 @@ export type CargoInspectionDocument = {
   updatedAtIso?: string;
   dispatchedAt?: Timestamp | string;
   dispatchedAtIso?: string;
+  clientLocationId?: string;
+  clientLocationName?: string;
+  portalClientId?: string;
+  registeredLatitude?: number;
+  registeredLongitude?: number;
+  registeredAccuracyMeters?: number;
+  registeredLocationAt?: string;
+  registeredMapsUrl?: string;
 };
 
 function timestampToIso(value: Timestamp | string | undefined): string | undefined {
@@ -117,6 +125,19 @@ function mapDocumentToCargoInspection(
     updatedAt: timestampToIso(data.updatedAt) ?? data.updatedAtIso,
     dispatchedAt: dispatchedAtIso,
     createdBy: data.createdBy ?? '',
+    clientLocationId: data.clientLocationId?.trim() || undefined,
+    clientLocationName: data.clientLocationName?.trim() || undefined,
+    portalClientId: data.portalClientId?.trim() || undefined,
+    registeredLatitude:
+      typeof data.registeredLatitude === 'number' ? data.registeredLatitude : undefined,
+    registeredLongitude:
+      typeof data.registeredLongitude === 'number' ? data.registeredLongitude : undefined,
+    registeredAccuracyMeters:
+      typeof data.registeredAccuracyMeters === 'number'
+        ? data.registeredAccuracyMeters
+        : undefined,
+    registeredLocationAt: data.registeredLocationAt?.trim() || undefined,
+    registeredMapsUrl: data.registeredMapsUrl?.trim() || undefined,
   };
 }
 
@@ -129,6 +150,8 @@ function buildFirestorePayload(
 ): Omit<CargoInspectionDocument, 'registeredAt' | 'registeredAtIso' | 'updatedAt' | 'updatedAtIso' | 'userId'> {
   const issueDescription = input.hasIssues ? (input.issueDescription ?? '').trim() : '';
   const uldId = normalizeUldId(input.uldId);
+  const clientLocationId = input.clientLocationId?.trim() ?? '';
+  const clientLocationName = input.clientLocationName?.trim() ?? '';
   return {
     unitType: input.unitType,
     uldId,
@@ -143,6 +166,28 @@ function buildFirestorePayload(
     photoEvidence,
     videoEvidence,
     createdBy,
+    ...(clientLocationId
+      ? {
+          clientLocationId,
+          clientLocationName,
+          portalClientId: clientLocationId,
+        }
+      : {}),
+    ...(typeof input.registeredLatitude === 'number'
+      ? { registeredLatitude: input.registeredLatitude }
+      : {}),
+    ...(typeof input.registeredLongitude === 'number'
+      ? { registeredLongitude: input.registeredLongitude }
+      : {}),
+    ...(typeof input.registeredAccuracyMeters === 'number'
+      ? { registeredAccuracyMeters: input.registeredAccuracyMeters }
+      : {}),
+    ...(input.registeredLocationAt?.trim()
+      ? { registeredLocationAt: input.registeredLocationAt.trim() }
+      : {}),
+    ...(input.registeredMapsUrl?.trim()
+      ? { registeredMapsUrl: input.registeredMapsUrl.trim() }
+      : {}),
   };
 }
 

@@ -67,6 +67,14 @@ function parseEmployeeRecord(raw: Record<string, unknown>): EmployeeRecord | nul
     department: typeof raw.department === 'string' ? raw.department.trim() : '',
     employeeId: typeof raw.employeeId === 'string' ? raw.employeeId.trim() : '',
     photoUrl: typeof raw.photoUrl === 'string' ? raw.photoUrl.trim() : undefined,
+    locationId:
+      typeof raw.locationId === 'string' && raw.locationId.trim()
+        ? raw.locationId.trim()
+        : undefined,
+    locationGroupId:
+      typeof raw.locationGroupId === 'string' && raw.locationGroupId.trim()
+        ? raw.locationGroupId.trim()
+        : undefined,
   };
 }
 

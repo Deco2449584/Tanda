@@ -28,6 +28,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import {
+  fetchAllActiveClientLocations,
+  fetchAllowedClientLocations,
+  type InspectClientLocation,
+} from '@/services/locationsRepository';
 import { brand } from '@/theme/brand';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
@@ -47,6 +52,10 @@ import {
   requiresUldId,
   resolveUnitType,
 } from '@/utils/cargoUnitType';
+import {
+  captureRegistrationLocation,
+  RegistrationLocationError,
+} from '@/utils/captureRegistrationLocation';
 import { normalizeUldId } from '@/utils/uldId';
 import {
   extractCargoLabelFromImage,
@@ -72,7 +81,7 @@ export default function CargoInspectionFormScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(createFormStyles);
   const { editId } = useLocalSearchParams<{ editId?: string }>();
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile } = useAuth();
   const {
     inspections,
     isLoading: inspectionsLoading,
@@ -94,6 +103,8 @@ export default function CargoInspectionFormScreen() {
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrParsedResult, setOcrParsedResult] = useState<ParsedCargoLabel | null>(null);
   const [showOcrConfirm, setShowOcrConfirm] = useState(false);
+  const [allowedClients, setAllowedClients] = useState<InspectClientLocation[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
 
   const isEditMode = Boolean(editingId);
 
@@ -107,6 +118,42 @@ export default function CargoInspectionFormScreen() {
     setBoxCountText('0');
     setEditingId(null);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setClientsLoading(true);
+    void (async () => {
+      try {
+        const clients = isAdmin
+          ? await fetchAllActiveClientLocations()
+          : await fetchAllowedClientLocations({
+              locationId: profile?.locationId,
+              locationGroupId: profile?.locationGroupId,
+            });
+        if (cancelled) return;
+        setAllowedClients(clients);
+        if (clients.length === 1 && !editId) {
+          setForm((prev) => ({
+            ...prev,
+            clientLocationId: clients[0].id,
+            clientLocationName: clients[0].name,
+            portalClientId: clients[0].id,
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          setAllowedClients([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setClientsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, profile?.locationId, profile?.locationGroupId, editId]);
 
   useEffect(() => {
     if (!editId || inspectionsLoading) return;
@@ -132,6 +179,14 @@ export default function CargoInspectionFormScreen() {
       issueDescription: existing.issueDescription ?? '',
       photoEvidence: [...existing.photoEvidence],
       videoEvidence: [...existing.videoEvidence],
+      clientLocationId: existing.clientLocationId ?? '',
+      clientLocationName: existing.clientLocationName ?? '',
+      portalClientId: existing.portalClientId ?? existing.clientLocationId ?? '',
+      registeredLatitude: existing.registeredLatitude,
+      registeredLongitude: existing.registeredLongitude,
+      registeredAccuracyMeters: existing.registeredAccuracyMeters,
+      registeredLocationAt: existing.registeredLocationAt,
+      registeredMapsUrl: existing.registeredMapsUrl,
     });
     setWeightText(String(existing.weightKg));
     setBoxCountText(String(existing.boxCount));
@@ -276,9 +331,20 @@ export default function CargoInspectionFormScreen() {
     const awbNumber = form.awbNumber.trim();
     const foodType = form.foodType.trim();
     const unitType = resolveUnitType(form.unitType, uldId);
+    const clientLocationId = form.clientLocationId?.trim() ?? '';
+    const clientLocationName = form.clientLocationName?.trim() ?? '';
 
     if (requiresUldId(unitType) && !uldId) {
       Alert.alert('ULD required', 'Enter or scan the ULD ID (e.g. AKE 12345 CX).');
+      return null;
+    }
+    if (!clientLocationId) {
+      Alert.alert(
+        'Client required',
+        allowedClients.length === 0
+          ? 'No client is assigned to your account. Ask an administrator in TimeTracker to assign a location or location group.'
+          : 'Select the client you are registering this cargo for.',
+      );
       return null;
     }
     if (!awbNumber) {
@@ -306,6 +372,9 @@ export default function CargoInspectionFormScreen() {
       issueDescription: form.hasIssues ? form.issueDescription?.trim() ?? '' : '',
       photoEvidence: form.photoEvidence,
       videoEvidence: form.videoEvidence,
+      clientLocationId,
+      clientLocationName,
+      portalClientId: clientLocationId,
     };
   };
 
@@ -315,14 +384,20 @@ export default function CargoInspectionFormScreen() {
 
     setIsSaving(true);
     try {
+      let geoPayload = payload;
+      if (!isEditMode) {
+        const geo = await captureRegistrationLocation();
+        geoPayload = { ...payload, ...geo };
+      }
+
       if (isEditMode && editingId) {
-        await updateInspectionById(editingId, payload);
+        await updateInspectionById(editingId, geoPayload);
         router.replace(`/cargo/${encodeURIComponent(editingId)}` as Href);
         return;
       }
 
-      const duplicate = payload.uldId
-        ? await lookupInspectionByUldId(payload.uldId)
+      const duplicate = geoPayload.uldId
+        ? await lookupInspectionByUldId(geoPayload.uldId)
         : null;
       if (duplicate) {
         Alert.alert(
@@ -333,11 +408,13 @@ export default function CargoInspectionFormScreen() {
         return;
       }
 
-      await addInspection(payload);
+      await addInspection(geoPayload);
       router.replace('/(tabs)' as Href);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
-      if (message === 'DUPLICATE_ULD') {
+      if (error instanceof RegistrationLocationError) {
+        Alert.alert('Location required', error.message);
+      } else if (message === 'DUPLICATE_ULD') {
         Alert.alert('Duplicate ULD', 'This ULD is already registered.');
       } else if (message === 'OFFLINE_UPDATE_UNSUPPORTED') {
         Alert.alert(
@@ -584,6 +661,43 @@ export default function CargoInspectionFormScreen() {
                 autoCorrect={false}
               />
             </FormField>
+
+            {clientsLoading ? (
+              <View style={styles.clientLoadingRow}>
+                <ActivityIndicator size="small" color={colors.accent.primary} />
+                <Text style={styles.unitTypeHint}>Loading assigned clients…</Text>
+              </View>
+            ) : allowedClients.length === 0 ? (
+              <View style={styles.clientWarning}>
+                <Ionicons name="alert-circle-outline" size={18} color={colors.semantic.warning} />
+                <Text style={styles.clientWarningText}>
+                  No client assigned — contact admin in TimeTracker.
+                </Text>
+              </View>
+            ) : allowedClients.length === 1 ? (
+              <FormField label="Client">
+                <View style={styles.clientReadonly}>
+                  <Text style={styles.clientReadonlyText}>{allowedClients[0].name}</Text>
+                </View>
+              </FormField>
+            ) : (
+              <OptionGroup
+                label="Client"
+                options={allowedClients.map((client) => client.id)}
+                value={form.clientLocationId ?? ''}
+                onChange={(clientLocationId) => {
+                  const match = allowedClients.find((client) => client.id === clientLocationId);
+                  patchForm({
+                    clientLocationId,
+                    clientLocationName: match?.name ?? '',
+                    portalClientId: clientLocationId,
+                  });
+                }}
+                getLabel={(id) =>
+                  allowedClients.find((client) => client.id === id)?.name ?? id
+                }
+              />
+            )}
           </FormSectionCard>
 
           <FormSectionCard
@@ -933,6 +1047,43 @@ function createFormStyles(colors: AppColors) {
       fontSize: 13,
       color: colors.text.onSurfaceMuted,
       lineHeight: 18,
+    },
+    clientLoadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 4,
+    },
+    clientWarning: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(245, 158, 11, 0.45)',
+      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    },
+    clientWarningText: {
+      flex: 1,
+      fontFamily: fonts.body,
+      fontSize: 13,
+      color: colors.text.onSurface,
+      lineHeight: 18,
+    },
+    clientReadonly: {
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border.onSurface,
+      backgroundColor: colors.background.secondary,
+    },
+    clientReadonlyText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 15,
+      color: colors.text.onSurface,
     },
     field: { gap: 8 },
     fieldLabel: {

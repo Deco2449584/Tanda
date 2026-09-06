@@ -236,7 +236,39 @@ service cloud.firestore {
     match /cargo_inspections/{inspectionId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && (
+          !('clientLocationId' in request.resource.data)
+          || request.resource.data.clientLocationId is string
+        )
+        && (
+          !('clientLocationName' in request.resource.data)
+          || request.resource.data.clientLocationName is string
+        )
+        && (
+          !('portalClientId' in request.resource.data)
+          || request.resource.data.portalClientId is string
+        )
+        && (
+          !('registeredLatitude' in request.resource.data)
+          || request.resource.data.registeredLatitude is number
+        )
+        && (
+          !('registeredLongitude' in request.resource.data)
+          || request.resource.data.registeredLongitude is number
+        )
+        && (
+          !('registeredAccuracyMeters' in request.resource.data)
+          || request.resource.data.registeredAccuracyMeters is number
+        )
+        && (
+          !('registeredLocationAt' in request.resource.data)
+          || request.resource.data.registeredLocationAt is string
+        )
+        && (
+          !('registeredMapsUrl' in request.resource.data)
+          || request.resource.data.registeredMapsUrl is string
+        );
       allow update: if request.auth != null;
       allow delete: if request.auth != null;
     }

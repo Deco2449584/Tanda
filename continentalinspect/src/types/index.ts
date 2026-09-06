@@ -61,11 +61,21 @@ export interface CargoInspection {
   dispatchedAt?: Date | string;
   createdBy: string;
   syncStatus?: InspectionSyncStatus;
+  /** Assigned client/site (Firestore `locations` id). */
+  clientLocationId?: string;
+  clientLocationName?: string;
+  /** Same as clientLocationId for TimeTracker portal linking. */
+  portalClientId?: string;
+  registeredLatitude?: number;
+  registeredLongitude?: number;
+  registeredAccuracyMeters?: number;
+  registeredLocationAt?: string;
+  registeredMapsUrl?: string;
 }
 
 export type NewCargoInspectionInput = Omit<
   CargoInspection,
-  'id' | 'status' | 'registeredAt' | 'updatedAt' | 'createdBy'
+  'id' | 'status' | 'registeredAt' | 'updatedAt' | 'createdBy' | 'syncStatus'
 >;
 
 export type UpdateCargoInspectionInput = NewCargoInspectionInput;
@@ -83,4 +93,6 @@ export const EMPTY_CARGO_INSPECTION_INPUT: NewCargoInspectionInput = {
   issueDescription: '',
   photoEvidence: [],
   videoEvidence: [],
+  clientLocationId: '',
+  clientLocationName: '',
 };

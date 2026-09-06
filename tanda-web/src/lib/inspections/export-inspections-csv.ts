@@ -16,6 +16,8 @@ function rangeFileLabel(range: InspectionDateRange): string {
 const CSV_HEADERS = [
   'ULD ID',
   'AWB Number',
+  'Client',
+  'Client Location ID',
   'Status',
   'Lifecycle',
   'Conservation',
@@ -29,6 +31,10 @@ const CSV_HEADERS = [
   'Inspector Email',
   'Registered',
   'Updated',
+  'Latitude',
+  'Longitude',
+  'GPS Accuracy (m)',
+  'GPS Captured At',
 ] as const;
 
 function escapeCsv(value: string): string {
@@ -44,6 +50,8 @@ function inspectionToRow(inspection: CargoInspection): string[] {
   return [
     inspection.uldId,
     inspection.awbNumber,
+    inspection.clientLocationName ?? '',
+    inspection.clientLocationId ?? '',
     listStatus.label,
     resolveInspectionStatus(inspection),
     getConservationLabel(inspection.conservationType),
@@ -57,6 +65,18 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.createdBy,
     formatInspectionDate(inspection.registeredAt),
     inspection.updatedAt ? formatInspectionDate(inspection.updatedAt) : '',
+    typeof inspection.registeredLatitude === 'number'
+      ? String(inspection.registeredLatitude)
+      : '',
+    typeof inspection.registeredLongitude === 'number'
+      ? String(inspection.registeredLongitude)
+      : '',
+    typeof inspection.registeredAccuracyMeters === 'number'
+      ? String(inspection.registeredAccuracyMeters)
+      : '',
+    inspection.registeredLocationAt
+      ? formatInspectionDate(inspection.registeredLocationAt)
+      : '',
   ];
 }
 

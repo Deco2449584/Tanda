@@ -11,6 +11,8 @@ const CSV_HEADERS = [
   'ULD ID',
   'Unit Type',
   'AWB Number',
+  'Client',
+  'Client Location ID',
   'Conservation',
   'Food Type',
   'Weight (Kg)',
@@ -21,6 +23,10 @@ const CSV_HEADERS = [
   'Inspector Email',
   'Registered',
   'Dispatched on truck',
+  'Latitude',
+  'Longitude',
+  'GPS Accuracy (m)',
+  'GPS Captured At',
 ] as const;
 
 function escapeCsv(value: string): string {
@@ -35,6 +41,8 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.uldId || '—',
     getUnitTypeLabel(inspection.unitType),
     inspection.awbNumber,
+    inspection.clientLocationName ?? '',
+    inspection.clientLocationId ?? '',
     getConservationLabel(inspection.conservationType),
     inspection.foodType,
     String(inspection.weightKg),
@@ -45,6 +53,18 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.createdBy,
     formatInspectionDate(inspection.registeredAt),
     inspection.dispatchedAt ? formatInspectionDate(inspection.dispatchedAt) : '',
+    typeof inspection.registeredLatitude === 'number'
+      ? String(inspection.registeredLatitude)
+      : '',
+    typeof inspection.registeredLongitude === 'number'
+      ? String(inspection.registeredLongitude)
+      : '',
+    typeof inspection.registeredAccuracyMeters === 'number'
+      ? String(inspection.registeredAccuracyMeters)
+      : '',
+    inspection.registeredLocationAt
+      ? formatInspectionDate(inspection.registeredLocationAt)
+      : '',
   ];
 }
 

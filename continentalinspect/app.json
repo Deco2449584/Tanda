@@ -73,6 +73,15 @@
           "savePhotosPermission": "Allow Continental Inspect to save downloaded video evidence to your gallery.",
           "isAccessMediaLocationEnabled": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Continental Inspect to capture your location when registering cargo for audit and fraud prevention.",
+          "locationWhenInUsePermission": "Allow Continental Inspect to capture your location when registering cargo for audit and fraud prevention.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ],
     "experiments": {

@@ -29,6 +29,14 @@ export function mapInspectionDoc(
 ): CargoInspection {
   const record = data as Partial<CargoInspectionFirestore>;
   const issueDescription = record.issueDescription?.trim();
+  const clientLocationId =
+    typeof record.clientLocationId === 'string' && record.clientLocationId.trim()
+      ? record.clientLocationId.trim()
+      : undefined;
+  const portalClientId =
+    typeof record.portalClientId === 'string' && record.portalClientId.trim()
+      ? record.portalClientId.trim()
+      : clientLocationId;
 
   return {
     id,
@@ -50,9 +58,32 @@ export function mapInspectionDoc(
     updatedAt: timestampToIso(record.updatedAt) ?? record.updatedAtIso,
     createdBy: record.createdBy ?? '',
     portalEnabled: Boolean(record.portalEnabled),
-    portalClientId:
-      typeof record.portalClientId === 'string' && record.portalClientId.trim()
-        ? record.portalClientId.trim()
+    portalClientId,
+    clientLocationId,
+    clientLocationName:
+      typeof record.clientLocationName === 'string' && record.clientLocationName.trim()
+        ? record.clientLocationName.trim()
+        : undefined,
+    registeredLatitude:
+      typeof record.registeredLatitude === 'number'
+        ? record.registeredLatitude
+        : undefined,
+    registeredLongitude:
+      typeof record.registeredLongitude === 'number'
+        ? record.registeredLongitude
+        : undefined,
+    registeredAccuracyMeters:
+      typeof record.registeredAccuracyMeters === 'number'
+        ? record.registeredAccuracyMeters
+        : undefined,
+    registeredLocationAt:
+      typeof record.registeredLocationAt === 'string' &&
+      record.registeredLocationAt.trim()
+        ? record.registeredLocationAt.trim()
+        : undefined,
+    registeredMapsUrl:
+      typeof record.registeredMapsUrl === 'string' && record.registeredMapsUrl.trim()
+        ? record.registeredMapsUrl.trim()
         : undefined,
   };
 }

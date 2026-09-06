@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -212,6 +213,12 @@ function createDetailStyles(colors: AppColors) {
       fontSize: 16,
       fontWeight: '600',
       color: colors.text.onSurface,
+    },
+    mapsLink: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.accent.primary,
+      textDecorationLine: 'underline',
     },
     sectionLabel: {
       fontFamily: fonts.headingSemiBold,
@@ -594,6 +601,13 @@ export default function CargoDetailScreen() {
               <Text style={styles.cardHeaderTitle}>Shipment details</Text>
             </View>
             <View style={styles.detailsGrid}>
+              {inspection.clientLocationName?.trim() ? (
+                <DetailRow
+                  label="Client"
+                  value={inspection.clientLocationName.trim()}
+                  styles={styles}
+                />
+              ) : null}
               <DetailRow
                 label="Unit type"
                 value={getUnitTypeLabel(
@@ -606,6 +620,37 @@ export default function CargoDetailScreen() {
               ) : null}
               <DetailRow label="AWB" value={inspection.awbNumber} styles={styles} />
               <DetailRow label="Food type" value={inspection.foodType} styles={styles} />
+              {typeof inspection.registeredLatitude === 'number' &&
+              typeof inspection.registeredLongitude === 'number' ? (
+                <DetailRow
+                  label="Registered GPS"
+                  value={`${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
+                    typeof inspection.registeredAccuracyMeters === 'number'
+                      ? ` (±${inspection.registeredAccuracyMeters} m)`
+                      : ''
+                  }`}
+                  styles={styles}
+                />
+              ) : null}
+              {inspection.registeredLocationAt ? (
+                <DetailRow
+                  label="GPS captured at"
+                  value={formatInspectionDate(inspection.registeredLocationAt)}
+                  styles={styles}
+                />
+              ) : null}
+              {inspection.registeredMapsUrl?.trim() ? (
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>Maps</Text>
+                  <Pressable
+                    onPress={() => {
+                      void Linking.openURL(inspection.registeredMapsUrl!.trim());
+                    }}
+                    hitSlop={8}>
+                    <Text style={styles.mapsLink}>Open in Maps</Text>
+                  </Pressable>
+                </View>
+              ) : null}
               {inspection.dispatchedAt ? (
                 <DetailRow
                   label="Dispatched on truck"

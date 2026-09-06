@@ -201,6 +201,9 @@ export function InspectionDetailView({
         )}
 
         <section className="grid gap-4 rounded-2xl border border-border bg-surface-raised p-5 sm:grid-cols-2 md:p-6">
+          {inspection.clientLocationName ? (
+            <DetailRow label="Client" value={inspection.clientLocationName} />
+          ) : null}
           <DetailRow
             label="Conservation"
             value={getConservationLabel(inspection.conservationType)}
@@ -209,6 +212,38 @@ export function InspectionDetailView({
           <DetailRow label="Weight" value={`${inspection.weightKg} kg`} />
           <DetailRow label="Box count" value={String(inspection.boxCount)} />
           <DetailRow label="Operator" value={inspection.createdBy || '—'} />
+          {typeof inspection.registeredLatitude === 'number' &&
+          typeof inspection.registeredLongitude === 'number' ? (
+            <DetailRow
+              label="Registered GPS"
+              value={`${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
+                typeof inspection.registeredAccuracyMeters === 'number'
+                  ? ` (±${inspection.registeredAccuracyMeters} m)`
+                  : ''
+              }`}
+            />
+          ) : null}
+          {inspection.registeredLocationAt ? (
+            <DetailRow
+              label="GPS captured at"
+              value={formatInspectionDate(inspection.registeredLocationAt)}
+            />
+          ) : null}
+          {inspection.registeredMapsUrl ? (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Maps
+              </p>
+              <a
+                href={inspection.registeredMapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block text-sm font-semibold text-primary underline"
+              >
+                Open in Maps
+              </a>
+            </div>
+          ) : null}
         </section>
 
         {inspection.hasIssues && (

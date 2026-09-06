@@ -28,6 +28,13 @@ export interface CargoInspectionFirestore {
   updatedAtIso?: string;
   portalEnabled?: boolean;
   portalClientId?: string;
+  clientLocationId?: string;
+  clientLocationName?: string;
+  registeredLatitude?: number;
+  registeredLongitude?: number;
+  registeredAccuracyMeters?: number;
+  registeredLocationAt?: string;
+  registeredMapsUrl?: string;
 }
 
 export interface CargoInspection {
@@ -49,6 +56,13 @@ export interface CargoInspection {
   createdBy: string;
   portalEnabled: boolean;
   portalClientId?: string;
+  clientLocationId?: string;
+  clientLocationName?: string;
+  registeredLatitude?: number;
+  registeredLongitude?: number;
+  registeredAccuracyMeters?: number;
+  registeredLocationAt?: string;
+  registeredMapsUrl?: string;
 }
 
 export type CargoInspectionFormInput = {

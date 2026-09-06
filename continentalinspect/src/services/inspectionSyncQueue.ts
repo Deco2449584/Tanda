@@ -169,6 +169,14 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     dispatchedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     createdBy: operation.createdBy,
     syncStatus: 'pending',
+    clientLocationId: operation.input.clientLocationId,
+    clientLocationName: operation.input.clientLocationName,
+    portalClientId: operation.input.portalClientId ?? operation.input.clientLocationId,
+    registeredLatitude: operation.input.registeredLatitude,
+    registeredLongitude: operation.input.registeredLongitude,
+    registeredAccuracyMeters: operation.input.registeredAccuracyMeters,
+    registeredLocationAt: operation.input.registeredLocationAt,
+    registeredMapsUrl: operation.input.registeredMapsUrl,
   };
 }
 

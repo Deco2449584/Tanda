@@ -67,7 +67,9 @@ function employeeRecordChanged(
     current.department !== record.department ||
     current.employeeId !== record.employeeId ||
     current.email !== (record.email || email) ||
-    current.role !== nextRole
+    current.role !== nextRole ||
+    current.locationId !== record.locationId ||
+    current.locationGroupId !== record.locationGroupId
   );
 }
 

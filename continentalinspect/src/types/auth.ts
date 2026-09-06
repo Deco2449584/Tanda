@@ -9,6 +9,8 @@ export type EmployeeRecord = {
   department: string;
   employeeId: string;
   photoUrl?: string;
+  locationId?: string;
+  locationGroupId?: string;
 };
 
 /** Authenticated employee profile used in the app (role is derived). */
