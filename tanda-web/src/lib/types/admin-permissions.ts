@@ -50,6 +50,7 @@ export const ADMIN_MODULE_ACTIONS = {
     'viewLocations',
     'viewDepartments',
     'viewLocationGroups',
+    'viewEmployeeFields',
   ] as const,
 } as const;
 
@@ -89,6 +90,7 @@ export const SETTINGS_SECTION_ACTIONS = {
   locations: 'viewLocations',
   departments: 'viewDepartments',
   locationGroups: 'viewLocationGroups',
+  employeeFields: 'viewEmployeeFields',
 } as const;
 
 export type SettingsSectionKey = keyof typeof SETTINGS_SECTION_ACTIONS;

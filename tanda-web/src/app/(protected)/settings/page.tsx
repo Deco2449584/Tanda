@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AdminProfileTab } from '@/components/settings/AdminProfileTab';
 import { AdminRolesTab } from '@/components/settings/AdminRolesTab';
 import { AttendanceSettingsTab } from '@/components/settings/AttendanceSettingsTab';
 import { AuditLogsTab } from '@/components/settings/AuditLogsTab';
@@ -31,7 +30,6 @@ import type { SettingsSectionKey } from '@/lib/types/admin-permissions';
 type SettingsTab =
   | 'localization'
   | 'attendance'
-  | 'profile'
   | 'notifications'
   | 'accessRoles'
   | 'auditLogs'
@@ -46,28 +44,13 @@ const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey
   { id: 'attendance', label: 'Time & attendance', section: 'attendance' },
   { id: 'notifications', label: 'Notifications', section: 'notifications' },
   { id: 'accessRoles', label: 'Access roles' },
-  { id: 'employeeFields', label: 'Employee fields' },
+  { id: 'employeeFields', label: 'Employee fields', section: 'employeeFields' },
   { id: 'auditLogs', label: 'Audit logs' },
-  { id: 'profile', label: 'User profile' },
   { id: 'locations', label: 'Clients', section: 'locations' },
   { id: 'departments', label: 'Departments', section: 'departments' },
   { id: 'locationGroups', label: 'Location groups', section: 'locationGroups' },
   { id: 'data', label: 'Data cleanup' },
 ];
-
-function deriveDisplayName(
-  displayName: string | null | undefined,
-  email: string | null | undefined,
-): string {
-  if (displayName?.trim()) return displayName.trim();
-  if (!email) return 'User';
-  const local = email.split('@')[0] ?? '';
-  return local
-    .split(/[._-]/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
 
 export default function SettingsPage() {
   const searchParams = useSearchParams();
@@ -83,16 +66,8 @@ export default function SettingsPage() {
   const tabs = useMemo(
     () =>
       ADMIN_TABS.filter((tab) => {
-        if (
-          tab.id === 'data' ||
-          tab.id === 'accessRoles' ||
-          tab.id === 'auditLogs' ||
-          tab.id === 'employeeFields'
-        ) {
+        if (tab.id === 'data' || tab.id === 'accessRoles' || tab.id === 'auditLogs') {
           return isMaster;
-        }
-        if (tab.id === 'profile') {
-          return true;
         }
         if (tab.section) {
           return canViewSection(tab.section);
@@ -107,17 +82,11 @@ export default function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('localization');
   const [draft, setDraft] = useState<CompanySettings>(DEFAULT_COMPANY_SETTINGS);
-  const [adminName, setAdminName] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
-
-  useEffect(() => {
-    if (!user) return;
-    setAdminName(deriveDisplayName(user.displayName, user.email));
-  }, [user?.displayName, user?.email, user]);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -128,7 +97,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!tabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab(tabs[0]?.id ?? 'profile');
+      setActiveTab(tabs[0]?.id ?? 'localization');
     }
   }, [activeTab, tabs]);
 
@@ -154,6 +123,8 @@ export default function SettingsPage() {
 
   const pageLoading = authLoading || settingsLoading;
   const settingsSaving = saving && canEditSettings;
+  const canManageEmployeeFields =
+    isMaster || canPerformAction('settings', 'viewEmployeeFields');
 
   return (
     <PageContent className="relative min-h-full space-y-6">
@@ -209,18 +180,10 @@ export default function SettingsPage() {
           )}
           {activeTab === 'notifications' && <NotificationsSettingsTab />}
           {activeTab === 'accessRoles' && isMaster && <AdminRolesTab />}
-          {activeTab === 'employeeFields' && isMaster && (
+          {activeTab === 'employeeFields' && canManageEmployeeFields ? (
             <EmployeeCustomFieldsTab onToast={showToast} />
-          )}
+          ) : null}
           {activeTab === 'auditLogs' && isMaster && <AuditLogsTab />}
-          {activeTab === 'profile' && (
-            <AdminProfileTab
-              name={adminName}
-              email={user?.email ?? ''}
-              loading={authLoading}
-              onNameChange={setAdminName}
-            />
-          )}
           {activeTab === 'data' && isMaster && (
             <DataPurgeTab adminEmail={user?.email ?? ''} />
           )}

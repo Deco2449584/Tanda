@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
+import { verifyAdminActionRequest } from '@/lib/auth/verify-admin-action-request';
 import { loadEmployeeContext } from '@/lib/auth/load-employee-context';
 import { loadAdminAccessFromRequest } from '@/lib/auth/load-admin-access';
+import { canPerformAction } from '@/lib/auth/admin-action-permissions';
 import {
   createEmployeeCustomField,
   listEmployeeCustomFields,
@@ -22,10 +23,12 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const includeInactive = url.searchParams.get('includeInactive') === 'true';
-    const isMaster = admin?.access.isMaster === true;
+    const canManageFields =
+      admin?.access.isMaster === true ||
+      canPerformAction(admin?.access ?? null, 'settings', 'viewEmployeeFields');
 
     const fields = await listEmployeeCustomFields({
-      activeOnly: !(isMaster && includeInactive),
+      activeOnly: !(canManageFields && includeInactive),
     });
 
     return NextResponse.json({ fields });
@@ -37,8 +40,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const master = await verifyMasterRequest(request);
-    if (!master) {
+    const admin = await verifyAdminActionRequest(request, 'settings', 'viewEmployeeFields');
+    if (!admin) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 

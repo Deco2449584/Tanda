@@ -68,6 +68,7 @@ export const ADMIN_ACTION_LABELS: {
     viewLocations: 'Clients tab',
     viewDepartments: 'Departments tab',
     viewLocationGroups: 'Location groups tab',
+    viewEmployeeFields: 'Employee fields tab',
   },
 };
 
@@ -106,6 +107,7 @@ function applyLegacyActionFallback(
       'viewLocations',
       'viewDepartments',
       'viewLocationGroups',
+      'viewEmployeeFields',
     ] as const;
     for (const key of viewKeys) {
       if (rawModule[key] === undefined) {

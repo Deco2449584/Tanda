@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
+import { verifyAdminActionRequest } from '@/lib/auth/verify-admin-action-request';
 import {
   deleteEmployeeCustomField,
   updateEmployeeCustomField,
@@ -11,8 +11,8 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const master = await verifyMasterRequest(request);
-    if (!master) {
+    const admin = await verifyAdminActionRequest(request, 'settings', 'viewEmployeeFields');
+    if (!admin) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
@@ -33,8 +33,8 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const master = await verifyMasterRequest(request);
-    if (!master) {
+    const admin = await verifyAdminActionRequest(request, 'settings', 'viewEmployeeFields');
+    if (!admin) {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
