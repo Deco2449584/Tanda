@@ -95,7 +95,7 @@ export default function EmployeeProfilesPage() {
     };
     for (const employee of employees) {
       const role = (employee.role ?? 'empleado').trim().toLowerCase();
-      if (role === 'kiosk' || role === 'master') continue;
+      if (role === 'kiosk' || role === 'master' || role === 'admin') continue;
 
       const status = employee.personalProfileStatus ?? 'none';
       const key =

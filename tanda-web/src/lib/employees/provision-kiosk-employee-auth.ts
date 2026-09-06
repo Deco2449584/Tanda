@@ -1,19 +1,19 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { FirebaseAuthError } from 'firebase-admin/auth';
 import { COLLECTIONS } from '@/lib/constants';
-import { normalizeKioskLoginEmail } from '@/lib/employees/normalize-kiosk-login-email';
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase-admin';
 
 const MIN_PASSWORD_LENGTH = 6;
 
-export async function provisionKioskEmployeeAuth(input: {
+/** Create or update Firebase Auth with a password and link authUid on the employee doc. */
+export async function provisionPasswordAuth(input: {
   email: string;
   password: string;
   name: string;
   employeeDocId: string;
 }): Promise<{ uid: string; email: string }> {
   const auth = getAdminAuth();
-  const email = normalizeKioskLoginEmail(input.email);
+  const email = input.email.trim().toLowerCase();
   const name = input.name.trim();
   const password = input.password;
   const employeeRef = getAdminFirestore()
@@ -81,4 +81,14 @@ export async function provisionKioskEmployeeAuth(input: {
   });
 
   return { uid, email };
+}
+
+/** @deprecated Prefer provisionPasswordAuth — kept for existing imports. */
+export async function provisionKioskEmployeeAuth(input: {
+  email: string;
+  password: string;
+  name: string;
+  employeeDocId: string;
+}): Promise<{ uid: string; email: string }> {
+  return provisionPasswordAuth(input);
 }

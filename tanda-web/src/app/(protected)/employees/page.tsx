@@ -16,6 +16,7 @@ import {
   matchesEmployeeAccessFilter,
   type EmployeeAccessFilter,
 } from '@/lib/employees/employee-access-filter';
+import { staffToastMessage } from '@/lib/employees/staff-toast';
 import type { Employee } from '@/lib/types/employee';
 
 export default function EmployeesPage() {
@@ -41,25 +42,17 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     const toastState = searchParams.get('toast');
-    if (!toastState) return;
-
-    const text =
-      toastState === 'created'
-        ? 'Empleado creado correctamente.'
-        : toastState === 'updated'
-          ? 'Empleado actualizado correctamente.'
-          : '';
-
-    if (!text) return;
+    if (toastState !== 'created' && toastState !== 'updated') return;
 
     setToast({
       id: crypto.randomUUID(),
-      text,
+      text: staffToastMessage(toastState, searchParams.get('kind')),
       variant: 'success',
     });
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete('toast');
+    params.delete('kind');
     const next = params.toString();
     router.replace(next ? `/employees?${next}` : '/employees');
   }, [router, searchParams]);

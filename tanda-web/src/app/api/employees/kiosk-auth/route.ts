@@ -3,8 +3,11 @@ import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-req
 import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
 import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
 import { COLLECTIONS } from '@/lib/constants';
-import { provisionKioskEmployeeAuth } from '@/lib/employees/provision-kiosk-employee-auth';
+import { normalizeKioskLoginEmail } from '@/lib/employees/normalize-kiosk-login-email';
+import { provisionPasswordAuth } from '@/lib/employees/provision-kiosk-employee-auth';
 import { getAdminFirestore } from '@/lib/firebase-admin';
+
+const PASSWORD_AUTH_ROLES = new Set(['kiosk', 'admin', 'master']);
 
 export async function POST(request: Request) {
   try {
@@ -20,12 +23,12 @@ export async function POST(request: Request) {
       employeeDocId?: string;
     };
 
-    const email = body.email?.trim().toLowerCase() ?? '';
     const name = body.name?.trim() ?? '';
     const password = body.password ?? '';
     const employeeDocId = body.employeeDocId?.trim() ?? '';
+    const rawEmail = body.email?.trim() ?? '';
 
-    if (!email || !name || !password || !employeeDocId) {
+    if (!rawEmail || !name || !password || !employeeDocId) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
     }
 
@@ -44,14 +47,20 @@ export async function POST(request: Request) {
       department: typeof data.department === 'string' ? data.department : undefined,
     });
 
-    if (role !== 'kiosk') {
+    if (!PASSWORD_AUTH_ROLES.has(role)) {
       return NextResponse.json(
-        { error: 'Password sign-in is only available for kiosk device accounts.' },
+        {
+          error:
+            'Password sign-in is only available for administrator, master, and kiosk accounts.',
+        },
         { status: 400 },
       );
     }
 
-    const result = await provisionKioskEmployeeAuth({
+    const email =
+      role === 'kiosk' ? normalizeKioskLoginEmail(rawEmail) : rawEmail.toLowerCase();
+
+    const result = await provisionPasswordAuth({
       email,
       name,
       password,
@@ -59,18 +68,18 @@ export async function POST(request: Request) {
     });
 
     await recordAuditFromRequest(request, master, {
-      action: 'employee.kiosk_auth_provisioned',
+      action: 'employee.password_auth_provisioned',
       entityType: 'employee',
       entityId: employeeDocId,
-      summary: `Set kiosk sign-in password for ${email}`,
-      metadata: { email, name },
+      summary: `Set sign-in password for ${email} (${role})`,
+      metadata: { email, name, role },
     });
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error('POST /api/employees/kiosk-auth', error);
     const message =
-      error instanceof Error ? error.message : 'Could not set the kiosk sign-in password.';
+      error instanceof Error ? error.message : 'Could not set the sign-in password.';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

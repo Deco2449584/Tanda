@@ -8,6 +8,21 @@ export function isKioskAccessRole(role: EmployeeAccessRole): boolean {
   return role === 'kiosk';
 }
 
+/** Administrator or Master — web panel accounts, not workforce staff. */
+export function isWebAdminAccessRole(role: EmployeeAccessRole): boolean {
+  return role === 'admin' || role === 'master';
+}
+
+/** Accounts that only manage the product / devices (no employee HR fields). */
+export function isAccountOnlyAccessRole(role: EmployeeAccessRole): boolean {
+  return isKioskAccessRole(role) || isWebAdminAccessRole(role);
+}
+
+/** Workforce employee records (scheduling, payroll, personal profile). */
+export function isWorkforceAccessRole(role: EmployeeAccessRole): boolean {
+  return role === 'empleado';
+}
+
 interface EmployeeAccessRoleSectionProps {
   accessRole: EmployeeAccessRole;
   adminRoleId: string;
@@ -54,7 +69,8 @@ export function EmployeeAccessRoleSection({
           <option value="kiosk">Kiosk device</option>
         </select>
         <p className="mt-1.5 text-xs text-subtle">
-          Master has full access. Administrators use a role template from Settings.
+          Master and Administrator manage the web app only. Employees are workforce staff.
+          Kiosk devices open the tablet check-in app.
         </p>
       </div>
 
@@ -100,6 +116,13 @@ export function EmployeeAccessRoleSection({
         <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-subtle">
           Set a sign-in email and password for the tablet. Employees clock in with their
           own PIN — this account only opens the kiosk app.
+        </p>
+      ) : null}
+
+      {isWebAdminAccessRole(accessRole) ? (
+        <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-subtle">
+          Web administration only — no employee ID, locations, or personal profile. Set a
+          corporate email and password here to sign in at /login.
         </p>
       ) : null}
     </div>

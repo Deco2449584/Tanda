@@ -14,7 +14,7 @@ export type ProfileStatusFilter = 'all' | PersonalProfileStatus;
 
 function isStaffProfileEmployee(employee: Employee): boolean {
   const role = (employee.role ?? 'empleado').trim().toLowerCase();
-  return role !== 'kiosk' && role !== 'master';
+  return role !== 'kiosk' && role !== 'master' && role !== 'admin';
 }
 
 interface EmployeeProfilesTableProps {
