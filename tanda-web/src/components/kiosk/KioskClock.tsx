@@ -187,30 +187,30 @@ export function KioskClock() {
     : 'Loading time';
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[clamp(1.25rem,4vw,2rem)] border border-white/10 bg-white/[0.03] px-4 py-3 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-md max-lg:landscape:mx-auto max-lg:landscape:max-w-xs max-lg:landscape:shadow-none lg:landscape:justify-between lg:landscape:px-[clamp(1rem,3.5vw,1.75rem)] lg:landscape:py-[clamp(1.25rem,4vh,2rem)]">
+    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[clamp(1.1rem,3.5vw,1.75rem)] border border-white/10 bg-white/[0.03] px-3 py-2.5 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-md max-md:landscape:mx-auto max-md:landscape:max-w-xs max-md:landscape:shadow-none md:landscape:justify-between md:landscape:px-[clamp(0.85rem,2.8vw,1.5rem)] md:landscape:py-[clamp(0.85rem,2.8vh,1.5rem)]">
       <div
-        className="pointer-events-none absolute -top-1/4 left-1/2 hidden h-2/3 w-[130%] -translate-x-1/2 rounded-[50%] bg-primary/10 blur-3xl lg:landscape:block"
+        className="pointer-events-none absolute -top-1/4 left-1/2 hidden h-2/3 w-[130%] -translate-x-1/2 rounded-[50%] bg-primary/10 blur-3xl md:landscape:block"
         aria-hidden
       />
 
       <div
-        className="relative flex h-full w-full flex-col lg:landscape:justify-between"
+        className="relative flex h-full w-full flex-col md:landscape:justify-between"
         aria-live="polite"
         aria-atomic="true"
         aria-label={timeLabel}
       >
-        <p className="shrink-0 text-[clamp(0.58rem,1.5vh,0.7rem)] font-semibold uppercase tracking-[0.32em] text-primary/80">
+        <p className="shrink-0 text-[clamp(0.55rem,1.3vh,0.68rem)] font-semibold uppercase tracking-[0.32em] text-primary/80">
           {cityLabel} Time
         </p>
         <h2
-          className="mt-[clamp(0.15rem,0.6vh,0.4rem)] hidden text-center text-[clamp(1.2rem,3.2vh,1.75rem)] font-bold text-white lg:landscape:block lg:landscape:opacity-0"
+          className="mt-[clamp(0.1rem,0.5vh,0.35rem)] hidden text-center text-[clamp(1.1rem,2.8vh,1.6rem)] font-bold text-white md:landscape:block md:landscape:opacity-0"
           aria-hidden
         >
           .
         </h2>
 
         {/* Analog clock — landscape split layout */}
-        <div className="relative mx-auto mt-[clamp(0.5rem,1.8vh,1.25rem)] hidden aspect-square w-[min(100%,clamp(11rem,28vh,18rem))] lg:landscape:mt-0 lg:landscape:block lg:landscape:flex-1 lg:landscape:max-h-[min(32vh,20rem)] lg:landscape:w-auto lg:landscape:self-center">
+        <div className="relative mx-auto mt-[clamp(0.35rem,1.4vh,0.9rem)] hidden aspect-square w-[min(100%,clamp(9rem,24vh,15rem))] md:landscape:mt-0 md:landscape:block md:landscape:flex-1 md:landscape:max-h-[min(28vh,16rem)] md:landscape:w-auto md:landscape:self-center">
           {parts ? (
             <AnalogClockFace
               hour={parts.hour}
@@ -226,28 +226,28 @@ export function KioskClock() {
 
         {/* Digital clock — mobile & portrait */}
         {now ? (
-          <div className="mt-2 shrink-0 lg:landscape:hidden">
-            <p className="whitespace-nowrap font-semibold leading-none tabular-nums tracking-tight text-white text-[clamp(1.65rem,5.5vh,2.15rem)]">
+          <div className="mt-1.5 shrink-0 md:landscape:hidden">
+            <p className="whitespace-nowrap font-semibold leading-none tabular-nums tracking-tight text-white text-[clamp(1.45rem,4.8vh,2rem)]">
               {formatClockTime(now, settings.timeZone, { showSeconds: false })}
             </p>
-            <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">
+            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">
               {formatClockDate(now, settings.timeZone)}
             </p>
           </div>
         ) : (
-          <div className="mt-3 flex shrink-0 flex-col items-center gap-2 lg:landscape:hidden" aria-hidden>
-            <div className="h-8 w-36 animate-pulse rounded-lg bg-white/10" />
-            <div className="h-2.5 w-44 animate-pulse rounded bg-white/5" />
+          <div className="mt-2 flex shrink-0 flex-col items-center gap-2 md:landscape:hidden" aria-hidden>
+            <div className="h-7 w-32 animate-pulse rounded-lg bg-white/10" />
+            <div className="h-2 w-40 animate-pulse rounded bg-white/5" />
           </div>
         )}
 
         {/* Digital readout — landscape footer */}
         {now ? (
-          <div className="mt-[clamp(0.65rem,1.8vh,1rem)] hidden shrink-0 lg:landscape:block">
-            <p className="whitespace-nowrap font-semibold tabular-nums tracking-tight text-white text-[clamp(1rem,2.5vh,1.35rem)]">
+          <div className="mt-[clamp(0.45rem,1.4vh,0.85rem)] hidden shrink-0 md:landscape:block">
+            <p className="whitespace-nowrap font-semibold tabular-nums tracking-tight text-white text-[clamp(0.95rem,2.2vh,1.25rem)]">
               {formatClockTime(now, settings.timeZone, { showSeconds: true })}
             </p>
-            <p className="mt-[clamp(0.25rem,0.8vh,0.5rem)] text-[clamp(0.58rem,1.4vh,0.75rem)] font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="mt-[clamp(0.2rem,0.6vh,0.4rem)] text-[clamp(0.55rem,1.2vh,0.7rem)] font-medium uppercase tracking-[0.2em] text-zinc-500">
               {formatClockDate(now, settings.timeZone)}
             </p>
           </div>

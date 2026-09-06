@@ -270,15 +270,15 @@ export function KioskScreen({
         ) : null}
       </div>
 
-      <header className="z-20 flex shrink-0 flex-col items-center gap-3 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] lg:landscape:gap-4">
+      <header className="z-20 flex shrink-0 flex-col items-center gap-2 px-4 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top))] md:landscape:gap-3">
         {step === 'pin' && showLogo && (
           <CompanyLogo
             priority
             variant="light"
-            className="h-auto w-[min(84vw,18rem)] max-h-[5.25rem] shrink-0 object-contain drop-shadow-lg lg:landscape:w-[min(100%,20rem)] lg:landscape:max-h-[6rem]"
+            className="h-auto w-[min(72vw,15rem)] max-h-[4.25rem] shrink-0 object-contain drop-shadow-lg md:landscape:w-[min(100%,16rem)] md:landscape:max-h-[4.75rem]"
           />
         )}
-        <div className="inline-flex max-w-[92%] items-center gap-2 rounded-full border border-primary/30 bg-white/[0.04] px-4 py-2 text-[clamp(0.65rem,1.6vh,0.8rem)] text-zinc-200 shadow-lg backdrop-blur">
+        <div className="inline-flex max-w-[92%] items-center gap-2 rounded-full border border-primary/30 bg-white/[0.04] px-3.5 py-1.5 text-[clamp(0.6rem,1.4vh,0.75rem)] text-zinc-200 shadow-lg backdrop-blur">
           <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="truncate">
             Clocking in at:{' '}
@@ -287,14 +287,14 @@ export function KioskScreen({
         </div>
       </header>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 max-lg:landscape:pt-3 lg:landscape:py-[clamp(1.5rem,4.5vh,2.5rem)]">
+      <main className="flex w-full min-h-0 flex-1 flex-col items-center justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 max-md:landscape:pt-2 md:landscape:py-[clamp(0.75rem,2.5vh,1.75rem)]">
         {step === 'pin' ? (
-          <div className="flex w-full max-w-sm flex-col items-stretch gap-4 max-lg:landscape:gap-3 lg:landscape:min-h-[min(68vh,520px)] lg:landscape:max-w-4xl lg:landscape:flex-row lg:landscape:items-stretch lg:landscape:gap-8">
-            <div className="flex w-full min-w-0 lg:landscape:flex-1">
+          <div className="flex w-full max-w-sm min-h-0 flex-col items-stretch gap-3 max-md:landscape:gap-2 md:landscape:h-full md:landscape:max-h-[min(78vh,560px)] md:landscape:max-w-5xl md:landscape:flex-row md:landscape:items-stretch md:landscape:gap-6">
+            <div className="flex w-full min-h-0 min-w-0 max-md:landscape:max-h-[28vh] md:landscape:flex-1">
               <KioskClock />
             </div>
 
-            <div className="flex w-full min-w-0 lg:landscape:flex-1">
+            <div className="flex w-full min-h-0 min-w-0 md:landscape:flex-[1.15]">
               <KioskPinPad
                 pin={pin}
                 loading={loading}
