@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { auth } from '@/lib/firebase';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -49,213 +49,354 @@ async function getAuthHeaders(): Promise<HeadersInit | null> {
   };
 }
 
-export function usePushNotifications() {
+function readBrowserPermission(): NotificationPermission | 'unsupported' {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'unsupported';
+  }
+  return Notification.permission;
+}
+
+type PushStoreState = {
+  permission: NotificationPermission | 'unsupported';
+  subscribed: boolean;
+  loading: boolean;
+  busy: boolean;
+  error: string;
+};
+
+const listeners = new Set<() => void>();
+
+let store: PushStoreState = {
+  permission: typeof window === 'undefined' ? 'default' : readBrowserPermission(),
+  subscribed: false,
+  loading: true,
+  busy: false,
+  error: '',
+};
+
+let refreshInFlight: Promise<void> | null = null;
+let syncInFlight: Promise<boolean> | null = null;
+let permissionStatus: PermissionStatus | null = null;
+let permissionListenerBound = false;
+
+function emit() {
+  listeners.forEach((listener) => listener());
+}
+
+function patchStore(patch: Partial<PushStoreState>) {
+  store = { ...store, ...patch };
+  emit();
+}
+
+function subscribeStore(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getStoreSnapshot(): PushStoreState {
+  return store;
+}
+
+function getServerSnapshot(): PushStoreState {
+  return {
+    permission: 'default',
+    subscribed: false,
+    loading: true,
+    busy: false,
+    error: '',
+  };
+}
+
+function isPushSupported(): boolean {
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? '';
-  const supported =
+  return (
     typeof window !== 'undefined' &&
     'serviceWorker' in navigator &&
     'PushManager' in window &&
-    Boolean(vapidPublicKey);
-
-  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
-    'default',
+    Boolean(vapidPublicKey)
   );
-  const [subscribed, setSubscribed] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+}
 
-  const refreshSubscriptionState = useCallback(async () => {
-    if (!supported) {
-      setPermission('unsupported');
-      setSubscribed(false);
-      setLoading(false);
+async function refreshSubscriptionState(): Promise<void> {
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = (async () => {
+    if (!isPushSupported()) {
+      patchStore({
+        permission: 'unsupported',
+        subscribed: false,
+        loading: false,
+      });
       return;
     }
 
-    setLoading(true);
-    setError('');
+    patchStore({ loading: true, error: '' });
 
     try {
-      const currentPermission = Notification.permission;
-      setPermission(currentPermission);
+      const currentPermission = readBrowserPermission();
+      patchStore({ permission: currentPermission });
 
-      // Browser/OS may revoke permission while an old PushSubscription still exists.
       if (currentPermission !== 'granted') {
-        setSubscribed(false);
+        patchStore({ subscribed: false, loading: false });
         return;
       }
 
       const registration = await getExistingServiceWorkerRegistration();
       if (!registration) {
-        setSubscribed(false);
+        patchStore({ subscribed: false, loading: false });
         return;
       }
 
       const subscription = await registration.pushManager.getSubscription();
-      setSubscribed(Boolean(subscription));
+      patchStore({ subscribed: Boolean(subscription), loading: false });
     } catch {
-      setSubscribed(false);
+      patchStore({ subscribed: false, loading: false });
     } finally {
-      setLoading(false);
+      refreshInFlight = null;
     }
-  }, [supported]);
+  })();
 
-  useEffect(() => {
-    void refreshSubscriptionState();
-  }, [refreshSubscriptionState]);
+  return refreshInFlight;
+}
 
-  useEffect(() => {
-    if (!supported) return;
+async function syncSubscriptionInternal(): Promise<boolean> {
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? '';
+  const registration = await registerServiceWorker();
+  if (!registration) {
+    patchStore({ error: 'Could not register the notification service.' });
+    return false;
+  }
 
-    function onVisible() {
-      if (document.visibilityState === 'visible') {
-        void refreshSubscriptionState();
-      }
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+  }
+
+  const headers = await getAuthHeaders();
+  if (!headers) {
+    patchStore({ error: 'You must be signed in to enable notifications.' });
+    return false;
+  }
+
+  const response = await fetch('/api/notifications/subscribe', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ subscription: subscription.toJSON() }),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? 'Could not enable notifications.');
+  }
+
+  patchStore({ subscribed: true, permission: 'granted', error: '' });
+  return true;
+}
+
+async function syncSubscription(): Promise<boolean> {
+  if (!isPushSupported() || store.busy) {
+    return false;
+  }
+
+  if (readBrowserPermission() !== 'granted') {
+    return false;
+  }
+
+  if (syncInFlight) {
+    return syncInFlight;
+  }
+
+  syncInFlight = (async () => {
+    patchStore({ busy: true, error: '' });
+    try {
+      return await syncSubscriptionInternal();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not enable notifications.';
+      patchStore({ error: message, subscribed: false });
+      return false;
+    } finally {
+      patchStore({ busy: false });
+      syncInFlight = null;
     }
+  })();
 
-    function onFocus() {
-      void refreshSubscriptionState();
+  return syncInFlight;
+}
+
+async function enablePush(): Promise<boolean> {
+  if (!isPushSupported() || store.busy) {
+    return false;
+  }
+
+  patchStore({ busy: true, error: '' });
+
+  try {
+    // Re-read before prompting — Android may have changed OS permission while app was backgrounded.
+    await refreshSubscriptionState();
+    const current = readBrowserPermission();
+
+    let result = current;
+    if (current !== 'granted') {
+      result = await Notification.requestPermission();
     }
+    patchStore({ permission: result });
 
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onFocus);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [refreshSubscriptionState, supported]);
-
-  const syncSubscriptionInternal = useCallback(async (): Promise<boolean> => {
-    const registration = await registerServiceWorker();
-    if (!registration) {
-      setError('Could not register the notification service.');
+    if (result !== 'granted') {
+      patchStore({
+        error: 'Notification permission was not granted.',
+        subscribed: false,
+      });
       return false;
     }
 
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      });
+    return await syncSubscriptionInternal();
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Could not enable notifications.';
+    patchStore({ error: message, subscribed: false });
+    return false;
+  } finally {
+    patchStore({ busy: false });
+  }
+}
+
+async function disablePush(): Promise<void> {
+  if (!isPushSupported() || store.busy) {
+    return;
+  }
+
+  patchStore({ busy: true, error: '' });
+
+  try {
+    const registration = await getExistingServiceWorkerRegistration();
+    const subscription = registration
+      ? await registration.pushManager.getSubscription()
+      : null;
+
+    if (subscription) {
+      await subscription.unsubscribe();
     }
 
     const headers = await getAuthHeaders();
-    if (!headers) {
-      setError('You must be signed in to enable notifications.');
-      return false;
+    if (headers) {
+      await fetch('/api/notifications/unsubscribe', {
+        method: 'POST',
+        headers,
+      });
     }
 
-    const response = await fetch('/api/notifications/subscribe', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ subscription: subscription.toJSON() }),
+    patchStore({ subscribed: false });
+  } catch {
+    patchStore({ error: 'Could not disable notifications.' });
+  } finally {
+    patchStore({ busy: false });
+  }
+}
+
+async function bindPermissionListener() {
+  if (permissionListenerBound || typeof navigator === 'undefined' || !navigator.permissions?.query) {
+    return;
+  }
+
+  permissionListenerBound = true;
+
+  try {
+    permissionStatus = await navigator.permissions.query({
+      name: 'notifications' as PermissionName,
     });
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(data?.error ?? 'Could not enable notifications.');
-    }
+    const onPermissionChange = () => {
+      void (async () => {
+        await refreshSubscriptionState();
+        if (readBrowserPermission() === 'granted' && !store.subscribed) {
+          await syncSubscription();
+        }
+      })();
+    };
 
-    setSubscribed(true);
-    setPermission('granted');
-    return true;
-  }, [vapidPublicKey]);
+    permissionStatus.addEventListener('change', onPermissionChange);
+  } catch {
+    // Safari / some WebViews reject notifications permission query.
+    permissionListenerBound = false;
+  }
+}
 
-  const enable = useCallback(async () => {
-    if (!supported || busy) return false;
+let lifecycleBound = false;
 
-    setBusy(true);
-    setError('');
+function bindLifecycleListeners() {
+  if (lifecycleBound || typeof window === 'undefined') {
+    return;
+  }
+  lifecycleBound = true;
 
-    try {
-      const result = await Notification.requestPermission();
-      setPermission(result);
-
-      if (result !== 'granted') {
-        setError('Notification permission was not granted.');
-        setSubscribed(false);
-        return false;
+  const refreshAndMaybeSync = () => {
+    void (async () => {
+      await refreshSubscriptionState();
+      if (readBrowserPermission() === 'granted' && !store.subscribed) {
+        await syncSubscription();
       }
+    })();
+  };
 
-      return await syncSubscriptionInternal();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Could not enable notifications.';
-      setError(message);
-      setSubscribed(false);
-      return false;
-    } finally {
-      setBusy(false);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      refreshAndMaybeSync();
     }
-  }, [busy, supported, syncSubscriptionInternal]);
+  });
+  window.addEventListener('focus', refreshAndMaybeSync);
+  window.addEventListener('pageshow', refreshAndMaybeSync);
+}
 
-  const syncSubscription = useCallback(async () => {
-    if (!supported || busy || Notification.permission !== 'granted') {
-      return false;
-    }
+export function usePushNotifications() {
+  const state = useSyncExternalStore(
+    subscribeStore,
+    getStoreSnapshot,
+    getServerSnapshot,
+  );
 
-    setBusy(true);
-    setError('');
+  const supported = isPushSupported();
 
-    try {
-      return await syncSubscriptionInternal();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Could not enable notifications.';
-      setError(message);
-      setSubscribed(false);
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }, [busy, supported, syncSubscriptionInternal]);
-
-  const disable = useCallback(async () => {
-    if (!supported || busy) return;
-
-    setBusy(true);
-    setError('');
-
-    try {
-      const registration = await getExistingServiceWorkerRegistration();
-      const subscription = registration
-        ? await registration.pushManager.getSubscription()
-        : null;
-
-      if (subscription) {
-        await subscription.unsubscribe();
+  useEffect(() => {
+    bindLifecycleListeners();
+    void bindPermissionListener();
+    void refreshSubscriptionState().then(async () => {
+      if (readBrowserPermission() === 'granted' && !store.subscribed) {
+        await syncSubscription();
       }
+    });
+  }, []);
 
-      const headers = await getAuthHeaders();
-      if (headers) {
-        await fetch('/api/notifications/unsubscribe', {
-          method: 'POST',
-          headers,
-        });
-      }
-
-      setSubscribed(false);
-    } catch {
-      setError('Could not disable notifications.');
-    } finally {
-      setBusy(false);
+  const refresh = useCallback(async () => {
+    await refreshSubscriptionState();
+    if (readBrowserPermission() === 'granted' && !store.subscribed) {
+      await syncSubscription();
     }
-  }, [busy, supported]);
+  }, []);
+
+  const enable = useCallback(async () => enablePush(), []);
+  const disable = useCallback(async () => disablePush(), []);
+  const sync = useCallback(async () => syncSubscription(), []);
 
   return {
     supported,
-    permission,
-    subscribed,
+    permission: state.permission,
+    subscribed: state.subscribed,
     /** True only when permission is granted and a push subscription exists. */
-    enabled: supported && permission === 'granted' && subscribed,
-    loading,
-    busy,
-    error,
+    enabled: supported && state.permission === 'granted' && state.subscribed,
+    loading: state.loading,
+    busy: state.busy,
+    error: state.error,
     enable,
-    syncSubscription,
+    syncSubscription: sync,
     disable,
-    refreshSubscriptionState,
+    refreshSubscriptionState: refresh,
   };
 }

@@ -39,12 +39,18 @@ export function EmployeeNotificationsMenu() {
   } = usePushNotifications();
 
   const systemPushEnabled = settings.pushNotificationsEnabled !== false;
+  // Prefer live browser permission so Android Settings changes are reflected immediately.
+  const livePermission =
+    typeof window !== 'undefined' && 'Notification' in window
+      ? Notification.permission
+      : pushPermission;
   const showPushPrompt =
     open &&
     pushSupported &&
     systemPushEnabled &&
     !pushLoading &&
     !pushEnabled;
+  const permissionBlocked = livePermission === 'denied';
 
   const hasProtectedNotifications = hasAttentionRequiredNotifications(notifications);
   const clearableCount = notifications.filter(
@@ -130,11 +136,11 @@ export function EmployeeNotificationsMenu() {
           {showPushPrompt ? (
             <div className="border-b border-border bg-surface-base/60 px-4 py-3">
               <p className="text-xs text-muted">
-                {pushPermission === 'denied'
+                {permissionBlocked
                   ? 'Notifications are blocked for this app. Open your phone Settings → Apps → Time Tracker → Notifications and allow them, then tap Enable again.'
                   : 'Allow notifications so you get shift updates on this phone.'}
               </p>
-              {pushPermission === 'denied' ? null : (
+              {permissionBlocked ? null : (
                 <button
                   type="button"
                   onClick={() => void enablePush()}
