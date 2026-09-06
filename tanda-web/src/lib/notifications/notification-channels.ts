@@ -9,6 +9,21 @@ export const NOTIFICATION_CHANNEL_KEYS = [
 
 export type NotificationChannelKey = (typeof NOTIFICATION_CHANNEL_KEYS)[number];
 
+/** Channels employees can mute for their own tray / push. */
+export const EMPLOYEE_NOTIFICATION_CHANNEL_KEYS: NotificationChannelKey[] = [
+  'shifts',
+  'announcements',
+  'attendance',
+];
+
+/** Channels for admin/master personal alert preferences. */
+export const ADMIN_NOTIFICATION_CHANNEL_KEYS: NotificationChannelKey[] = [
+  'shifts',
+  'announcements',
+  'attendance',
+  'leaveRequests',
+];
+
 export interface NotificationChannelPreferences {
   shifts: boolean;
   announcements: boolean;

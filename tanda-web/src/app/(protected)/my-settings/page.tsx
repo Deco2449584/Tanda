@@ -11,6 +11,7 @@ import {
   subscribeToNotificationChannels,
 } from '@/lib/notifications/employee-notification-preferences';
 import {
+  EMPLOYEE_NOTIFICATION_CHANNEL_KEYS,
   mapNotificationChannels,
   type NotificationChannelPreferences,
 } from '@/lib/notifications/notification-channels';
@@ -65,22 +66,17 @@ export default function MySettingsPage() {
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
         title="Settings"
-        description="Manage notification preferences for this device and your account."
+        description="Your personal alert preferences. Organization-wide push is controlled by Master."
       />
 
       <section className="space-y-6 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
-        <div>
-          <h2 className="text-sm font-semibold text-white">Notifications</h2>
-          <p className="mt-1 text-xs text-subtle">
-            Choose which updates you receive, and turn push alerts on for this phone or
-            browser.
-          </p>
-        </div>
-
         <NotificationChannelPreferencesPanel
           channels={channels}
           saving={saving}
           onChange={handleChannelsChange}
+          channelKeys={EMPLOYEE_NOTIFICATION_CHANNEL_KEYS}
+          title="Your activity alerts"
+          description="Choose which updates appear in your tray and push on this account. These do not change company settings."
         />
 
         {pushSupported && systemPushEnabled ? (
@@ -88,10 +84,10 @@ export default function MySettingsPage() {
             <p className="text-sm font-medium text-foreground">Push on this device</p>
             <p className="mt-1 text-xs text-subtle">
               {pushPermission === 'denied'
-                ? 'Notifications are blocked for this app. Enable them in your device or browser settings, then tap Enable again.'
+                ? 'Notifications are blocked. Open phone Settings → Apps → Tanda → Notifications, allow them, then tap Enable again.'
                 : pushEnabled
-                  ? 'Push alerts are on for this device. You can turn them off anytime.'
-                  : 'Turn on push notifications to receive shift updates even when the app is closed.'}
+                  ? 'Push alerts are on for this device.'
+                  : 'Enable asks your phone for notification permission (Android / browser prompt).'}
             </p>
 
             {pushPermission === 'denied' ? null : pushEnabled ? (
@@ -110,7 +106,7 @@ export default function MySettingsPage() {
                 onClick={() => void enablePush()}
                 className="mt-3 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
               >
-                {pushBusy ? 'Enabling…' : 'Enable push on this device'}
+                {pushBusy ? 'Waiting for permission…' : 'Enable push on this device'}
               </button>
             )}
 
@@ -122,7 +118,7 @@ export default function MySettingsPage() {
           </div>
         ) : !systemPushEnabled ? (
           <p className="rounded-xl border border-border bg-surface-base/50 px-4 py-3 text-xs text-subtle">
-            Push notifications are currently disabled by your organization.
+            Push notifications are turned off for the organization by Master.
           </p>
         ) : (
           <p className="rounded-xl border border-border bg-surface-base/50 px-4 py-3 text-xs text-subtle">

@@ -11,12 +11,18 @@ interface NotificationChannelPreferencesPanelProps {
   channels: NotificationChannelPreferences;
   saving?: boolean;
   onChange: (channels: NotificationChannelPreferences) => void;
+  channelKeys?: readonly NotificationChannelKey[];
+  title?: string;
+  description?: string;
 }
 
 export function NotificationChannelPreferencesPanel({
   channels,
   saving = false,
   onChange,
+  channelKeys = NOTIFICATION_CHANNEL_KEYS,
+  title = 'Your activity alerts',
+  description = 'These preferences apply only to your account — not the whole organization.',
 }: NotificationChannelPreferencesPanelProps) {
   function toggleChannel(key: NotificationChannelKey, enabled: boolean) {
     onChange({ ...channels, [key]: enabled });
@@ -25,13 +31,11 @@ export function NotificationChannelPreferencesPanel({
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm font-semibold text-white">Activity alerts</p>
-        <p className="mt-0.5 text-xs text-subtle">
-          Enable or disable activity types across your tray, admin alerts, and push.
-        </p>
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="mt-0.5 text-xs text-subtle">{description}</p>
       </div>
 
-      {NOTIFICATION_CHANNEL_KEYS.map((key) => {
+      {channelKeys.map((key) => {
         const label = NOTIFICATION_CHANNEL_LABELS[key];
         const enabled = channels[key] !== false;
 

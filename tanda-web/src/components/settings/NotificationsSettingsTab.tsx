@@ -11,6 +11,7 @@ import {
   subscribeToNotificationChannels,
 } from '@/lib/notifications/employee-notification-preferences';
 import {
+  ADMIN_NOTIFICATION_CHANNEL_KEYS,
   mapNotificationChannels,
   type NotificationChannelPreferences,
 } from '@/lib/notifications/notification-channels';
@@ -98,79 +99,86 @@ export function NotificationsSettingsTab() {
         <h2 className="text-sm font-semibold text-white">Notifications</h2>
         <p className="mt-1 text-xs text-subtle">
           {isMaster
-            ? 'These preferences apply across the app. As Master, you can disable browser push for the entire organization.'
-            : canManagePush
-              ? 'These preferences apply across the app: operational alerts, in-app messages, and push on this device.'
-              : 'In-app notification preferences for your account.'}
+            ? 'Organization controls apply to everyone. Activity alerts below only affect this Master account.'
+            : 'Activity alerts below only affect your account. Device push is for this browser or phone.'}
         </p>
       </div>
+
+      {isMaster ? (
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-white">Organization</p>
+            <p className="mt-0.5 text-xs text-subtle">
+              Master-only kill switches. Employees cannot override these.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+            <p className="text-sm font-medium text-foreground">Browser push (system-wide)</p>
+            <p className="mt-1 text-xs text-subtle">
+              Turns push on or off for all users. When disabled, employees cannot enable
+              device push until you turn this back on.
+            </p>
+
+            <button
+              type="button"
+              disabled={systemPushBusy || savingSettings}
+              onClick={() => void handleSystemPushToggle()}
+              className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60 ${
+                systemPushEnabled
+                  ? 'border border-border-strong text-muted transition-colors hover:bg-surface-hover hover:text-foreground'
+                  : 'bg-primary text-white hover:opacity-90'
+              }`}
+            >
+              {systemPushBusy || savingSettings
+                ? 'Updating…'
+                : systemPushEnabled
+                  ? 'Disable push system-wide'
+                  : 'Enable push system-wide'}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface-base/50 p-4">
+            <p className="text-sm font-medium text-foreground">Shift schedule emails</p>
+            <p className="mt-1 text-xs text-subtle">
+              When enabled, employees can receive email when a shift is assigned or
+              cancelled (requires Resend and their schedule channel on).
+            </p>
+
+            <button
+              type="button"
+              disabled={systemPushBusy || savingSettings}
+              onClick={() => void handleShiftEmailToggle()}
+              className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60 ${
+                shiftEmailEnabled
+                  ? 'border border-border-strong text-muted transition-colors hover:bg-surface-hover hover:text-foreground'
+                  : 'bg-primary text-white hover:opacity-90'
+              }`}
+            >
+              {systemPushBusy || savingSettings
+                ? 'Updating…'
+                : shiftEmailEnabled
+                  ? 'Disable shift emails'
+                  : 'Enable shift emails'}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <NotificationChannelPreferencesPanel
         channels={channels}
         saving={saving}
         onChange={handleChannelsChange}
+        channelKeys={ADMIN_NOTIFICATION_CHANNEL_KEYS}
+        title="Your activity alerts"
+        description="Personal preferences for this signed-in account only. Employees manage their own alerts in their Settings."
       />
-
-      {isMaster ? (
-        <div className="rounded-xl border border-border bg-surface-base/50 p-4">
-          <p className="text-sm font-medium text-foreground">Browser push alerts</p>
-          <p className="mt-1 text-xs text-subtle">
-            Controls push notifications for all users across the system, not just this
-            device. Disabling clears existing device subscriptions.
-          </p>
-
-          <button
-            type="button"
-            disabled={systemPushBusy || savingSettings}
-            onClick={() => void handleSystemPushToggle()}
-            className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60 ${
-              systemPushEnabled
-                ? 'border border-border-strong text-muted transition-colors hover:bg-surface-hover hover:text-foreground'
-                : 'bg-primary text-white hover:opacity-90'
-            }`}
-          >
-            {systemPushBusy || savingSettings
-              ? 'Updating…'
-              : systemPushEnabled
-                ? 'Disable push system-wide'
-                : 'Enable push system-wide'}
-          </button>
-        </div>
-      ) : null}
-
-      {isMaster ? (
-        <div className="rounded-xl border border-border bg-surface-base/50 p-4">
-          <p className="text-sm font-medium text-foreground">Shift schedule emails</p>
-          <p className="mt-1 text-xs text-subtle">
-            When enabled, employees receive an email when a shift is assigned or
-            cancelled (if Resend is configured and they have schedule notifications on).
-          </p>
-
-          <button
-            type="button"
-            disabled={systemPushBusy || savingSettings}
-            onClick={() => void handleShiftEmailToggle()}
-            className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60 ${
-              shiftEmailEnabled
-                ? 'border border-border-strong text-muted transition-colors hover:bg-surface-hover hover:text-foreground'
-                : 'bg-primary text-white hover:opacity-90'
-            }`}
-          >
-            {systemPushBusy || savingSettings
-              ? 'Updating…'
-              : shiftEmailEnabled
-                ? 'Disable shift emails'
-                : 'Enable shift emails'}
-          </button>
-        </div>
-      ) : null}
 
       {canManagePush && !isMaster && pushSupported ? (
         <div className="rounded-xl border border-border bg-surface-base/50 p-4">
-          <p className="text-sm font-medium text-foreground">Browser push alerts</p>
+          <p className="text-sm font-medium text-foreground">Push on this device</p>
           <p className="mt-1 text-xs text-subtle">
-            Optional alerts on this device when enabled activities occur, even if the
-            tab is closed.
+            Asks the browser or phone for notification permission for this device.
           </p>
 
           {pushEnabled ? (
