@@ -1,0 +1,27 @@
+# Monorepo root — package-specific rules live in each app's .gitignore.
+
+# Dependencies
+node_modules/
+
+# Next.js / Expo caches
+.next/
+.expo/
+dist/
+web-build/
+out/
+
+# Env / secrets
+.env
+.env*.local
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Logs / build info
+*.log
+*.tsbuildinfo
+.turbo/
+.vercel/
+coverage/
