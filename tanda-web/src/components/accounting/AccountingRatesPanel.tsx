@@ -248,7 +248,7 @@ export function AccountingRatesPanel({
 
   return (
     <div className="min-w-0 space-y-5">
-      <div className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-surface-base/40 p-1 sm:flex sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0">
+      <div className="-mx-1 flex gap-1 overflow-x-auto overscroll-x-contain rounded-xl border border-border bg-surface-base/40 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0">
         {(
           [
             ['staff', 'Staff'],
@@ -260,10 +260,10 @@ export function AccountingRatesPanel({
             key={id}
             type="button"
             onClick={() => setSide(id)}
-            className={`rounded-lg px-2 py-2 text-center text-xs font-medium sm:border sm:px-3 sm:text-sm ${
+            className={`shrink-0 rounded-lg border px-3 py-2 text-center text-xs font-medium sm:px-3 sm:text-sm ${
               side === id
-                ? 'bg-primary/15 text-primary sm:border-primary/50'
-                : 'text-muted sm:border-border'
+                ? 'border-primary/50 bg-primary/15 text-primary'
+                : 'border-border/70 text-muted hover:border-border'
             }`}
           >
             <span className="sm:hidden">{label}</span>

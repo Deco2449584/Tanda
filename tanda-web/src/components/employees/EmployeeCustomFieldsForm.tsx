@@ -49,11 +49,26 @@ function buildInitialDrafts(
   return drafts;
 }
 
+/** Optional file/image fields with nothing on file yet. */
+export function isOptionalMissingDocumentField(
+  field: EmployeeCustomField,
+  draft?: Pick<CustomFieldDraft, 'url' | 'fileName'>,
+): boolean {
+  if (field.required) return false;
+  if (field.type !== 'file' && field.type !== 'image') return false;
+  return !draft?.url?.trim() && !draft?.fileName?.trim();
+}
+
 interface EmployeeCustomFieldsFormProps {
   fields: EmployeeCustomField[];
   values: EmployeeCustomFieldValue[];
   disabled?: boolean;
   readOnly?: boolean;
+  /**
+   * When the profile is approved, still allow uploading optional file/image
+   * fields that were never filled.
+   */
+  allowOptionalDocumentUpload?: boolean;
   idPrefix?: string;
   draftsRef?: MutableRefObject<Record<string, CustomFieldDraft>>;
 }
@@ -63,6 +78,7 @@ export function EmployeeCustomFieldsForm({
   values,
   disabled = false,
   readOnly = false,
+  allowOptionalDocumentUpload = false,
   idPrefix = 'custom',
   draftsRef,
 }: EmployeeCustomFieldsFormProps) {
@@ -71,7 +87,6 @@ export function EmployeeCustomFieldsForm({
   );
   const internalRef = useRef(drafts);
   const targetRef = draftsRef ?? internalRef;
-  const fieldsLocked = disabled || readOnly;
 
   const fieldKey = useMemo(
     () =>
@@ -115,7 +130,11 @@ export function EmployeeCustomFieldsForm({
   return (
     <FormSection
       title="Additional information"
-      description="Extra details requested by your organisation."
+      description={
+        allowOptionalDocumentUpload
+          ? 'Your profile is approved. You can still upload optional documents that were not required.'
+          : 'Extra details requested by your organisation.'
+      }
       icon={ClipboardList}
     >
       <div className="space-y-5">
@@ -125,6 +144,11 @@ export function EmployeeCustomFieldsForm({
             valueNumber: '',
             file: null,
           };
+          const optionalDocEditable =
+            allowOptionalDocumentUpload &&
+            isOptionalMissingDocumentField(field, draft);
+          const fieldReadOnly = readOnly && !optionalDocEditable;
+          const fieldDisabled = disabled || fieldReadOnly;
 
           return (
             <div key={field.id} className="space-y-2">
@@ -142,8 +166,8 @@ export function EmployeeCustomFieldsForm({
                     onChange={(event) =>
                       patchDraft(field.id, { valueText: event.target.value })
                     }
-                    disabled={fieldsLocked}
-                    readOnly={readOnly}
+                    disabled={fieldDisabled}
+                    readOnly={fieldReadOnly}
                     className={formInputClass}
                   />
                 </FormField>
@@ -163,8 +187,8 @@ export function EmployeeCustomFieldsForm({
                     onChange={(event) =>
                       patchDraft(field.id, { valueNumber: event.target.value })
                     }
-                    disabled={fieldsLocked}
-                    readOnly={readOnly}
+                    disabled={fieldDisabled}
+                    readOnly={fieldReadOnly}
                     className={formInputClass}
                   />
                 </FormField>
@@ -178,8 +202,8 @@ export function EmployeeCustomFieldsForm({
                   currentFileUrl={draft.url}
                   selectedFile={draft.file}
                   onFileChange={(file) => patchDraft(field.id, { file })}
-                  disabled={fieldsLocked}
-                  readOnly={readOnly}
+                  disabled={fieldDisabled}
+                  readOnly={fieldReadOnly}
                 />
               ) : null}
             </div>

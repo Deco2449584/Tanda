@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import {
   EmployeeCustomFieldsForm,
   buildCustomFieldValuePayloads,
+  isOptionalMissingDocumentField,
   type CustomFieldDraft,
 } from '@/components/employees/EmployeeCustomFieldsForm';
 import { EmployeePersonalFields } from '@/components/employees/EmployeePersonalFields';
@@ -137,6 +138,7 @@ export default function MyProfilePage() {
       employee.personalProfileStatus,
     );
     if (currentStatus === 'Approved') {
+      await handleSaveOptionalDocuments();
       return;
     }
 
@@ -250,10 +252,62 @@ export default function MyProfilePage() {
     }
   }
 
+  async function handleSaveOptionalDocuments() {
+    if (!employee) return;
+
+    setError('');
+    setSuccess('');
+
+    const drafts = customDraftsRef.current;
+    const optionalFields = customFields.filter((field) =>
+      isOptionalMissingDocumentField(field, drafts[field.id]),
+    );
+    const fieldsWithNewFiles = optionalFields.filter(
+      (field) => drafts[field.id]?.file,
+    );
+
+    if (fieldsWithNewFiles.length === 0) {
+      setError('Select an optional document to upload.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const values = await buildCustomFieldValuePayloads({
+        fields: fieldsWithNewFiles,
+        drafts,
+        employeeCode: employee.employeeId,
+      });
+      if (values.length === 0) {
+        setError('Select an optional document to upload.');
+        return;
+      }
+      await saveEmployeeCustomFieldValuesRequest({ values });
+      setSuccess('Optional documents saved.');
+      await loadCustomFields();
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : 'Could not save optional documents.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const loading = authLoading || employeeLoading;
   const profileStatus = normalizePersonalProfileStatus(employee?.personalProfileStatus);
   const isReadOnly = profileStatus === 'Approved';
-  const busy = isSubmitting || loading || isReadOnly || customLoading;
+  const busy = isSubmitting || loading || customLoading;
+  const personalBusy = busy || isReadOnly;
+  const hasOptionalMissingDocs = customFields.some((field) => {
+    const existing = customValues.find((value) => value.fieldId === field.id);
+    return isOptionalMissingDocumentField(field, {
+      url: existing?.url,
+      fileName: existing?.fileName,
+    });
+  });
 
   return (
     <PageContent className="space-y-6">
@@ -274,8 +328,8 @@ export default function MyProfilePage() {
             </div>
             {isReadOnly ? (
               <p className="text-xs text-subtle">
-                Your profile is approved. You can view your details here; contact an
-                administrator if something needs to change.
+                Your profile is approved. Personal details stay locked; you can still
+                upload optional documents that were not required.
               </p>
             ) : (
               <p className="text-xs text-subtle">
@@ -304,7 +358,7 @@ export default function MyProfilePage() {
               currentPhotoUrl={employee.photoUrl}
               selectedFile={photoFile}
               onFileChange={setPhotoFile}
-              disabled={busy}
+              disabled={personalBusy}
               readOnly={isReadOnly}
               required={!isReadOnly}
             />
@@ -313,7 +367,7 @@ export default function MyProfilePage() {
           <EmployeePersonalFields
             form={form}
             onChange={patchForm}
-            disabled={busy}
+            disabled={personalBusy}
             readOnly={isReadOnly}
             idPrefix="my-profile"
             passportFile={passportFile}
@@ -333,6 +387,7 @@ export default function MyProfilePage() {
               values={customValues}
               disabled={busy}
               readOnly={isReadOnly}
+              allowOptionalDocumentUpload={isReadOnly}
               idPrefix="my-custom"
               draftsRef={customDraftsRef}
             />
@@ -344,6 +399,12 @@ export default function MyProfilePage() {
           {!isReadOnly ? (
             <FormActions
               submitLabel={isSubmitting ? 'Submitting…' : 'Submit for review'}
+              disabled={personalBusy}
+              hideCancel
+            />
+          ) : hasOptionalMissingDocs ? (
+            <FormActions
+              submitLabel={isSubmitting ? 'Saving…' : 'Save optional documents'}
               disabled={busy}
               hideCancel
             />

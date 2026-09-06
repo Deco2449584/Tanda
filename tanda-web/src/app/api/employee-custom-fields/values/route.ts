@@ -4,6 +4,7 @@ import { loadAdminAccessFromRequest } from '@/lib/auth/load-admin-access';
 import { loadEmployeeContext } from '@/lib/auth/load-employee-context';
 import { COLLECTIONS } from '@/lib/constants';
 import {
+  listEmployeeCustomFields,
   listEmployeeCustomFieldValues,
   upsertEmployeeCustomFieldValues,
 } from '@/lib/employees/server/employee-custom-fields-admin';
@@ -93,13 +94,46 @@ export async function PUT(request: Request) {
         .doc(employee.employeeDocId)
         .get();
       if (employeeSnap.data()?.personalProfileStatus === 'Approved') {
-        return NextResponse.json(
-          {
-            error:
-              'Your profile is already approved and cannot be edited. Contact an administrator if changes are needed.',
-          },
-          { status: 403 },
+        const [fields, existingValues] = await Promise.all([
+          listEmployeeCustomFields({ activeOnly: true }),
+          listEmployeeCustomFieldValues(employee.employeeDocId),
+        ]);
+        const fieldById = new Map(fields.map((field) => [field.id, field]));
+        const existingByField = new Map(
+          existingValues.map((value) => [value.fieldId, value]),
         );
+
+        for (const item of values) {
+          const field = fieldById.get(item.fieldId);
+          if (
+            !field ||
+            field.required ||
+            (field.type !== 'file' && field.type !== 'image')
+          ) {
+            return NextResponse.json(
+              {
+                error:
+                  'Your profile is approved. You can only upload optional documents that are still missing.',
+              },
+              { status: 403 },
+            );
+          }
+          if (existingByField.get(field.id)?.url?.trim()) {
+            return NextResponse.json(
+              {
+                error: `"${field.title}" is already on file. Contact an administrator to replace it.`,
+              },
+              { status: 403 },
+            );
+          }
+          if (!item.url?.trim()) {
+            return NextResponse.json(
+              { error: `"${field.title}" requires a file upload.` },
+              { status: 400 },
+            );
+          }
+        }
+        enforceRequired = false;
       }
     } else {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });

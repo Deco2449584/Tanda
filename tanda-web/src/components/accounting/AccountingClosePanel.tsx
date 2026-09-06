@@ -274,7 +274,7 @@ export function AccountingClosePanel({
 
         {loading ? <p className="text-sm text-subtle">Loading period…</p> : null}
 
-        <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-primary/25 bg-primary/10">

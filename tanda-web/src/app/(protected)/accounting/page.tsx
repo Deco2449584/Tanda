@@ -42,19 +42,19 @@ export default function AccountingPage() {
         </p>
       </div>
 
-      <nav className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-raised p-1 md:flex md:flex-wrap">
+      <nav className="-mx-1 flex gap-1 overflow-x-auto overscroll-x-contain rounded-xl border border-border bg-surface-raised p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:flex-wrap md:overflow-visible">
         {TABS.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
-            className={`flex min-w-0 flex-col rounded-lg px-3 py-2.5 text-left transition md:px-4 ${
+            className={`flex shrink-0 flex-col rounded-lg border px-3 py-2.5 text-left transition md:min-w-0 md:px-4 ${
               tab === item.id
-                ? 'bg-primary/15 text-primary'
-                : 'text-muted hover:bg-surface-hover hover:text-foreground'
+                ? 'border-primary/50 bg-primary/15 text-primary'
+                : 'border-border/70 text-muted hover:border-border hover:bg-surface-hover hover:text-foreground'
             }`}
           >
-            <span className="text-sm font-semibold">{item.label}</span>
+            <span className="text-sm font-semibold whitespace-nowrap">{item.label}</span>
             <span className="hidden text-[11px] opacity-70 sm:block">{item.hint}</span>
           </button>
         ))}

@@ -348,13 +348,13 @@ export function AccountingReportsPanel({
           Filter data, change views, and save presets for recurring reports.
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 -mx-1 flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {VIEWS.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setView(item.id)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+              className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium ${
                 view === item.id
                   ? 'border-primary/50 bg-primary/15 text-primary'
                   : 'border-border text-muted'
@@ -497,7 +497,7 @@ function GroupedTable({
   const hoursKey = view === 'charge' ? 'chargeHours' : 'payHours';
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
+    <div className="overflow-x-auto rounded-xl border border-border bg-surface-raised">
       <table className="w-full min-w-[640px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-primary/25 bg-primary/10">
