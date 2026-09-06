@@ -1,0 +1,90 @@
+{
+  "expo": {
+    "name": "Continental Inspect",
+    "slug": "Continental-Inspect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "continental-inspect",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.deco2449584.continentalinspect"
+    },
+    "android": {
+      "package": "com.deco2449584.continentalinspect",
+      "versionCode": 3,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Continental Inspect to access the camera to scan cargo labels and barcodes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Continental Inspect to access your photo library to attach photo evidence.",
+          "cameraPermission": "Allow Continental Inspect to use the camera to capture photo evidence.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "backgroundColor": "#FFFFFF"
+          }
+        }
+      ],
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      "expo-video",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Continental Inspect to save downloaded video evidence to your gallery.",
+          "savePhotosPermission": "Allow Continental Inspect to save downloaded video evidence to your gallery.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "52f5cd45-a731-4c4f-9f82-ba01be736f17"
+      }
+    },
+    "owner": "deco2449584"
+  }
+}
