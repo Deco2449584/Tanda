@@ -9,44 +9,11 @@ import type {
   UpdateAdminRoleInput,
 } from '@/lib/types/admin-role';
 
-const DEFAULT_ROLE_NAME = 'Full administrator';
-const DEFAULT_ROLE_DESCRIPTION =
-  'Access to all admin modules with full edit rights.';
-
 function rolesCollection() {
   return getAdminFirestore().collection(COLLECTIONS.ADMIN_ROLES);
 }
 
-export async function ensureDefaultAdminRole(): Promise<AdminRoleTemplate> {
-  const snapshot = await rolesCollection().get();
-
-  if (!snapshot.empty) {
-    const sorted = snapshot.docs
-      .map((doc) => mapAdminRoleDoc(doc.id, doc.data()))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    return sorted[0]!;
-  }
-
-  const ref = rolesCollection().doc();
-  const permissions = mapModulePermissions(null);
-
-  await ref.set({
-    name: DEFAULT_ROLE_NAME,
-    description: DEFAULT_ROLE_DESCRIPTION,
-    modulePermissions: permissions,
-    active: true,
-    isBuiltIn: true,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-
-  const created = await ref.get();
-  return mapAdminRoleDoc(created.id, created.data() ?? {});
-}
-
 export async function listAdminRoles(): Promise<AdminRoleTemplate[]> {
-  await ensureDefaultAdminRole();
-
   const snapshot = await rolesCollection().get();
   return snapshot.docs
     .map((doc) => mapAdminRoleDoc(doc.id, doc.data()))
@@ -163,10 +130,6 @@ export async function deleteAdminRole(roleId: string): Promise<void> {
 
   if (!snapshot.exists) {
     throw new Error('Role not found.');
-  }
-
-  if (snapshot.data()?.isBuiltIn === true) {
-    throw new Error('Built-in roles cannot be deleted.');
   }
 
   const usageCount = await countEmployeesWithAdminRole(id);

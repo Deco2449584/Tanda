@@ -123,8 +123,6 @@ export function AdminRolesTab() {
   }
 
   async function handleDelete(role: AdminRoleTemplate) {
-    if (role.isBuiltIn) return;
-
     const confirmed = window.confirm(
       `Delete the "${role.name}" role? This cannot be undone.`,
     );
@@ -203,11 +201,6 @@ export function AdminRolesTab() {
                         Inactive
                       </span>
                     ) : null}
-                    {role.isBuiltIn ? (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                        Built-in
-                      </span>
-                    ) : null}
                   </div>
                   {role.description ? (
                     <p className="mt-1 text-sm text-subtle">{role.description}</p>
@@ -223,17 +216,15 @@ export function AdminRolesTab() {
                     <Pencil className="h-3.5 w-3.5" />
                     Edit
                   </button>
-                  {!role.isBuiltIn ? (
-                    <button
-                      type="button"
-                      disabled={deletingId === role.id}
-                      onClick={() => void handleDelete(role)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-900/50 bg-red-950/20 px-3 text-xs font-semibold text-red-300 hover:bg-red-950/40 disabled:opacity-60"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    disabled={deletingId === role.id}
+                    onClick={() => void handleDelete(role)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-900/50 bg-red-950/20 px-3 text-xs font-semibold text-red-300 hover:bg-red-950/40 disabled:opacity-60"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </button>
                 </div>
               </div>
             </li>
