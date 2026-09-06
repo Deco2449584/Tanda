@@ -31,10 +31,7 @@ export function EmployeeNotificationsMenu() {
     supported: pushSupported,
     enabled: pushEnabled,
     loading: pushLoading,
-    busy: pushBusy,
     permission: pushPermission,
-    error: pushError,
-    enable: enablePush,
     refreshSubscriptionState,
   } = usePushNotifications();
 
@@ -131,24 +128,17 @@ export function EmployeeNotificationsMenu() {
             <div className="border-b border-border bg-surface-base/60 px-4 py-3">
               <p className="text-xs text-muted">
                 {pushPermission === 'denied'
-                  ? 'Notifications are turned off for this app. Enable them in your device or browser settings, then tap Enable again.'
-                  : pushPermission === 'granted'
-                    ? 'Push notifications are off on this device. Tap Enable to turn them back on.'
-                    : 'Turn on push notifications to receive shift updates on this device.'}
+                  ? 'Notifications are turned off for this app. Enable them in your device or browser settings, then open Settings to try again.'
+                  : 'Turn on push notifications to receive shift updates on this device.'}
               </p>
-              {pushPermission !== 'denied' ? (
-                <button
-                  type="button"
-                  onClick={() => void enablePush()}
-                  disabled={pushBusy}
-                  className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-                >
-                  {pushBusy ? 'Enabling…' : 'Enable notifications'}
-                </button>
-              ) : null}
-              {pushError ? (
-                <p className="mt-2 text-[11px] text-red-400">{pushError}</p>
-              ) : null}
+              <Link
+                href="/my-settings"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="mt-2 flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+              >
+                Enable notifications
+              </Link>
             </div>
           ) : null}
 

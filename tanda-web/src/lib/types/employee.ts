@@ -72,6 +72,10 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   personalProfileSubmittedAt?: Timestamp;
   personalProfileReviewedAt?: Timestamp;
   personalProfileRejectionReason?: string;
+  /** Employee-set target hours for overview progress (this / last week). */
+  weeklyHoursGoal?: number;
+  /** Employee-set target hours for overview progress (this month). */
+  monthlyHoursGoal?: number;
 }
 
 export interface Employee extends EmployeeFirestore {

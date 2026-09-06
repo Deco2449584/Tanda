@@ -15,6 +15,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 }
 
 export type SubmitEmployeeProfileInput = EmployeePersonalDetails & {
+  photoUrl: string;
   passportUrl: string;
   visaUrl: string;
   passportFileName?: string;
@@ -55,5 +56,22 @@ export async function reviewEmployeeProfileRequest(
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error ?? 'Could not review personal profile.');
+  }
+}
+
+export async function saveEmployeeHoursGoalsRequest(input: {
+  weeklyHoursGoal?: number;
+  monthlyHoursGoal?: number;
+}): Promise<void> {
+  const headers = await getAuthHeaders();
+  const response = await fetch('/api/employee-profile/hours-goals', {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? 'Could not save hours goal.');
   }
 }

@@ -9,8 +9,9 @@ import {
   type CustomFieldDraft,
 } from '@/components/employees/EmployeeCustomFieldsForm';
 import { EmployeePersonalFields } from '@/components/employees/EmployeePersonalFields';
+import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
 import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
-import { FormAlert, FormActions } from '@/components/employees/employee-form-ui';
+import { FormAlert, FormActions, FormSection } from '@/components/employees/employee-form-ui';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import {
@@ -21,6 +22,8 @@ import {
 import { submitEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
 import { employeeToFormValues } from '@/lib/employees/employee-to-form';
 import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile-status';
+import { validatePersonalDetails } from '@/lib/employees/validate-personal-details';
+import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
 import { uploadEmployeeDocument } from '@/lib/employees/upload-document';
 import { initialCreateEmployeeForm } from '@/lib/employees/build-create-payload';
 import type { CreateEmployeeFormValues } from '@/lib/types/employee';
@@ -28,6 +31,7 @@ import type {
   EmployeeCustomField,
   EmployeeCustomFieldValue,
 } from '@/lib/types/employee-custom-field';
+import { UserRound } from 'lucide-react';
 
 function validateRequiredCustomFields(
   fields: EmployeeCustomField[],
@@ -71,6 +75,7 @@ export default function MyProfilePage() {
   } = useCurrentEmployee(user?.email);
 
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [visaFile, setVisaFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,6 +92,7 @@ export default function MyProfilePage() {
       return;
     }
     setForm(employeeToFormValues(employee));
+    setPhotoFile(null);
     setPassportFile(null);
     setVisaFile(null);
   }, [employee]);
@@ -137,10 +143,22 @@ export default function MyProfilePage() {
     setError('');
     setSuccess('');
 
+    const hasPhoto = Boolean(photoFile || employee.photoUrl?.trim());
+    if (!hasPhoto) {
+      setError('A profile photo is required before submitting.');
+      return;
+    }
+
     const hasPassport = Boolean(passportFile || employee.passportUrl);
     const hasVisa = Boolean(visaFile || employee.visaUrl);
     if (!hasPassport || !hasVisa) {
       setError('Passport and visa documents are required before submitting.');
+      return;
+    }
+
+    const personalDetailsError = validatePersonalDetails(form);
+    if (personalDetailsError) {
+      setError(personalDetailsError);
       return;
     }
 
@@ -166,10 +184,15 @@ export default function MyProfilePage() {
         }
       }
 
+      let photoUrl = employee.photoUrl?.trim() ?? '';
       let passportUrl = employee.passportUrl ?? '';
       let passportFileName = employee.passportFileName;
       let visaUrl = employee.visaUrl ?? '';
       let visaFileName = employee.visaFileName;
+
+      if (photoFile) {
+        photoUrl = await uploadEmployeeAvatar(employee.employeeId, photoFile);
+      }
 
       if (passportFile) {
         const uploaded = await uploadEmployeeDocument(
@@ -204,12 +227,14 @@ export default function MyProfilePage() {
         emergencyContactPhone: form.emergencyContactPhone,
         passportNumber: form.passportNumber,
         visaExpiry: form.visaExpiry,
+        photoUrl,
         passportUrl,
         visaUrl,
         passportFileName,
         visaFileName,
       });
 
+      setPhotoFile(null);
       setPassportFile(null);
       setVisaFile(null);
       setSuccess('Profile submitted for admin review.');
@@ -254,8 +279,8 @@ export default function MyProfilePage() {
               </p>
             ) : (
               <p className="text-xs text-subtle">
-                Complete your personal details, passport/visa, and any required additional
-                fields, then submit for admin approval.
+                Upload your profile photo, complete your personal details, passport/visa,
+                and any required additional fields, then submit for admin approval.
               </p>
             )}
             {profileStatus === 'Rejected' &&
@@ -265,6 +290,25 @@ export default function MyProfilePage() {
               </p>
             ) : null}
           </div>
+
+          <FormSection
+            title="Profile photo"
+            description={
+              isReadOnly
+                ? 'Your photo on file for scheduling and attendance.'
+                : 'A clear photo of your face is required for your staff profile.'
+            }
+            icon={UserRound}
+          >
+            <EmployeePhotoUpload
+              currentPhotoUrl={employee.photoUrl}
+              selectedFile={photoFile}
+              onFileChange={setPhotoFile}
+              disabled={busy}
+              readOnly={isReadOnly}
+              required={!isReadOnly}
+            />
+          </FormSection>
 
           <EmployeePersonalFields
             form={form}

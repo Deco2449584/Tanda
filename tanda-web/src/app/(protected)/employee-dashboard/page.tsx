@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Bell } from 'lucide-react';
 import { CollapsibleDashboardCard } from '@/components/dashboard/CollapsibleDashboardCard';
 import {
   EmployeeHoursEarningsCard,
@@ -15,38 +17,45 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { RefreshButton } from '@/components/ui/RefreshButton';
 import { useEmployeeAttendance } from '@/hooks/useEmployeeAttendance';
 import { useEmployeeOverviewLayout } from '@/hooks/useEmployeeOverviewLayout';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
 import { useEmployeeShifts } from '@/hooks/useEmployeeShifts';
-import { getMonthDateRange, getYearDateRange } from '@/lib/attendance/work-sessions';
+import { resolveHoursEarningsRange } from '@/lib/employee-dashboard/hours-earnings-period';
 import { computeAwardPay } from '@/lib/payroll/compute-award-pay';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { formatTimeLabel } from '@/lib/schedule/week';
 import { useLocations } from '@/providers/LocationsProvider';
 
-function resolveHoursRange(
-  period: HoursEarningsPeriod,
-  weekStart: string,
-  weekEnd: string,
-) {
-  if (period === 'week') return { start: weekStart, end: weekEnd };
-  if (period === 'month') return getMonthDateRange();
-  return getYearDateRange();
-}
-
 export default function EmployeeDashboardPage() {
   const { user, loading: authLoading } = useAuthRole();
   const { settings } = useCompanySettings();
   const { locations } = useLocations();
   const { isSectionCollapsed, toggleSectionCollapsed } = useEmployeeOverviewLayout();
-  const { employee, loading: employeeLoading, error: employeeError } =
-    useCurrentEmployee(user?.email);
+  const {
+    employee,
+    loading: employeeLoading,
+    error: employeeError,
+    refresh: refreshEmployee,
+  } = useCurrentEmployee(user?.email);
   const [hoursPeriod, setHoursPeriod] = useState<HoursEarningsPeriod>('week');
+  const {
+    supported: pushSupported,
+    enabled: pushEnabled,
+    loading: pushLoading,
+  } = usePushNotifications();
 
   const employeeCode = employee?.employeeId ?? '';
   const hourlyRate = employee?.hourlyRate ?? 0;
+  const systemPushEnabled = settings.pushNotificationsEnabled !== false;
+  const showPushEnable =
+    Boolean(employee) &&
+    pushSupported &&
+    systemPushEnabled &&
+    !pushLoading &&
+    !pushEnabled;
 
   const {
     week,
@@ -69,7 +78,7 @@ export default function EmployeeDashboardPage() {
 
   const hoursEarningsStats = useMemo(() => {
     if (!employee) return { hours: 0, earnings: 0 };
-    const range = resolveHoursRange(hoursPeriod, week.start, week.end);
+    const range = resolveHoursEarningsRange(hoursPeriod, week.start, week.end);
     const award = computeAwardPay({
       employees: [employee],
       records: attendanceRecords,
@@ -134,7 +143,7 @@ export default function EmployeeDashboardPage() {
   const isRefreshing = shiftsRefreshing || recordsRefreshing;
 
   function handleRefresh() {
-    void Promise.all([refreshShifts(), refreshRecords()]);
+    void Promise.all([refreshShifts(), refreshRecords(), refreshEmployee()]);
   }
 
   return (
@@ -145,7 +154,7 @@ export default function EmployeeDashboardPage() {
           <RefreshButton
             onClick={handleRefresh}
             refreshing={isRefreshing}
-            disabled={dataLoading}
+            disabled={dataLoading || authLoading}
           />
         }
       />
@@ -164,6 +173,30 @@ export default function EmployeeDashboardPage() {
 
       {employee && (
         <div className="space-y-4">
+          {showPushEnable ? (
+            <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-raised px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <Bell className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    Enable notifications
+                  </p>
+                  <p className="mt-0.5 text-xs text-subtle">
+                    Get shift updates on this device, even when the app is closed.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/my-settings"
+                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+              >
+                Enable
+              </Link>
+            </div>
+          ) : null}
+
           <CollapsibleDashboardCard
             title="Your employee ID"
             description="Use this number at the warehouse time clock when you clock in or out."
@@ -201,6 +234,7 @@ export default function EmployeeDashboardPage() {
               embedded
               period={hoursPeriod}
               onPeriodChange={setHoursPeriod}
+              onGoalSaved={refreshEmployee}
             />
           </CollapsibleDashboardCard>
 

@@ -10,6 +10,9 @@ interface EmployeePhotoUploadProps {
   selectedFile: File | null;
   onFileChange: (file: File | null) => void;
   disabled?: boolean;
+  readOnly?: boolean;
+  required?: boolean;
+  description?: string;
 }
 
 export function EmployeePhotoUpload({
@@ -17,8 +20,12 @@ export function EmployeePhotoUpload({
   selectedFile,
   onFileChange,
   disabled = false,
+  readOnly = false,
+  required = false,
+  description,
 }: EmployeePhotoUploadProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fieldsDisabled = disabled || readOnly;
 
   useEffect(() => {
     if (!selectedFile) {
@@ -36,7 +43,12 @@ export function EmployeePhotoUpload({
 
   return (
     <div>
-      <label className="mb-1.5 block text-sm text-muted">Profile photo</label>
+      <label className="mb-1.5 block text-sm text-muted">
+        {required && !readOnly ? 'Profile photo *' : 'Profile photo'}
+      </label>
+      {description ? (
+        <p className="mb-2 text-xs text-subtle">{description}</p>
+      ) : null}
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-hover ring-2 ring-zinc-700">
           {displayUrl ? (
@@ -64,24 +76,31 @@ export function EmployeePhotoUpload({
           )}
         </div>
 
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          disabled={disabled}
-          onChange={(e) => {
-            const file = e.target.files?.[0] ?? null;
-            if (file) {
-              const error = validateImageFile(file);
-              if (error) {
-                window.alert(error);
-                e.target.value = '';
-                return;
+        {readOnly ? (
+          <p className="text-sm text-muted">
+            {displayUrl ? 'Photo on file' : 'No photo uploaded'}
+          </p>
+        ) : (
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={fieldsDisabled}
+            required={required && !displayUrl}
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              if (file) {
+                const error = validateImageFile(file);
+                if (error) {
+                  window.alert(error);
+                  e.target.value = '';
+                  return;
+                }
               }
-            }
-            onFileChange(file);
-          }}
-          className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
-        />
+              onFileChange(file);
+            }}
+            className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-50"
+          />
+        )}
       </div>
     </div>
   );

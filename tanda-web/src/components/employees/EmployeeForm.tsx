@@ -738,6 +738,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             selectedFile={photoFile}
             onFileChange={setPhotoFile}
             disabled={isBusy}
+            description="Optional here — employees upload their required photo from My profile."
           />
         ) : null}
 

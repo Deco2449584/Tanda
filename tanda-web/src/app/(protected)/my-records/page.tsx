@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { Briefcase } from 'lucide-react';
 import { RecentRecordsTable } from '@/components/employee-dashboard/RecentRecordsTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -37,11 +39,20 @@ export default function MyRecordsPage() {
         title="My attendance records"
         description="Check-ins, check-outs, and photo verification for your shifts."
         actions={
-          <RefreshButton
-            onClick={refresh}
-            refreshing={refreshing}
-            disabled={loading}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/worked-shifts"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+            >
+              <Briefcase className="h-3.5 w-3.5" aria-hidden />
+              Worked shifts
+            </Link>
+            <RefreshButton
+              onClick={refresh}
+              refreshing={refreshing}
+              disabled={loading}
+            />
+          </div>
         }
       />
 

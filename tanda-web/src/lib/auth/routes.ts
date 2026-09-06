@@ -9,6 +9,7 @@ export const EMPLOYEE_ROUTES = [
   '/my-schedule',
   '/my-requests',
   '/my-profile',
+  '/my-settings',
 ] as const;
 
 /** Routes available to both employees and admins (e.g. worked shifts). */

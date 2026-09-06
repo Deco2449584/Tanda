@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { loadEmployeeContext } from '@/lib/auth/load-employee-context';
 import { COLLECTIONS } from '@/lib/constants';
+import { validatePersonalDetails } from '@/lib/employees/validate-personal-details';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 
 const PERSONAL_FIELDS = [
@@ -52,8 +53,16 @@ export async function POST(request: Request) {
 
     const passportUrl = optionalTrim(body.passportUrl);
     const visaUrl = optionalTrim(body.visaUrl);
+    const photoUrl = optionalTrim(body.photoUrl);
     const passportFileName = optionalTrim(body.passportFileName);
     const visaFileName = optionalTrim(body.visaFileName);
+
+    if (!photoUrl) {
+      return NextResponse.json(
+        { error: 'A profile photo is required to submit your profile.' },
+        { status: 400 },
+      );
+    }
 
     if (!passportUrl || !visaUrl) {
       return NextResponse.json(
@@ -62,11 +71,30 @@ export async function POST(request: Request) {
       );
     }
 
+    const personalDetailsError = validatePersonalDetails({
+      phone: optionalTrim(body.phone),
+      dateOfBirth: optionalTrim(body.dateOfBirth),
+      addressLine1: optionalTrim(body.addressLine1),
+      addressLine2: optionalTrim(body.addressLine2),
+      city: optionalTrim(body.city),
+      state: optionalTrim(body.state),
+      postcode: optionalTrim(body.postcode),
+      country: optionalTrim(body.country),
+      emergencyContactName: optionalTrim(body.emergencyContactName),
+      emergencyContactPhone: optionalTrim(body.emergencyContactPhone),
+      passportNumber: optionalTrim(body.passportNumber),
+      visaExpiry: optionalTrim(body.visaExpiry),
+    });
+    if (personalDetailsError) {
+      return NextResponse.json({ error: personalDetailsError }, { status: 400 });
+    }
+
     const payload: Record<string, unknown> = {
       personalProfileStatus: 'Pending',
       personalProfileSubmittedAt: FieldValue.serverTimestamp(),
       personalProfileRejectionReason: FieldValue.delete(),
       personalProfileReviewedAt: FieldValue.delete(),
+      photoUrl,
       passportUrl,
       visaUrl,
     };

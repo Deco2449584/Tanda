@@ -1,11 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 import {
-  getMonthDateRange,
-  getYearDateRange,
-} from '@/lib/attendance/work-sessions';
+  hoursPeriodLabel,
+  resolveHoursEarningsRange,
+  resolveHoursGoal,
+  type HoursEarningsPeriod,
+} from '@/lib/employee-dashboard/hours-earnings-period';
+import { saveEmployeeHoursGoalsRequest } from '@/lib/employees/employee-profile-api';
 import { computeAwardPay } from '@/lib/payroll/compute-award-pay';
 import type { AttendanceBreakSettings, PayrollAccountingSettings } from '@/lib/types/company-settings';
 import type { AttendanceRecord } from '@/lib/types/attendance';
@@ -14,19 +18,13 @@ import type { Location } from '@/lib/types/location';
 import type { PayRules } from '@/lib/types/pay-rules';
 import type { Shift } from '@/lib/types/shift';
 
-export type HoursEarningsPeriod = 'week' | 'month' | 'year';
+export type { HoursEarningsPeriod };
 
 const PERIOD_OPTIONS: Array<{ id: HoursEarningsPeriod; label: string }> = [
-  { id: 'week', label: 'Week' },
-  { id: 'month', label: 'Month' },
-  { id: 'year', label: 'Year' },
+  { id: 'week', label: 'This week' },
+  { id: 'lastWeek', label: 'Last week' },
+  { id: 'month', label: 'This month' },
 ];
-
-const HOUR_GOALS: Record<HoursEarningsPeriod, number> = {
-  week: 40,
-  month: 200,
-  year: 2080,
-};
 
 interface EmployeeHoursEarningsCardProps {
   records: AttendanceRecord[];
@@ -45,20 +43,7 @@ interface EmployeeHoursEarningsCardProps {
   embedded?: boolean;
   period?: HoursEarningsPeriod;
   onPeriodChange?: (period: HoursEarningsPeriod) => void;
-}
-
-function resolveRange(
-  period: HoursEarningsPeriod,
-  weekStart: string,
-  weekEnd: string,
-): { start: string; end: string } {
-  if (period === 'week') {
-    return { start: weekStart, end: weekEnd };
-  }
-  if (period === 'month') {
-    return getMonthDateRange();
-  }
-  return getYearDateRange();
+  onGoalSaved?: () => void;
 }
 
 export function formatHoursEarningsSummary(
@@ -69,7 +54,7 @@ export function formatHoursEarningsSummary(
   hourlyRate: number,
 ): string {
   const roundedHours = Math.round(hours * 10) / 10;
-  const periodLabel = period === 'week' ? 'this week' : period === 'month' ? 'this month' : 'this year';
+  const periodLabel = hoursPeriodLabel(period).toLowerCase();
 
   if (hourlyRate > 0) {
     return `${formatDashboardCurrency(earnings, currency)} · ${roundedHours} hrs ${periodLabel}`;
@@ -95,9 +80,14 @@ export function EmployeeHoursEarningsCard({
   embedded = false,
   period: controlledPeriod,
   onPeriodChange,
+  onGoalSaved,
 }: EmployeeHoursEarningsCardProps) {
   const [internalPeriod, setInternalPeriod] = useState<HoursEarningsPeriod>('week');
   const period = controlledPeriod ?? internalPeriod;
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalDraft, setGoalDraft] = useState('');
+  const [goalBusy, setGoalBusy] = useState(false);
+  const [goalError, setGoalError] = useState('');
 
   function setPeriod(next: HoursEarningsPeriod) {
     if (onPeriodChange) {
@@ -105,10 +95,24 @@ export function EmployeeHoursEarningsCard({
     } else {
       setInternalPeriod(next);
     }
+    setEditingGoal(false);
+    setGoalError('');
   }
 
-  const { hours, earnings, goal, progress } = useMemo(() => {
-    const range = resolveRange(period, weekStart, weekEnd);
+  const goal = resolveHoursGoal(
+    period,
+    employee.weeklyHoursGoal,
+    employee.monthlyHoursGoal,
+  );
+
+  useEffect(() => {
+    if (!editingGoal) {
+      setGoalDraft(String(goal));
+    }
+  }, [editingGoal, goal]);
+
+  const { hours, earnings, progress } = useMemo(() => {
+    const range = resolveHoursEarningsRange(period, weekStart, weekEnd);
     const award = computeAwardPay({
       employees: [employee],
       records,
@@ -121,18 +125,17 @@ export function EmployeeHoursEarningsCard({
       attendanceBreak: breakSettings,
     });
     const rounded = Math.round(award.payHours * 10) / 10;
-    const hourGoal = HOUR_GOALS[period];
-    const progressPct = hourGoal > 0 ? Math.min((rounded / hourGoal) * 100, 100) : 0;
+    const progressPct = goal > 0 ? Math.min((rounded / goal) * 100, 100) : 0;
 
     return {
       hours: rounded,
       earnings: Math.round(award.payAmount * 100) / 100,
-      goal: hourGoal,
       progress: progressPct,
     };
   }, [
     breakSettings,
     employee,
+    goal,
     locations,
     payRules,
     payrollAccounting,
@@ -144,8 +147,33 @@ export function EmployeeHoursEarningsCard({
     weekStart,
   ]);
 
-  const periodLabel =
-    period === 'week' ? 'This week' : period === 'month' ? 'This month' : 'This year';
+  const periodLabel = hoursPeriodLabel(period);
+
+  async function handleSaveGoal() {
+    const parsed = Number(goalDraft);
+    if (!Number.isInteger(parsed)) {
+      setGoalError('Enter a whole number of hours.');
+      return;
+    }
+
+    setGoalBusy(true);
+    setGoalError('');
+    try {
+      if (period === 'month') {
+        await saveEmployeeHoursGoalsRequest({ monthlyHoursGoal: parsed });
+      } else {
+        await saveEmployeeHoursGoalsRequest({ weeklyHoursGoal: parsed });
+      }
+      setEditingGoal(false);
+      onGoalSaved?.();
+    } catch (error) {
+      setGoalError(
+        error instanceof Error ? error.message : 'Could not save hours goal.',
+      );
+    } finally {
+      setGoalBusy(false);
+    }
+  }
 
   return (
     <div className={embedded ? '' : 'rounded-2xl border border-border bg-surface-raised p-5 backdrop-blur-sm'}>
@@ -213,7 +241,68 @@ export function EmployeeHoursEarningsCard({
             ) : null}
           </div>
 
-          <p className="mt-3 text-[11px] text-subtle">Goal {goal} hrs</p>
+          {editingGoal ? (
+            <div className="mt-3 space-y-2">
+              <label className="block text-[11px] text-subtle" htmlFor="hours-goal-input">
+                {period === 'month' ? 'Monthly hours goal' : 'Weekly hours goal'}
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="hours-goal-input"
+                  type="number"
+                  min={1}
+                  max={period === 'month' ? 400 : 80}
+                  step={1}
+                  value={goalDraft}
+                  onChange={(event) => setGoalDraft(event.target.value)}
+                  disabled={goalBusy}
+                  className="w-24 rounded-lg border border-border bg-surface-base px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleSaveGoal()}
+                  disabled={goalBusy}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                >
+                  {goalBusy ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingGoal(false);
+                    setGoalError('');
+                    setGoalDraft(String(goal));
+                  }}
+                  disabled={goalBusy}
+                  className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted hover:text-foreground disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+              {goalError ? (
+                <p className="text-[11px] text-red-400" role="alert">
+                  {goalError}
+                </p>
+              ) : (
+                <p className="text-[11px] text-subtle">
+                  {period === 'month'
+                    ? 'Used for this month progress.'
+                    : 'Used for this week and last week progress.'}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingGoal(true)}
+              className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-subtle transition-colors hover:text-foreground"
+            >
+              Goal {goal} hrs
+              <Pencil className="h-3 w-3" aria-hidden />
+              <span className="sr-only">Edit hours goal</span>
+            </button>
+          )}
+
           <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-hover">
             <div
               className="h-full rounded-full bg-primary transition-all"

@@ -85,5 +85,15 @@ export function mapEmployeeDoc(
     personalProfileRejectionReason: optionalString(
       employee.personalProfileRejectionReason,
     ),
+    weeklyHoursGoal:
+      typeof employee.weeklyHoursGoal === 'number' &&
+      Number.isFinite(employee.weeklyHoursGoal)
+        ? employee.weeklyHoursGoal
+        : undefined,
+    monthlyHoursGoal:
+      typeof employee.monthlyHoursGoal === 'number' &&
+      Number.isFinite(employee.monthlyHoursGoal)
+        ? employee.monthlyHoursGoal
+        : undefined,
   };
 }
