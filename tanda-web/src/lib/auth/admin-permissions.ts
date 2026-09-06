@@ -12,7 +12,7 @@ import {
   type AdminActionName,
   type AdminEditModuleKey,
   type AdminModuleKey,
-  type AdminModulePermissionsFirestore,
+  type AdminModulePermissionsBag,
   type ResolvedAdminAccess,
   SETTINGS_SECTION_ACTIONS,
   type SettingsSectionKey,
@@ -46,7 +46,22 @@ export const ADMIN_MODULE_ROUTES: Record<AdminModuleKey, string> = {
   settings: '/settings',
 };
 
-const MODULE_ORDER: AdminModuleKey[] = [...ADMIN_MODULE_KEYS];
+/** Sidebar-first order used for post-login landing. */
+const MODULE_ORDER: AdminModuleKey[] = [
+  'dashboard',
+  'accounting',
+  'attendance',
+  'schedule',
+  'employees',
+  'announcements',
+  'leaveRequests',
+  'inspections',
+  'issueReports',
+  'helpTutorials',
+  'payroll',
+  'kiosk',
+  'settings',
+];
 
 function buildFullActions(): ResolvedAdminAccess['actions'] {
   return Object.fromEntries(
@@ -72,7 +87,7 @@ function buildFullAccess(): ResolvedAdminAccess {
 
 export function resolveAdminAccess(input: {
   role: UserRole;
-  modulePermissions?: AdminModulePermissionsFirestore | null;
+  modulePermissions?: AdminModulePermissionsBag | null;
 }): ResolvedAdminAccess | null {
   if (!isAdminAreaRole(input.role)) {
     return null;
@@ -136,10 +151,19 @@ export function getDefaultAdminHref(access: ResolvedAdminAccess): string {
     }
   }
 
-  return '/dashboard';
+  // Help has no module gate in the sidebar — safe when a role has zero modules.
+  return '/help';
 }
 
-export function createDefaultModulePermissions(): AdminModulePermissionsFirestore {
+/** True when at least one admin menu/module is enabled. */
+export function hasEnabledAdminModule(
+  permissions: AdminModulePermissionsBag | null | undefined,
+): boolean {
+  const mapped = mapModulePermissions(permissions);
+  return ADMIN_MODULE_KEYS.some((key) => mapped.modules?.[key] === true);
+}
+
+export function createDefaultModulePermissions(): AdminModulePermissionsBag {
   return mapModulePermissions(null);
 }
 

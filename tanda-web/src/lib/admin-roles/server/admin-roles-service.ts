@@ -1,5 +1,8 @@
 import { FieldValue } from 'firebase-admin/firestore';
-import { mapModulePermissions } from '@/lib/auth/admin-permissions';
+import {
+  hasEnabledAdminModule,
+  mapModulePermissions,
+} from '@/lib/auth/admin-permissions';
 import { mapAdminRoleDoc } from '@/lib/admin-roles/map-admin-role';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
@@ -11,6 +14,14 @@ import type {
 
 function rolesCollection() {
   return getAdminFirestore().collection(COLLECTIONS.ADMIN_ROLES);
+}
+
+function assertHasMenuModule(
+  permissions: CreateAdminRoleInput['modulePermissions'] | UpdateAdminRoleInput['modulePermissions'],
+) {
+  if (!hasEnabledAdminModule(permissions ?? null)) {
+    throw new Error('Select at least one menu module for this role.');
+  }
 }
 
 export async function listAdminRoles(): Promise<AdminRoleTemplate[]> {
@@ -40,6 +51,8 @@ export async function createAdminRole(
   if (!duplicate.empty) {
     throw new Error('A role with this name already exists.');
   }
+
+  assertHasMenuModule(input.modulePermissions);
 
   const ref = rolesCollection().doc();
   const payload: Record<string, unknown> = {
@@ -103,6 +116,7 @@ export async function updateAdminRole(
   }
 
   if (input.modulePermissions !== undefined) {
+    assertHasMenuModule(input.modulePermissions);
     update.modulePermissions = mapModulePermissions(input.modulePermissions);
   }
 

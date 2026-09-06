@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Pencil, Plus, Shield, Trash2, X } from 'lucide-react';
 import { AdminPermissionsEditor } from '@/components/employees/AdminPermissionsEditor';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
-import { mapModulePermissions } from '@/lib/auth/admin-permissions';
+import { mapModulePermissions, hasEnabledAdminModule } from '@/lib/auth/admin-permissions';
 import {
   createAdminRoleRequest,
   deleteAdminRoleRequest,
@@ -86,6 +86,11 @@ export function AdminRolesTab() {
     event.preventDefault();
     if (!form.name.trim()) {
       setError('Role name is required.');
+      return;
+    }
+
+    if (!hasEnabledAdminModule(form.modulePermissions)) {
+      setError('Select at least one menu module for this role.');
       return;
     }
 
@@ -295,13 +300,20 @@ export function AdminRolesTab() {
                 />
               </div>
 
-              <AdminPermissionsEditor
-                value={form.modulePermissions}
-                onChange={(modulePermissions) =>
-                  setForm((current) => ({ ...current, modulePermissions }))
-                }
-                disabled={saving}
-              />
+              <div>
+                <p className="mb-1.5 text-sm text-muted">Menu access</p>
+                <p className="mb-3 text-xs text-subtle">
+                  Select at least one module. After sign-in, users land on the first
+                  enabled menu item in sidebar order.
+                </p>
+                <AdminPermissionsEditor
+                  value={form.modulePermissions}
+                  onChange={(modulePermissions) =>
+                    setForm((current) => ({ ...current, modulePermissions }))
+                  }
+                  disabled={saving}
+                />
+              </div>
 
               <label className="flex items-center justify-between rounded-lg border border-border bg-surface-base/60 px-3 py-3">
                 <span className="text-sm text-foreground">Active role</span>

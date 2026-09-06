@@ -17,7 +17,8 @@ import {
   fetchEmployeeSessionForEmail,
   getEmployeeSessionBlockMessage,
 } from '@/lib/auth/employee-session';
-import { getHomeRouteForRole, isKioskRole } from '@/lib/auth/roles';
+import { isKioskRole } from '@/lib/auth/roles';
+import { resolvePostLoginHref } from '@/lib/auth/resolve-post-login-href';
 import {
   claimAuthSession,
   releaseOwnedAuthSession,
@@ -109,7 +110,17 @@ function LoginPageContent() {
 
   useEffect(() => {
     if (authLoading || !user || !role) return;
-    router.replace(getHomeRouteForRole(role));
+
+    let cancelled = false;
+    void resolvePostLoginHref(user.email, role).then((href) => {
+      if (!cancelled) {
+        router.replace(href);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, role, router, user]);
 
   if (authLoading) {
@@ -145,7 +156,7 @@ function LoginPageContent() {
         }
       }
 
-      router.push(getHomeRouteForRole(session.role));
+      router.push(await resolvePostLoginHref(credential.user.email, session.role));
     } catch (err) {
       const code =
         err && typeof err === 'object' && 'code' in err
