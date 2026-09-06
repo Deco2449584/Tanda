@@ -21,3 +21,12 @@ export function personalProfileStatusLabel(status: PersonalProfileStatus): strin
       return 'Not submitted';
   }
 }
+
+/** Show employee reminder until profile is submitted (Pending) or approved. */
+export function employeeNeedsPersonalProfile(
+  status: PersonalProfileStatus | string | null | undefined,
+): boolean {
+  const normalized = normalizePersonalProfileStatus(status);
+  return normalized === 'none' || normalized === 'Rejected';
+}
+

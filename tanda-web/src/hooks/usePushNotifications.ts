@@ -77,7 +77,14 @@ export function usePushNotifications() {
     setError('');
 
     try {
-      setPermission(Notification.permission);
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+
+      // Browser/OS may revoke permission while an old PushSubscription still exists.
+      if (currentPermission !== 'granted') {
+        setSubscribed(false);
+        return;
+      }
 
       const registration = await getExistingServiceWorkerRegistration();
       if (!registration) {
@@ -97,6 +104,27 @@ export function usePushNotifications() {
   useEffect(() => {
     void refreshSubscriptionState();
   }, [refreshSubscriptionState]);
+
+  useEffect(() => {
+    if (!supported) return;
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        void refreshSubscriptionState();
+      }
+    }
+
+    function onFocus() {
+      void refreshSubscriptionState();
+    }
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [refreshSubscriptionState, supported]);
 
   const syncSubscriptionInternal = useCallback(async (): Promise<boolean> => {
     const registration = await registerServiceWorker();
@@ -220,6 +248,8 @@ export function usePushNotifications() {
     supported,
     permission,
     subscribed,
+    /** True only when permission is granted and a push subscription exists. */
+    enabled: supported && permission === 'granted' && subscribed,
     loading,
     busy,
     error,

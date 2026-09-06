@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   collection,
-  getDocs,
   limit,
+  onSnapshot,
   query,
   where,
 } from 'firebase/firestore';
@@ -46,25 +46,27 @@ export function useCurrentEmployee(userEmail: string | null | undefined) {
       limit(1),
     );
 
-    getDocs(employeesQuery)
-      .then((snapshot) => {
+    const unsubscribe = onSnapshot(
+      employeesQuery,
+      (snapshot) => {
         if (snapshot.empty) {
           setEmployee(null);
           setError('No employee profile linked to this user was found.');
-          return;
+        } else {
+          const document = snapshot.docs[0];
+          setEmployee(mapEmployeeDoc(document.id, document.data()));
+          setError('');
         }
-
-        const document = snapshot.docs[0];
-        setEmployee(mapEmployeeDoc(document.id, document.data()));
-        setError('');
-      })
-      .catch(() => {
+        setLoading(false);
+      },
+      () => {
         setEmployee(null);
         setError('Could not load the employee profile.');
-      })
-      .finally(() => {
         setLoading(false);
-      });
+      },
+    );
+
+    return () => unsubscribe();
   }, [userEmail, reloadToken]);
 
   return { employee, loading, error, refresh };

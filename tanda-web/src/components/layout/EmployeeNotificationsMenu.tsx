@@ -8,7 +8,7 @@ import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotifica
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
-import { employeeNeedsPersonalProfile } from '@/components/employees/EmployeeProfileReminderBanner';
+import { employeeNeedsPersonalProfile } from '@/lib/employees/personal-profile-status';
 import { hasAttentionRequiredNotifications } from '@/lib/notifications/notification-attention';
 import { getEmployeeNotificationVisual } from '@/lib/notifications/notification-visuals';
 import type { AppNotification } from '@/lib/types/notification';
@@ -17,7 +17,7 @@ export function EmployeeNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthRole();
-  const { employee } = useCurrentEmployee(user?.email);
+  const { employee, refresh: refreshEmployee } = useCurrentEmployee(user?.email);
   const needsProfile = employeeNeedsPersonalProfile(employee?.personalProfileStatus);
   const {
     notifications,
@@ -29,12 +29,13 @@ export function EmployeeNotificationsMenu() {
   const { settings } = useCompanySettings();
   const {
     supported: pushSupported,
-    subscribed: pushSubscribed,
+    enabled: pushEnabled,
     loading: pushLoading,
     busy: pushBusy,
     permission: pushPermission,
     error: pushError,
     enable: enablePush,
+    refreshSubscriptionState,
   } = usePushNotifications();
 
   const systemPushEnabled = settings.pushNotificationsEnabled !== false;
@@ -43,7 +44,7 @@ export function EmployeeNotificationsMenu() {
     pushSupported &&
     systemPushEnabled &&
     !pushLoading &&
-    !pushSubscribed;
+    !pushEnabled;
 
   const hasProtectedNotifications = hasAttentionRequiredNotifications(notifications);
   const clearableCount = notifications.filter(
@@ -65,10 +66,12 @@ export function EmployeeNotificationsMenu() {
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
       markAllRead();
+      void refreshSubscriptionState();
+      refreshEmployee();
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [markAllRead, open]);
+  }, [markAllRead, open, refreshEmployee, refreshSubscriptionState]);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -128,8 +131,10 @@ export function EmployeeNotificationsMenu() {
             <div className="border-b border-border bg-surface-base/60 px-4 py-3">
               <p className="text-xs text-muted">
                 {pushPermission === 'denied'
-                  ? 'Browser notifications are blocked. Enable them in your device settings to get shift alerts.'
-                  : 'Turn on push notifications to receive shift updates on this device.'}
+                  ? 'Notifications are turned off for this app. Enable them in your device or browser settings, then tap Enable again.'
+                  : pushPermission === 'granted'
+                    ? 'Push notifications are off on this device. Tap Enable to turn them back on.'
+                    : 'Turn on push notifications to receive shift updates on this device.'}
               </p>
               {pushPermission !== 'denied' ? (
                 <button

@@ -29,11 +29,12 @@ export function NotificationsSettingsTab() {
   const [systemPushBusy, setSystemPushBusy] = useState(false);
   const {
     supported: pushSupported,
-    subscribed: pushSubscribed,
+    enabled: pushEnabled,
     busy: pushBusy,
     error: pushError,
     enable: enablePush,
     disable: disablePush,
+    refreshSubscriptionState,
   } = usePushNotifications();
 
   const systemPushEnabled = settings.pushNotificationsEnabled !== false;
@@ -43,6 +44,10 @@ export function NotificationsSettingsTab() {
     if (!email) return;
     return subscribeToNotificationChannels(email, setChannels);
   }, [email]);
+
+  useEffect(() => {
+    void refreshSubscriptionState();
+  }, [refreshSubscriptionState]);
 
   function handleChannelsChange(next: NotificationChannelPreferences) {
     if (!email) return;
@@ -168,7 +173,7 @@ export function NotificationsSettingsTab() {
             tab is closed.
           </p>
 
-          {pushSubscribed ? (
+          {pushEnabled ? (
             <button
               type="button"
               disabled={pushBusy}
