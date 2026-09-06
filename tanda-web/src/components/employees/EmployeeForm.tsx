@@ -137,6 +137,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [adminRoleId, setAdminRoleId] = useState('');
   const [active, setActive] = useState(true);
   const [kioskEnabled, setKioskEnabled] = useState(false);
+  const [continentalInspectEnabled, setContinentalInspectEnabled] = useState(false);
   const { roles: adminRoleTemplates } = useAdminRoleTemplates(
     isMaster && accessRole === 'admin',
   );
@@ -176,6 +177,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       setAdminRoleId('');
       setActive(true);
       setKioskEnabled(false);
+      setContinentalInspectEnabled(false);
       setEmployeeIdEdited(false);
       setPhotoFile(null);
       setPassportFile(null);
@@ -193,6 +195,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     setAdminRoleId(employee.adminRoleId ?? '');
     setActive(employee.active);
     setKioskEnabled(employee.kioskEnabled === true);
+    setContinentalInspectEnabled(employee.continentalInspectEnabled === true);
     setEmployeeIdEdited(true);
     setPhotoFile(null);
     setPassportFile(null);
@@ -478,6 +481,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           form: normalizedForm,
           active: effectiveActive,
           kioskEnabled: isWorkforce ? kioskEnabled : false,
+          continentalInspectEnabled: isWorkforce ? continentalInspectEnabled : false,
           photoUrl: isWorkforce ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
           visa: isWorkforce ? visa : undefined,
@@ -584,6 +588,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           photoUrl: isWorkforce ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
           visa: isWorkforce ? visa : undefined,
+          continentalInspectEnabled: isWorkforce
+            ? continentalInspectEnabled
+            : false,
         });
 
         payload.lastTimestampServer = serverTimestamp();
@@ -1032,12 +1039,30 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
                 disabled={isBusy}
               />
             ) : null}
+            {isWorkforce ? (
+              <FormToggle
+                label="Continental Inspect access"
+                description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."
+                checked={continentalInspectEnabled}
+                onChange={setContinentalInspectEnabled}
+                disabled={isBusy}
+              />
+            ) : null}
           </div>
         ) : null}
         {isEditMode && accessRole === 'master' ? (
           <p className="rounded-lg border border-border bg-surface-base/50 px-3 py-2 text-xs text-subtle">
             Master accounts stay active and cannot be deactivated.
           </p>
+        ) : null}
+        {!isEditMode && isWorkforce ? (
+          <FormToggle
+            label="Continental Inspect access"
+            description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."
+            checked={continentalInspectEnabled}
+            onChange={setContinentalInspectEnabled}
+            disabled={isBusy}
+          />
         ) : null}
         {isWorkforce ? (
           <FormToggle

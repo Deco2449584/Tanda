@@ -54,6 +54,7 @@ export function mapEmployeeDoc(
       : undefined,
     active: employee.active ?? false,
     kioskEnabled: employee.kioskEnabled === true,
+    continentalInspectEnabled: employee.continentalInspectEnabled === true,
     allowCheckInWithoutScheduledShift:
       employee.allowCheckInWithoutScheduledShift === true,
     lastAction: employee.lastAction ?? 'none',

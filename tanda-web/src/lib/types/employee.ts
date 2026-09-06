@@ -56,6 +56,8 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   endDate?: string;
   /** Grants access to the /kiosk check-in module from the employee's own device. */
   kioskEnabled?: boolean;
+  /** Grants sign-in to Continental Inspect to create cargo inspection records. */
+  continentalInspectEnabled?: boolean;
   /** Allows kiosk check-in even if the employee has no scheduled shift that day. */
   allowCheckInWithoutScheduledShift?: boolean;
   lastAction: string;

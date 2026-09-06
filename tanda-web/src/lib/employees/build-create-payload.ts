@@ -28,6 +28,7 @@ export function buildEmployeeCreatePayload(input: {
   photoUrl?: string;
   passport?: { url: string; fileName: string };
   visa?: { url: string; fileName: string };
+  continentalInspectEnabled?: boolean;
 }): Record<string, unknown> {
   const { form, photoUrl, passport, visa } = input;
 
@@ -39,6 +40,7 @@ export function buildEmployeeCreatePayload(input: {
     hourlyRate: DEFAULT_EMPLOYEE_HOURLY_RATE,
     active: true,
     kioskEnabled: false,
+    continentalInspectEnabled: input.continentalInspectEnabled === true,
     lastAction: 'none',
   };
 
@@ -91,6 +93,7 @@ export function buildEmployeeUpdatePayload(input: {
   form: CreateEmployeeFormValues;
   active: boolean;
   kioskEnabled: boolean;
+  continentalInspectEnabled: boolean;
   photoUrl?: string;
   passport?: { url: string; fileName: string };
   visa?: { url: string; fileName: string };
@@ -100,12 +103,14 @@ export function buildEmployeeUpdatePayload(input: {
     photoUrl: input.photoUrl,
     passport: input.passport,
     visa: input.visa,
+    continentalInspectEnabled: input.continentalInspectEnabled,
   });
 
   delete payload.lastAction;
   delete payload.hourlyRate;
   payload.active = input.active;
   payload.kioskEnabled = input.kioskEnabled;
+  payload.continentalInspectEnabled = input.continentalInspectEnabled;
   payload.allowCheckInWithoutScheduledShift =
     input.form.allowCheckInWithoutScheduledShift === true;
 

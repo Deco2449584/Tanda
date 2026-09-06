@@ -13,6 +13,7 @@ service cloud.firestore {
           'email',
           'active',
           'kioskEnabled',
+          'continentalInspectEnabled',
           'lastAction',
           'lastTimestampServer',
           'department',
@@ -48,6 +49,10 @@ service cloud.firestore {
         (
           !('kioskEnabled' in request.resource.data) ||
           request.resource.data.kioskEnabled is bool
+        ) &&
+        (
+          !('continentalInspectEnabled' in request.resource.data) ||
+          request.resource.data.continentalInspectEnabled is bool
         ) &&
         (
           !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
@@ -91,6 +96,10 @@ service cloud.firestore {
           request.resource.data.kioskEnabled is bool
         ) &&
         (
+          !('continentalInspectEnabled' in request.resource.data) ||
+          request.resource.data.continentalInspectEnabled is bool
+        ) &&
+        (
           !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
           request.resource.data.allowCheckInWithoutScheduledShift is bool
         ) &&
@@ -102,6 +111,7 @@ service cloud.firestore {
           'photoUrl',
           'active',
           'kioskEnabled',
+          'continentalInspectEnabled',
           'allowCheckInWithoutScheduledShift',
           'locationId',
           'locationGroupId',
