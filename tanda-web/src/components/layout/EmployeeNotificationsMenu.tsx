@@ -131,19 +131,17 @@ export function EmployeeNotificationsMenu() {
             <div className="border-b border-border bg-surface-base/60 px-4 py-3">
               <p className="text-xs text-muted">
                 {pushPermission === 'denied'
-                  ? 'Notifications are blocked for this app. Open your phone Settings → Apps → Tanda → Notifications and allow them, then tap Enable again.'
+                  ? 'Notifications are blocked. Allow them in phone Settings → Apps → Time Tracker Pro → Notifications, then tap Enable.'
                   : 'Allow notifications so you get shift updates on this phone.'}
               </p>
-              {pushPermission === 'denied' ? null : (
-                <button
-                  type="button"
-                  onClick={() => void enablePush()}
-                  disabled={pushBusy}
-                  className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-                >
-                  {pushBusy ? 'Waiting for permission…' : 'Enable notifications'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => void enablePush()}
+                disabled={pushBusy}
+                className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              >
+                {pushBusy ? 'Waiting for permission…' : 'Enable notifications'}
+              </button>
               {pushError ? (
                 <p className="mt-2 text-[11px] text-red-400">{pushError}</p>
               ) : null}
