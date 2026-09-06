@@ -174,9 +174,9 @@ export function AdminRolesTab() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:opacity-90"
+            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary/40 bg-primary/15 px-4 text-sm font-semibold text-primary hover:bg-primary/25 sm:w-auto"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 shrink-0" aria-hidden />
             New role
           </button>
         </div>
