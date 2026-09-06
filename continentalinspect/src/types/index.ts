@@ -24,7 +24,20 @@ export function normalizeConservationType(value: string | undefined): Conservati
 
 export type CargoInspectionStatus = 'new' | 'loaded';
 
-export type CargoUnitType = 'container' | 'uld_pallet' | 'loose_pallet';
+/**
+ * Warehouse cargo categories:
+ * - uld: aircraft Unit Load Devices (AKE, PMC, …)
+ * - pallet_skid: general cargo on ISPM-15 pallets/skids
+ * - lcl: consolidated freight de-van'd in warehouse
+ * - loose_cargo: loose cartons / parcels
+ * - breakbulk: oversized or special crates/machinery
+ */
+export type CargoUnitType =
+  | 'uld'
+  | 'pallet_skid'
+  | 'lcl'
+  | 'loose_cargo'
+  | 'breakbulk';
 
 export type InspectionSyncStatus = 'synced' | 'pending' | 'error';
 
@@ -59,7 +72,7 @@ export type UpdateCargoInspectionInput = NewCargoInspectionInput;
 
 /** Default form / draft values for a new cargo inspection. */
 export const EMPTY_CARGO_INSPECTION_INPUT: NewCargoInspectionInput = {
-  unitType: 'container',
+  unitType: 'pallet_skid',
   uldId: '',
   awbNumber: '',
   conservationType: 'Ambient',

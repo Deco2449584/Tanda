@@ -37,11 +37,15 @@ import {
   type NewCargoInspectionInput,
 } from '@/types';
 import {
-  CARGO_UNIT_TYPES,
+  MANUAL_UNIT_TYPES,
+  getUldKindLabel,
+  getUldPrefix,
   getUnitTypeHint,
   getUnitTypeLabel,
   inferUnitTypeFromUldId,
+  isManualUnitType,
   requiresUldId,
+  resolveUnitType,
 } from '@/utils/cargoUnitType';
 import { normalizeUldId } from '@/utils/uldId';
 import {
@@ -117,7 +121,7 @@ export default function CargoInspectionFormScreen() {
 
     setEditingId(existing.id);
     setForm({
-      unitType: existing.unitType,
+      unitType: resolveUnitType(existing.unitType, existing.uldId),
       uldId: existing.uldId,
       awbNumber: existing.awbNumber,
       conservationType: existing.conservationType,
@@ -163,15 +167,23 @@ export default function CargoInspectionFormScreen() {
 
   const applyOcrFields = useCallback(
     (fields: { uldId: string; awbNumber: string }) => {
-      const inferred = fields.uldId ? inferUnitTypeFromUldId(fields.uldId) : null;
-      patchForm({
-        ...(fields.uldId ? { uldId: fields.uldId } : {}),
-        ...(fields.awbNumber ? { awbNumber: fields.awbNumber } : {}),
-        ...(inferred ? { unitType: inferred } : {}),
+      setForm((prev) => {
+        const inferred = fields.uldId ? inferUnitTypeFromUldId(fields.uldId) : null;
+        const nextUnitType = inferred
+          ? inferred
+          : isManualUnitType(prev.unitType)
+            ? prev.unitType
+            : 'pallet_skid';
+        return {
+          ...prev,
+          ...(fields.uldId ? { uldId: fields.uldId } : {}),
+          ...(fields.awbNumber ? { awbNumber: fields.awbNumber } : {}),
+          unitType: nextUnitType,
+        };
       });
       closeOcrConfirm();
     },
-    [patchForm, closeOcrConfirm],
+    [closeOcrConfirm],
   );
 
   const captureLabelWithOcr = useCallback(async () => {
@@ -242,21 +254,28 @@ export default function CargoInspectionFormScreen() {
       if (!normalized || scanHandledRef.current === normalized) return;
 
       scanHandledRef.current = normalized;
-      const inferred = inferUnitTypeFromUldId(normalized);
-      patchForm({
-        uldId: normalized,
-        ...(inferred ? { unitType: inferred } : {}),
+      setForm((prev) => {
+        const inferred = inferUnitTypeFromUldId(normalized);
+        return {
+          ...prev,
+          uldId: normalized,
+          unitType: inferred
+            ? inferred
+            : isManualUnitType(prev.unitType)
+              ? prev.unitType
+              : 'pallet_skid',
+        };
       });
       setShowScanner(false);
     },
-    [showScanner, patchForm],
+    [showScanner],
   );
 
   const buildPayload = (): NewCargoInspectionInput | null => {
     const uldId = form.uldId.trim();
     const awbNumber = form.awbNumber.trim();
     const foodType = form.foodType.trim();
-    const unitType = form.unitType;
+    const unitType = resolveUnitType(form.unitType, uldId);
 
     if (requiresUldId(unitType) && !uldId) {
       Alert.alert('ULD required', 'Enter or scan the ULD ID (e.g. AKE 12345 CX).');
@@ -407,6 +426,8 @@ export default function CargoInspectionFormScreen() {
   }
 
   const formBottomPadding = Math.max(insets.bottom, 16) + 24;
+  const inferredUldType = inferUnitTypeFromUldId(form.uldId);
+  const uldPrefix = getUldPrefix(form.uldId);
 
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
@@ -452,16 +473,7 @@ export default function CargoInspectionFormScreen() {
           <FormSectionCard
             icon="barcode-outline"
             title="Identification"
-            subtitle="Unit type, ULD code, and air waybill">
-            <OptionGroup
-              label="Unit type"
-              options={CARGO_UNIT_TYPES}
-              value={form.unitType}
-              onChange={(unitType) => patchForm({ unitType })}
-              getLabel={getUnitTypeLabel}
-            />
-            <Text style={styles.unitTypeHint}>{getUnitTypeHint(form.unitType)}</Text>
-
+            subtitle="ULD code and air waybill">
             <FormField
               label={requiresUldId(form.unitType) ? 'ULD ID' : 'ULD ID (optional)'}>
               <View style={styles.uldRow}>
@@ -469,14 +481,24 @@ export default function CargoInspectionFormScreen() {
                   style={[styles.input, styles.uldInput]}
                   value={form.uldId}
                   onChangeText={(text) => {
-                    const inferred = inferUnitTypeFromUldId(text);
-                    patchForm({
-                      uldId: text,
-                      ...(inferred ? { unitType: inferred } : {}),
+                    setForm((prev) => {
+                      const inferred = inferUnitTypeFromUldId(text);
+                      if (inferred) {
+                        return { ...prev, uldId: text, unitType: inferred };
+                      }
+                      return {
+                        ...prev,
+                        uldId: text,
+                        unitType: isManualUnitType(prev.unitType)
+                          ? prev.unitType
+                          : 'pallet_skid',
+                      };
                     });
                   }}
                   placeholder={
-                    form.unitType === 'loose_pallet' ? 'Optional reference' : 'AKE 12345 CX'
+                    isManualUnitType(form.unitType) && !inferredUldType
+                      ? 'Optional reference'
+                      : 'AKE 12345 CX'
                   }
                   placeholderTextColor={colors.text.onSurfaceMuted}
                   autoCapitalize="characters"
@@ -515,6 +537,41 @@ export default function CargoInspectionFormScreen() {
                 ) : null}
               </View>
             </FormField>
+
+            {inferredUldType ? (
+              <View style={styles.detectedTypeBlock}>
+                <View style={styles.detectedTypeChip}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.accent.primary} />
+                  <Text style={styles.detectedTypeText}>
+                    Detected: {getUldKindLabel(form.uldId) ?? getUnitTypeLabel(inferredUldType)}
+                    {uldPrefix ? ` · ${uldPrefix}` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.unitTypeHint}>{getUnitTypeHint(inferredUldType)}</Text>
+              </View>
+            ) : (
+              <View style={styles.detectedTypeBlock}>
+                {normalizeUldId(form.uldId) ? (
+                  <Text style={styles.unknownUldNote}>
+                    ULD prefix not recognized — choose the cargo category below.
+                  </Text>
+                ) : (
+                  <Text style={styles.unknownUldNote}>
+                    No ULD code — select LCL, Pallet/Skid, Loose cargo, or Breakbulk.
+                  </Text>
+                )}
+                <OptionGroup
+                  label="Cargo category"
+                  options={MANUAL_UNIT_TYPES}
+                  value={
+                    isManualUnitType(form.unitType) ? form.unitType : 'pallet_skid'
+                  }
+                  onChange={(unitType) => patchForm({ unitType })}
+                  getLabel={getUnitTypeLabel}
+                />
+                <Text style={styles.unitTypeHint}>{getUnitTypeHint(form.unitType)}</Text>
+              </View>
+            )}
 
             <FormField label="Air waybill (AWB)">
               <TextInput
@@ -849,7 +906,33 @@ function createFormStyles(colors: AppColors) {
       fontSize: 13,
       color: colors.text.onSurfaceMuted,
       lineHeight: 18,
-      marginTop: -8,
+      marginTop: -4,
+    },
+    detectedTypeBlock: {
+      gap: 8,
+    },
+    detectedTypeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.accent.primary,
+      backgroundColor: 'rgba(2, 101, 220, 0.08)',
+    },
+    detectedTypeText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 13,
+      color: colors.accent.primary,
+    },
+    unknownUldNote: {
+      fontFamily: fonts.body,
+      fontSize: 13,
+      color: colors.text.onSurfaceMuted,
+      lineHeight: 18,
     },
     field: { gap: 8 },
     fieldLabel: {

@@ -13,7 +13,12 @@ import type { CargoInspection } from '@/types';
 import { METRIC_ATTENTION, METRIC_LOADED, METRIC_NEW_CARGO } from '@/components/TodayOperationsDonut';
 import { getConservationLabel } from '@/utils/cargoLabels';
 import { getInspectionDisplayBadge } from '@/utils/cargoInspectionStatus';
-import { getInspectionDisplayTitle, getUnitTypeLabel } from '@/utils/cargoUnitType';
+import {
+  getInspectionDisplayTitle,
+  getUnitTypeLabel,
+  isManualUnitType,
+  resolveUnitType,
+} from '@/utils/cargoUnitType';
 import { formatInspectionDate } from '@/utils/formatDate';
 
 type CargoCardProps = {
@@ -225,7 +230,8 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
 
   const displayBadge = getInspectionDisplayBadge(inspection);
   const title = getInspectionDisplayTitle(inspection);
-  const unitTypeLabel = getUnitTypeLabel(inspection.unitType);
+  const unitType = resolveUnitType(inspection.unitType, inspection.uldId);
+  const unitTypeLabel = getUnitTypeLabel(unitType);
   const statusBg =
     displayBadge.kind === 'attention'
       ? `${METRIC_ATTENTION}22`
@@ -270,7 +276,7 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
                   {title}
                 </Text>
                 <Text style={styles.awb} numberOfLines={1}>
-                  {inspection.unitType === 'loose_pallet' && !inspection.uldId.trim()
+                  {isManualUnitType(unitType) && !inspection.uldId.trim()
                     ? unitTypeLabel
                     : `AWB ${inspection.awbNumber}`}
                 </Text>
@@ -286,7 +292,7 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
 
             <Text style={styles.metaLine} numberOfLines={1}>
               {inspection.foodType}
-              {inspection.unitType !== 'loose_pallet' || inspection.uldId.trim()
+              {!isManualUnitType(unitType) || inspection.uldId.trim()
                 ? ` · ${unitTypeLabel}`
                 : ''}
             </Text>

@@ -27,7 +27,11 @@ import { METRIC_LOADED, METRIC_NEW_CARGO } from '@/components/TodayOperationsDon
 import { shareCargoInspectionPdf } from '@/utils/cargoInspectionPdf';
 import { CONSERVATION_COLORS, getConservationLabel } from '@/utils/cargoLabels';
 import { getInspectionDisplayBadge, resolveInspectionStatus } from '@/utils/cargoInspectionStatus';
-import { getInspectionDisplayTitle, getUnitTypeLabel } from '@/utils/cargoUnitType';
+import {
+  getInspectionDisplayTitle,
+  getUnitTypeLabel,
+  resolveUnitType,
+} from '@/utils/cargoUnitType';
 import { formatInspectionDate } from '@/utils/formatDate';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -470,7 +474,10 @@ export default function CargoDetailScreen() {
               <Text style={styles.heroEyebrow}>Inspection record</Text>
               <Text style={styles.heroUld}>{getInspectionDisplayTitle(inspection)}</Text>
               <Text style={styles.heroAwb}>
-                {getUnitTypeLabel(inspection.unitType)} · AWB {inspection.awbNumber}
+                {getUnitTypeLabel(
+                  resolveUnitType(inspection.unitType, inspection.uldId),
+                )}{' '}
+                · AWB {inspection.awbNumber}
               </Text>
 
               <View style={styles.chipRow}>
@@ -589,7 +596,9 @@ export default function CargoDetailScreen() {
             <View style={styles.detailsGrid}>
               <DetailRow
                 label="Unit type"
-                value={getUnitTypeLabel(inspection.unitType)}
+                value={getUnitTypeLabel(
+                  resolveUnitType(inspection.unitType, inspection.uldId),
+                )}
                 styles={styles}
               />
               {inspection.uldId.trim() ? (
