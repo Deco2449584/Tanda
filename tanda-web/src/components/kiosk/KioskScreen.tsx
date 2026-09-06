@@ -286,7 +286,7 @@ export function KioskScreen({
         {step === 'pin' && showLogo && (
           <CompanyLogo
             priority
-            variant="light"
+            variant="horizontal"
             className="h-auto w-[min(72vw,15rem)] max-h-[4.25rem] shrink-0 object-contain drop-shadow-lg md:landscape:w-[min(100%,16rem)] md:landscape:max-h-[4.75rem]"
           />
         )}
@@ -323,7 +323,7 @@ export function KioskScreen({
             {showLogo && (
               <CompanyLogo
                 priority
-                variant="light"
+                variant="horizontal"
                 className="mb-[clamp(1rem,3vh,1.5rem)] h-auto w-[min(88vw,20rem)] max-h-[clamp(5.5rem,14vh,9rem)] shrink-0 object-contain drop-shadow-lg"
               />
             )}

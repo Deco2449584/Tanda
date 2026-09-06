@@ -26,7 +26,7 @@ export async function sendShiftEmail(input: SendShiftEmailInput): Promise<boolea
   if (!apiKey || !from) return false;
 
   const appUrl = getAppBaseUrl();
-  const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('light');
+  const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('horizontal');
   const scheduleUrl = `${appUrl}/my-schedule`;
 
   const emailContent = {

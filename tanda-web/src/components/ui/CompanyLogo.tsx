@@ -5,23 +5,38 @@ import { Building2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
-export type CompanyLogoVariant = 'default' | 'light' | 'mark' | 'mark-light';
+export type CompanyLogoVariant =
+  | 'horizontal'
+  | 'stacked'
+  | 'mark'
+  | 'mark-light'
+  /** @deprecated Prefer `horizontal` on dark UI */
+  | 'light'
+  /** @deprecated Prefer `horizontal` or `mark` by background */
+  | 'default';
 
 const LOGO_ASSETS: Record<
-  CompanyLogoVariant,
+  Exclude<CompanyLogoVariant, 'light' | 'default'>,
   { src: string; width: number; height: number }
 > = {
-  default: { src: '/logo.svg', width: 548, height: 480 },
-  light: { src: '/logo-light.svg', width: 548, height: 480 },
-  mark: { src: '/logo-mark.svg', width: 250, height: 250 },
-  'mark-light': { src: '/logo-mark-light.svg', width: 250, height: 250 },
+  horizontal: { src: '/logos/logo-horizontal.png', width: 1585, height: 443 },
+  stacked: { src: '/logos/logo-stacked.png', width: 1125, height: 646 },
+  mark: { src: '/logos/logo-mark.png', width: 2378, height: 2392 },
+  'mark-light': { src: '/logos/logo-mark-light.png', width: 2379, height: 2393 },
 };
+
+function resolveAsset(variant: CompanyLogoVariant) {
+  if (variant === 'light' || variant === 'default') {
+    return LOGO_ASSETS.horizontal;
+  }
+  return LOGO_ASSETS[variant];
+}
 
 interface CompanyLogoProps {
   alt?: string;
   className?: string;
   priority?: boolean;
-  /** @deprecated Use variant="light" instead */
+  /** @deprecated Use variant="light" or variant="horizontal" instead */
   invert?: boolean;
   variant?: CompanyLogoVariant;
 }
@@ -35,7 +50,7 @@ export function CompanyLogo({
 }: CompanyLogoProps) {
   const label = alt ?? COMPANY_NAME;
   const resolvedVariant = variant ?? (invert ? 'light' : 'default');
-  const asset = LOGO_ASSETS[resolvedVariant];
+  const asset = resolveAsset(resolvedVariant);
 
   return (
     <Image

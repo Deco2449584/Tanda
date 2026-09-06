@@ -13,11 +13,10 @@ async function getMarkDataUrl(): Promise<string> {
     return cachedMarkDataUrl;
   }
 
-  const svg = await readFile(
-    path.join(process.cwd(), 'public/logo-mark-light.svg'),
-    'utf8',
+  const png = await readFile(
+    path.join(process.cwd(), 'public/logos/logo-mark-light.png'),
   );
-  cachedMarkDataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  cachedMarkDataUrl = `data:image/png;base64,${png.toString('base64')}`;
   return cachedMarkDataUrl;
 }
 

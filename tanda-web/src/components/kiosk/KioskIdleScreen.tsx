@@ -25,7 +25,7 @@ export function KioskIdleScreen({
 }: KioskIdleScreenProps) {
   return (
     <div className="kiosk-ambient flex min-h-[100dvh] flex-col items-center justify-center px-6 py-10 text-center text-white">
-      <CompanyLogo variant="light" className="h-auto w-40 object-contain opacity-90" />
+      <CompanyLogo variant="horizontal" className="h-auto w-40 object-contain opacity-90" />
       <div className="mt-6 w-full max-w-sm rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur-md">
         <MonitorSmartphone className="mx-auto h-8 w-8 text-primary" />
         <h1 className="mt-3 text-lg font-semibold">{name}</h1>

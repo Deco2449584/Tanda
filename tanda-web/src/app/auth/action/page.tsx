@@ -124,7 +124,7 @@ function SetPasswordContent() {
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
           <CompanyLogo
-            variant="light"
+            variant="horizontal"
             priority
             className="mx-auto h-16 w-auto object-contain"
           />

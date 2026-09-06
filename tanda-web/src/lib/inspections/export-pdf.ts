@@ -86,7 +86,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 async function resolveLogoDataUrl(): Promise<string | null> {
   try {
-    const response = await fetch('/logo.svg');
+    const response = await fetch('/logos/logo-horizontal.png');
     if (!response.ok) return null;
     const blob = await response.blob();
     return blobToDataUrl(blob);

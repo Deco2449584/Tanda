@@ -30,8 +30,11 @@ export function getAppAuthActionUrl(): string {
   return `${getAppBaseUrl()}/auth/action`;
 }
 
-/** Absolute URL for email images (logo-light.svg on the app origin). */
-export function getAppLogoUrl(variant: 'light' | 'mark-light' = 'light'): string {
-  const file = variant === 'light' ? 'logo-light.svg' : 'logo-mark-light.svg';
+/** Absolute URL for email images (PNG on the app origin — better client support than SVG). */
+export function getAppLogoUrl(
+  variant: 'light' | 'horizontal' | 'mark-light' = 'horizontal',
+): string {
+  const file =
+    variant === 'mark-light' ? 'logo-mark-light.png' : 'logo-horizontal.png';
   return `${getAppBaseUrl()}/${file}`;
 }

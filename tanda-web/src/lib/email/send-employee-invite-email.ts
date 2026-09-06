@@ -20,7 +20,7 @@ async function sendViaResend(input: SendEmployeeInviteEmailInput): Promise<boole
     throw new Error('RESEND_FROM_EMAIL is not set.');
   }
 
-  const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('light');
+  const logoUrl = process.env.EMAIL_LOGO_URL?.trim() || getAppLogoUrl('horizontal');
   const emailContent = {
     email: input.email,
     name: input.name,

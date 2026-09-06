@@ -30,7 +30,7 @@ type Phase = 'loading' | 'denied' | 'select-location' | 'ready' | 'settings';
 function KioskMessage({ children }: { children: React.ReactNode }) {
   return (
     <div className="kiosk-ambient flex min-h-[100dvh] flex-col items-center justify-center gap-4 px-6 text-center">
-      <CompanyLogo variant="light" className="h-auto w-44 object-contain opacity-90" />
+      <CompanyLogo variant="horizontal" className="h-auto w-44 object-contain opacity-90" />
       {children}
     </div>
   );

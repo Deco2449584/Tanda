@@ -71,7 +71,7 @@ export default function PortalLoginPage() {
 
           <div className="relative">
             <CompanyLogo
-              variant="light"
+              variant="horizontal"
               priority
               className="h-20 w-auto max-w-[280px] object-contain sm:h-24"
             />
@@ -135,7 +135,7 @@ export default function PortalLoginPage() {
         <section className="flex flex-1 flex-col justify-center bg-[#F5F5F5] px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
           <div className="mx-auto w-full max-w-md">
             <div className="mb-8 lg:hidden">
-              <CompanyLogo className="mx-auto h-16 w-auto" />
+              <CompanyLogo variant="mark" className="mx-auto h-16 w-16" />
             </div>
 
             <div className="rounded-2xl border border-[#CBCBCB]/40 bg-white p-6 shadow-xl shadow-[#262626]/10 sm:p-8">

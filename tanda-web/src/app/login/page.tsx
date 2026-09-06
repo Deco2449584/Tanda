@@ -192,7 +192,7 @@ function LoginPageContent() {
         />
 
         <div className="relative">
-          <CompanyLogo variant="light" priority className="h-20 w-auto object-contain" />
+          <CompanyLogo variant="horizontal" priority className="h-20 w-auto object-contain" />
           <div className="mt-10 inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface-raised px-3 py-1 text-xs font-medium text-secondary">
             <Truck className="h-3.5 w-3.5" />
             Logistics workforce platform
@@ -241,7 +241,7 @@ function LoginPageContent() {
                 aria-hidden
               />
               <CompanyLogo
-                variant="light"
+                variant="horizontal"
                 priority
                 className="relative mx-auto h-16 w-auto object-contain"
               />
