@@ -18,6 +18,7 @@ import { Alert } from 'react-native';
 import { auth, isFirebaseConfigured } from '@/services/firebaseConfig';
 import {
   EmployeeAccessError,
+  hasContinentalInspectAccess,
   loadEmployeeProfile,
   resolveRoleFromEmployee,
   resolveUserRole,
@@ -69,7 +70,8 @@ function employeeRecordChanged(
     current.email !== (record.email || email) ||
     current.role !== nextRole ||
     current.locationId !== record.locationId ||
-    current.locationGroupId !== record.locationGroupId
+    current.locationGroupId !== record.locationGroupId ||
+    current.workforceRole !== record.workforceRole
   );
 }
 
@@ -144,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          if (!record.continentalInspectEnabled) {
+          if (!hasContinentalInspectAccess(record)) {
             void handleInspectDisabled();
             return;
           }

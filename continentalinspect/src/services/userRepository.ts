@@ -75,7 +75,18 @@ function parseEmployeeRecord(raw: Record<string, unknown>): EmployeeRecord | nul
       typeof raw.locationGroupId === 'string' && raw.locationGroupId.trim()
         ? raw.locationGroupId.trim()
         : undefined,
+    workforceRole:
+      typeof raw.role === 'string' && raw.role.trim() ? raw.role.trim() : undefined,
   };
+}
+
+/** Master always has Inspect access; others need the TimeTracker toggle. */
+export function hasContinentalInspectAccess(record: EmployeeRecord): boolean {
+  const workforceRole = record.workforceRole?.trim().toLowerCase() ?? '';
+  if (workforceRole === 'master') {
+    return true;
+  }
+  return record.continentalInspectEnabled === true;
 }
 
 /** Admin if department is logistica/admin or email is in EXPO_PUBLIC_ADMIN_EMAILS. */
@@ -180,7 +191,7 @@ export async function loadEmployeeProfile(
     );
   }
 
-  if (!found.record.continentalInspectEnabled) {
+  if (!hasContinentalInspectAccess(found.record)) {
     throw new EmployeeAccessError(
       'inspect_disabled',
       'Continental Inspect access is not enabled for this employee.',

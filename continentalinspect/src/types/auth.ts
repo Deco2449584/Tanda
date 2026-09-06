@@ -11,6 +11,11 @@ export type EmployeeRecord = {
   photoUrl?: string;
   locationId?: string;
   locationGroupId?: string;
+  /**
+   * Firestore workforce `role` (master / admin / empleado / kiosk).
+   * Separate from in-app `EmployeeProfile.role` (admin | operator).
+   */
+  workforceRole?: string;
 };
 
 /** Authenticated employee profile used in the app (role is derived). */
