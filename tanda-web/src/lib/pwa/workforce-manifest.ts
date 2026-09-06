@@ -12,7 +12,7 @@ export function getWorkforceManifest(): MetadataRoute.Manifest {
     start_url: '/',
     scope: '/',
     display: 'standalone',
-    orientation: 'portrait',
+    orientation: 'any',
     background_color: BRAND.graphite,
     theme_color: BRAND.graphite,
     icons: buildPwaIconEntries(),
