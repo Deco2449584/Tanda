@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
@@ -31,6 +31,7 @@ import { cn } from '@/lib/cn';
 import { CompanyLogoSidebar } from '@/components/ui/CompanyLogo';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
+import { employeeNeedsPersonalProfile } from '@/components/employees/EmployeeProfileReminderBanner';
 
 interface NavItem {
   label: string;
@@ -126,8 +127,18 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
   const { user } = useAuthRole();
   const { canAccessModule } = useAdminAccess();
-  const { employee } = useCurrentEmployee(role === 'empleado' ? user?.email : null);
+  const { employee, refresh: refreshEmployee } = useCurrentEmployee(
+    role === 'empleado' ? user?.email : null,
+  );
   const kioskEnabled = employee?.kioskEnabled === true;
+  const needsProfile =
+    role === 'empleado' && employeeNeedsPersonalProfile(employee?.personalProfileStatus);
+
+  useEffect(() => {
+    if (role === 'empleado') {
+      refreshEmployee();
+    }
+  }, [pathname, refreshEmployee, role]);
 
   const navGroups = useMemo(() => {
     if (isAdminAreaRole(role)) {
@@ -189,6 +200,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
               <div className="space-y-0.5">
                 {group.items.map(({ label, href, icon: Icon }) => {
                   const active = isActive(pathname, href);
+                  const showProfileBadge = needsProfile && href === '/my-profile';
 
                   return (
                     <Link
@@ -212,7 +224,14 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                         className={cn('h-4 w-4 shrink-0', active ? 'text-primary' : '')}
                         strokeWidth={1.75}
                       />
-                      {label}
+                      <span className="min-w-0 flex-1 truncate">{label}</span>
+                      {showProfileBadge ? (
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-primary"
+                          aria-label="Profile incomplete"
+                          title="Complete your personal profile"
+                        />
+                      ) : null}
                     </Link>
                   );
                 })}

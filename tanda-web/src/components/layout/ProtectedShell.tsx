@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { EmployeeProfileReminderBanner } from '@/components/employees/EmployeeProfileReminderBanner';
 import { LoadingSplash } from '@/components/ui/LoadingSplash';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -146,7 +147,10 @@ function ProtectedLayoutContent({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header role={role} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="relative z-0 flex-1 overflow-y-auto">{children}</main>
+        <main className="relative z-0 flex-1 overflow-y-auto">
+          {role === 'empleado' ? <EmployeeProfileReminderBanner /> : null}
+          {children}
+        </main>
       </div>
     </div>
     </>

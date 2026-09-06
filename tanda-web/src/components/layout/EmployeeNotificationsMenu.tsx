@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import { Bell, IdCard } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotificationsProvider';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
+import { useAuthRole } from '@/hooks/useAuthRole';
+import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
+import { employeeNeedsPersonalProfile } from '@/components/employees/EmployeeProfileReminderBanner';
 import { hasAttentionRequiredNotifications } from '@/lib/notifications/notification-attention';
 import { getEmployeeNotificationVisual } from '@/lib/notifications/notification-visuals';
 import type { AppNotification } from '@/lib/types/notification';
@@ -13,6 +16,9 @@ import type { AppNotification } from '@/lib/types/notification';
 export function EmployeeNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthRole();
+  const { employee } = useCurrentEmployee(user?.email);
+  const needsProfile = employeeNeedsPersonalProfile(employee?.personalProfileStatus);
   const {
     notifications,
     unreadCount,
@@ -44,6 +50,7 @@ export function EmployeeNotificationsMenu() {
     (notification) =>
       notification.type !== 'justification_required' && notification.type !== 'no_show',
   ).length;
+  const badgeCount = unreadCount + (needsProfile ? 1 : 0);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -74,9 +81,9 @@ export function EmployeeNotificationsMenu() {
         aria-haspopup="menu"
       >
         <Bell className="h-5 w-5" />
-        {unreadCount > 0 ? (
+        {badgeCount > 0 ? (
           <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-zinc-950 md:ring-[#0a0a0a]">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         ) : null}
       </button>
@@ -91,9 +98,11 @@ export function EmployeeNotificationsMenu() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-white">Notifications</p>
                 <p className="mt-0.5 text-xs text-subtle">
-                  {notifications.length === 0
+                  {notifications.length === 0 && !needsProfile
                     ? 'No updates yet'
-                    : `${notifications.length} update${notifications.length === 1 ? '' : 's'}`}
+                    : `${notifications.length + (needsProfile ? 1 : 0)} update${
+                        notifications.length + (needsProfile ? 1 : 0) === 1 ? '' : 's'
+                      }`}
                 </p>
               </div>
               {clearableCount > 0 ? (
@@ -138,12 +147,35 @@ export function EmployeeNotificationsMenu() {
             </div>
           ) : null}
 
-          {notifications.length === 0 ? (
+          {notifications.length === 0 && !needsProfile ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">
               You are all caught up.
             </p>
           ) : (
             <ul className="max-h-72 overflow-y-auto py-1">
+              {needsProfile ? (
+                <li>
+                  <Link
+                    href="/my-profile"
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="flex gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-surface-hover/60"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                      <IdCard className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground">
+                        Complete your personal profile
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-snug text-subtle">
+                        Add your personal details and documents for admin review.
+                      </span>
+                    </span>
+                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden />
+                  </Link>
+                </li>
+              ) : null}
               {notifications.map((notification) => (
                 <NotificationRow
                   key={notification.id}

@@ -29,6 +29,38 @@ import type {
   EmployeeCustomFieldValue,
 } from '@/lib/types/employee-custom-field';
 
+function validateRequiredCustomFields(
+  fields: EmployeeCustomField[],
+  drafts: Record<string, CustomFieldDraft>,
+): string | null {
+  for (const field of fields) {
+    if (!field.required) continue;
+
+    const draft = drafts[field.id];
+    if (!draft) {
+      return `"${field.title}" is required.`;
+    }
+
+    if (field.type === 'text' && !draft.valueText.trim()) {
+      return `"${field.title}" is required.`;
+    }
+
+    if (field.type === 'number' && !draft.valueNumber.trim()) {
+      return `"${field.title}" is required.`;
+    }
+
+    if (
+      (field.type === 'file' || field.type === 'image') &&
+      !draft.file &&
+      !draft.url?.trim()
+    ) {
+      return `"${field.title}" is required.`;
+    }
+  }
+
+  return null;
+}
+
 export default function MyProfilePage() {
   const { user, loading: authLoading } = useAuthRole();
   const {
@@ -42,11 +74,8 @@ export default function MyProfilePage() {
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [visaFile, setVisaFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSavingCustom, setIsSavingCustom] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [customError, setCustomError] = useState('');
-  const [customSuccess, setCustomSuccess] = useState('');
   const [customFields, setCustomFields] = useState<EmployeeCustomField[]>([]);
   const [customValues, setCustomValues] = useState<EmployeeCustomFieldValue[]>([]);
   const [customLoading, setCustomLoading] = useState(true);
@@ -115,8 +144,28 @@ export default function MyProfilePage() {
       return;
     }
 
+    const requiredCustomError = validateRequiredCustomFields(
+      customFields,
+      customDraftsRef.current,
+    );
+    if (requiredCustomError) {
+      setError(requiredCustomError);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      if (customFields.length > 0) {
+        const values = await buildCustomFieldValuePayloads({
+          fields: customFields,
+          drafts: customDraftsRef.current,
+          employeeCode: employee.employeeId,
+        });
+        if (values.length > 0) {
+          await saveEmployeeCustomFieldValuesRequest({ values });
+        }
+      }
+
       let passportUrl = employee.passportUrl ?? '';
       let passportFileName = employee.passportFileName;
       let visaUrl = employee.visaUrl ?? '';
@@ -164,7 +213,7 @@ export default function MyProfilePage() {
       setPassportFile(null);
       setVisaFile(null);
       setSuccess('Profile submitted for admin review.');
-      await refresh();
+      await Promise.all([refresh(), loadCustomFields()]);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -176,43 +225,10 @@ export default function MyProfilePage() {
     }
   }
 
-  async function handleSaveCustom(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!employee || customFields.length === 0) return;
-
-    if (
-      normalizePersonalProfileStatus(employee.personalProfileStatus) === 'Approved'
-    ) {
-      return;
-    }
-
-    setCustomError('');
-    setCustomSuccess('');
-    setIsSavingCustom(true);
-    try {
-      const values = await buildCustomFieldValuePayloads({
-        fields: customFields,
-        drafts: customDraftsRef.current,
-        employeeCode: employee.employeeId,
-      });
-      await saveEmployeeCustomFieldValuesRequest({ values });
-      setCustomSuccess('Additional information saved.');
-      await loadCustomFields();
-    } catch (saveError) {
-      setCustomError(
-        saveError instanceof Error
-          ? saveError.message
-          : 'Could not save additional information.',
-      );
-    } finally {
-      setIsSavingCustom(false);
-    }
-  }
-
   const loading = authLoading || employeeLoading;
   const profileStatus = normalizePersonalProfileStatus(employee?.personalProfileStatus);
   const isReadOnly = profileStatus === 'Approved';
-  const busy = isSubmitting || loading || isReadOnly;
+  const busy = isSubmitting || loading || isReadOnly || customLoading;
 
   return (
     <PageContent className="space-y-6">
@@ -225,90 +241,70 @@ export default function MyProfilePage() {
           {employeeError || 'No employee profile found for this account.'}
         </FormAlert>
       ) : (
-        <>
-          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
-            <div className="flex flex-col gap-2 rounded-2xl border border-border/80 bg-surface-raised/60 px-5 py-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-sm font-medium text-foreground">Review status</p>
-                <PersonalProfileStatusBadge status={profileStatus} />
-              </div>
-              {isReadOnly ? (
-                <p className="text-xs text-subtle">
-                  Your profile is approved. You can view your details here; contact an
-                  administrator if something needs to change.
-                </p>
-              ) : (
-                <p className="text-xs text-subtle">
-                  Complete your personal details, passport/visa, and any additional fields,
-                  then submit for admin approval.
-                </p>
-              )}
-              {profileStatus === 'Rejected' &&
-              employee.personalProfileRejectionReason ? (
-                <p className="text-xs text-red-300/90">
-                  Rejection reason: {employee.personalProfileRejectionReason}
-                </p>
-              ) : null}
+        <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
+          <div className="flex flex-col gap-2 rounded-2xl border border-border/80 bg-surface-raised/60 px-5 py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm font-medium text-foreground">Review status</p>
+              <PersonalProfileStatusBadge status={profileStatus} />
             </div>
-
-            <EmployeePersonalFields
-              form={form}
-              onChange={patchForm}
-              disabled={busy}
-              readOnly={isReadOnly}
-              idPrefix="my-profile"
-              passportFile={passportFile}
-              visaFile={visaFile}
-              onPassportFileChange={setPassportFile}
-              onVisaFileChange={setVisaFile}
-              currentPassportFileName={employee.passportFileName}
-              currentVisaFileName={employee.visaFileName}
-              currentPassportUrl={employee.passportUrl}
-              currentVisaUrl={employee.visaUrl}
-              requireDocuments={!isReadOnly}
-            />
-
-            {error ? <FormAlert variant="error">{error}</FormAlert> : null}
-            {success ? <FormAlert variant="success">{success}</FormAlert> : null}
-
-            {!isReadOnly ? (
-              <FormActions
-                submitLabel={isSubmitting ? 'Submitting…' : 'Submit for review'}
-                disabled={busy}
-                hideCancel
-              />
+            {isReadOnly ? (
+              <p className="text-xs text-subtle">
+                Your profile is approved. You can view your details here; contact an
+                administrator if something needs to change.
+              </p>
+            ) : (
+              <p className="text-xs text-subtle">
+                Complete your personal details, passport/visa, and any required additional
+                fields, then submit for admin approval.
+              </p>
+            )}
+            {profileStatus === 'Rejected' &&
+            employee.personalProfileRejectionReason ? (
+              <p className="text-xs text-red-300/90">
+                Rejection reason: {employee.personalProfileRejectionReason}
+              </p>
             ) : null}
-          </form>
+          </div>
+
+          <EmployeePersonalFields
+            form={form}
+            onChange={patchForm}
+            disabled={busy}
+            readOnly={isReadOnly}
+            idPrefix="my-profile"
+            passportFile={passportFile}
+            visaFile={visaFile}
+            onPassportFileChange={setPassportFile}
+            onVisaFileChange={setVisaFile}
+            currentPassportFileName={employee.passportFileName}
+            currentVisaFileName={employee.visaFileName}
+            currentPassportUrl={employee.passportUrl}
+            currentVisaUrl={employee.visaUrl}
+            requireDocuments={!isReadOnly}
+          />
 
           {!customLoading && customFields.length > 0 ? (
-            <form
-              onSubmit={(event) => void handleSaveCustom(event)}
-              className="space-y-6"
-            >
-              <EmployeeCustomFieldsForm
-                fields={customFields}
-                values={customValues}
-                disabled={isSavingCustom || isReadOnly}
-                readOnly={isReadOnly}
-                idPrefix="my-custom"
-                draftsRef={customDraftsRef}
-              />
-              {customError ? <FormAlert variant="error">{customError}</FormAlert> : null}
-              {customSuccess ? (
-                <FormAlert variant="success">{customSuccess}</FormAlert>
-              ) : null}
-              {!isReadOnly ? (
-                <FormActions
-                  submitLabel={
-                    isSavingCustom ? 'Saving…' : 'Save additional information'
-                  }
-                  disabled={isSavingCustom}
-                  hideCancel
-                />
-              ) : null}
-            </form>
+            <EmployeeCustomFieldsForm
+              fields={customFields}
+              values={customValues}
+              disabled={busy}
+              readOnly={isReadOnly}
+              idPrefix="my-custom"
+              draftsRef={customDraftsRef}
+            />
           ) : null}
-        </>
+
+          {error ? <FormAlert variant="error">{error}</FormAlert> : null}
+          {success ? <FormAlert variant="success">{success}</FormAlert> : null}
+
+          {!isReadOnly ? (
+            <FormActions
+              submitLabel={isSubmitting ? 'Submitting…' : 'Submit for review'}
+              disabled={busy}
+              hideCancel
+            />
+          ) : null}
+        </form>
       )}
     </PageContent>
   );
