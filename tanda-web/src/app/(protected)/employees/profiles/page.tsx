@@ -15,12 +15,47 @@ import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import type { PersonalProfileStatus } from '@/lib/types/employee';
 
-const STATUS_FILTERS: { value: ProfileStatusFilter; label: string }[] = [
-  { value: 'Pending', label: 'Pending' },
-  { value: 'Approved', label: 'Approved' },
-  { value: 'Rejected', label: 'Rejected' },
-  { value: 'none', label: 'Not submitted' },
-  { value: 'all', label: 'All' },
+const STATUS_FILTERS: {
+  value: ProfileStatusFilter;
+  label: string;
+  activeClass: string;
+  idleClass: string;
+}[] = [
+  {
+    value: 'Pending',
+    label: 'Pending',
+    activeClass: 'border-amber-400/50 bg-amber-500/20 text-amber-200',
+    idleClass:
+      'border-amber-500/25 bg-amber-500/5 text-amber-400/80 hover:bg-amber-500/15 hover:text-amber-200',
+  },
+  {
+    value: 'Approved',
+    label: 'Approved',
+    activeClass: 'border-emerald-400/50 bg-emerald-500/20 text-emerald-200',
+    idleClass:
+      'border-emerald-500/25 bg-emerald-500/5 text-emerald-400/80 hover:bg-emerald-500/15 hover:text-emerald-200',
+  },
+  {
+    value: 'Rejected',
+    label: 'Rejected',
+    activeClass: 'border-red-400/50 bg-red-500/20 text-red-200',
+    idleClass:
+      'border-red-500/25 bg-red-500/5 text-red-400/80 hover:bg-red-500/15 hover:text-red-200',
+  },
+  {
+    value: 'none',
+    label: 'Not submitted',
+    activeClass: 'border-zinc-400/40 bg-zinc-500/20 text-zinc-200',
+    idleClass:
+      'border-border bg-surface-base/40 text-muted hover:bg-surface-hover hover:text-foreground',
+  },
+  {
+    value: 'all',
+    label: 'All',
+    activeClass: 'border-primary/50 bg-primary/20 text-primary',
+    idleClass:
+      'border-border text-muted hover:bg-surface-hover hover:text-foreground',
+  },
 ];
 
 function parseStatusFilter(raw: string | null): ProfileStatusFilter {
@@ -104,12 +139,12 @@ export default function EmployeeProfilesPage() {
               onClick={() => setStatusFilter(option.value)}
               className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                 statusFilter === option.value
-                  ? 'border-primary/40 bg-primary/15 text-primary'
-                  : 'border-border text-muted hover:bg-surface-hover hover:text-foreground'
+                  ? option.activeClass
+                  : option.idleClass
               }`}
             >
               {option.label}
-              <span className="ml-1.5 text-[10px] opacity-70">
+              <span className="ml-1.5 text-[10px] opacity-80">
                 {counts[option.value]}
               </span>
             </button>

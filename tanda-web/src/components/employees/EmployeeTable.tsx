@@ -38,7 +38,7 @@ function StatusBadge({
   if (active) {
     return (
       <span
-        className={`inline-flex shrink-0 rounded-full border border-primary/30 bg-primary/10 font-semibold text-primary ${sizeClass}`}
+        className={`inline-flex shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 font-semibold text-emerald-300 ${sizeClass}`}
       >
         Active
       </span>
