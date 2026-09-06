@@ -12,7 +12,7 @@ import {
   type AdminActionName,
   type AdminEditModuleKey,
   type AdminModuleKey,
-  type AdminModulePermissionsBag,
+  type AdminModulePermissionsFirestore,
   type ResolvedAdminAccess,
   SETTINGS_SECTION_ACTIONS,
   type SettingsSectionKey,
@@ -87,7 +87,7 @@ function buildFullAccess(): ResolvedAdminAccess {
 
 export function resolveAdminAccess(input: {
   role: UserRole;
-  modulePermissions?: AdminModulePermissionsBag | null;
+  modulePermissions?: AdminModulePermissionsFirestore | null;
 }): ResolvedAdminAccess | null {
   if (!isAdminAreaRole(input.role)) {
     return null;
@@ -157,13 +157,13 @@ export function getDefaultAdminHref(access: ResolvedAdminAccess): string {
 
 /** True when at least one admin menu/module is enabled. */
 export function hasEnabledAdminModule(
-  permissions: AdminModulePermissionsBag | null | undefined,
+  permissions: AdminModulePermissionsFirestore | null | undefined,
 ): boolean {
   const mapped = mapModulePermissions(permissions);
   return ADMIN_MODULE_KEYS.some((key) => mapped.modules?.[key] === true);
 }
 
-export function createDefaultModulePermissions(): AdminModulePermissionsBag {
+export function createDefaultModulePermissions(): AdminModulePermissionsFirestore {
   return mapModulePermissions(null);
 }
 

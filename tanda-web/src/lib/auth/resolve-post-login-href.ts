@@ -9,7 +9,7 @@ import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
 import { getHomeRouteForRole, type UserRole } from '@/lib/auth/roles';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
-import type { AdminModulePermissionsBag } from '@/lib/types/admin-permissions';
+import type { AdminModulePermissionsFirestore } from '@/lib/types/admin-permissions';
 
 /**
  * Resolves where a user should land after sign-in.
@@ -53,10 +53,10 @@ export async function resolvePostLoginHref(
 
     const adminRoleId =
       typeof data.adminRoleId === 'string' ? data.adminRoleId.trim() : '';
-    let modulePermissions: AdminModulePermissionsBag | null =
+    let modulePermissions: AdminModulePermissionsFirestore | null =
       data.modulePermissions && typeof data.modulePermissions === 'object'
         ? mapModulePermissions(
-            data.modulePermissions as AdminModulePermissionsBag,
+            data.modulePermissions as AdminModulePermissionsFirestore,
           )
         : null;
 
