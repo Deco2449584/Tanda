@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Settings, X } from 'lucide-react';
-import { getKioskAuthHeaders } from '@/lib/kiosk/kiosk-auth-headers';
+import { formatKioskActionLabel } from '@/lib/kiosk/kiosk-action-labels';
+import {
+  listLocalKioskPunchHistory,
+  type LocalKioskPunchHistoryEntry,
+} from '@/lib/kiosk/local-punch-history';
 import { reauthenticateKioskPassword } from '@/lib/kiosk/reauthenticate-kiosk';
-import type { KioskContext, KioskLoginLog } from '@/lib/types/kiosk-context';
+import type { KioskContext } from '@/lib/types/kiosk-context';
 
 interface KioskSettingsPanelProps {
   context: KioskContext;
@@ -16,7 +20,13 @@ interface KioskSettingsPanelProps {
 function formatLogTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return date.toLocaleString('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 export function KioskSettingsPanel({
@@ -30,8 +40,7 @@ export function KioskSettingsPanel({
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [logs, setLogs] = useState<KioskLoginLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logs, setLogs] = useState<LocalKioskPunchHistoryEntry[]>([]);
 
   const activeLocation =
     context.allowedLocations.find((item) => item.id === activeLocationId) ??
@@ -39,36 +48,7 @@ export function KioskSettingsPanel({
 
   useEffect(() => {
     if (!unlocked) return;
-
-    let cancelled = false;
-    setLoadingLogs(true);
-    void getKioskAuthHeaders()
-      .then((headers) => fetch('/api/kiosk/login-history', { headers }))
-      .then(async (response) => {
-        const data = (await response.json().catch(() => null)) as
-          | { logs?: KioskLoginLog[]; error?: string }
-          | null;
-        if (!response.ok) {
-          throw new Error(data?.error ?? 'Could not load history.');
-        }
-        if (!cancelled) setLogs(data?.logs ?? []);
-      })
-      .catch((loadError) => {
-        if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : 'Could not load history.',
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingLogs(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    setLogs(listLocalKioskPunchHistory());
   }, [unlocked]);
 
   async function handleUnlock(event: React.FormEvent) {
@@ -124,7 +104,8 @@ export function KioskSettingsPanel({
         {!unlocked ? (
           <form onSubmit={(event) => void handleUnlock(event)} className="mt-6 space-y-4">
             <p className="text-sm text-zinc-400">
-              Enter the kiosk password to change client or view login history.
+              Enter the kiosk password to change client or view this week&apos;s
+              clock activity on this device.
             </p>
             <input
               type="password"
@@ -170,11 +151,17 @@ export function KioskSettingsPanel({
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold text-white">Login history</h2>
-              {loadingLogs ? (
-                <p className="mt-2 text-sm text-zinc-500">Loading…</p>
-              ) : logs.length === 0 ? (
-                <p className="mt-2 text-sm text-zinc-500">No logins recorded yet.</p>
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-sm font-semibold text-white">This week on this device</h2>
+                <p className="text-[11px] text-zinc-500">
+                  {logs.length}/100 · kept 7 days
+                </p>
+              </div>
+              <p className="mt-1 text-xs text-zinc-500">
+                People who clocked in or out on this tablet. Stored only on this device.
+              </p>
+              {logs.length === 0 ? (
+                <p className="mt-2 text-sm text-zinc-500">No clock activity recorded yet.</p>
               ) : (
                 <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
                   {logs.map((log) => (
@@ -182,11 +169,9 @@ export function KioskSettingsPanel({
                       key={log.id}
                       className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-left"
                     >
-                      <p className="text-xs font-medium text-white">
-                        {log.event === 'location_change' ? 'Client changed' : 'Signed in'}
-                      </p>
+                      <p className="text-xs font-medium text-white">{log.employeeName}</p>
                       <p className="mt-0.5 text-xs text-zinc-400">
-                        {formatLogTime(log.createdAt)}
+                        {formatKioskActionLabel(log.actionType)} · {formatLogTime(log.createdAt)}
                         {log.locationName ? ` · ${log.locationName}` : ''}
                       </p>
                     </li>

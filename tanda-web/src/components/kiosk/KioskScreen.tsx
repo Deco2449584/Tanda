@@ -15,6 +15,7 @@ import {
 } from '@/components/kiosk/KioskSuccessModal';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { getKioskAuthHeaders } from '@/lib/kiosk/kiosk-auth-headers';
+import { recordLocalKioskPunch } from '@/lib/kiosk/local-punch-history';
 import type { AttendanceType } from '@/lib/types/attendance';
 
 type KioskStep = 'pin' | 'choose' | 'camera' | 'success';
@@ -160,6 +161,7 @@ export function KioskScreen({
     (params: {
       imageBlob: Blob;
       employeeId: string;
+      employeeName: string;
       employeePin: string;
       actionType: AttendanceType;
     }) => {
@@ -202,6 +204,15 @@ export function KioskScreen({
               | null;
             throw new Error(data?.error ?? 'Could not save attendance.');
           }
+
+          recordLocalKioskPunch({
+            employeeId: params.employeeId,
+            employeeName: params.employeeName,
+            actionType: params.actionType,
+            locationId,
+            locationName: warehouseLabel,
+            createdAt: now,
+          });
         } catch (error) {
           console.error('Kiosk background punch failed:', error);
           showError(
@@ -212,7 +223,7 @@ export function KioskScreen({
         }
       })();
     },
-    [locationId, showError],
+    [locationId, showError, warehouseLabel],
   );
 
   const handleCapture = (imageBlob: Blob, previewDataUrl: string) => {
@@ -234,6 +245,7 @@ export function KioskScreen({
     submitPunchInBackground({
       imageBlob,
       employeeId: session.employeeId,
+      employeeName: session.employeeName,
       employeePin: pin,
       actionType: session.actionType,
     });
