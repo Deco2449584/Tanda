@@ -9,9 +9,10 @@ import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfi
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
-import { isProtectedAdminEmployee } from '@/lib/employees/is-protected-admin';
+import { canDeleteStaffAccount, canEditStaffAccount } from '@/lib/employees/is-protected-admin';
 import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
 import { recordEmployeeAuditEvent } from '@/lib/audit/audit-logs-client';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
@@ -64,6 +65,7 @@ export function EmployeeTable({
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
   const { refresh: refreshEmployees } = useEmployees();
+  const { isMaster } = useAdminAccess();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Employee | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -86,8 +88,12 @@ export function EmployeeTable({
   }, [employees, groups, locations, searchQuery]);
 
   function requestDelete(employee: Employee) {
-    if (isProtectedAdminEmployee(employee)) {
-      window.alert('Administrator accounts cannot be deleted from staff management.');
+    if (!canDeleteStaffAccount(isMaster, employee)) {
+      window.alert(
+        canDeleteStaffAccount(true, employee)
+          ? 'Only a Master can delete administrator accounts.'
+          : 'Master accounts cannot be deleted from staff management.',
+      );
       return;
     }
 
@@ -169,7 +175,9 @@ export function EmployeeTable({
               </tr>
             ) : (
               filteredEmployees.map((employee) => {
-                const isAdminAccount = isProtectedAdminEmployee(employee);
+                const canEditThis = Boolean(onEdit) && canEditStaffAccount(isMaster, employee);
+                const canDeleteThis =
+                  canDelete && canDeleteStaffAccount(isMaster, employee);
 
                 return (
                 <tr
@@ -206,10 +214,10 @@ export function EmployeeTable({
                   {showActions ? (
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2">
-                        {onEdit ? (
+                        {canEditThis ? (
                           <button
                             type="button"
-                            onClick={() => onEdit(employee)}
+                            onClick={() => onEdit?.(employee)}
                             className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
                             aria-label={`Edit ${employee.name}`}
                           >
@@ -220,10 +228,12 @@ export function EmployeeTable({
                           <button
                             type="button"
                             onClick={() => requestDelete(employee)}
-                            disabled={deletingId === employee.id || isAdminAccount}
+                            disabled={deletingId === employee.id || !canDeleteThis}
                             title={
-                              isAdminAccount
-                                ? 'Administrator accounts cannot be deleted'
+                              !canDeleteThis
+                                ? canDeleteStaffAccount(true, employee)
+                                  ? 'Only a Master can delete administrator accounts'
+                                  : 'Master accounts cannot be deleted'
                                 : `Delete ${employee.name}`
                             }
                             className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
@@ -248,7 +258,9 @@ export function EmployeeTable({
           <li className="px-4 py-10 text-center text-sm text-subtle">{emptyMessage}</li>
         ) : (
           filteredEmployees.map((employee) => {
-            const isAdminAccount = isProtectedAdminEmployee(employee);
+            const canEditThis = Boolean(onEdit) && canEditStaffAccount(isMaster, employee);
+            const canDeleteThis =
+              canDelete && canDeleteStaffAccount(isMaster, employee);
             const locationLabel = getEmployeeLocationLabel(employee, locations, groups);
             const metaParts = [
               employee.employeeId || null,
@@ -285,10 +297,10 @@ export function EmployeeTable({
 
                     {showActions ? (
                       <div className="flex items-center gap-0.5">
-                        {onEdit ? (
+                        {canEditThis ? (
                           <button
                             type="button"
-                            onClick={() => onEdit(employee)}
+                            onClick={() => onEdit?.(employee)}
                             className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-primary"
                             aria-label={`Edit ${employee.name}`}
                           >
@@ -299,10 +311,12 @@ export function EmployeeTable({
                           <button
                             type="button"
                             onClick={() => requestDelete(employee)}
-                            disabled={deletingId === employee.id || isAdminAccount}
+                            disabled={deletingId === employee.id || !canDeleteThis}
                             title={
-                              isAdminAccount
-                                ? 'Administrator accounts cannot be deleted'
+                              !canDeleteThis
+                                ? canDeleteStaffAccount(true, employee)
+                                  ? 'Only a Master can delete administrator accounts'
+                                  : 'Master accounts cannot be deleted'
                                 : `Delete ${employee.name}`
                             }
                             className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"

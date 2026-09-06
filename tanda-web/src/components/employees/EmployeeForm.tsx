@@ -75,6 +75,7 @@ import { suggestAccountEmployeeId } from '@/lib/employees/suggest-account-employ
 import { normalizeKioskLoginEmail } from '@/lib/employees/normalize-kiosk-login-email';
 import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
 import { staffToastMessage } from '@/lib/employees/staff-toast';
+import { canEditStaffAccount } from '@/lib/employees/is-protected-admin';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAdminRoleTemplates } from '@/hooks/useAdminRoleTemplates';
 import { db } from '@/lib/firebase';
@@ -328,6 +329,16 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       return;
     }
 
+    if (isEditMode && employee && !canEditStaffAccount(isMaster, employee)) {
+      setError('Only a Master can edit this account.');
+      return;
+    }
+
+    if (accessRole === 'master' && !active) {
+      setError('Master accounts cannot be deactivated.');
+      return;
+    }
+
     if (isWorkforce && !form.employeeId.trim()) {
       setError('Complete all required work details.');
       return;
@@ -442,6 +453,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
 
       setIsUploading(false);
 
+      const effectiveActive = accessRole === 'master' ? true : active;
+
       const normalizedForm: CreateEmployeeFormValues = {
         ...form,
         employeeId: employeeCode,
@@ -463,7 +476,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       if (isEditMode && employee) {
         const payload: Record<string, unknown> = buildEmployeeUpdatePayload({
           form: normalizedForm,
-          active,
+          active: effectiveActive,
           kioskEnabled: isWorkforce ? kioskEnabled : false,
           photoUrl: isWorkforce ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
@@ -542,8 +555,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           });
         }
 
-        if (active !== employee.active) {
-          await requestSyncEmployeeAuth(employee.id, active ? 'enable' : 'disable');
+        if (effectiveActive !== employee.active && accessRole !== 'master') {
+          await requestSyncEmployeeAuth(employee.id, effectiveActive ? 'enable' : 'disable');
         }
 
         void recordEmployeeAuditEvent({
@@ -996,7 +1009,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           </div>
         ) : null}
 
-        {isEditMode ? (
+        {isEditMode && accessRole !== 'master' ? (
           <div className="grid gap-4 md:grid-cols-2">
             <FormToggle
               label={isWorkforce ? 'Active employee' : 'Active account'}
@@ -1019,6 +1032,11 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
               />
             ) : null}
           </div>
+        ) : null}
+        {isEditMode && accessRole === 'master' ? (
+          <p className="rounded-lg border border-border bg-surface-base/50 px-3 py-2 text-xs text-subtle">
+            Master accounts stay active and cannot be deactivated.
+          </p>
         ) : null}
         {isWorkforce ? (
           <FormToggle

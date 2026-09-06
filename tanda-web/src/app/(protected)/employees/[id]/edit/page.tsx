@@ -8,6 +8,7 @@ import { EmployeeForm } from '@/components/employees/EmployeeForm';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { canEditStaffAccount } from '@/lib/employees/is-protected-admin';
 import { useEmployees } from '@/providers/EmployeesProvider';
 
 export default function EditEmployeePage() {
@@ -15,20 +16,39 @@ export default function EditEmployeePage() {
   const params = useParams();
   const employeeDocId = typeof params.id === 'string' ? params.id : '';
   const { employees, loading: employeesLoading } = useEmployees();
-  const { loading: accessLoading, canAccessModule, canPerformAction } = useAdminAccess();
+  const {
+    loading: accessLoading,
+    isMaster,
+    canAccessModule,
+    canPerformAction,
+  } = useAdminAccess();
   const canUpdate = canPerformAction('employees', 'update');
 
   const employee = employees.find((item) => item.id === employeeDocId) ?? null;
   const loading = employeesLoading || accessLoading;
+  const canEditThisAccount =
+    Boolean(employee) && canEditStaffAccount(isMaster, employee);
 
   useEffect(() => {
-    if (accessLoading) return;
+    if (accessLoading || employeesLoading) return;
     if (!canAccessModule('employees') || !canUpdate) {
       router.replace('/employees');
+      return;
     }
-  }, [accessLoading, canAccessModule, canUpdate, router]);
+    if (employee && !canEditStaffAccount(isMaster, employee)) {
+      router.replace('/employees');
+    }
+  }, [
+    accessLoading,
+    canAccessModule,
+    canUpdate,
+    employee,
+    employeesLoading,
+    isMaster,
+    router,
+  ]);
 
-  if (loading || !canUpdate) {
+  if (loading || !canUpdate || (employee && !canEditThisAccount)) {
     return (
       <PageContent>
         <LoadingIndicator message="Loading…" />

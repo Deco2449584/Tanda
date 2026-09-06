@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
+import { resolveRoleFromEmployee } from '@/lib/auth/resolve-role';
 import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
+import { COLLECTIONS } from '@/lib/constants';
 import {
   deleteEmployeeAuth,
   disableEmployeeAuth,
   enableEmployeeAuth,
 } from '@/lib/employees/sync-employee-auth';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 
 const ACTIONS = new Set(['disable', 'enable', 'delete']);
 
@@ -26,6 +29,28 @@ export async function POST(request: Request) {
 
     if (!employeeDocId || !ACTIONS.has(action)) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
+    }
+
+    const snapshot = await getAdminFirestore()
+      .collection(COLLECTIONS.EMPLOYEES)
+      .doc(employeeDocId)
+      .get();
+
+    if (!snapshot.exists) {
+      return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
+    }
+
+    const data = snapshot.data() ?? {};
+    const role = resolveRoleFromEmployee({
+      role: typeof data.role === 'string' ? data.role : undefined,
+      department: typeof data.department === 'string' ? data.department : undefined,
+    });
+
+    if (role === 'master' && (action === 'disable' || action === 'delete')) {
+      return NextResponse.json(
+        { error: 'Master accounts cannot be deactivated or deleted.' },
+        { status: 403 },
+      );
     }
 
     if (action === 'disable') {
