@@ -75,8 +75,8 @@ export function EmployeeIdCard({
         ) : displayId ? (
           <EmployeeIdDigits value={displayId} />
         ) : (
-          <p className="rounded-xl border border-amber-900/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
-            Your administrator has not assigned an employee ID yet.
+          <p className="text-sm text-muted">
+            Your employee ID will appear here once it has been assigned.
           </p>
         )}
       </div>

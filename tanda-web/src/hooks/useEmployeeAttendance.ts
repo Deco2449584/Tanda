@@ -70,16 +70,24 @@ export function useEmployeeAttendance({
 
     try {
       const recordsRef = collection(db, COLLECTIONS.ATTENDANCE_RECORDS);
-      const recordsQuery =
-        displayRange === 'all'
-          ? query(recordsRef, where('employeeId', '==', code))
-          : query(
-              recordsRef,
-              where('employeeId', '==', code),
-              where('timestampServer', '>=', getQueryStartTimestamp()),
-            );
+      let snapshot;
+      try {
+        const recordsQuery =
+          displayRange === 'all'
+            ? query(recordsRef, where('employeeId', '==', code))
+            : query(
+                recordsRef,
+                where('employeeId', '==', code),
+                where('timestampServer', '>=', getQueryStartTimestamp()),
+              );
+        snapshot = await getDocs(recordsQuery);
+      } catch (rangedError) {
+        console.warn('useEmployeeAttendance ranged query failed, falling back', rangedError);
+        snapshot = await getDocs(
+          query(recordsRef, where('employeeId', '==', code)),
+        );
+      }
 
-      const snapshot = await getDocs(recordsQuery);
       const mapped = snapshot.docs
         .map((document) => mapAttendanceDoc(document.id, document.data()))
         .sort((a, b) => {

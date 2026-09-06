@@ -128,7 +128,7 @@ function EmployeeWorkedShiftsView() {
       ) : null}
 
       {recordsError && employee && !recordsLoading ? (
-        <p className="rounded-xl border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
+        <p className="rounded-xl border border-border bg-surface-raised/60 px-4 py-3 text-sm text-muted">
           {recordsError}
         </p>
       ) : null}

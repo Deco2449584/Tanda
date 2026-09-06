@@ -64,17 +64,32 @@ export function useEmployeeShifts({
     setError('');
 
     try {
-      const snapshot = await getDocs(
-        query(
-          collection(db, COLLECTIONS.SHIFTS),
-          where('employeeId', '==', code),
-          where('date', '>=', minDate),
-          where('date', '<=', maxDate),
-        ),
-      );
-      setAllShifts(
-        snapshot.docs.map((document) => mapShiftDoc(document.id, document.data())),
-      );
+      let docs;
+      try {
+        const snapshot = await getDocs(
+          query(
+            collection(db, COLLECTIONS.SHIFTS),
+            where('employeeId', '==', code),
+            where('date', '>=', minDate),
+            where('date', '<=', maxDate),
+          ),
+        );
+        docs = snapshot.docs;
+      } catch (rangeError) {
+        // Composite index may be missing; fall back to employee-only query.
+        console.warn('useEmployeeShifts ranged query failed, falling back', rangeError);
+        const snapshot = await getDocs(
+          query(collection(db, COLLECTIONS.SHIFTS), where('employeeId', '==', code)),
+        );
+        docs = snapshot.docs.filter((document) => {
+          const date = normalizeInputDate(
+            typeof document.data().date === 'string' ? document.data().date : '',
+          );
+          return date && isDateInRange(date, minDate, maxDate);
+        });
+      }
+
+      setAllShifts(docs.map((document) => mapShiftDoc(document.id, document.data())));
     } catch (fetchError) {
       console.error('useEmployeeShifts', fetchError);
       setAllShifts([]);
