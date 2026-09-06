@@ -84,13 +84,13 @@ export default function MySettingsPage() {
             <p className="text-sm font-medium text-foreground">Push on this device</p>
             <p className="mt-1 text-xs text-subtle">
               {pushPermission === 'denied'
-                ? 'Notifications are blocked. Allow them in phone Settings → Apps → Time Tracker Pro → Notifications, then tap Enable.'
+                ? 'Notifications are blocked. Open phone Settings → Apps → Time Tracker → Notifications, allow them, then tap Enable again.'
                 : pushEnabled
                   ? 'Push alerts are on for this device.'
                   : 'Enable asks your phone for notification permission (Android / browser prompt).'}
             </p>
 
-            {pushEnabled ? (
+            {pushPermission === 'denied' ? null : pushEnabled ? (
               <button
                 type="button"
                 disabled={pushBusy}

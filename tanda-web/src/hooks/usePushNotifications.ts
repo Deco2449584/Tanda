@@ -174,11 +174,7 @@ export function usePushNotifications() {
       setPermission(result);
 
       if (result !== 'granted') {
-        setError(
-          result === 'denied'
-            ? 'Permission is blocked. Allow notifications in Settings → Apps → Time Tracker Pro → Notifications, then try Enable again.'
-            : 'Notification permission was not granted.',
-        );
+        setError('Notification permission was not granted.');
         setSubscribed(false);
         return false;
       }
