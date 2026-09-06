@@ -30,7 +30,6 @@ import {
 import { isKioskRole } from '@/lib/auth/roles';
 import type { UserRole } from '@/lib/auth/roles';
 import { auth } from '@/lib/firebase';
-import { disconnectKioskDeviceSession } from '@/lib/kiosk/disconnect-kiosk-device';
 import { releaseKioskSession } from '@/lib/kiosk/clear-kiosk-session';
 import { SessionSupersededDialog } from '@/components/auth/SessionSupersededDialog';
 
@@ -212,7 +211,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      await disconnectKioskDeviceSession();
       await releaseKioskSession();
       await releaseOwnedAuthSession();
       await signOut(auth);

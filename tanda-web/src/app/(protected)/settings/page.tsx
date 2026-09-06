@@ -11,7 +11,6 @@ import { LocalizationTab } from '@/components/settings/LocalizationTab';
 import { LocationsTab } from '@/components/settings/LocationsTab';
 import { DepartmentsTab } from '@/components/settings/DepartmentsTab';
 import { LocationGroupsTab } from '@/components/settings/LocationGroupsTab';
-import { KioskDevicesTab } from '@/components/settings/KioskDevicesTab';
 import { EmployeeCustomFieldsTab } from '@/components/settings/EmployeeCustomFieldsTab';
 import { NotificationsSettingsTab } from '@/components/settings/NotificationsSettingsTab';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
@@ -40,7 +39,6 @@ type SettingsTab =
   | 'locations'
   | 'departments'
   | 'locationGroups'
-  | 'kioskDevices'
   | 'employeeFields';
 
 const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey }[] = [
@@ -54,7 +52,6 @@ const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey
   { id: 'locations', label: 'Clients', section: 'locations' },
   { id: 'departments', label: 'Departments', section: 'departments' },
   { id: 'locationGroups', label: 'Location groups', section: 'locationGroups' },
-  { id: 'kioskDevices', label: 'Kiosk devices', section: 'kioskDevices' },
   { id: 'data', label: 'Data cleanup' },
 ];
 
@@ -232,7 +229,6 @@ export default function SettingsPage() {
           {activeTab === 'locationGroups' && (
             <LocationGroupsTab onToast={showToast} />
           )}
-          {activeTab === 'kioskDevices' && <KioskDevicesTab onToast={showToast} />}
         </div>
       )}
 

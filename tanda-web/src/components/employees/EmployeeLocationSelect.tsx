@@ -10,6 +10,8 @@ interface EmployeeLocationSelectProps {
   disabled?: boolean;
   required?: boolean;
   allowUnassigned?: boolean;
+  label?: string;
+  hint?: string;
   /** When set, only these location ids are shown (e.g. employee's site + group). */
   allowedLocationIds?: string[];
 }
@@ -21,6 +23,8 @@ export function EmployeeLocationSelect({
   disabled = false,
   required = false,
   allowUnassigned = false,
+  label = 'Location',
+  hint,
   allowedLocationIds,
 }: EmployeeLocationSelectProps) {
   const { activeLocations, locations, loading } = useLocations();
@@ -35,7 +39,7 @@ export function EmployeeLocationSelect({
   return (
     <div>
       <label htmlFor={id} className="mb-1.5 block text-sm text-muted">
-        Location
+        {label}
         {required ? <span className="text-red-400"> *</span> : null}
       </label>
       <select
@@ -69,6 +73,7 @@ export function EmployeeLocationSelect({
           ))
         )}
       </select>
+      {hint ? <p className="mt-1 text-xs text-subtle">{hint}</p> : null}
     </div>
   );
 }

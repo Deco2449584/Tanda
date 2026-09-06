@@ -29,9 +29,14 @@ import {
 } from '@/lib/geo/reverse-geocode';
 import { canEmployeePunchAtKiosk } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
-import { findKioskDeviceByToken } from '@/lib/kiosk/server/kiosk-devices-service';
+import {
+  assertLocationAllowedForOperator,
+  loadKioskAllowedLocations,
+  type KioskOperator,
+} from '@/lib/kiosk/server/kiosk-operator';
 import type { AttendanceType } from '@/lib/types/attendance';
 import type { AttendanceWorkState } from '@/lib/attendance/resolve-attendance-action';
+import type { KioskLocationOption } from '@/lib/types/kiosk-context';
 
 export interface KioskLookupResult {
   employeeDocId: string;
@@ -46,13 +51,14 @@ export interface KioskLookupResult {
 const PUNCH_MAX_ATTEMPTS = 3;
 
 export async function lookupKioskEmployee(input: {
-  deviceToken: string;
+  operator: KioskOperator;
+  locationId: string;
   employeePin: string;
 }): Promise<KioskLookupResult> {
-  const device = await requireActiveKioskDevice(input.deviceToken);
+  const location = await requireOperatorLocation(input.operator, input.locationId);
   const employee = await requireAuthorizedEmployee(
     input.employeePin,
-    device.locationId!,
+    location.id,
   );
 
   const employeeCode = employee.data.employeeId as string;
@@ -81,15 +87,15 @@ export async function lookupKioskEmployee(input: {
 
     if (violation) {
       await logAttendanceRestrictionBlocked({
-        actorEmail: device.createdBy ?? device.ownerEmail ?? 'kiosk@device',
+        actorEmail: input.operator.email,
         employeeId: employeeCode,
         employeeName: employee.data.name as string,
         channel: 'kiosk',
         violation,
         punchAt: new Date(),
         metadata: {
-          kioskDeviceId: device.id,
-          kioskDeviceName: device.name,
+          kioskOperatorEmployeeId: input.operator.employeeDocId,
+          kioskAccountName: input.operator.name,
           phase: 'lookup',
         },
       });
@@ -101,7 +107,7 @@ export async function lookupKioskEmployee(input: {
     const openCheckIn = findOpenCheckInRecord(fullRecords, settings.timeZone);
     const locationViolation = validateCheckoutSameLocationAsCheckIn({
       openCheckIn,
-      kioskLocationId: device.locationId!,
+      kioskLocationId: location.id,
     });
 
     if (locationViolation) {
@@ -121,7 +127,8 @@ export async function lookupKioskEmployee(input: {
 }
 
 export async function recordKioskPunch(input: {
-  deviceToken: string;
+  operator: KioskOperator;
+  locationId: string;
   employeePin: string;
   photoPath: string;
   photoUrl: string;
@@ -131,10 +138,10 @@ export async function recordKioskPunch(input: {
   geoAccuracy?: number;
   geoCapturedAt?: string;
 }): Promise<KioskLookupResult & { recordedAt: string }> {
-  const device = await requireActiveKioskDevice(input.deviceToken);
+  const location = await requireOperatorLocation(input.operator, input.locationId);
   const employee = await requireAuthorizedEmployee(
     input.employeePin,
-    device.locationId!,
+    location.id,
   );
 
   const employeeDocId = employee.id;
@@ -192,15 +199,15 @@ export async function recordKioskPunch(input: {
 
       if (violation) {
         await logAttendanceRestrictionBlocked({
-          actorEmail: device.createdBy ?? device.ownerEmail ?? 'kiosk@device',
+          actorEmail: input.operator.email,
           employeeId: employeeCode,
           employeeName,
           channel: 'kiosk',
           violation,
           punchAt,
           metadata: {
-            kioskDeviceId: device.id,
-            kioskDeviceName: device.name,
+            kioskOperatorEmployeeId: input.operator.employeeDocId,
+            kioskAccountName: input.operator.name,
           },
         });
         throw new KioskPunchError(violation.message, 403);
@@ -211,19 +218,13 @@ export async function recordKioskPunch(input: {
       const openCheckIn = findOpenCheckInRecord(fullRecords, timeZone);
       const locationViolation = validateCheckoutSameLocationAsCheckIn({
         openCheckIn,
-        kioskLocationId: device.locationId!,
+        kioskLocationId: location.id,
       });
 
       if (locationViolation) {
         throw new KioskPunchError(locationViolation.message, 403);
       }
     }
-
-    const locationDoc = await getAdminFirestore()
-      .collection(COLLECTIONS.LOCATIONS)
-      .doc(device.locationId!)
-      .get();
-    const locationData = locationDoc.data() ?? {};
 
     const geoFields: Record<string, unknown> = {};
     if (isValidLatitude(input.latitude) && isValidLongitude(input.longitude)) {
@@ -274,14 +275,13 @@ export async function recordKioskPunch(input: {
           photoCaptured: true,
           photoPath: input.photoPath,
           photoUrl: input.photoUrl,
-          locationId: device.locationId,
-          locationNameSnapshot:
-            typeof locationData.name === 'string' ? locationData.name : '',
-          locationCitySnapshot:
-            typeof locationData.city === 'string' ? locationData.city : '',
-          kioskDeviceId: device.id,
-          kioskDeviceNameSnapshot: device.name ?? '',
-          kioskDeviceType: device.type,
+          locationId: location.id,
+          locationNameSnapshot: location.name,
+          locationCitySnapshot: location.city,
+          kioskOperatorEmployeeId: input.operator.employeeDocId,
+          kioskAccountName: input.operator.name,
+          kioskDeviceNameSnapshot: input.operator.name,
+          kioskDeviceType: input.operator.isKioskAccount ? 'tablet' : 'mobile',
           ...(actionType === 'check_out' ? { breakWaived: false } : {}),
           ...geoFields,
         });
@@ -330,15 +330,18 @@ export async function recordKioskPunch(input: {
   };
 }
 
-async function requireActiveKioskDevice(token: string) {
-  const device = await findKioskDeviceByToken(token);
-  if (!device) {
-    throw new KioskPunchError('Device not registered.', 404);
+async function requireOperatorLocation(
+  operator: KioskOperator,
+  locationId: string,
+): Promise<KioskLocationOption> {
+  const { options } = await loadKioskAllowedLocations(operator);
+  if (options.length === 0) {
+    throw new KioskPunchError(
+      'This kiosk has no assigned client. Ask an administrator to set one.',
+      403,
+    );
   }
-  if (device.status !== 'active' || !device.locationId) {
-    throw new KioskPunchError('This kiosk is no longer active.', 403);
-  }
-  return device;
+  return assertLocationAllowedForOperator(locationId, options);
 }
 
 async function requireAuthorizedEmployee(employeePin: string, kioskLocationId: string) {
@@ -357,7 +360,7 @@ async function requireAuthorizedEmployee(employeePin: string, kioskLocationId: s
     throw new KioskPunchError('Invalid or unknown employee PIN.', 404);
   }
 
-  const employeeDoc = snapshot.docs[0];
+  const employeeDoc = snapshot.docs[0]!;
   const data = employeeDoc.data();
 
   if (data.active === false) {

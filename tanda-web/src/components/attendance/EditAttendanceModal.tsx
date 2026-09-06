@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Coffee, X } from 'lucide-react';
 import { updateAttendanceRecordRequest } from '@/lib/attendance/attendance-records-api';
 import { AttendanceMapLink } from '@/components/attendance/AttendanceMapLink';
@@ -14,10 +14,8 @@ import {
   formValuesToTimestamp,
   timestampToFormValues,
 } from '@/lib/attendance/format';
-import { fetchKioskDevices } from '@/lib/kiosk/fetch-kiosk-devices';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
-import type { KioskDevice } from '@/lib/types/kiosk-device';
 import type { Location } from '@/lib/types/location';
 
 interface EditAttendanceModalProps {
@@ -40,8 +38,6 @@ export function EditAttendanceModal({
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [locationId, setLocationId] = useState('');
-  const [kioskDeviceId, setKioskDeviceId] = useState('');
-  const [kioskDevices, setKioskDevices] = useState<KioskDevice[]>([]);
   const [breakWaived, setBreakWaived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -56,55 +52,9 @@ export function EditAttendanceModal({
     setDate(formValues.date);
     setTime(formValues.time);
     setLocationId(record.locationId ?? '');
-    setKioskDeviceId(record.kioskDeviceId ?? '');
     setBreakWaived(record.breakWaived === true);
     setError('');
   }, [record]);
-
-  useEffect(() => {
-    if (!record) return;
-
-    let cancelled = false;
-
-    void fetchKioskDevices()
-      .then((devices) => {
-        if (!cancelled) setKioskDevices(devices);
-      })
-      .catch(() => {
-        if (!cancelled) setKioskDevices([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [record]);
-
-  const kioskOptions = useMemo(() => {
-    const active = kioskDevices.filter((device) => device.status === 'active');
-    const currentId = record?.kioskDeviceId?.trim();
-    const currentName = record?.kioskDeviceNameSnapshot?.trim();
-
-    if (
-      currentId &&
-      !active.some((device) => device.id === currentId) &&
-      currentName
-    ) {
-      return [
-        ...active,
-        {
-          id: currentId,
-          name: currentName,
-          status: 'revoked' as const,
-          type: record?.kioskDeviceType ?? 'tablet',
-          locationId: '',
-          hasLockPin: false,
-          createdAt: '',
-        },
-      ];
-    }
-
-    return active;
-  }, [kioskDevices, record]);
 
   if (!record) return null;
 
@@ -129,7 +79,6 @@ export function EditAttendanceModal({
 
     const selectedLocation = activeLocations.find((item) => item.id === locationId);
     const timestampMs = formValuesToTimestamp(date, time).toMillis();
-    const selectedKiosk = kioskOptions.find((device) => device.id === kioskDeviceId);
 
     const payload: Record<string, unknown> = {
       type,
@@ -138,9 +87,6 @@ export function EditAttendanceModal({
       locationNameSnapshot: selectedLocation ? selectedLocation.name : null,
       locationCitySnapshot: selectedLocation?.city ?? null,
       breakWaived: type === 'check_out' ? breakWaived : null,
-      kioskDeviceId: selectedKiosk ? selectedKiosk.id : null,
-      kioskDeviceNameSnapshot: selectedKiosk ? selectedKiosk.name : null,
-      kioskDeviceType: selectedKiosk ? selectedKiosk.type : null,
     };
 
     setSaving(true);
@@ -256,25 +202,15 @@ export function EditAttendanceModal({
             </select>
           </div>
 
-          <div>
-            <label htmlFor="record-kiosk" className="mb-1.5 block text-sm text-muted">
-              Kiosk
-            </label>
-            <select
-              id="record-kiosk"
-              value={kioskDeviceId}
-              onChange={(e) => setKioskDeviceId(e.target.value)}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            >
-              <option value="">No kiosk</option>
-              {kioskOptions.map((device) => (
-                <option key={device.id} value={device.id}>
-                  {device.name}
-                  {device.status !== 'active' ? ' (inactive)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          {record.kioskAccountName ? (
+            <p className="text-xs text-subtle">
+              Recorded on kiosk: {record.kioskAccountName}
+            </p>
+          ) : record.kioskDeviceNameSnapshot ? (
+            <p className="text-xs text-subtle">
+              Recorded on kiosk: {record.kioskDeviceNameSnapshot}
+            </p>
+          ) : null}
 
           {type === 'check_out' && attendanceBreak.enabled ? (
             <button

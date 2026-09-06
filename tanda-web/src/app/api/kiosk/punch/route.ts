@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getKioskDeviceTokenFromRequest } from '@/lib/kiosk/server/device-token';
+import { KioskAccessError, requireKioskOperator } from '@/lib/kiosk/server/kiosk-operator';
 import { KioskPunchError, recordKioskPunch } from '@/lib/kiosk/server/punch-service';
 
 export async function POST(request: Request) {
   try {
-    const token = getKioskDeviceTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Device token is required.' }, { status: 401 });
-    }
-
+    const operator = await requireKioskOperator(request);
     const body = (await request.json()) as {
       employeePin?: string;
+      locationId?: string;
       photoPath?: string;
       photoUrl?: string;
       actionType?: string;
@@ -36,7 +33,8 @@ export async function POST(request: Request) {
     }
 
     const result = await recordKioskPunch({
-      deviceToken: token,
+      operator,
+      locationId: body.locationId?.trim() ?? '',
       employeePin,
       photoPath,
       photoUrl,
@@ -49,7 +47,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof KioskPunchError) {
+    if (error instanceof KioskAccessError || error instanceof KioskPunchError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error('POST /api/kiosk/punch', error);

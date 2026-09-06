@@ -1,10 +1,10 @@
-import { clearKioskLocalCache } from '@/lib/kiosk/device-token';
+import { clearStoredKioskLocationId } from '@/lib/kiosk/active-location';
 import { clearKioskModeActive } from '@/lib/kiosk/kiosk-lock-state';
 import { exitKioskFullscreen } from '@/lib/pwa/kiosk-display';
 
-/** Clears kiosk local storage and exits fullscreen punch mode. */
+/** Clears kiosk local state and exits fullscreen punch mode. */
 export async function releaseKioskSession(): Promise<void> {
-  clearKioskLocalCache();
+  clearStoredKioskLocationId();
   clearKioskModeActive();
   await exitKioskFullscreen();
 }

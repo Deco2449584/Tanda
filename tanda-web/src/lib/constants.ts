@@ -9,6 +9,7 @@ export const COLLECTIONS = {
   DEPARTMENTS: 'departments',
   LOCATION_GROUPS: 'location_groups',
   KIOSK_DEVICES: 'kiosk_devices',
+  KIOSK_LOGIN_LOGS: 'kiosk_login_logs',
   NOTIFICATIONS: 'notifications',
   NOTIFICATION_PREFERENCES: 'notification_preferences',
   ATTENDANCE_JUSTIFICATIONS: 'attendance_justifications',

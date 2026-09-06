@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, MapPin } from 'lucide-react';
+import { LogOut, MapPin, Settings } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/images/storage-upload';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import { KioskClock } from '@/components/kiosk/KioskClock';
@@ -14,8 +14,7 @@ import {
   type KioskSuccessData,
 } from '@/components/kiosk/KioskSuccessModal';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { kioskDeviceHeaders } from '@/lib/kiosk/device-token';
-import type { KioskDeviceSession } from '@/lib/types/kiosk-device';
+import { getKioskAuthHeaders } from '@/lib/kiosk/kiosk-auth-headers';
 import type { AttendanceType } from '@/lib/types/attendance';
 
 type KioskStep = 'pin' | 'choose' | 'camera' | 'success';
@@ -31,14 +30,18 @@ interface KioskSession {
 }
 
 interface KioskScreenProps {
-  deviceSession: KioskDeviceSession;
+  locationId: string;
+  locationLabel: string;
   onExit?: () => void;
+  onOpenSettings?: () => void;
   exitLabel?: string;
 }
 
 export function KioskScreen({
-  deviceSession,
+  locationId,
+  locationLabel,
   onExit,
+  onOpenSettings,
   exitLabel = 'Exit',
 }: KioskScreenProps) {
   const [step, setStep] = useState<KioskStep>('pin');
@@ -49,10 +52,7 @@ export function KioskScreen({
   const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const warehouseLabel =
-    deviceSession.locationName && deviceSession.locationCity
-      ? `${deviceSession.locationName} (${deviceSession.locationCity})`
-      : deviceSession.locationName || 'Assigned warehouse';
+  const warehouseLabel = locationLabel || 'Assigned client';
 
   const resetToPin = useCallback(() => {
     setSuccessData((current) => {
@@ -94,8 +94,8 @@ export function KioskScreen({
       try {
         const response = await fetch('/api/kiosk/lookup', {
           method: 'POST',
-          headers: kioskDeviceHeaders(),
-          body: JSON.stringify({ employeePin: value }),
+          headers: await getKioskAuthHeaders(),
+          body: JSON.stringify({ employeePin: value, locationId }),
         });
 
         const data = (await response.json().catch(() => null)) as
@@ -141,7 +141,7 @@ export function KioskScreen({
         setLoading(false);
       }
     },
-    [showError],
+    [locationId, showError],
   );
 
   const handleDigit = (digit: string) => {
@@ -178,9 +178,10 @@ export function KioskScreen({
 
           const response = await fetch('/api/kiosk/punch', {
             method: 'POST',
-            headers: kioskDeviceHeaders(),
+            headers: await getKioskAuthHeaders(),
             body: JSON.stringify({
               employeePin: params.employeePin,
+              locationId,
               photoPath,
               photoUrl,
               actionType: params.actionType,
@@ -211,7 +212,7 @@ export function KioskScreen({
         }
       })();
     },
-    [showError],
+    [locationId, showError],
   );
 
   const handleCapture = (imageBlob: Blob, previewDataUrl: string) => {
@@ -247,6 +248,16 @@ export function KioskScreen({
       ) : null}
 
       <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center gap-2">
+        {onOpenSettings ? (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="Kiosk settings"
+            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-black/30 p-2 text-zinc-300 backdrop-blur transition hover:text-white"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
         {onExit ? (
           <button
             type="button"

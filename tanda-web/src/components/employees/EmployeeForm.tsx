@@ -334,6 +334,11 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         setError('Passwords do not match.');
         return;
       }
+
+      if (!form.locationId?.trim() && !form.locationGroupId?.trim()) {
+        setError('Assign a client or a location group to this kiosk account.');
+        return;
+      }
     }
 
     if (!isKiosk && activeLocations.length > 0 && !form.locationId?.trim()) {
@@ -420,8 +425,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         department: isKiosk ? 'Kiosk' : form.department.trim(),
         startDate: isKiosk ? undefined : form.startDate,
         endDate: isKiosk ? undefined : form.endDate,
-        locationId: isKiosk ? '' : form.locationId,
-        locationGroupId: isKiosk ? '' : form.locationGroupId,
+        locationId: form.locationId,
+        locationGroupId: form.locationGroupId,
       };
 
       if (isEditMode && employee) {
@@ -826,23 +831,35 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             </div>
           ) : null}
 
+          <EmployeeLocationSelect
+            id="emp-location"
+            value={form.locationId ?? ''}
+            onChange={(locationId) => patchForm({ locationId })}
+            disabled={isBusy}
+            required={!isKiosk && activeLocations.length > 0}
+            allowUnassigned={isKiosk}
+            label={isKiosk ? 'Client' : 'Location'}
+            hint={
+              isKiosk
+                ? 'Default client for punches. Required unless a location group is assigned.'
+                : undefined
+            }
+          />
+
+          <EmployeeLocationGroupSelect
+            id="emp-location-group"
+            value={form.locationGroupId ?? ''}
+            onChange={(locationGroupId) => patchForm({ locationGroupId })}
+            disabled={isBusy}
+            hint={
+              isKiosk
+                ? 'If assigned, this tablet can switch between group clients from kiosk settings.'
+                : undefined
+            }
+          />
+
           {!isKiosk ? (
             <>
-              <EmployeeLocationSelect
-                id="emp-location"
-                value={form.locationId ?? ''}
-                onChange={(locationId) => patchForm({ locationId })}
-                disabled={isBusy}
-                required={activeLocations.length > 0}
-              />
-
-              <EmployeeLocationGroupSelect
-                id="emp-location-group"
-                value={form.locationGroupId ?? ''}
-                onChange={(locationGroupId) => patchForm({ locationGroupId })}
-                disabled={isBusy}
-              />
-
               <FormField label="Start date" htmlFor="emp-start-date" required>
                 <input
                   id="emp-start-date"

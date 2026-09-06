@@ -9,6 +9,7 @@ interface EmployeeLocationGroupSelectProps {
   onChange: (locationGroupId: string) => void;
   disabled?: boolean;
   id?: string;
+  hint?: string;
 }
 
 export function EmployeeLocationGroupSelect({
@@ -16,6 +17,7 @@ export function EmployeeLocationGroupSelect({
   onChange,
   disabled = false,
   id = 'employee-location-group',
+  hint,
 }: EmployeeLocationGroupSelectProps) {
   const { activeGroups, groups } = useLocationGroups();
   const { locations } = useLocations();
@@ -33,16 +35,18 @@ export function EmployeeLocationGroupSelect({
         disabled={disabled || options.length === 0}
         className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
       >
-        <option value="">No group — primary site only</option>
+        <option value="">No group — primary client only</option>
         {options.map((group) => (
           <option key={group.id} value={group.id}>
             {group.name} — {formatLocationGroupSites(group, locations)}
           </option>
         ))}
       </select>
-      {options.length === 0 ? (
+      {hint ? (
+        <p className="mt-1 text-xs text-subtle">{hint}</p>
+      ) : options.length === 0 ? (
         <p className="mt-1 text-xs text-subtle">
-          Groups are optional. Assign a primary location above.
+          Groups are optional. Assign a primary client above.
         </p>
       ) : null}
     </div>

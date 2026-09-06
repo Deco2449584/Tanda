@@ -209,8 +209,8 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         <OptionRow
           checked={options.kioskDevices}
           onChange={() => toggleOption('kioskDevices')}
-          label="Kiosk devices (Firestore)"
-          hint="Registered tablets and approval state — re-pair after purge"
+          label="Legacy kiosk_devices collection (orphaned)"
+          hint="Old tablet approval records. Kiosk access is now on employee accounts."
         />
         <OptionRow
           checked={options.locationGroups}
@@ -320,7 +320,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
                 <p>Legacy portal clients removed: {result.portalClientsDeleted}</p>
               ) : null}
               {result.kioskDevicesDeleted > 0 ? (
-                <p>Kiosk devices removed: {result.kioskDevicesDeleted}</p>
+                <p>Legacy kiosk devices removed: {result.kioskDevicesDeleted}</p>
               ) : null}
               {result.locationGroupsDeleted > 0 ? (
                 <p>Location groups removed: {result.locationGroupsDeleted}</p>

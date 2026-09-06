@@ -251,8 +251,13 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // 10. Dispositivos kiosk — solo Admin SDK (API routes)
+    // 10. Legacy kiosk_devices (orphaned after auth-based kiosk) — Admin SDK only
     match /kiosk_devices/{deviceId} {
+      allow read, write: if false;
+    }
+
+    // 10b. Kiosk login history — Admin SDK only
+    match /kiosk_login_logs/{logId} {
       allow read, write: if false;
     }
 

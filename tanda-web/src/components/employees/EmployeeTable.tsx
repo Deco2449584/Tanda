@@ -18,10 +18,6 @@ import { useEmployees } from '@/providers/EmployeesProvider';
 import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
 
-function formatHourlyRate(rate: number): string {
-  return `$${rate.toFixed(2)}/hr`;
-}
-
 interface EmployeeTableProps {
   employees: Employee[];
   loading: boolean;
@@ -149,16 +145,13 @@ export function EmployeeTable({
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
       <div className="hidden overflow-x-auto scrollbar-modern md:block">
-        <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[860px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-primary/25 bg-primary/10">
               <th className="px-4 py-3.5 font-semibold text-white">Photo</th>
               <th className="px-4 py-3.5 font-semibold text-white">Employee ID</th>
               <th className="px-4 py-3.5 font-semibold text-white">Full Name</th>
               <th className="px-4 py-3.5 font-semibold text-white">Email</th>
-              <th className="px-4 py-3.5 font-semibold text-white">
-                Hourly Rate (Pay)
-              </th>
               <th className="px-4 py-3.5 font-semibold text-white">Area/Dept</th>
               <th className="px-4 py-3.5 font-semibold text-white">Location</th>
               <th className="px-4 py-3.5 font-semibold text-white">Status</th>
@@ -170,7 +163,7 @@ export function EmployeeTable({
           <tbody>
             {filteredEmployees.length === 0 ? (
               <tr>
-                <td colSpan={showActions ? 9 : 8} className="px-4 py-12 text-center text-subtle">
+                <td colSpan={showActions ? 8 : 7} className="px-4 py-12 text-center text-subtle">
                   {emptyMessage}
                 </td>
               </tr>
@@ -196,9 +189,6 @@ export function EmployeeTable({
                     {employee.name}
                   </td>
                   <td className="px-4 py-3.5 text-muted">{employee.email}</td>
-                  <td className="px-4 py-3.5 font-semibold text-white">
-                    {formatHourlyRate(employee.hourlyRate ?? 0)}
-                  </td>
                   <td className="px-4 py-3.5 text-muted">
                     {employee.department || '—'}
                   </td>
@@ -264,7 +254,6 @@ export function EmployeeTable({
               employee.employeeId || null,
               employee.department || null,
               locationLabel !== '—' ? locationLabel : null,
-              formatHourlyRate(employee.hourlyRate ?? 0),
             ].filter(Boolean);
 
             return (

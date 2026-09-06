@@ -47,6 +47,12 @@ export function mapAttendanceDoc(
       record.kioskDeviceType === 'tablet' || record.kioskDeviceType === 'mobile'
         ? record.kioskDeviceType
         : undefined,
+    kioskOperatorEmployeeId:
+      typeof record.kioskOperatorEmployeeId === 'string'
+        ? record.kioskOperatorEmployeeId
+        : undefined,
+    kioskAccountName:
+      typeof record.kioskAccountName === 'string' ? record.kioskAccountName : undefined,
     latitude: typeof record.latitude === 'number' ? record.latitude : undefined,
     longitude: typeof record.longitude === 'number' ? record.longitude : undefined,
     geoAccuracy:
