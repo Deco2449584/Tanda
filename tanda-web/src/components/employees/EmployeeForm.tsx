@@ -138,6 +138,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [active, setActive] = useState(true);
   const [kioskEnabled, setKioskEnabled] = useState(false);
   const [continentalInspectEnabled, setContinentalInspectEnabled] = useState(false);
+  const [continentalInspectAdmin, setContinentalInspectAdmin] = useState(false);
   const { roles: adminRoleTemplates } = useAdminRoleTemplates(
     isMaster && accessRole === 'admin',
   );
@@ -196,6 +197,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     setActive(employee.active);
     setKioskEnabled(employee.kioskEnabled === true);
     setContinentalInspectEnabled(employee.continentalInspectEnabled === true);
+    setContinentalInspectAdmin(employee.continentalInspectAdmin === true);
     setEmployeeIdEdited(true);
     setPhotoFile(null);
     setPassportFile(null);
@@ -482,6 +484,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           active: effectiveActive,
           kioskEnabled: isWorkforce ? kioskEnabled : false,
           continentalInspectEnabled: isWorkforce ? continentalInspectEnabled : false,
+          continentalInspectAdmin: isWorkforce
+            ? continentalInspectEnabled && continentalInspectAdmin
+            : false,
           photoUrl: isWorkforce ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
           visa: isWorkforce ? visa : undefined,
@@ -590,6 +595,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           visa: isWorkforce ? visa : undefined,
           continentalInspectEnabled: isWorkforce
             ? continentalInspectEnabled
+            : false,
+          continentalInspectAdmin: isWorkforce
+            ? continentalInspectEnabled && continentalInspectAdmin
             : false,
         });
 
@@ -1044,7 +1052,19 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
                 label="Continental Inspect access"
                 description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."
                 checked={continentalInspectEnabled}
-                onChange={setContinentalInspectEnabled}
+                onChange={(checked) => {
+                  setContinentalInspectEnabled(checked);
+                  if (!checked) setContinentalInspectAdmin(false);
+                }}
+                disabled={isBusy}
+              />
+            ) : null}
+            {isWorkforce && continentalInspectEnabled ? (
+              <FormToggle
+                label="Continental Inspect admin"
+                description="Admin can export CSV reports, edit inspections, and register cargo for any client."
+                checked={continentalInspectAdmin}
+                onChange={setContinentalInspectAdmin}
                 disabled={isBusy}
               />
             ) : null}
@@ -1052,17 +1072,32 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         ) : null}
         {isEditMode && accessRole === 'master' ? (
           <p className="rounded-lg border border-border bg-surface-base/50 px-3 py-2 text-xs text-subtle">
-            Master accounts stay active and cannot be deactivated.
+            Master accounts stay active and cannot be deactivated. In Continental
+            Inspect they always have admin powers and can select any client.
           </p>
         ) : null}
         {!isEditMode && isWorkforce ? (
-          <FormToggle
-            label="Continental Inspect access"
-            description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."
-            checked={continentalInspectEnabled}
-            onChange={setContinentalInspectEnabled}
-            disabled={isBusy}
-          />
+          <>
+            <FormToggle
+              label="Continental Inspect access"
+              description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."
+              checked={continentalInspectEnabled}
+              onChange={(checked) => {
+                setContinentalInspectEnabled(checked);
+                if (!checked) setContinentalInspectAdmin(false);
+              }}
+              disabled={isBusy}
+            />
+            {continentalInspectEnabled ? (
+              <FormToggle
+                label="Continental Inspect admin"
+                description="Admin can export CSV reports, edit inspections, and register cargo for any client."
+                checked={continentalInspectAdmin}
+                onChange={setContinentalInspectAdmin}
+                disabled={isBusy}
+              />
+            ) : null}
+          </>
         ) : null}
         {isWorkforce ? (
           <FormToggle

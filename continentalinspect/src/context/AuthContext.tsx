@@ -64,6 +64,7 @@ function employeeRecordChanged(
   return (
     current.active !== record.active ||
     current.continentalInspectEnabled !== record.continentalInspectEnabled ||
+    current.continentalInspectAdmin !== record.continentalInspectAdmin ||
     current.name !== record.name ||
     current.department !== record.department ||
     current.employeeId !== record.employeeId ||

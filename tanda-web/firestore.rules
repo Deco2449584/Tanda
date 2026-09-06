@@ -14,6 +14,7 @@ service cloud.firestore {
           'active',
           'kioskEnabled',
           'continentalInspectEnabled',
+          'continentalInspectAdmin',
           'lastAction',
           'lastTimestampServer',
           'department',
@@ -53,6 +54,10 @@ service cloud.firestore {
         (
           !('continentalInspectEnabled' in request.resource.data) ||
           request.resource.data.continentalInspectEnabled is bool
+        ) &&
+        (
+          !('continentalInspectAdmin' in request.resource.data) ||
+          request.resource.data.continentalInspectAdmin is bool
         ) &&
         (
           !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
@@ -100,6 +105,10 @@ service cloud.firestore {
           request.resource.data.continentalInspectEnabled is bool
         ) &&
         (
+          !('continentalInspectAdmin' in request.resource.data) ||
+          request.resource.data.continentalInspectAdmin is bool
+        ) &&
+        (
           !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
           request.resource.data.allowCheckInWithoutScheduledShift is bool
         ) &&
@@ -112,6 +121,7 @@ service cloud.firestore {
           'active',
           'kioskEnabled',
           'continentalInspectEnabled',
+          'continentalInspectAdmin',
           'allowCheckInWithoutScheduledShift',
           'locationId',
           'locationGroupId',

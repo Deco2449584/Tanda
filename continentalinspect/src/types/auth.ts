@@ -5,6 +5,8 @@ export type EmployeeRecord = {
   email: string;
   active: boolean;
   continentalInspectEnabled: boolean;
+  /** TimeTracker toggle: Inspect admin (export, edit, all clients). */
+  continentalInspectAdmin?: boolean;
   name: string;
   department: string;
   employeeId: string;

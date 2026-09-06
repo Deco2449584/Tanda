@@ -10,6 +10,7 @@ import {
   PDF_PORTAL_NAVY,
   PDF_PORTAL_NAVY_LIGHT,
 } from '@/theme/pdfBrand';
+import { PDF_LOGO_PNG_BASE64 } from '@/theme/pdfLogoBase64';
 import type { CargoInspection } from '@/types';
 import { getInspectionDisplayBadge } from '@/utils/cargoInspectionStatus';
 import { getConservationLabel } from '@/utils/cargoLabels';
@@ -22,7 +23,7 @@ const SURFACE = '#F8FAFC';
 const ALERT_RED = '#B91C1C';
 const ALERT_RED_BG = '#FEF2F2';
 
-const LOGO_MODULE = require('../../assets/brand/logo-horizontal.png');
+const LOGO_MODULE = require('../../assets/brand/logo-horizontal-pdf.png');
 
 function escapeHtml(value: string): string {
   return value
@@ -96,21 +97,23 @@ function statusClassForBadge(kind: 'attention' | 'warehouse' | 'truck'): string 
   return 'status-ok';
 }
 
-async function resolveLogoDataUrl(): Promise<string | null> {
+async function resolveLogoDataUrl(): Promise<string> {
   try {
     const asset = Asset.fromModule(LOGO_MODULE);
     await asset.downloadAsync();
     const uri = asset.localUri ?? asset.uri;
-    if (!uri) {
-      return null;
+    if (uri) {
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      if (base64?.length) {
+        return `data:image/png;base64,${base64}`;
+      }
     }
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    return `data:image/png;base64,${base64}`;
   } catch {
-    return null;
+    // Fall through to embedded logo — Asset/FS can fail in some release builds.
   }
+  return `data:image/png;base64,${PDF_LOGO_PNG_BASE64}`;
 }
 
 async function resolvePhotoSourceForPdf(url: string, index: number): Promise<string> {
@@ -150,7 +153,7 @@ async function resolvePhotoSourcesForPdf(urls: readonly string[]): Promise<strin
 function buildInspectionHtml(
   inspection: CargoInspection,
   photoSources: readonly string[],
-  logoDataUrl: string | null,
+  logoDataUrl: string,
 ): string {
   const photoCount = inspection.photoEvidence?.length ?? 0;
   const videoCount = inspection.videoEvidence?.length ?? 0;
@@ -162,9 +165,7 @@ function buildInspectionHtml(
   const statusLabel = displayBadge.label;
   const statusClass = statusClassForBadge(displayBadge.kind);
 
-  const logoHtml = logoDataUrl
-    ? `<img src="${escapeAttr(logoDataUrl)}" alt="${escapeAttr(brand.name)}" class="header-logo" />`
-    : `<div class="header-logo-text">${escapeHtml(brand.name)}</div>`;
+  const logoHtml = `<img src="${escapeAttr(logoDataUrl)}" alt="${escapeAttr(brand.name)}" class="header-logo" />`;
 
   const issueAlert = inspection.hasIssues
     ? `<div class="issue-alert">

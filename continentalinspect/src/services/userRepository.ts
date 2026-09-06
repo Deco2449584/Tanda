@@ -63,6 +63,7 @@ function parseEmployeeRecord(raw: Record<string, unknown>): EmployeeRecord | nul
     email,
     active: raw.active === true,
     continentalInspectEnabled: raw.continentalInspectEnabled === true,
+    continentalInspectAdmin: raw.continentalInspectAdmin === true,
     name: typeof raw.name === 'string' ? raw.name.trim() : '',
     department: typeof raw.department === 'string' ? raw.department.trim() : '',
     employeeId: typeof raw.employeeId === 'string' ? raw.employeeId.trim() : '',
@@ -89,11 +90,17 @@ export function hasContinentalInspectAccess(record: EmployeeRecord): boolean {
   return record.continentalInspectEnabled === true;
 }
 
-/** Admin if department is logistica/admin or email is in EXPO_PUBLIC_ADMIN_EMAILS. */
+/** Admin: master, Inspect-admin flag, email allowlist, or logistics/admin department. */
 export function resolveRoleFromEmployee(
-  employee: Pick<EmployeeRecord, 'department'> | null | undefined,
+  employee:
+    | Pick<EmployeeRecord, 'department' | 'workforceRole' | 'continentalInspectAdmin'>
+    | null
+    | undefined,
   email: string | null | undefined,
 ): UserRole {
+  const workforceRole = employee?.workforceRole?.trim().toLowerCase() ?? '';
+  if (workforceRole === 'master') return 'admin';
+  if (employee?.continentalInspectAdmin === true) return 'admin';
   if (isAdminEmail(email)) return 'admin';
   const dept = employee?.department?.toLowerCase().trim() ?? '';
   if (ADMIN_DEPARTMENTS.has(dept)) return 'admin';
