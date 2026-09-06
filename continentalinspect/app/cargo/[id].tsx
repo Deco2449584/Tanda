@@ -620,6 +620,34 @@ export default function CargoDetailScreen() {
               ) : null}
               <DetailRow label="AWB" value={inspection.awbNumber} styles={styles} />
               <DetailRow label="Food type" value={inspection.foodType} styles={styles} />
+              {typeof inspection.temperatureCelsius === 'number' ? (
+                <DetailRow
+                  label="Temperature"
+                  value={`${inspection.temperatureCelsius} °C`}
+                  styles={styles}
+                />
+              ) : null}
+              {inspection.exitVehiclePlate?.trim() ? (
+                <DetailRow
+                  label="Exit vehicle plate"
+                  value={inspection.exitVehiclePlate.trim()}
+                  styles={styles}
+                />
+              ) : null}
+              {inspection.driverName?.trim() ? (
+                <DetailRow
+                  label="Driver name"
+                  value={inspection.driverName.trim()}
+                  styles={styles}
+                />
+              ) : null}
+              {inspection.transportCompany?.trim() ? (
+                <DetailRow
+                  label="Transport company"
+                  value={inspection.transportCompany.trim()}
+                  styles={styles}
+                />
+              ) : null}
               {typeof inspection.registeredLatitude === 'number' &&
               typeof inspection.registeredLongitude === 'number' ? (
                 <DetailRow
@@ -651,9 +679,14 @@ export default function CargoDetailScreen() {
                   </Pressable>
                 </View>
               ) : null}
+              <DetailRow
+                label="Registered at"
+                value={formatInspectionDate(inspection.registeredAt)}
+                styles={styles}
+              />
               {inspection.dispatchedAt ? (
                 <DetailRow
-                  label="Dispatched on truck"
+                  label="Loaded on truck at"
                   value={formatInspectionDate(inspection.dispatchedAt)}
                   styles={styles}
                 />
@@ -672,6 +705,11 @@ export default function CargoDetailScreen() {
                 </View>
                 <Text style={styles.cardHeaderTitle}>Issue report</Text>
               </View>
+              {inspection.issueReportedAt ? (
+                <Text style={styles.heroMeta}>
+                  Reported {formatInspectionDate(inspection.issueReportedAt)}
+                </Text>
+              ) : null}
               <Text style={styles.issueText}>
                 {inspection.issueDescription?.trim() || 'No description provided.'}
               </Text>

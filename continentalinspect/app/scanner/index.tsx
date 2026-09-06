@@ -75,6 +75,15 @@ function parseBoxCount(value: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
+/** Empty → undefined (optional). Invalid text → null for validation. */
+function parseOptionalTemperature(value: string): number | undefined | null {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const n = parseFloat(trimmed.replace(',', '.'));
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
+
 export default function CargoInspectionFormScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -97,6 +106,7 @@ export default function CargoInspectionFormScreen() {
   const [form, setForm] = useState<FormState>({ ...EMPTY_CARGO_INSPECTION_INPUT });
   const [weightText, setWeightText] = useState('0');
   const [boxCountText, setBoxCountText] = useState('0');
+  const [temperatureText, setTemperatureText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -116,6 +126,7 @@ export default function CargoInspectionFormScreen() {
     setForm({ ...EMPTY_CARGO_INSPECTION_INPUT });
     setWeightText('0');
     setBoxCountText('0');
+    setTemperatureText('');
     setEditingId(null);
   }, []);
 
@@ -177,6 +188,7 @@ export default function CargoInspectionFormScreen() {
       boxCount: existing.boxCount,
       hasIssues: existing.hasIssues,
       issueDescription: existing.issueDescription ?? '',
+      issueReportedAt: existing.issueReportedAt,
       photoEvidence: [...existing.photoEvidence],
       videoEvidence: [...existing.videoEvidence],
       clientLocationId: existing.clientLocationId ?? '',
@@ -187,9 +199,18 @@ export default function CargoInspectionFormScreen() {
       registeredAccuracyMeters: existing.registeredAccuracyMeters,
       registeredLocationAt: existing.registeredLocationAt,
       registeredMapsUrl: existing.registeredMapsUrl,
+      temperatureCelsius: existing.temperatureCelsius,
+      exitVehiclePlate: existing.exitVehiclePlate ?? '',
+      driverName: existing.driverName ?? '',
+      transportCompany: existing.transportCompany ?? '',
     });
     setWeightText(String(existing.weightKg));
     setBoxCountText(String(existing.boxCount));
+    setTemperatureText(
+      typeof existing.temperatureCelsius === 'number'
+        ? String(existing.temperatureCelsius)
+        : '',
+    );
   }, [editId, isAdmin, inspections, inspectionsLoading, router]);
 
   const openScanner = useCallback(async () => {
@@ -360,6 +381,16 @@ export default function CargoInspectionFormScreen() {
       return null;
     }
 
+    const temperatureCelsius = parseOptionalTemperature(temperatureText);
+    if (temperatureCelsius === null) {
+      Alert.alert('Temperature', 'Enter a valid temperature in °C, or leave the field empty.');
+      return null;
+    }
+
+    const exitVehiclePlate = form.exitVehiclePlate?.trim() ?? '';
+    const driverName = form.driverName?.trim() ?? '';
+    const transportCompany = form.transportCompany?.trim() ?? '';
+
     return {
       unitType,
       uldId,
@@ -370,11 +401,16 @@ export default function CargoInspectionFormScreen() {
       boxCount: parseBoxCount(boxCountText),
       hasIssues: form.hasIssues,
       issueDescription: form.hasIssues ? form.issueDescription?.trim() ?? '' : '',
+      issueReportedAt: form.issueReportedAt,
       photoEvidence: form.photoEvidence,
       videoEvidence: form.videoEvidence,
       clientLocationId,
       clientLocationName,
       portalClientId: clientLocationId,
+      ...(typeof temperatureCelsius === 'number' ? { temperatureCelsius } : {}),
+      ...(exitVehiclePlate ? { exitVehiclePlate } : { exitVehiclePlate: '' }),
+      ...(driverName ? { driverName } : { driverName: '' }),
+      ...(transportCompany ? { transportCompany } : { transportCompany: '' }),
     };
   };
 
@@ -749,6 +785,17 @@ export default function CargoInspectionFormScreen() {
               </View>
             </View>
 
+            <FormField label="Temperature (°C) — optional">
+              <TextInput
+                style={styles.input}
+                value={temperatureText}
+                onChangeText={setTemperatureText}
+                keyboardType="decimal-pad"
+                placeholder="e.g. -18 or 4"
+                placeholderTextColor={colors.text.onSurfaceMuted}
+              />
+            </FormField>
+
             <View style={styles.switchCard}>
               <View style={styles.switchRow}>
                 <View style={styles.switchText}>
@@ -783,6 +830,43 @@ export default function CargoInspectionFormScreen() {
                 />
               </FormField>
             ) : null}
+          </FormSectionCard>
+
+          <FormSectionCard
+            icon="bus-outline"
+            title="Outbound transport"
+            subtitle="Optional — truck, driver, and carrier">
+            <FormField label="Exit vehicle plate">
+              <TextInput
+                style={styles.input}
+                value={form.exitVehiclePlate ?? ''}
+                onChangeText={(text) => patchForm({ exitVehiclePlate: text })}
+                placeholder="e.g. ABC-123"
+                placeholderTextColor={colors.text.onSurfaceMuted}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </FormField>
+            <FormField label="Driver name">
+              <TextInput
+                style={styles.input}
+                value={form.driverName ?? ''}
+                onChangeText={(text) => patchForm({ driverName: text })}
+                placeholder="Driver full name"
+                placeholderTextColor={colors.text.onSurfaceMuted}
+                autoCorrect={false}
+              />
+            </FormField>
+            <FormField label="Transport company">
+              <TextInput
+                style={styles.input}
+                value={form.transportCompany ?? ''}
+                onChangeText={(text) => patchForm({ transportCompany: text })}
+                placeholder="Carrier / haulage company"
+                placeholderTextColor={colors.text.onSurfaceMuted}
+                autoCorrect={false}
+              />
+            </FormField>
           </FormSectionCard>
 
           <FormSectionCard

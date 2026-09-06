@@ -276,6 +276,9 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
             ...input,
             photoEvidence,
             videoEvidence,
+            issueReportedAt: input.hasIssues
+              ? input.issueReportedAt ?? registeredAt
+              : input.issueReportedAt,
           },
           status: 'new',
           registeredAt,
@@ -352,10 +355,25 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         hasIssues: input.hasIssues,
         status: resolveInspectionStatus(existing),
         issueDescription: input.hasIssues ? input.issueDescription?.trim() : undefined,
+        issueReportedAt: input.hasIssues
+          ? existing.issueReportedAt ?? updatedAtIso
+          : existing.issueReportedAt,
         photoEvidence,
         videoEvidence,
         updatedAt: updatedAtIso,
         syncStatus: 'synced',
+        clientLocationId: input.clientLocationId?.trim() || undefined,
+        clientLocationName: input.clientLocationName?.trim() || undefined,
+        portalClientId: input.clientLocationId?.trim() || undefined,
+        registeredLatitude: input.registeredLatitude,
+        registeredLongitude: input.registeredLongitude,
+        registeredAccuracyMeters: input.registeredAccuracyMeters,
+        registeredLocationAt: input.registeredLocationAt,
+        registeredMapsUrl: input.registeredMapsUrl,
+        temperatureCelsius: input.temperatureCelsius,
+        exitVehiclePlate: input.exitVehiclePlate?.trim() || undefined,
+        driverName: input.driverName?.trim() || undefined,
+        transportCompany: input.transportCompany?.trim() || undefined,
       };
 
       setRemoteInspections((prev) => {

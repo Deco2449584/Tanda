@@ -211,7 +211,32 @@ export function InspectionDetailView({
           <DetailRow label="Food type" value={inspection.foodType} />
           <DetailRow label="Weight" value={`${inspection.weightKg} kg`} />
           <DetailRow label="Box count" value={String(inspection.boxCount)} />
+          {typeof inspection.temperatureCelsius === 'number' ? (
+            <DetailRow
+              label="Temperature"
+              value={`${inspection.temperatureCelsius} °C`}
+            />
+          ) : null}
+          {inspection.exitVehiclePlate ? (
+            <DetailRow label="Exit vehicle plate" value={inspection.exitVehiclePlate} />
+          ) : null}
+          {inspection.driverName ? (
+            <DetailRow label="Driver name" value={inspection.driverName} />
+          ) : null}
+          {inspection.transportCompany ? (
+            <DetailRow label="Transport company" value={inspection.transportCompany} />
+          ) : null}
           <DetailRow label="Operator" value={inspection.createdBy || '—'} />
+          <DetailRow
+            label="Registered at"
+            value={formatInspectionDate(inspection.registeredAt)}
+          />
+          {inspection.dispatchedAt ? (
+            <DetailRow
+              label="Loaded on truck at"
+              value={formatInspectionDate(inspection.dispatchedAt)}
+            />
+          ) : null}
           {typeof inspection.registeredLatitude === 'number' &&
           typeof inspection.registeredLongitude === 'number' ? (
             <DetailRow
@@ -249,6 +274,11 @@ export function InspectionDetailView({
         {inspection.hasIssues && (
           <section className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5 md:p-6">
             <h2 className="text-sm font-semibold text-amber-200">Issue description</h2>
+            {inspection.issueReportedAt ? (
+              <p className="mt-2 text-xs text-amber-200/80">
+                Reported {formatInspectionDate(inspection.issueReportedAt)}
+              </p>
+            ) : null}
             <p className="mt-3 text-sm leading-relaxed text-foreground">
               {inspection.issueDescription?.trim() || 'No description provided.'}
             </p>

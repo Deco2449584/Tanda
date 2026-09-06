@@ -52,10 +52,18 @@ export function mapInspectionDoc(
     hasIssues: Boolean(record.hasIssues),
     status: normalizeInspectionStatus(record.status),
     issueDescription: issueDescription || undefined,
+    issueReportedAt:
+      typeof record.issueReportedAt === 'string' && record.issueReportedAt.trim()
+        ? record.issueReportedAt.trim()
+        : undefined,
     photoEvidence: Array.isArray(record.photoEvidence) ? record.photoEvidence : [],
     videoEvidence: Array.isArray(record.videoEvidence) ? record.videoEvidence : [],
     registeredAt: toDisplayIso(record.registeredAt, record.registeredAtIso),
     updatedAt: timestampToIso(record.updatedAt) ?? record.updatedAtIso,
+    dispatchedAt:
+      timestampToIso(record.dispatchedAt) ??
+      record.dispatchedAtIso ??
+      undefined,
     createdBy: record.createdBy ?? '',
     portalEnabled: Boolean(record.portalEnabled),
     portalClientId,
@@ -84,6 +92,22 @@ export function mapInspectionDoc(
     registeredMapsUrl:
       typeof record.registeredMapsUrl === 'string' && record.registeredMapsUrl.trim()
         ? record.registeredMapsUrl.trim()
+        : undefined,
+    temperatureCelsius:
+      typeof record.temperatureCelsius === 'number'
+        ? record.temperatureCelsius
+        : undefined,
+    exitVehiclePlate:
+      typeof record.exitVehiclePlate === 'string' && record.exitVehiclePlate.trim()
+        ? record.exitVehiclePlate.trim()
+        : undefined,
+    driverName:
+      typeof record.driverName === 'string' && record.driverName.trim()
+        ? record.driverName.trim()
+        : undefined,
+    transportCompany:
+      typeof record.transportCompany === 'string' && record.transportCompany.trim()
+        ? record.transportCompany.trim()
         : undefined,
   };
 }

@@ -268,6 +268,26 @@ service cloud.firestore {
         && (
           !('registeredMapsUrl' in request.resource.data)
           || request.resource.data.registeredMapsUrl is string
+        )
+        && (
+          !('issueReportedAt' in request.resource.data)
+          || request.resource.data.issueReportedAt is string
+        )
+        && (
+          !('temperatureCelsius' in request.resource.data)
+          || request.resource.data.temperatureCelsius is number
+        )
+        && (
+          !('exitVehiclePlate' in request.resource.data)
+          || request.resource.data.exitVehiclePlate is string
+        )
+        && (
+          !('driverName' in request.resource.data)
+          || request.resource.data.driverName is string
+        )
+        && (
+          !('transportCompany' in request.resource.data)
+          || request.resource.data.transportCompany is string
         );
       allow update: if request.auth != null;
       allow delete: if request.auth != null;

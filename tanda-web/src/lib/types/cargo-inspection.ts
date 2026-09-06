@@ -19,6 +19,7 @@ export interface CargoInspectionFirestore {
   hasIssues: boolean;
   status?: CargoInspectionStatus | string;
   issueDescription: string;
+  issueReportedAt?: string;
   photoEvidence: string[];
   videoEvidence: string[];
   createdBy: string;
@@ -26,6 +27,8 @@ export interface CargoInspectionFirestore {
   registeredAtIso?: string;
   updatedAt?: unknown;
   updatedAtIso?: string;
+  dispatchedAt?: unknown;
+  dispatchedAtIso?: string;
   portalEnabled?: boolean;
   portalClientId?: string;
   clientLocationId?: string;
@@ -35,6 +38,10 @@ export interface CargoInspectionFirestore {
   registeredAccuracyMeters?: number;
   registeredLocationAt?: string;
   registeredMapsUrl?: string;
+  temperatureCelsius?: number;
+  exitVehiclePlate?: string;
+  driverName?: string;
+  transportCompany?: string;
 }
 
 export interface CargoInspection {
@@ -49,10 +56,12 @@ export interface CargoInspection {
   status: CargoInspectionStatus;
   hasIssues: boolean;
   issueDescription?: string;
+  issueReportedAt?: string;
   photoEvidence: string[];
   videoEvidence: string[];
   registeredAt: string;
   updatedAt?: string;
+  dispatchedAt?: string;
   createdBy: string;
   portalEnabled: boolean;
   portalClientId?: string;
@@ -63,6 +72,10 @@ export interface CargoInspection {
   registeredAccuracyMeters?: number;
   registeredLocationAt?: string;
   registeredMapsUrl?: string;
+  temperatureCelsius?: number;
+  exitVehiclePlate?: string;
+  driverName?: string;
+  transportCompany?: string;
 }
 
 export type CargoInspectionFormInput = {

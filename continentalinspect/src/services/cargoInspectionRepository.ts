@@ -48,6 +48,7 @@ export type CargoInspectionDocument = {
   hasIssues: boolean;
   status?: CargoInspectionStatus | string;
   issueDescription: string;
+  issueReportedAt?: string;
   photoEvidence: string[];
   videoEvidence: string[];
   createdBy: string;
@@ -65,6 +66,10 @@ export type CargoInspectionDocument = {
   registeredAccuracyMeters?: number;
   registeredLocationAt?: string;
   registeredMapsUrl?: string;
+  temperatureCelsius?: number;
+  exitVehiclePlate?: string;
+  driverName?: string;
+  transportCompany?: string;
 };
 
 function timestampToIso(value: Timestamp | string | undefined): string | undefined {
@@ -119,6 +124,7 @@ function mapDocumentToCargoInspection(
     hasIssues: Boolean(data.hasIssues),
     status,
     issueDescription: issueDescription || undefined,
+    issueReportedAt: data.issueReportedAt?.trim() || undefined,
     photoEvidence: data.photoEvidence ?? [],
     videoEvidence: data.videoEvidence ?? [],
     registeredAt: toDisplayIso(data.registeredAt, data.registeredAtIso),
@@ -138,7 +144,23 @@ function mapDocumentToCargoInspection(
         : undefined,
     registeredLocationAt: data.registeredLocationAt?.trim() || undefined,
     registeredMapsUrl: data.registeredMapsUrl?.trim() || undefined,
+    temperatureCelsius:
+      typeof data.temperatureCelsius === 'number' ? data.temperatureCelsius : undefined,
+    exitVehiclePlate: data.exitVehiclePlate?.trim() || undefined,
+    driverName: data.driverName?.trim() || undefined,
+    transportCompany: data.transportCompany?.trim() || undefined,
   };
+}
+
+function resolveIssueReportedAtIso(
+  hasIssues: boolean,
+  existing?: string,
+): string | undefined {
+  const preserved = existing?.trim() || undefined;
+  if (!hasIssues) {
+    return preserved;
+  }
+  return preserved ?? new Date().toISOString();
 }
 
 function buildFirestorePayload(
@@ -152,6 +174,17 @@ function buildFirestorePayload(
   const uldId = normalizeUldId(input.uldId);
   const clientLocationId = input.clientLocationId?.trim() ?? '';
   const clientLocationName = input.clientLocationName?.trim() ?? '';
+  const issueReportedAt = resolveIssueReportedAtIso(
+    input.hasIssues,
+    typeof input.issueReportedAt === 'string'
+      ? input.issueReportedAt
+      : input.issueReportedAt
+        ? new Date(input.issueReportedAt).toISOString()
+        : undefined,
+  );
+  const exitVehiclePlate = input.exitVehiclePlate?.trim() ?? '';
+  const driverName = input.driverName?.trim() ?? '';
+  const transportCompany = input.transportCompany?.trim() ?? '';
   return {
     unitType: input.unitType,
     uldId,
@@ -166,6 +199,14 @@ function buildFirestorePayload(
     photoEvidence,
     videoEvidence,
     createdBy,
+    ...(issueReportedAt ? { issueReportedAt } : {}),
+    ...(typeof input.temperatureCelsius === 'number' &&
+    Number.isFinite(input.temperatureCelsius)
+      ? { temperatureCelsius: input.temperatureCelsius }
+      : {}),
+    exitVehiclePlate,
+    driverName,
+    transportCompany,
     ...(clientLocationId
       ? {
           clientLocationId,
@@ -188,6 +229,47 @@ function buildFirestorePayload(
     ...(input.registeredMapsUrl?.trim()
       ? { registeredMapsUrl: input.registeredMapsUrl.trim() }
       : {}),
+  };
+}
+
+function toInspectionFromCreatePayload(
+  id: string,
+  input: NewCargoInspectionInput,
+  payload: ReturnType<typeof buildFirestorePayload>,
+  photoEvidence: string[],
+  videoEvidence: string[],
+  registeredAtIso: string,
+  createdByEmail: string,
+): CargoInspection {
+  return {
+    id,
+    unitType: input.unitType,
+    uldId: payload.uldId,
+    awbNumber: payload.awbNumber,
+    conservationType: payload.conservationType,
+    foodType: payload.foodType,
+    weightKg: payload.weightKg,
+    boxCount: payload.boxCount,
+    status: 'new',
+    hasIssues: payload.hasIssues,
+    issueDescription: payload.issueDescription || undefined,
+    issueReportedAt: payload.issueReportedAt,
+    photoEvidence,
+    videoEvidence,
+    registeredAt: registeredAtIso,
+    createdBy: createdByEmail,
+    clientLocationId: payload.clientLocationId,
+    clientLocationName: payload.clientLocationName,
+    portalClientId: payload.portalClientId,
+    registeredLatitude: payload.registeredLatitude,
+    registeredLongitude: payload.registeredLongitude,
+    registeredAccuracyMeters: payload.registeredAccuracyMeters,
+    registeredLocationAt: payload.registeredLocationAt,
+    registeredMapsUrl: payload.registeredMapsUrl,
+    temperatureCelsius: payload.temperatureCelsius,
+    exitVehiclePlate: payload.exitVehiclePlate,
+    driverName: payload.driverName,
+    transportCompany: payload.transportCompany,
   };
 }
 
@@ -364,23 +446,15 @@ export async function createCargoInspectionRecord(
     registeredAtIso,
   });
 
-  const inspection: CargoInspection = {
-    id: inspectionRef.id,
-    unitType: input.unitType,
-    uldId: payload.uldId,
-    awbNumber: payload.awbNumber,
-    conservationType: payload.conservationType,
-    foodType: payload.foodType,
-    weightKg: payload.weightKg,
-    boxCount: payload.boxCount,
-    status: 'new',
-    hasIssues: payload.hasIssues,
-    issueDescription: payload.issueDescription || undefined,
-    photoEvidence: [...photoSplit.remote, ...photoSplit.local],
-    videoEvidence: [...videoSplit.remote, ...videoSplit.local],
-    registeredAt: registeredAtIso,
-    createdBy: createdByEmail,
-  };
+  const inspection = toInspectionFromCreatePayload(
+    inspectionRef.id,
+    input,
+    payload,
+    [...photoSplit.remote, ...photoSplit.local],
+    [...videoSplit.remote, ...videoSplit.local],
+    registeredAtIso,
+    createdByEmail,
+  );
 
   return {
     inspection,
@@ -424,23 +498,15 @@ export async function createCargoInspection(
     registeredAtIso,
   });
 
-  return {
-    id: inspectionRef.id,
-    unitType: input.unitType,
-    uldId: payload.uldId,
-    awbNumber: payload.awbNumber,
-    conservationType: payload.conservationType,
-    foodType: payload.foodType,
-    weightKg: payload.weightKg,
-    boxCount: payload.boxCount,
-    status: 'new',
-    hasIssues: payload.hasIssues,
-    issueDescription: payload.issueDescription || undefined,
+  return toInspectionFromCreatePayload(
+    inspectionRef.id,
+    input,
+    payload,
     photoEvidence,
     videoEvidence,
-    registeredAt: registeredAtIso,
-    createdBy: createdByEmail,
-  };
+    registeredAtIso,
+    createdByEmail,
+  );
 }
 
 export async function updateCargoInspection(

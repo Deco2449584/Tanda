@@ -24,12 +24,18 @@ const CSV_HEADERS = [
   'Food Type',
   'Weight (Kg)',
   'Box Count',
+  'Temperature (°C)',
+  'Exit Vehicle Plate',
+  'Driver Name',
+  'Transport Company',
   'Has Issues',
   'Issue Description',
+  'Issue Reported At',
   'Photos',
   'Videos',
   'Inspector Email',
-  'Registered',
+  'Registered At',
+  'Loaded On Truck At',
   'Updated',
   'Latitude',
   'Longitude',
@@ -58,12 +64,22 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.foodType,
     String(inspection.weightKg),
     String(inspection.boxCount),
+    typeof inspection.temperatureCelsius === 'number'
+      ? String(inspection.temperatureCelsius)
+      : '',
+    inspection.exitVehiclePlate ?? '',
+    inspection.driverName ?? '',
+    inspection.transportCompany ?? '',
     inspection.hasIssues ? 'Yes' : 'No',
     inspection.issueDescription ?? '',
+    inspection.issueReportedAt
+      ? formatInspectionDate(inspection.issueReportedAt)
+      : '',
     String(inspection.photoEvidence.length),
     String(inspection.videoEvidence.length),
     inspection.createdBy,
     formatInspectionDate(inspection.registeredAt),
+    inspection.dispatchedAt ? formatInspectionDate(inspection.dispatchedAt) : '',
     inspection.updatedAt ? formatInspectionDate(inspection.updatedAt) : '',
     typeof inspection.registeredLatitude === 'number'
       ? String(inspection.registeredLatitude)

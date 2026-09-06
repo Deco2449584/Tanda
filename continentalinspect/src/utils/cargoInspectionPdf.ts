@@ -199,10 +199,35 @@ function buildInspectionHtml(
         ${tableRow('Food Type', inspection.foodType)}
         ${tableRow('Weight (Kg)', String(inspection.weightKg))}
         ${tableRow('Box Count', String(inspection.boxCount))}
+        ${
+          typeof inspection.temperatureCelsius === 'number'
+            ? tableRow('Temperature (°C)', String(inspection.temperatureCelsius))
+            : ''
+        }
+        ${
+          inspection.exitVehiclePlate?.trim()
+            ? tableRow('Exit vehicle plate', inspection.exitVehiclePlate.trim())
+            : ''
+        }
+        ${
+          inspection.driverName?.trim()
+            ? tableRow('Driver name', inspection.driverName.trim())
+            : ''
+        }
+        ${
+          inspection.transportCompany?.trim()
+            ? tableRow('Transport company', inspection.transportCompany.trim())
+            : ''
+        }
         ${tableRow('Status', statusLabel)}
         ${tableRow('Has Issues', inspection.hasIssues ? 'Yes' : 'No')}
+        ${
+          inspection.issueReportedAt
+            ? tableRow('Issue reported at', formatInspectionDate(inspection.issueReportedAt))
+            : ''
+        }
         ${tableRow('Inspector Email', inspection.createdBy)}
-        ${tableRow('Inspection Date', formatInspectionDate(inspection.registeredAt))}
+        ${tableRow('Registered at', formatInspectionDate(inspection.registeredAt))}
         ${tableRow('Registered location', locationValue)}
         ${
           mapsLink
@@ -214,7 +239,11 @@ function buildInspectionHtml(
             ? tableRow('GPS captured at', formatInspectionDate(inspection.registeredLocationAt))
             : ''
         }
-        ${inspection.dispatchedAt ? tableRow('Dispatched on truck', formatInspectionDate(inspection.dispatchedAt)) : ''}
+        ${
+          inspection.dispatchedAt
+            ? tableRow('Loaded on truck at', formatInspectionDate(inspection.dispatchedAt))
+            : ''
+        }
         ${inspection.updatedAt && !inspection.dispatchedAt ? tableRow('Last Updated', formatInspectionDate(inspection.updatedAt)) : ''}
       </tbody>
     </table>`;

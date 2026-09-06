@@ -53,6 +53,8 @@ export interface CargoInspection {
   status: CargoInspectionStatus;
   hasIssues: boolean;
   issueDescription?: string;
+  /** Auto-set when an issue is first reported (exact date/time). */
+  issueReportedAt?: Date | string;
   photoEvidence: string[];
   videoEvidence: string[];
   registeredAt: Date | string;
@@ -71,6 +73,14 @@ export interface CargoInspection {
   registeredAccuracyMeters?: number;
   registeredLocationAt?: string;
   registeredMapsUrl?: string;
+  /** Optional intake temperature reading (°C). */
+  temperatureCelsius?: number;
+  /** Optional outbound truck plate. */
+  exitVehiclePlate?: string;
+  /** Optional outbound driver name. */
+  driverName?: string;
+  /** Optional haulage / carrier company. */
+  transportCompany?: string;
 }
 
 export type NewCargoInspectionInput = Omit<
@@ -95,4 +105,7 @@ export const EMPTY_CARGO_INSPECTION_INPUT: NewCargoInspectionInput = {
   videoEvidence: [],
   clientLocationId: '',
   clientLocationName: '',
+  exitVehiclePlate: '',
+  driverName: '',
+  transportCompany: '',
 };

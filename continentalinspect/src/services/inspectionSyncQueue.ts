@@ -177,6 +177,13 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     registeredAccuracyMeters: operation.input.registeredAccuracyMeters,
     registeredLocationAt: operation.input.registeredLocationAt,
     registeredMapsUrl: operation.input.registeredMapsUrl,
+    temperatureCelsius: operation.input.temperatureCelsius,
+    exitVehiclePlate: operation.input.exitVehiclePlate,
+    driverName: operation.input.driverName,
+    transportCompany: operation.input.transportCompany,
+    issueReportedAt: operation.input.hasIssues
+      ? operation.input.issueReportedAt ?? operation.registeredAt
+      : operation.input.issueReportedAt,
   };
 }
 
