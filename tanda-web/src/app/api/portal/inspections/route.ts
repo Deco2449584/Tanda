@@ -33,6 +33,7 @@ export async function GET(request: Request) {
         boxCount: inspection.boxCount,
         registeredAt: inspection.registeredAt,
         updatedAt: inspection.updatedAt,
+        clientLocationName: inspection.clientLocationName,
       })),
     });
   } catch (error) {

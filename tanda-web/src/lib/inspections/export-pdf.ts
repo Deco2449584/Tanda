@@ -1,19 +1,16 @@
-import {
-  PORTAL_COMPANY_TAGLINE,
-  PORTAL_NAVY,
-  PORTAL_NAVY_LIGHT,
-  PORTAL_ACCENT,
-} from '@/lib/portal/portal-brand';
+import { BRAND } from '@/lib/brand/tokens';
+import { PORTAL_COMPANY_TAGLINE, PORTAL_CONTACT } from '@/lib/portal/portal-brand';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import { formatInspectionDate } from '@/lib/inspections/format';
+import { resolveInspectionMapsUrl } from '@/lib/inspections/inspection-maps-url';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
+import { getInspectionListStatus } from '@/lib/inspections/status';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 
-const MUTED = '#64748B';
-const BORDER = '#E2E8F0';
-const SURFACE = '#F8FAFC';
-const ALERT_RED = '#B91C1C';
-const ALERT_RED_BG = '#FEF2F2';
+const INK = '#1A1A1A';
+const MUTED = '#6B6B6B';
+const LINE = '#E6E6E6';
+const WASH = '#F7F7F7';
 
 function escapeHtml(value: string): string {
   return value
@@ -27,52 +24,54 @@ function escapeAttr(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
-function tableRow(label: string, value: string): string {
-  return `<tr>
-    <th>${escapeHtml(label)}</th>
-    <td>${escapeHtml(value)}</td>
-  </tr>`;
+function detailItem(label: string, value: string | null | undefined): string {
+  const text = value?.trim();
+  if (!text) return '';
+  return `<div class="detail-item">
+    <dt>${escapeHtml(label)}</dt>
+    <dd>${escapeHtml(text)}</dd>
+  </div>`;
+}
+
+function detailLink(label: string, href: string, linkLabel: string): string {
+  return `<div class="detail-item">
+    <dt>${escapeHtml(label)}</dt>
+    <dd><a class="map-link" href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(linkLabel)}</a></dd>
+  </div>`;
 }
 
 function buildVisualPhotoEvidenceHtml(photoSources: readonly string[]): string {
   if (photoSources.length === 0) {
-    return '<p class="empty-evidence">No photo evidence captured for this inspection.</p>';
+    return '<p class="empty">No photo evidence captured for this inspection.</p>';
   }
 
-  const photosHtml = photoSources
+  return `<div class="photo-grid">${photoSources
     .map(
       (src, index) =>
-        `<figure class="photo-figure">
-          <img src="${escapeAttr(src)}" alt="Evidence photo ${index + 1}" class="photo-evidence-img" />
+        `<figure class="photo-card">
+          <img src="${escapeAttr(src)}" alt="Evidence photo ${index + 1}" />
           <figcaption>Photo ${index + 1}</figcaption>
         </figure>`,
     )
-    .join('');
-
-  return `<div class="photo-grid">${photosHtml}</div>`;
+    .join('')}</div>`;
 }
 
-function buildMediaAccessLinks(
-  urls: readonly string[],
-  label: string,
-): string {
+function buildVideoLinks(urls: readonly string[]): string {
   if (urls.length === 0) {
-    return `<p class="empty-evidence">No ${escapeHtml(label.toLowerCase())} files attached.</p>`;
+    return '<p class="empty">No video clips attached.</p>';
   }
 
-  const items = urls
+  return `<ul class="link-list">${urls
     .map(
       (url, index) =>
-        `<li class="access-item">
-          <a href="${escapeAttr(url)}" class="access-link">
-            <span class="access-index">${index + 1}</span>
-            <span class="access-text">${escapeHtml(label)} ${index + 1} — open in browser</span>
+        `<li>
+          <a href="${escapeAttr(url)}" target="_blank" rel="noreferrer">
+            <span class="link-index">${index + 1}</span>
+            <span>Open video clip ${index + 1}</span>
           </a>
         </li>`,
     )
-    .join('');
-
-  return `<ul class="access-list">${items}</ul>`;
+    .join('')}</ul>`;
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -88,8 +87,7 @@ async function resolveLogoDataUrl(): Promise<string | null> {
   try {
     const response = await fetch('/logos/logo-horizontal.png');
     if (!response.ok) return null;
-    const blob = await response.blob();
-    return blobToDataUrl(blob);
+    return blobToDataUrl(await response.blob());
   } catch {
     return null;
   }
@@ -99,8 +97,7 @@ async function resolvePhotoSourceForPdf(url: string): Promise<string> {
   try {
     const response = await fetch(url);
     if (!response.ok) return url;
-    const blob = await response.blob();
-    return blobToDataUrl(blob);
+    return blobToDataUrl(await response.blob());
   } catch {
     return url;
   }
@@ -115,106 +112,66 @@ function buildInspectionHtml(
   photoSources: readonly string[],
   logoDataUrl: string | null,
 ): string {
-  const photoCount = inspection.photoEvidence.length;
-  const videoCount = inspection.videoEvidence.length;
-  const visualPhotosHtml = buildVisualPhotoEvidenceHtml(photoSources);
-  const videoLinksHtml = buildMediaAccessLinks(inspection.videoEvidence, 'Video clip');
-  const photoLinksHtml = buildMediaAccessLinks(inspection.photoEvidence, 'Photo');
-
-  const statusLabel = inspection.hasIssues ? 'REQUIRES ATTENTION' : 'LOADED';
-  const statusClass = inspection.hasIssues ? 'status-warn' : 'status-ok';
+  const status = getInspectionListStatus(inspection);
+  const mapsUrl = resolveInspectionMapsUrl(inspection);
+  const statusClass =
+    status.label === 'REQUIRES ATTENTION'
+      ? 'badge-warn'
+      : status.label === 'NEW'
+        ? 'badge-new'
+        : 'badge-ok';
 
   const logoHtml = logoDataUrl
-    ? `<img src="${escapeAttr(logoDataUrl)}" alt="${escapeAttr(COMPANY_NAME)}" class="header-logo" />`
-    : `<div class="header-logo-text">${escapeHtml(COMPANY_NAME)}</div>`;
+    ? `<img src="${escapeAttr(logoDataUrl)}" alt="${escapeAttr(COMPANY_NAME)}" class="brand-logo" />`
+    : `<div class="brand-fallback">${escapeHtml(COMPANY_NAME)}</div>`;
 
-  const issueAlert = inspection.hasIssues
-    ? `<div class="issue-alert">
-        <div class="issue-alert-title">Inspection issue reported</div>
-        <div class="issue-alert-body">${escapeHtml(inspection.issueDescription?.trim() || 'No description provided.')}</div>
-      </div>`
+  const detailsHtml = `
+    <dl class="detail-grid">
+      ${detailItem('Site / client', inspection.clientLocationName)}
+      ${detailItem('ULD ID', inspection.uldId)}
+      ${detailItem('AWB number', inspection.awbNumber)}
+      ${detailItem('Conservation', getConservationLabel(inspection.conservationType))}
+      ${detailItem('Food type', inspection.foodType)}
+      ${detailItem('Weight', `${inspection.weightKg} kg`)}
+      ${detailItem('Boxes', String(inspection.boxCount))}
+      ${
+        typeof inspection.temperatureCelsius === 'number'
+          ? detailItem('Temperature', `${inspection.temperatureCelsius} °C`)
+          : ''
+      }
+      ${detailItem('Exit vehicle plate', inspection.exitVehiclePlate)}
+      ${detailItem('Driver', inspection.driverName)}
+      ${detailItem('Transport company', inspection.transportCompany)}
+      ${detailItem('Inspector', inspection.createdBy)}
+      ${detailItem('Registered', formatInspectionDate(inspection.registeredAt))}
+      ${
+        inspection.dispatchedAt
+          ? detailItem('Loaded on truck', formatInspectionDate(inspection.dispatchedAt))
+          : ''
+      }
+      ${
+        inspection.updatedAt && !inspection.dispatchedAt
+          ? detailItem('Last updated', formatInspectionDate(inspection.updatedAt))
+          : ''
+      }
+      ${
+        inspection.issueReportedAt
+          ? detailItem('Issue reported', formatInspectionDate(inspection.issueReportedAt))
+          : ''
+      }
+      ${
+        mapsUrl
+          ? detailLink('Registration location', mapsUrl, 'View on map')
+          : ''
+      }
+    </dl>`;
+
+  const issueBlock = inspection.hasIssues
+    ? `<section class="issue-block">
+        <h2>Issue reported</h2>
+        <p>${escapeHtml(inspection.issueDescription?.trim() || 'No description provided.')}</p>
+      </section>`
     : '';
-
-  const locationValue =
-    typeof inspection.registeredLatitude === 'number' &&
-    typeof inspection.registeredLongitude === 'number'
-      ? `${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
-          typeof inspection.registeredAccuracyMeters === 'number'
-            ? ` (±${inspection.registeredAccuracyMeters} m)`
-            : ''
-        }`
-      : '—';
-
-  const mapsLink = inspection.registeredMapsUrl?.trim()
-    ? `<a href="${escapeAttr(inspection.registeredMapsUrl.trim())}">Open in Maps</a>`
-    : '';
-
-  const dataTable = `
-    <table class="data-table">
-      <tbody>
-        ${tableRow('Client', inspection.clientLocationName?.trim() || '—')}
-        ${tableRow('ULD ID', inspection.uldId)}
-        ${tableRow('AWB Number', inspection.awbNumber)}
-        ${tableRow('Conservation', getConservationLabel(inspection.conservationType))}
-        ${tableRow('Food Type', inspection.foodType)}
-        ${tableRow('Weight (Kg)', String(inspection.weightKg))}
-        ${tableRow('Box Count', String(inspection.boxCount))}
-        ${
-          typeof inspection.temperatureCelsius === 'number'
-            ? tableRow('Temperature (°C)', String(inspection.temperatureCelsius))
-            : ''
-        }
-        ${
-          inspection.exitVehiclePlate?.trim()
-            ? tableRow('Exit vehicle plate', inspection.exitVehiclePlate.trim())
-            : ''
-        }
-        ${
-          inspection.driverName?.trim()
-            ? tableRow('Driver name', inspection.driverName.trim())
-            : ''
-        }
-        ${
-          inspection.transportCompany?.trim()
-            ? tableRow('Transport company', inspection.transportCompany.trim())
-            : ''
-        }
-        ${tableRow('Has Issues', inspection.hasIssues ? 'Yes' : 'No')}
-        ${
-          inspection.issueReportedAt
-            ? tableRow(
-                'Issue reported at',
-                formatInspectionDate(inspection.issueReportedAt),
-              )
-            : ''
-        }
-        ${tableRow('Inspector Email', inspection.createdBy)}
-        ${tableRow('Registered at', formatInspectionDate(inspection.registeredAt))}
-        ${tableRow('Registered location', locationValue)}
-        ${
-          mapsLink
-            ? `<tr><th>Maps</th><td>${mapsLink}</td></tr>`
-            : ''
-        }
-        ${
-          inspection.registeredLocationAt
-            ? tableRow(
-                'GPS captured at',
-                formatInspectionDate(inspection.registeredLocationAt),
-              )
-            : ''
-        }
-        ${
-          inspection.dispatchedAt
-            ? tableRow(
-                'Loaded on truck at',
-                formatInspectionDate(inspection.dispatchedAt),
-              )
-            : ''
-        }
-        ${inspection.updatedAt && !inspection.dispatchedAt ? tableRow('Last Updated', formatInspectionDate(inspection.updatedAt)) : ''}
-      </tbody>
-    </table>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -222,116 +179,328 @@ function buildInspectionHtml(
   <meta charset="utf-8" />
   <title>${escapeHtml(COMPANY_NAME)} — Inspection ${escapeHtml(inspection.uldId)}</title>
   <style>
-    body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #0F172A; font-size: 13px; line-height: 1.5; margin: 0; background: #fff; }
-    .header { background: ${PORTAL_NAVY}; color: #fff; padding: 28px 36px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-    .header-brand { display: flex; align-items: center; gap: 20px; min-width: 0; }
-    .header-logo { height: 56px; width: auto; max-width: 200px; object-fit: contain; }
-    .header-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
-    .header-meta { text-align: right; flex-shrink: 0; }
-    .header-report { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
-    .header-title { font-size: 18px; font-weight: 700; margin-top: 4px; }
-    .header-tagline { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 2px; }
-    .accent-bar { height: 4px; background: linear-gradient(90deg, ${PORTAL_ACCENT}, ${PORTAL_NAVY_LIGHT}); }
-    .hero { padding: 28px 36px 20px; border-bottom: 1px solid ${BORDER}; background: ${SURFACE}; }
-    .hero-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: ${PORTAL_ACCENT}; margin: 0 0 8px; }
-    .hero-title { font-size: 30px; font-weight: 800; margin: 0 0 4px; color: ${PORTAL_NAVY}; letter-spacing: -0.02em; }
-    .hero-sub { color: ${MUTED}; font-size: 15px; margin: 0; }
-    .status { display: inline-block; margin-top: 14px; padding: 6px 14px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; }
-    .status-ok { background: #DCFCE7; color: #166534; }
-    .status-warn { background: #FEF3C7; color: #B45309; }
-    .section { padding: 22px 36px; page-break-inside: avoid; }
-    .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; margin: 0 0 14px; color: ${PORTAL_NAVY}; }
-    .subsection-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; color: #0F172A; }
-    .data-table { width: 100%; border-collapse: collapse; border: 1px solid ${BORDER}; border-radius: 10px; overflow: hidden; }
-    .data-table th { width: 36%; text-align: left; padding: 11px 16px; background: ${SURFACE}; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: ${MUTED}; border-bottom: 1px solid ${BORDER}; vertical-align: top; }
-    .data-table td { padding: 11px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid ${BORDER}; color: #0F172A; }
-    .data-table tr:last-child th, .data-table tr:last-child td { border-bottom: none; }
-    .issue-alert { margin-top: 18px; padding: 16px 18px; border-radius: 12px; border: 1px solid #FECACA; background: ${ALERT_RED_BG}; }
-    .issue-alert-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: ${ALERT_RED}; letter-spacing: 0.08em; margin-bottom: 8px; }
-    .issue-alert-body { font-size: 14px; color: #7F1D1D; line-height: 1.55; white-space: pre-wrap; }
-    .media-summary { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 4px; }
-    .media-stat { flex: 1; min-width: 140px; padding: 14px 16px; background: ${SURFACE}; border: 1px solid ${BORDER}; border-radius: 10px; }
-    .media-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: ${MUTED}; }
-    .media-stat-value { font-size: 22px; font-weight: 800; color: ${PORTAL_NAVY}; margin-top: 4px; }
-    .photo-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
-    .photo-figure { margin: 0; page-break-inside: avoid; }
-    .photo-evidence-img { width: 220px; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid ${BORDER}; display: block; object-fit: cover; }
-    .photo-figure figcaption { margin-top: 6px; font-size: 11px; color: ${MUTED}; font-weight: 600; }
-    .access-panel { background: ${SURFACE}; border: 1px solid ${BORDER}; border-radius: 12px; padding: 18px 20px; }
-    .access-note { margin: 0 0 14px; font-size: 12px; color: ${MUTED}; line-height: 1.5; }
-    .access-group { margin-bottom: 18px; }
-    .access-group:last-child { margin-bottom: 0; }
-    .access-subtitle { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: ${PORTAL_NAVY}; margin: 0 0 10px; }
-    .access-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-    .access-item { margin: 0; }
-    .access-link { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #fff; border: 1px solid ${BORDER}; border-radius: 8px; text-decoration: none; color: ${PORTAL_NAVY}; }
-    .access-index { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: ${PORTAL_NAVY}; color: #fff; font-size: 12px; font-weight: 800; flex-shrink: 0; }
-    .access-text { font-size: 13px; font-weight: 700; }
-    .empty-evidence { color: ${MUTED}; font-size: 13px; font-style: italic; margin: 0; padding: 8px 0; }
-    .footer { padding: 22px 36px 28px; font-size: 11px; color: ${MUTED}; border-top: 1px solid ${BORDER}; background: ${SURFACE}; }
-    .footer-brand { font-size: 12px; font-weight: 700; color: ${PORTAL_NAVY}; margin-bottom: 4px; }
-    .footer-note { margin-top: 10px; font-size: 10px; line-height: 1.5; color: #94A3B8; }
-    @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+    @page { margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: ${INK};
+      background: #fff;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+    .sheet { max-width: 860px; margin: 0 auto; }
+    .masthead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 26px;
+      background: ${BRAND.graphite};
+      color: #fff;
+    }
+    .brand-logo {
+      height: 52px;
+      width: auto;
+      max-width: 240px;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-fallback {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .masthead-meta { text-align: right; }
+    .masthead-kicker {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .masthead-title {
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .masthead-sub {
+      margin-top: 2px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+    }
+    .accent {
+      height: 3px;
+      background: linear-gradient(90deg, ${BRAND.magenta} 0%, ${BRAND.charcoal} 100%);
+    }
+    .hero {
+      padding: 24px 26px 18px;
+      border-bottom: 1px solid ${LINE};
+      background: ${WASH};
+    }
+    .hero-label {
+      margin: 0 0 8px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: ${BRAND.magenta};
+    }
+    .hero h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      color: ${INK};
+    }
+    .hero-awb {
+      margin: 6px 0 0;
+      color: ${MUTED};
+      font-size: 14px;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    .badge-ok { background: #E8F8EE; color: #166534; }
+    .badge-new { background: #E8F2FF; color: #1D4ED8; }
+    .badge-warn { background: #FFF4E5; color: #B45309; }
+    .section { padding: 20px 26px; }
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: ${BRAND.graphite};
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin: 0;
+      border: 1px solid ${LINE};
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .detail-item {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border-bottom: 1px solid ${LINE};
+      border-right: 1px solid ${LINE};
+      background: #fff;
+    }
+    .detail-item:nth-child(2n) { border-right: none; }
+    .detail-item dt {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: ${MUTED};
+    }
+    .detail-item dd {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: ${INK};
+    }
+    .map-link {
+      color: ${BRAND.magenta};
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(245, 30, 160, 0.35);
+    }
+    .issue-block {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid #FECACA;
+      background: #FEF2F2;
+    }
+    .issue-block h2 {
+      margin: 0 0 8px;
+      color: #B91C1C;
+    }
+    .issue-block p {
+      margin: 0;
+      color: #7F1D1D;
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .stat {
+      padding: 14px 16px;
+      border: 1px solid ${LINE};
+      border-radius: 12px;
+      background: ${WASH};
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: ${MUTED};
+    }
+    .stat-value {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 800;
+      color: ${INK};
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .photo-card {
+      margin: 0;
+      page-break-inside: avoid;
+    }
+    .photo-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid ${LINE};
+      background: ${WASH};
+      object-fit: cover;
+    }
+    .photo-card figcaption {
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: ${MUTED};
+    }
+    .link-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .link-list a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid ${LINE};
+      border-radius: 10px;
+      text-decoration: none;
+      color: ${INK};
+      background: ${WASH};
+      font-weight: 700;
+    }
+    .link-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: ${BRAND.graphite};
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .empty {
+      margin: 0;
+      color: ${MUTED};
+      font-style: italic;
+    }
+    .footer {
+      margin-top: 8px;
+      padding: 18px 26px 24px;
+      border-top: 1px solid ${LINE};
+      background: ${WASH};
+      color: ${MUTED};
+      font-size: 11px;
+    }
+    .footer strong {
+      display: block;
+      margin-bottom: 4px;
+      color: ${INK};
+      font-size: 12px;
+    }
+    .footer-note {
+      margin-top: 10px;
+      font-size: 10px;
+      line-height: 1.5;
+      color: #8A8A8A;
+    }
+    @media print {
+      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .section, .photo-card, .issue-block { page-break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-brand">
-      ${logoHtml}
-    </div>
-    <div class="header-meta">
-      <div class="header-report">Cargo inspection report</div>
-      <div class="header-title">${escapeHtml(COMPANY_NAME)}</div>
-      <div class="header-tagline">${escapeHtml(PORTAL_COMPANY_TAGLINE)}</div>
-    </div>
-  </div>
-  <div class="accent-bar"></div>
-  <div class="hero">
-    <p class="hero-kicker">Shipment unit</p>
-    <h1 class="hero-title">${escapeHtml(inspection.uldId)}</h1>
-    <p class="hero-sub">AWB ${escapeHtml(inspection.awbNumber)}</p>
-    <span class="status ${statusClass}">${escapeHtml(statusLabel)}</span>
-  </div>
-  <div class="section">
-    <h2 class="section-title">Inspection details</h2>
-    ${dataTable}
-    ${issueAlert}
-  </div>
-  <div class="section">
-    <h2 class="section-title">Evidence summary</h2>
-    <div class="media-summary">
-      <div class="media-stat">
-        <div class="media-stat-label">Photos</div>
-        <div class="media-stat-value">${photoCount}</div>
+  <div class="sheet">
+    <header class="masthead">
+      <div>${logoHtml}</div>
+      <div class="masthead-meta">
+        <div class="masthead-kicker">Cargo inspection report</div>
+        <div class="masthead-title">${escapeHtml(COMPANY_NAME)}</div>
+        <div class="masthead-sub">${escapeHtml(PORTAL_COMPANY_TAGLINE)} · ${escapeHtml(PORTAL_CONTACT.location)}</div>
       </div>
-      <div class="media-stat">
-        <div class="media-stat-label">Videos</div>
-        <div class="media-stat-value">${videoCount}</div>
+    </header>
+    <div class="accent"></div>
+
+    <section class="hero">
+      <p class="hero-label">Shipment unit</p>
+      <h1>${escapeHtml(inspection.uldId)}</h1>
+      <p class="hero-awb">AWB ${escapeHtml(inspection.awbNumber)}</p>
+      <span class="badge ${statusClass}">${escapeHtml(status.label)}</span>
+    </section>
+
+    <section class="section">
+      <h2>Inspection details</h2>
+      ${detailsHtml}
+      ${issueBlock}
+    </section>
+
+    <section class="section">
+      <h2>Evidence summary</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Photos</div>
+          <div class="stat-value">${inspection.photoEvidence.length}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Videos</div>
+          <div class="stat-value">${inspection.videoEvidence.length}</div>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="section">
-    <h2 class="section-title">Photo evidence</h2>
-    ${visualPhotosHtml}
-  </div>
-  <div class="section">
-    <h2 class="section-title">Media access links</h2>
-    <div class="access-panel">
-      <p class="access-note">Use the links below to open photo and video files in your browser. Save or share them from there if needed.</p>
-      <div class="access-group">
-        <h3 class="access-subtitle">Videos</h3>
-        ${videoLinksHtml}
-      </div>
-      <div class="access-group">
-        <h3 class="access-subtitle">Photos (full resolution)</h3>
-        ${photoLinksHtml}
-      </div>
-    </div>
-  </div>
-  <div class="footer">
-    <div class="footer-brand">${escapeHtml(COMPANY_NAME)} · ${escapeHtml(PORTAL_COMPANY_TAGLINE)}</div>
-    <div>Report generated ${escapeHtml(formatInspectionDate(new Date().toISOString()))}</div>
-    <div class="footer-note">Media links may expire after a period of time. Export a fresh report from the portal or admin console for current access.</div>
+    </section>
+
+    <section class="section">
+      <h2>Photo evidence</h2>
+      ${buildVisualPhotoEvidenceHtml(photoSources)}
+    </section>
+
+    <section class="section">
+      <h2>Video access</h2>
+      ${buildVideoLinks(inspection.videoEvidence)}
+    </section>
+
+    <footer class="footer">
+      <strong>${escapeHtml(COMPANY_NAME)} · ${escapeHtml(PORTAL_COMPANY_TAGLINE)}</strong>
+      <div>Generated ${escapeHtml(formatInspectionDate(new Date().toISOString()))}</div>
+      <div>${escapeHtml(PORTAL_CONTACT.email)} · ${escapeHtml(PORTAL_CONTACT.phone)}</div>
+      <div class="footer-note">Video links may expire. Export a fresh report from the portal for current access. Location is shared as a map link only — coordinates are not printed.</div>
+    </footer>
   </div>
 </body>
 </html>`;
@@ -361,5 +530,5 @@ export async function exportCargoInspectionPdf(
 
   window.setTimeout(() => {
     printWindow.print();
-  }, 300);
+  }, 350);
 }

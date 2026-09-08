@@ -7,7 +7,7 @@ import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 export function PortalFooter() {
   return (
-    <footer className="mt-auto border-t border-[#262626]/10 bg-[#262626] text-white">
+    <footer className="mt-auto border-t border-white/10 bg-[#141414] text-white">
       <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
         <div className="grid gap-8 md:grid-cols-2">
           <div>

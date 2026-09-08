@@ -179,16 +179,16 @@ select,
 }
 
 .portal-gallery .overflow-hidden.rounded-xl {
-  border-color: #e2e8f0;
-  background: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: #1f1f1f;
 }
 
 .portal-gallery .border-zinc-800 {
-  border-color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .portal-gallery .bg-zinc-950 {
-  background-color: #f1f5f9;
+  background-color: #1a1a1a;
 }
 
 /* Recharts: default hover cursor is a light band — keep it subtle on dark charts */

@@ -157,13 +157,13 @@ function PortalTrackContent() {
       </section>
 
       {loading ? (
-        <p className="text-sm text-slate-500">Loading inspections…</p>
+        <p className="text-sm text-white/55">Loading inspections…</p>
       ) : error ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       ) : inspections.length === 0 ? (
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-600 shadow-sm">
+        <p className="rounded-xl border border-[#262626]/20 bg-[#2F2F2F] px-4 py-10 text-center text-sm text-white/70 shadow-md">
           No inspections are available for this AWB on the portal.
         </p>
       ) : (

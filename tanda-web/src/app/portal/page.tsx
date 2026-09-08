@@ -50,7 +50,7 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F5F5F5]">
+    <div className="flex min-h-screen flex-col bg-[#262626]">
       <div className="flex flex-1 flex-col lg:flex-row">
         <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-r from-[#262626] to-[#606060] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-12">
           <div
@@ -132,21 +132,32 @@ export default function PortalLoginPage() {
           </div>
         </section>
 
-        <section className="flex flex-1 flex-col justify-center bg-[#F5F5F5] px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
-          <div className="mx-auto w-full max-w-md">
+        <section className="relative flex flex-1 flex-col justify-center overflow-hidden bg-[#3A3A3A] px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.08]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -left-16 bottom-10 h-56 w-56 rounded-full bg-[#F51EA0]/15 blur-3xl"
+            aria-hidden
+          />
+          <div className="relative mx-auto w-full max-w-md">
             <div className="mb-8 lg:hidden">
-              <CompanyLogo variant="mark" className="mx-auto h-16 w-16" />
+              <CompanyLogo variant="mark-light" className="mx-auto h-16 w-16" />
             </div>
 
-            <div className="rounded-2xl border border-[#CBCBCB]/40 bg-white p-6 shadow-xl shadow-[#262626]/10 sm:p-8">
+            <div className="rounded-2xl border border-white/15 bg-[#2A2A2A] p-6 shadow-2xl shadow-black/40 sm:p-8">
               <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#606060]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
                   Client portal
                 </p>
-                <h2 className="font-display mt-2 text-2xl font-normal text-[#262626]">
+                <h2 className="font-display mt-2 text-2xl font-normal text-white">
                   Track your shipment
                 </h2>
-                <p className="mt-2 text-sm font-light text-[#606060]">
+                <p className="mt-2 text-sm font-light text-white/65">
                   Enter your AWB number and company PIN to view live inspection
                   status.
                 </p>
@@ -156,7 +167,7 @@ export default function PortalLoginPage() {
                 <div>
                   <label
                     htmlFor="awb"
-                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#606060]"
+                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
                   >
                     AWB number
                   </label>
@@ -168,20 +179,20 @@ export default function PortalLoginPage() {
                     placeholder="e.g. 045-12345678"
                     autoComplete="off"
                     required
-                    className="w-full rounded-xl border border-[#CBCBCB] bg-[#F5F5F5] px-4 py-3 text-sm text-[#262626] outline-none transition focus:border-[#F51EA0]/40 focus:bg-white focus:ring-2 focus:ring-[#F51EA0]/10"
+                    className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="pin"
-                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#606060]"
+                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
                   >
                     Company PIN
                   </label>
                   <div className="relative">
                     <Lock
-                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#606060]"
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
                       aria-hidden
                     />
                     <input
@@ -193,14 +204,14 @@ export default function PortalLoginPage() {
                       placeholder="6–8 digits"
                       autoComplete="off"
                       required
-                      className="w-full rounded-xl border border-[#CBCBCB] bg-[#F5F5F5] py-3 pl-11 pr-4 text-sm text-[#262626] outline-none transition focus:border-[#F51EA0]/40 focus:bg-white focus:ring-2 focus:ring-[#F51EA0]/10"
+                      className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
                     />
                   </div>
                 </div>
 
                 {error ? (
                   <p
-                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
+                    className="rounded-xl border border-red-400/40 bg-red-950/50 px-3 py-2.5 text-sm text-red-200"
                     role="alert"
                   >
                     {error}
@@ -210,13 +221,13 @@ export default function PortalLoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-[#F51EA0] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F51EA0]/20 transition hover:bg-[#d4198a] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl bg-[#F51EA0] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F51EA0]/25 transition hover:bg-[#d4198a] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Verifying…' : 'Check status'}
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-xs font-light leading-relaxed text-[#606060]">
+              <p className="mt-6 text-center text-xs font-light leading-relaxed text-white/50">
                 Don&apos;t have a PIN? Contact your {COMPANY_NAME} representative.
               </p>
             </div>

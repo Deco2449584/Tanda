@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Globe, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { ExternalLink, Globe, Loader2 } from 'lucide-react';
 import { updateInspectionPortalAccess } from '@/lib/inspections/update-portal-access';
 import { fetchLocations } from '@/lib/locations/locations-service';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
@@ -64,15 +65,6 @@ export function InspectionPortalAccess({
     }
   }
 
-  function copyPortalLink() {
-    const url =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/portal`
-        : '/portal';
-    void navigator.clipboard.writeText(url);
-    setMessage('Portal link copied to clipboard.');
-  }
-
   return (
     <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -82,18 +74,27 @@ export function InspectionPortalAccess({
             Client portal access
           </h2>
           <p className="mt-1 text-xs text-subtle">
-            Clients track this shipment at /portal with AWB {inspection.awbNumber}{' '}
-            and their company PIN.
+            Clients track this shipment at{' '}
+            <Link
+              href="/portal"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline"
+            >
+              /portal
+            </Link>{' '}
+            with AWB {inspection.awbNumber} and their company PIN.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={copyPortalLink}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
+        <Link
+          href="/portal"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 hover:text-white"
         >
-          <Copy className="h-3.5 w-3.5" aria-hidden />
-          Copy portal link
-        </button>
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          Open portal
+        </Link>
       </div>
 
       <div className="mt-4 space-y-4">

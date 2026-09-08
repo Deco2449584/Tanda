@@ -12,9 +12,9 @@ interface PortalInspectionCardProps {
 }
 
 const PORTAL_STATUS_CLASSES: Record<string, string> = {
-  'REQUIRES ATTENTION': 'bg-amber-100 text-amber-900 ring-amber-200',
-  NEW: 'bg-sky-100 text-sky-900 ring-sky-200',
-  LOADED: 'bg-emerald-100 text-emerald-900 ring-emerald-200',
+  'REQUIRES ATTENTION': 'bg-amber-400/20 text-amber-100 ring-amber-300/30',
+  NEW: 'bg-sky-400/20 text-sky-100 ring-sky-300/30',
+  LOADED: 'bg-emerald-400/20 text-emerald-100 ring-emerald-300/30',
 };
 
 export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) {
@@ -22,7 +22,8 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
     inspection as Parameters<typeof getInspectionListStatus>[0],
   );
   const statusClass =
-    PORTAL_STATUS_CLASSES[status.label] ?? 'bg-slate-100 text-slate-700 ring-slate-200';
+    PORTAL_STATUS_CLASSES[status.label] ??
+    'bg-white/10 text-white/80 ring-white/15';
 
   const dateLabel = inspection.updatedAt
     ? formatInspectionDate(inspection.updatedAt)
@@ -31,33 +32,39 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
   return (
     <Link
       href={`/portal/track/${inspection.id}`}
-      className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-[#262626]/25 hover:shadow-md"
+      className="group flex overflow-hidden rounded-2xl border border-[#262626]/20 bg-[#2F2F2F] text-white shadow-md transition hover:border-[#F51EA0]/40 hover:shadow-lg"
     >
-      <div className="w-1.5 shrink-0 bg-[#262626]" aria-hidden />
+      <div className="w-1.5 shrink-0 bg-[#F51EA0]" aria-hidden />
 
       <div className="flex min-w-0 flex-1 gap-4 p-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#262626]/5">
-          <Package className="h-5 w-5 text-[#262626]" aria-hidden />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
+          <Package className="h-5 w-5 text-white/80" aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-base font-bold text-slate-900">
+              <p className="truncate text-base font-bold text-white">
                 {inspection.uldId}
               </p>
-              <p className="truncate text-xs text-slate-500">
+              <p className="truncate text-xs text-white/55">
                 AWB {inspection.awbNumber}
               </p>
             </div>
             <ChevronRight
-              className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-[#262626]"
+              className="h-4 w-4 shrink-0 text-white/40 transition group-hover:text-[#F51EA0]"
               aria-hidden
             />
           </div>
 
-          <p className="mt-1.5 truncate text-sm text-slate-700">{inspection.foodType}</p>
-          <p className="mt-0.5 truncate text-xs text-slate-500">
+          {inspection.clientLocationName ? (
+            <p className="mt-1.5 truncate text-xs font-medium text-[#F51EA0]/90">
+              {inspection.clientLocationName}
+            </p>
+          ) : null}
+
+          <p className="mt-1 truncate text-sm text-white/85">{inspection.foodType}</p>
+          <p className="mt-0.5 truncate text-xs text-white/50">
             {getConservationLabel(inspection.conservationType)} · {inspection.weightKg}{' '}
             kg · {inspection.boxCount} boxes
           </p>
@@ -68,7 +75,7 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
             >
               {status.label}
             </span>
-            <span className="text-[10px] text-slate-500">{dateLabel}</span>
+            <span className="text-[10px] text-white/45">{dateLabel}</span>
           </div>
         </div>
       </div>

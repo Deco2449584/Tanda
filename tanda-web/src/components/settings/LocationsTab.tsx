@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Copy,
+  ExternalLink,
   MapPin,
   Pencil,
   Plus,
@@ -103,15 +104,6 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         error instanceof Error ? error.message : 'Could not generate PIN.';
       onToast(message, 'error');
     }
-  }
-
-  function copyPortalLink() {
-    const url =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/portal`
-        : '/portal';
-    void navigator.clipboard.writeText(url);
-    onToast('Portal link copied.');
   }
 
   async function handleCreate(event: React.FormEvent) {
@@ -255,14 +247,15 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         <p className="mt-2 text-sm text-muted">
           Each client is a work site for staff, schedule, attendance, and billing.
           They sign in at{' '}
-          <button
-            type="button"
-            onClick={copyPortalLink}
+          <Link
+            href="/portal"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
           >
             /portal
-            <Copy className="h-3.5 w-3.5" aria-hidden />
-          </button>{' '}
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          </Link>{' '}
           with the shipment AWB and their company PIN. PINs do not expire unless
           you generate a new one or deactivate the client.
           {canOpenAccounting ? (

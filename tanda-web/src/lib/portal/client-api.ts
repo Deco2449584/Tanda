@@ -13,6 +13,7 @@ export interface PortalInspectionSummary {
   boxCount: number;
   registeredAt: string;
   updatedAt?: string;
+  clientLocationName?: string;
 }
 
 export async function verifyPortalAccess(
