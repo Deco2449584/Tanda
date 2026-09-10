@@ -1,10 +1,13 @@
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
-import type {
-  DataPurgeOptions,
-  DataPurgeResult,
-  PurgeProgressCallback,
+import { getAdminDb, getAdminStorage } from '@/lib/firebase-admin';
+import {
+  createEmptyPurgeResult,
+  purgeOptionsHasWork,
+  purgeResultHasSuccess,
+  type DataPurgeOptions,
+  type DataPurgeResult,
+  type PurgeProgressCallback,
 } from '@/lib/admin/data-purge';
 
 const BATCH_SIZE = 400;
@@ -13,7 +16,7 @@ async function deleteCollectionDocuments(
   collectionName: string,
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminFirestore();
+  const db = getAdminDb();
   let totalDeleted = 0;
 
   while (true) {
@@ -64,7 +67,7 @@ async function deleteStoragePrefix(
 async function clearInspectionPortalAccess(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminFirestore();
+  const db = getAdminDb();
   let cleared = 0;
 
   while (true) {
@@ -99,11 +102,15 @@ async function clearInspectionPortalAccess(
 async function resetAllEmployeePresence(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminFirestore();
+  const db = getAdminDb();
   let resetCount = 0;
+  let cursor: QueryDocumentSnapshot | undefined;
 
   while (true) {
-    const snapshot = await db.collection(COLLECTIONS.EMPLOYEES).limit(BATCH_SIZE).get();
+    let query = db.collection(COLLECTIONS.EMPLOYEES).orderBy('__name__').limit(BATCH_SIZE);
+    if (cursor) query = query.startAfter(cursor);
+
+    const snapshot = await query.get();
     if (snapshot.empty) break;
 
     const batch = db.batch();
@@ -116,6 +123,7 @@ async function resetAllEmployeePresence(
     await batch.commit();
 
     resetCount += snapshot.size;
+    cursor = snapshot.docs[snapshot.docs.length - 1];
     onProgress?.(`Reset presence for ${resetCount} employee${resetCount === 1 ? '' : 's'}…`);
 
     if (snapshot.size < BATCH_SIZE) break;
@@ -124,197 +132,320 @@ async function resetAllEmployeePresence(
   return resetCount;
 }
 
+async function clearEmployeeDocumentRefs(
+  onProgress?: PurgeProgressCallback,
+): Promise<number> {
+  const db = getAdminDb();
+  let cleared = 0;
+  let cursor: QueryDocumentSnapshot | undefined;
+
+  while (true) {
+    let query = db.collection(COLLECTIONS.EMPLOYEES).orderBy('__name__').limit(BATCH_SIZE);
+    if (cursor) query = query.startAfter(cursor);
+
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => {
+      batch.update(document.ref, {
+        passportUrl: FieldValue.delete(),
+        passportFileName: FieldValue.delete(),
+        visaUrl: FieldValue.delete(),
+        visaFileName: FieldValue.delete(),
+      });
+    });
+    await batch.commit();
+
+    cleared += snapshot.size;
+    cursor = snapshot.docs[snapshot.docs.length - 1];
+    onProgress?.(
+      `Cleared document refs on ${cleared} employee${cleared === 1 ? '' : 's'}…`,
+    );
+
+    if (snapshot.size < BATCH_SIZE) break;
+  }
+
+  return cleared;
+}
+
+async function clearEmployeeLocationRefs(
+  onProgress?: PurgeProgressCallback,
+): Promise<number> {
+  const db = getAdminDb();
+  let cleared = 0;
+  let cursor: QueryDocumentSnapshot | undefined;
+
+  while (true) {
+    let query = db.collection(COLLECTIONS.EMPLOYEES).orderBy('__name__').limit(BATCH_SIZE);
+    if (cursor) query = query.startAfter(cursor);
+
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => {
+      batch.update(document.ref, {
+        locationId: FieldValue.delete(),
+        locationGroupId: FieldValue.delete(),
+      });
+    });
+    await batch.commit();
+
+    cleared += snapshot.size;
+    cursor = snapshot.docs[snapshot.docs.length - 1];
+    onProgress?.(
+      `Cleared location refs on ${cleared} employee${cleared === 1 ? '' : 's'}…`,
+    );
+
+    if (snapshot.size < BATCH_SIZE) break;
+  }
+
+  return cleared;
+}
+
+async function runStep(
+  result: DataPurgeResult,
+  label: string,
+  run: () => Promise<number>,
+  assign: (count: number) => void,
+): Promise<void> {
+  try {
+    assign(await run());
+  } catch (error) {
+    result.errors.push(
+      error instanceof Error ? error.message : `Could not complete: ${label}`,
+    );
+  }
+}
+
 export async function purgeOperationalDataAdmin(
   options: DataPurgeOptions,
   onProgress?: PurgeProgressCallback,
 ): Promise<DataPurgeResult> {
-  const result: DataPurgeResult = {
-    attendanceRecordsDeleted: 0,
-    storageFilesDeleted: 0,
-    attendanceJustificationsDeleted: 0,
-    shiftsDeleted: 0,
-    leaveRequestsDeleted: 0,
-    notificationsDeleted: 0,
-    notificationPreferencesDeleted: 0,
-    announcementsDeleted: 0,
-    cargoInspectionsDeleted: 0,
-    cargoInspectionsStorageDeleted: 0,
-    portalClientsDeleted: 0,
-    locationsDeleted: 0,
-    locationGroupsDeleted: 0,
-    kioskDevicesDeleted: 0,
-    employeeDocumentsStorageDeleted: 0,
-    auditLogsDeleted: 0,
-    employeesReset: 0,
-    errors: [],
-  };
+  const result = createEmptyPurgeResult();
 
-  const hasWork =
-    options.attendanceRecords ||
-    options.attendanceStorage ||
-    options.attendanceJustifications ||
-    options.shifts ||
-    options.leaveRequests ||
-    options.notifications ||
-    options.notificationPreferences ||
-    options.announcements ||
-    options.cargoInspections ||
-    options.cargoInspectionsStorage ||
-    options.portalClients ||
-    options.locations ||
-    options.locationGroups ||
-    options.kioskDevices ||
-    options.employeeDocumentsStorage ||
-    options.auditLogs ||
-    options.resetEmployeePresence;
-
-  if (!hasWork) {
+  if (!purgeOptionsHasWork(options)) {
     throw new Error('Select at least one item to delete.');
   }
 
+  // Storage first where media pairs with Firestore docs.
   if (options.attendanceStorage) {
-    try {
-      result.storageFilesDeleted += await deleteStoragePrefix('attendance', onProgress);
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete attendance photos.',
-      );
-    }
+    await runStep(
+      result,
+      'attendance photos',
+      () => deleteStoragePrefix('attendance', onProgress),
+      (count) => {
+        result.storageFilesDeleted += count;
+      },
+    );
   }
 
   if (options.employeeDocumentsStorage) {
-    try {
-      result.employeeDocumentsStorageDeleted = await deleteStoragePrefix(
-        'employee_documents',
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error
-          ? error.message
-          : 'Could not delete employee identity documents.',
-      );
-    }
+    await runStep(
+      result,
+      'employee documents',
+      () => deleteStoragePrefix('employee_documents', onProgress),
+      (count) => {
+        result.employeeDocumentsStorageDeleted = count;
+      },
+    );
   }
 
-  if (options.attendanceRecords) {
-    try {
-      result.attendanceRecordsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.ATTENDANCE_RECORDS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete attendance records.',
-      );
-    }
+  if (options.issueReportsStorage) {
+    await runStep(
+      result,
+      'issue report attachments',
+      () => deleteStoragePrefix('issue_reports', onProgress),
+      (count) => {
+        result.issueReportsStorageDeleted = count;
+      },
+    );
   }
 
-  if (options.shifts) {
-    try {
-      result.shiftsDeleted = await deleteCollectionDocuments(COLLECTIONS.SHIFTS, onProgress);
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete shifts.',
-      );
-    }
-  }
-
-  if (options.leaveRequests) {
-    try {
-      result.leaveRequestsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.LEAVE_REQUESTS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete leave requests.',
-      );
-    }
-  }
-
-  if (options.attendanceJustifications) {
-    try {
-      result.attendanceJustificationsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.ATTENDANCE_JUSTIFICATIONS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error
-          ? error.message
-          : 'Could not delete attendance justifications.',
-      );
-    }
-  }
-
-  if (options.notifications) {
-    try {
-      result.notificationsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.NOTIFICATIONS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete notifications.',
-      );
-    }
-  }
-
-  if (options.notificationPreferences) {
-    try {
-      result.notificationPreferencesDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.NOTIFICATION_PREFERENCES,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error
-          ? error.message
-          : 'Could not delete notification preferences.',
-      );
-    }
-  }
-
-  if (options.announcements) {
-    try {
-      result.announcementsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.ANNOUNCEMENTS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete announcements.',
-      );
-    }
+  if (options.helpTutorialsStorage) {
+    await runStep(
+      result,
+      'help tutorial media',
+      () => deleteStoragePrefix('help_tutorials', onProgress),
+      (count) => {
+        result.helpTutorialsStorageDeleted = count;
+      },
+    );
   }
 
   if (options.cargoInspectionsStorage) {
-    try {
-      result.cargoInspectionsStorageDeleted = await deleteStoragePrefix(
-        'cargo_inspections',
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error
-          ? error.message
-          : 'Could not delete cargo inspection media.',
-      );
-    }
+    await runStep(
+      result,
+      'cargo inspection media',
+      () => deleteStoragePrefix('cargo_inspections', onProgress),
+      (count) => {
+        result.cargoInspectionsStorageDeleted = count;
+      },
+    );
+  }
+
+  // Operational Firestore collections.
+  if (options.attendanceRecords) {
+    await runStep(
+      result,
+      'attendance records',
+      () => deleteCollectionDocuments(COLLECTIONS.ATTENDANCE_RECORDS, onProgress),
+      (count) => {
+        result.attendanceRecordsDeleted = count;
+      },
+    );
+  }
+
+  if (options.shifts) {
+    await runStep(
+      result,
+      'shifts',
+      () => deleteCollectionDocuments(COLLECTIONS.SHIFTS, onProgress),
+      (count) => {
+        result.shiftsDeleted = count;
+      },
+    );
+  }
+
+  if (options.leaveRequests) {
+    await runStep(
+      result,
+      'leave requests',
+      () => deleteCollectionDocuments(COLLECTIONS.LEAVE_REQUESTS, onProgress),
+      (count) => {
+        result.leaveRequestsDeleted = count;
+      },
+    );
+  }
+
+  if (options.attendanceJustifications) {
+    await runStep(
+      result,
+      'attendance justifications',
+      () =>
+        deleteCollectionDocuments(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS, onProgress),
+      (count) => {
+        result.attendanceJustificationsDeleted = count;
+      },
+    );
+  }
+
+  if (options.notifications) {
+    await runStep(
+      result,
+      'notifications',
+      () => deleteCollectionDocuments(COLLECTIONS.NOTIFICATIONS, onProgress),
+      (count) => {
+        result.notificationsDeleted = count;
+      },
+    );
+  }
+
+  if (options.notificationPreferences) {
+    await runStep(
+      result,
+      'notification preferences',
+      () =>
+        deleteCollectionDocuments(COLLECTIONS.NOTIFICATION_PREFERENCES, onProgress),
+      (count) => {
+        result.notificationPreferencesDeleted = count;
+      },
+    );
+  }
+
+  if (options.announcements) {
+    await runStep(
+      result,
+      'announcements',
+      () => deleteCollectionDocuments(COLLECTIONS.ANNOUNCEMENTS, onProgress),
+      (count) => {
+        result.announcementsDeleted = count;
+      },
+    );
+  }
+
+  if (options.issueReports) {
+    await runStep(
+      result,
+      'issue reports',
+      () => deleteCollectionDocuments(COLLECTIONS.ISSUE_REPORTS, onProgress),
+      (count) => {
+        result.issueReportsDeleted = count;
+      },
+    );
+  }
+
+  if (options.helpTutorials) {
+    await runStep(
+      result,
+      'help tutorials',
+      () => deleteCollectionDocuments(COLLECTIONS.HELP_TUTORIALS, onProgress),
+      (count) => {
+        result.helpTutorialsDeleted = count;
+      },
+    );
+  }
+
+  if (options.accountingPeriodLocks) {
+    await runStep(
+      result,
+      'accounting period locks',
+      () =>
+        deleteCollectionDocuments(COLLECTIONS.ACCOUNTING_PERIOD_LOCKS, onProgress),
+      (count) => {
+        result.accountingPeriodLocksDeleted = count;
+      },
+    );
+  }
+
+  if (options.authSessions) {
+    await runStep(
+      result,
+      'auth sessions',
+      () => deleteCollectionDocuments(COLLECTIONS.AUTH_SESSIONS, onProgress),
+      (count) => {
+        result.authSessionsDeleted = count;
+      },
+    );
+  }
+
+  if (options.employeeCustomFieldValues) {
+    await runStep(
+      result,
+      'employee custom field values',
+      () =>
+        deleteCollectionDocuments(
+          COLLECTIONS.EMPLOYEE_CUSTOM_FIELD_VALUES,
+          onProgress,
+        ),
+      (count) => {
+        result.employeeCustomFieldValuesDeleted = count;
+      },
+    );
+  }
+
+  if (options.employeeCustomFields) {
+    await runStep(
+      result,
+      'employee custom fields',
+      () =>
+        deleteCollectionDocuments(COLLECTIONS.EMPLOYEE_CUSTOM_FIELDS, onProgress),
+      (count) => {
+        result.employeeCustomFieldsDeleted = count;
+      },
+    );
   }
 
   if (options.cargoInspections) {
-    try {
-      result.cargoInspectionsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.CARGO_INSPECTIONS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete cargo inspections.',
-      );
-    }
+    await runStep(
+      result,
+      'cargo inspections',
+      () => deleteCollectionDocuments(COLLECTIONS.CARGO_INSPECTIONS, onProgress),
+      (count) => {
+        result.cargoInspectionsDeleted = count;
+      },
+    );
   }
 
   if (options.portalClients) {
@@ -333,90 +464,100 @@ export async function purgeOperationalDataAdmin(
     }
   }
 
-  if (options.auditLogs) {
-    try {
-      result.auditLogsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.AUDIT_LOGS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete audit logs.',
-      );
-    }
-  }
-
-  if (options.resetEmployeePresence) {
-    try {
-      result.employeesReset = await resetAllEmployeePresence(onProgress);
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error
-          ? error.message
-          : 'Could not reset employee presence status.',
-      );
-    }
+  if (options.kioskLoginLogs) {
+    await runStep(
+      result,
+      'kiosk login logs',
+      () => deleteCollectionDocuments(COLLECTIONS.KIOSK_LOGIN_LOGS, onProgress),
+      (count) => {
+        result.kioskLoginLogsDeleted = count;
+      },
+    );
   }
 
   if (options.kioskDevices) {
-    try {
-      result.kioskDevicesDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.KIOSK_DEVICES,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete kiosk devices.',
-      );
-    }
+    await runStep(
+      result,
+      'kiosk devices',
+      () => deleteCollectionDocuments(COLLECTIONS.KIOSK_DEVICES, onProgress),
+      (count) => {
+        result.kioskDevicesDeleted = count;
+      },
+    );
+  }
+
+  if (options.clearEmployeeDocumentRefs || options.employeeDocumentsStorage) {
+    await runStep(
+      result,
+      'employee document refs',
+      () => clearEmployeeDocumentRefs(onProgress),
+      (count) => {
+        result.employeeDocumentRefsCleared = count;
+      },
+    );
   }
 
   if (options.locationGroups) {
-    try {
-      result.locationGroupsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.LOCATION_GROUPS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete location groups.',
-      );
-    }
+    await runStep(
+      result,
+      'location groups',
+      () => deleteCollectionDocuments(COLLECTIONS.LOCATION_GROUPS, onProgress),
+      (count) => {
+        result.locationGroupsDeleted = count;
+      },
+    );
   }
 
   if (options.locations) {
-    try {
-      result.locationsDeleted = await deleteCollectionDocuments(
-        COLLECTIONS.LOCATIONS,
-        onProgress,
-      );
-    } catch (error) {
-      result.errors.push(
-        error instanceof Error ? error.message : 'Could not delete locations.',
-      );
-    }
+    await runStep(
+      result,
+      'locations',
+      () => deleteCollectionDocuments(COLLECTIONS.LOCATIONS, onProgress),
+      (count) => {
+        result.locationsDeleted = count;
+      },
+    );
   }
 
-  const anySuccess =
-    result.attendanceRecordsDeleted > 0 ||
-    result.storageFilesDeleted > 0 ||
-    result.attendanceJustificationsDeleted > 0 ||
-    result.shiftsDeleted > 0 ||
-    result.leaveRequestsDeleted > 0 ||
-    result.notificationsDeleted > 0 ||
-    result.notificationPreferencesDeleted > 0 ||
-    result.announcementsDeleted > 0 ||
-    result.cargoInspectionsDeleted > 0 ||
-    result.cargoInspectionsStorageDeleted > 0 ||
-    result.portalClientsDeleted > 0 ||
-    result.locationsDeleted > 0 ||
-    result.locationGroupsDeleted > 0 ||
-    result.kioskDevicesDeleted > 0 ||
-    result.employeeDocumentsStorageDeleted > 0 ||
-    result.auditLogsDeleted > 0 ||
-    result.employeesReset > 0;
+  if (
+    options.clearEmployeeLocationRefs ||
+    options.locations ||
+    options.locationGroups
+  ) {
+    await runStep(
+      result,
+      'employee location refs',
+      () => clearEmployeeLocationRefs(onProgress),
+      (count) => {
+        result.employeeLocationRefsCleared = count;
+      },
+    );
+  }
 
-  if (result.errors.length > 0 && !anySuccess) {
+  if (options.resetEmployeePresence) {
+    await runStep(
+      result,
+      'employee presence reset',
+      () => resetAllEmployeePresence(onProgress),
+      (count) => {
+        result.employeesReset = count;
+      },
+    );
+  }
+
+  // Audit last so the purge action can still be recorded by the API afterward.
+  if (options.auditLogs) {
+    await runStep(
+      result,
+      'audit logs',
+      () => deleteCollectionDocuments(COLLECTIONS.AUDIT_LOGS, onProgress),
+      (count) => {
+        result.auditLogsDeleted = count;
+      },
+    );
+  }
+
+  if (result.errors.length > 0 && !purgeResultHasSuccess(result)) {
     throw new Error(result.errors.join(' '));
   }
 

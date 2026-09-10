@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-request';
-import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
 import { verifyMasterRequest } from '@/lib/auth/verify-master-request';
 import { purgeOperationalDataAdmin } from '@/lib/admin/data-purge-admin';
 import type { DataPurgeOptions } from '@/lib/admin/data-purge';
 
 export async function POST(request: Request) {
   try {
-    const admin = await verifyAdminRequest(request);
-    if (!admin) {
+    const master = await verifyMasterRequest(request);
+    if (!master) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
       progress.push(message);
     });
 
-    await recordAuditFromRequest(request, admin, {
+    await recordAuditFromRequest(request, master, {
       action: 'system.data_purged',
       entityType: 'system',
       summary: 'Ran operational data cleanup',

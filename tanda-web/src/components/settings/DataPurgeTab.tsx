@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
-import type { DataPurgeOptions, DataPurgeResult } from '@/lib/admin/data-purge';
+import {
+  createEmptyPurgeResult,
+  type DataPurgeOptions,
+  type DataPurgeResult,
+} from '@/lib/admin/data-purge';
 import { auth } from '@/lib/firebase';
 
 const CONFIRM_PHRASE = 'DELETE DATA';
@@ -26,9 +30,20 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
   locations: false,
   locationGroups: false,
   kioskDevices: false,
+  kioskLoginLogs: false,
   employeeDocumentsStorage: false,
+  employeeCustomFieldValues: false,
+  employeeCustomFields: false,
+  issueReports: false,
+  issueReportsStorage: false,
+  helpTutorials: false,
+  helpTutorialsStorage: false,
+  accountingPeriodLocks: false,
+  authSessions: false,
   auditLogs: false,
   resetEmployeePresence: true,
+  clearEmployeeDocumentRefs: false,
+  clearEmployeeLocationRefs: false,
 };
 
 export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
@@ -57,6 +72,21 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
       if (key === 'portalClients' && !next.portalClients && next.cargoInspections) {
         next.cargoInspections = false;
         next.cargoInspectionsStorage = false;
+      }
+      if (key === 'employeeDocumentsStorage' && next.employeeDocumentsStorage) {
+        next.clearEmployeeDocumentRefs = true;
+      }
+      if (key === 'issueReports' && next.issueReports) {
+        next.issueReportsStorage = true;
+      }
+      if (key === 'helpTutorials' && next.helpTutorials) {
+        next.helpTutorialsStorage = true;
+      }
+      if ((key === 'locations' || key === 'locationGroups') && (next.locations || next.locationGroups)) {
+        next.clearEmployeeLocationRefs = true;
+      }
+      if (key === 'employeeCustomFields' && next.employeeCustomFields) {
+        next.employeeCustomFieldValues = true;
       }
       return next;
     });
@@ -103,26 +133,8 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
       setConfirmText('');
     } catch (error) {
       setResult({
-        attendanceRecordsDeleted: 0,
-        storageFilesDeleted: 0,
-        attendanceJustificationsDeleted: 0,
-        shiftsDeleted: 0,
-        leaveRequestsDeleted: 0,
-        notificationsDeleted: 0,
-        notificationPreferencesDeleted: 0,
-        announcementsDeleted: 0,
-        cargoInspectionsDeleted: 0,
-        cargoInspectionsStorageDeleted: 0,
-        portalClientsDeleted: 0,
-        locationsDeleted: 0,
-        locationGroupsDeleted: 0,
-        kioskDevicesDeleted: 0,
-        employeeDocumentsStorageDeleted: 0,
-        auditLogsDeleted: 0,
-        employeesReset: 0,
-        errors: [
-          error instanceof Error ? error.message : 'Cleanup failed.',
-        ],
+        ...createEmptyPurgeResult(),
+        errors: [error instanceof Error ? error.message : 'Cleanup failed.'],
       });
     } finally {
       setRunning(false);
@@ -138,8 +150,9 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         <div>
           <h2 className="text-sm font-semibold text-white">Data cleanup</h2>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Manual purge for testing or freeing space. Employee records, profile avatars,
-            access roles, and localization settings are kept. This cannot be undone.
+            Manual purge for testing or freeing space. Employee accounts, profile avatars,
+            departments, access roles, and localization settings are kept. This cannot be
+            undone.
           </p>
         </div>
       </div>
@@ -201,10 +214,70 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           hint="Broadcast messages sent to staff"
         />
         <OptionRow
+          checked={options.issueReportsStorage}
+          onChange={() => toggleOption('issueReportsStorage')}
+          label="Issue report attachments (Storage)"
+          hint="Photos under issue_reports/"
+        />
+        <OptionRow
+          checked={options.issueReports}
+          onChange={() => toggleOption('issueReports')}
+          label="Issue reports (Firestore)"
+          hint="Staff-reported problems and support tickets"
+        />
+        <OptionRow
+          checked={options.helpTutorialsStorage}
+          onChange={() => toggleOption('helpTutorialsStorage')}
+          label="Help tutorial media (Storage)"
+          hint="Videos under help_tutorials/"
+        />
+        <OptionRow
+          checked={options.helpTutorials}
+          onChange={() => toggleOption('helpTutorials')}
+          label="Help tutorials (Firestore)"
+          hint="In-app help centre tutorial records"
+        />
+        <OptionRow
           checked={options.employeeDocumentsStorage}
           onChange={() => toggleOption('employeeDocumentsStorage')}
           label="Employee identity documents (Storage)"
-          hint="Passport and visa uploads under employee_documents/"
+          hint="Passport, visa, and custom field uploads under employee_documents/"
+        />
+        <OptionRow
+          checked={options.clearEmployeeDocumentRefs}
+          onChange={() => toggleOption('clearEmployeeDocumentRefs')}
+          label="Clear passport / visa URL fields on employees"
+          hint="Removes broken links after document storage is wiped"
+        />
+        <OptionRow
+          checked={options.employeeCustomFieldValues}
+          onChange={() => toggleOption('employeeCustomFieldValues')}
+          label="Employee custom field values (Firestore)"
+          hint="Per-employee answers for custom profile fields"
+        />
+        <OptionRow
+          checked={options.employeeCustomFields}
+          onChange={() => toggleOption('employeeCustomFields')}
+          label="Employee custom field definitions (Firestore)"
+          hint="Field schema — also selects values so answers are not orphaned"
+        />
+        <OptionRow
+          checked={options.accountingPeriodLocks}
+          onChange={() => toggleOption('accountingPeriodLocks')}
+          label="Accounting period locks (Firestore)"
+          hint="Closed pay-period locks used by payroll reporting"
+        />
+        <OptionRow
+          checked={options.authSessions}
+          onChange={() => toggleOption('authSessions')}
+          label="Auth sessions (Firestore)"
+          hint="Server session markers — users may need to sign in again"
+        />
+        <OptionRow
+          checked={options.kioskLoginLogs}
+          onChange={() => toggleOption('kioskLoginLogs')}
+          label="Kiosk login logs (Firestore)"
+          hint="Tablet sign-in history"
         />
         <OptionRow
           checked={options.kioskDevices}
@@ -216,13 +289,19 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           checked={options.locationGroups}
           onChange={() => toggleOption('locationGroups')}
           label="Location groups (Firestore)"
-          hint="Multi-site groupings — employees keep primary site assignments"
+          hint="Multi-site groupings — also clears group refs on employees"
         />
         <OptionRow
           checked={options.locations}
           onChange={() => toggleOption('locations')}
           label="Locations / warehouses (Firestore)"
-          hint="Site master data — also clears references on employees and kiosks"
+          hint="Site master data — also clears location refs on employees"
+        />
+        <OptionRow
+          checked={options.clearEmployeeLocationRefs}
+          onChange={() => toggleOption('clearEmployeeLocationRefs')}
+          label="Clear location / group fields on employees"
+          hint="Removes locationId and locationGroupId when sites are wiped"
         />
         <OptionRow
           checked={options.auditLogs}
@@ -273,74 +352,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           {progressLog.map((line, index) => (
             <p key={`${line}-${index}`}>{line}</p>
           ))}
-          {result ? (
-            <div className="mt-2 border-t border-border pt-2 text-muted">
-              {result.storageFilesDeleted > 0 ? (
-                <p>Storage files removed: {result.storageFilesDeleted}</p>
-              ) : null}
-              {result.attendanceRecordsDeleted > 0 ? (
-                <p>Attendance records removed: {result.attendanceRecordsDeleted}</p>
-              ) : null}
-              {result.attendanceJustificationsDeleted > 0 ? (
-                <p>
-                  Attendance justifications removed: {result.attendanceJustificationsDeleted}
-                </p>
-              ) : null}
-              {result.shiftsDeleted > 0 ? (
-                <p>Shifts removed: {result.shiftsDeleted}</p>
-              ) : null}
-              {result.leaveRequestsDeleted > 0 ? (
-                <p>Leave requests removed: {result.leaveRequestsDeleted}</p>
-              ) : null}
-              {result.notificationsDeleted > 0 ? (
-                <p>Notifications removed: {result.notificationsDeleted}</p>
-              ) : null}
-              {result.notificationPreferencesDeleted > 0 ? (
-                <p>
-                  Notification preferences removed: {result.notificationPreferencesDeleted}
-                </p>
-              ) : null}
-              {result.announcementsDeleted > 0 ? (
-                <p>Announcements removed: {result.announcementsDeleted}</p>
-              ) : null}
-              {result.employeeDocumentsStorageDeleted > 0 ? (
-                <p>
-                  Employee documents removed: {result.employeeDocumentsStorageDeleted}
-                </p>
-              ) : null}
-              {result.cargoInspectionsStorageDeleted > 0 ? (
-                <p>
-                  Inspection media removed: {result.cargoInspectionsStorageDeleted}
-                </p>
-              ) : null}
-              {result.cargoInspectionsDeleted > 0 ? (
-                <p>Cargo inspections removed: {result.cargoInspectionsDeleted}</p>
-              ) : null}
-              {result.portalClientsDeleted > 0 ? (
-                <p>Legacy portal clients removed: {result.portalClientsDeleted}</p>
-              ) : null}
-              {result.kioskDevicesDeleted > 0 ? (
-                <p>Legacy kiosk devices removed: {result.kioskDevicesDeleted}</p>
-              ) : null}
-              {result.locationGroupsDeleted > 0 ? (
-                <p>Location groups removed: {result.locationGroupsDeleted}</p>
-              ) : null}
-              {result.locationsDeleted > 0 ? (
-                <p>Locations removed: {result.locationsDeleted}</p>
-              ) : null}
-              {result.auditLogsDeleted > 0 ? (
-                <p>Audit logs removed: {result.auditLogsDeleted}</p>
-              ) : null}
-              {result.employeesReset > 0 ? (
-                <p>Employees reset: {result.employeesReset}</p>
-              ) : null}
-              {result.errors.map((error) => (
-                <p key={error} className="text-red-400">
-                  Error: {error}
-                </p>
-              ))}
-            </div>
-          ) : null}
+          {result ? <PurgeResultSummary result={result} /> : null}
         </div>
       )}
 
@@ -363,6 +375,56 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         )}
       </button>
     </section>
+  );
+}
+
+function PurgeResultSummary({ result }: { result: DataPurgeResult }) {
+  const lines: Array<[string, number]> = [
+    ['Storage files removed', result.storageFilesDeleted],
+    ['Attendance records removed', result.attendanceRecordsDeleted],
+    ['Attendance justifications removed', result.attendanceJustificationsDeleted],
+    ['Shifts removed', result.shiftsDeleted],
+    ['Leave requests removed', result.leaveRequestsDeleted],
+    ['Notifications removed', result.notificationsDeleted],
+    ['Notification preferences removed', result.notificationPreferencesDeleted],
+    ['Announcements removed', result.announcementsDeleted],
+    ['Issue report attachments removed', result.issueReportsStorageDeleted],
+    ['Issue reports removed', result.issueReportsDeleted],
+    ['Help tutorial media removed', result.helpTutorialsStorageDeleted],
+    ['Help tutorials removed', result.helpTutorialsDeleted],
+    ['Employee documents removed', result.employeeDocumentsStorageDeleted],
+    ['Employee document refs cleared', result.employeeDocumentRefsCleared],
+    ['Custom field values removed', result.employeeCustomFieldValuesDeleted],
+    ['Custom field definitions removed', result.employeeCustomFieldsDeleted],
+    ['Accounting period locks removed', result.accountingPeriodLocksDeleted],
+    ['Auth sessions removed', result.authSessionsDeleted],
+    ['Inspection media removed', result.cargoInspectionsStorageDeleted],
+    ['Cargo inspections removed', result.cargoInspectionsDeleted],
+    ['Legacy portal clients removed', result.portalClientsDeleted],
+    ['Kiosk login logs removed', result.kioskLoginLogsDeleted],
+    ['Legacy kiosk devices removed', result.kioskDevicesDeleted],
+    ['Location groups removed', result.locationGroupsDeleted],
+    ['Locations removed', result.locationsDeleted],
+    ['Employee location refs cleared', result.employeeLocationRefsCleared],
+    ['Audit logs removed', result.auditLogsDeleted],
+    ['Employees reset', result.employeesReset],
+  ];
+
+  return (
+    <div className="mt-2 border-t border-border pt-2 text-muted">
+      {lines.map(([label, count]) =>
+        count > 0 ? (
+          <p key={label}>
+            {label}: {count}
+          </p>
+        ) : null,
+      )}
+      {result.errors.map((error) => (
+        <p key={error} className="text-red-400">
+          Error: {error}
+        </p>
+      ))}
+    </div>
   );
 }
 
