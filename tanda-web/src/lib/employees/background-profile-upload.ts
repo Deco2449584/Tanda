@@ -61,19 +61,16 @@ export interface BackgroundProfileUploadJob {
 /**
  * Saves personal details immediately (Uploading), then uploads documents
  * in the background and finalizes to Pending.
+ *
+ * Resolves as soon as the profile is marked Uploading so the UI can navigate
+ * away without waiting for file uploads (or a previous in-flight job).
  */
 export async function beginBackgroundProfileUpload(
   job: BackgroundProfileUploadJob,
 ): Promise<void> {
   await startEmployeeProfileUploadRequest(job.personal);
 
-  if (activeJob) {
-    try {
-      await activeJob;
-    } catch {
-      // Previous job failed; continue with this one.
-    }
-  }
+  const previousJob = activeJob;
 
   publish({
     phase: 'uploading',
@@ -82,6 +79,14 @@ export async function beginBackgroundProfileUpload(
 
   let run!: Promise<void>;
   run = (async () => {
+    if (previousJob) {
+      try {
+        await previousJob;
+      } catch {
+        // Previous job failed; continue with this one.
+      }
+    }
+
     try {
       const customTask =
         job.customFields.length > 0
@@ -123,7 +128,6 @@ export async function beginBackgroundProfileUpload(
       ]).then(([photo, passport, visa]) => [photo, passport, visa] as const);
 
       if (!photoUrl.trim() && !passportUpload.url.trim() && !visaUpload.url.trim()) {
-        // No new/existing docs — still finalize personal details as Pending.
         await submitEmployeeProfileRequest({
           ...job.personal,
         });

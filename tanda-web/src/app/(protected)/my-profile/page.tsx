@@ -26,6 +26,7 @@ import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile
 import { validatePersonalDetails } from '@/lib/employees/validate-personal-details';
 import { initialCreateEmployeeForm } from '@/lib/employees/build-create-payload';
 import { employeeToFormValues } from '@/lib/employees/employee-to-form';
+import { getHomeRouteForRole } from '@/lib/auth/roles';
 import type { CreateEmployeeFormValues } from '@/lib/types/employee';
 import type {
   EmployeeCustomField,
@@ -45,7 +46,7 @@ function cloneCustomDrafts(
 
 export default function MyProfilePage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuthRole();
+  const { user, role, loading: authLoading } = useAuthRole();
   const {
     employee,
     loading: employeeLoading,
@@ -128,6 +129,10 @@ export default function MyProfilePage() {
       return;
     }
 
+    const dashboardHref = role
+      ? getHomeRouteForRole(role)
+      : '/employee-dashboard';
+
     setIsSubmitting(true);
     try {
       const personal = {
@@ -164,13 +169,14 @@ export default function MyProfilePage() {
       setPhotoFile(null);
       setPassportFile(null);
       setVisaFile(null);
-      router.replace('/employee-dashboard');
+      router.replace(dashboardHref);
     } catch (submitError) {
       setError(
         submitError instanceof Error
           ? submitError.message
           : 'Could not submit your profile.',
       );
+    } finally {
       setIsSubmitting(false);
     }
   }
@@ -194,6 +200,10 @@ export default function MyProfilePage() {
       return;
     }
 
+    const dashboardHref = role
+      ? getHomeRouteForRole(role)
+      : '/employee-dashboard';
+
     setIsSubmitting(true);
     try {
       const values = await buildCustomFieldValuePayloads({
@@ -207,7 +217,7 @@ export default function MyProfilePage() {
       }
       await saveEmployeeCustomFieldValuesRequest({ values });
       setSuccess('Optional documents saved.');
-      await loadCustomFields();
+      router.replace(dashboardHref);
     } catch (saveError) {
       setError(
         saveError instanceof Error
