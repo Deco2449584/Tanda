@@ -11,6 +11,15 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     defaultExpanded: true,
   },
   {
+    id: 'working-now',
+    title: 'Working now',
+    description: 'Live view of who is clocked in and which client site they are at',
+    category: 'overview',
+    chartType: 'live',
+    defaultVisible: true,
+    defaultExpanded: true,
+  },
+  {
     id: 'payroll-by-location',
     title: 'Payroll cost by site',
     description: 'Actual payroll cost distributed by location',

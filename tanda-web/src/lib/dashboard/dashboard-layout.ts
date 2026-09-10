@@ -50,18 +50,39 @@ export function loadDashboardLayout(
     const parsed = JSON.parse(raw) as Partial<DashboardLayoutState>;
     const defaults = createDefaultLayout();
 
+    const savedOrder = sanitizeWidgetIds(
+      parsed.widgetOrder ?? defaults.widgetOrder,
+      allowedWidgetIds,
+    );
     const visibleWidgets = sanitizeWidgetIds(
       parsed.visibleWidgets ?? defaults.visibleWidgets,
       allowedWidgetIds,
     );
-    const widgetOrder = [
-      ...sanitizeWidgetIds(parsed.widgetOrder ?? defaults.widgetOrder, allowedWidgetIds),
-      ...DEFAULT_WIDGET_ORDER.filter(
-        (id) =>
-          allowedWidgetIds.has(id) &&
-          !sanitizeWidgetIds(parsed.widgetOrder ?? [], allowedWidgetIds).includes(id),
-      ),
-    ];
+
+    // Newly added default-visible widgets appear for existing saved layouts.
+    const newlyVisibleDefaults = getDefaultVisibleWidgets().filter(
+      (id) =>
+        allowedWidgetIds.has(id) &&
+        !savedOrder.includes(id) &&
+        !visibleWidgets.includes(id),
+    );
+    newlyVisibleDefaults.forEach((id) => {
+      visibleWidgets.push(id);
+    });
+
+    const missingOrderIds = DEFAULT_WIDGET_ORDER.filter(
+      (id) => allowedWidgetIds.has(id) && !savedOrder.includes(id),
+    );
+    const widgetOrder = [...savedOrder];
+    missingOrderIds.forEach((id) => {
+      if (widgetOrder.includes(id)) return;
+      const kpiIndex = widgetOrder.indexOf('kpis');
+      if (kpiIndex >= 0 && (id === 'working-now' || newlyVisibleDefaults.includes(id))) {
+        widgetOrder.splice(kpiIndex + 1, 0, id);
+        return;
+      }
+      widgetOrder.push(id);
+    });
 
     const collapsedWidgets = sanitizeWidgetIds(
       parsed.collapsedWidgets ?? defaults.collapsedWidgets,

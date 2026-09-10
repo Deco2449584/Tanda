@@ -48,7 +48,13 @@ export type DashboardWidgetCategory =
   | 'scheduling'
   | 'leave';
 
-export type DashboardChartType = 'kpi' | 'pie' | 'bar' | 'grouped-bar' | 'area';
+export type DashboardChartType =
+  | 'kpi'
+  | 'live'
+  | 'pie'
+  | 'bar'
+  | 'grouped-bar'
+  | 'area';
 
 export interface DashboardWidgetDefinition {
   id: string;

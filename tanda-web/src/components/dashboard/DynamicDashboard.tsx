@@ -16,8 +16,10 @@ import { DashboardGroupedBarChart } from '@/components/dashboard/charts/Dashboar
 import { DashboardCurrencyPieChart, DashboardPieChart } from '@/components/dashboard/charts/DashboardPieChart';
 import { COLOR_HORAS_EXTRA_FALLBACK } from '@/components/dashboard/chart-theme';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
+import { WorkingNowWidget } from '@/components/dashboard/WorkingNowWidget';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useWorkingNow } from '@/hooks/useWorkingNow';
 import {
   getCurrentWeekDateRange,
   type DateRange,
@@ -72,10 +74,15 @@ function getWidgetSummary(
   widgetId: string,
   analytics: DashboardAnalytics,
   currency: string,
+  workingNowCount?: number,
 ): string {
   switch (widgetId) {
     case 'kpis':
       return `${analytics.activeStaffLabel} active · ${analytics.payrollActualFormatted} payroll`;
+    case 'working-now':
+      return workingNowCount != null
+        ? `${workingNowCount} clocked in live`
+        : 'Live presence';
     case 'payroll-by-location':
       return formatTopSlice(analytics.payrollByLocation, (v) =>
         formatDashboardCurrency(v, currency),
@@ -159,6 +166,13 @@ export function DynamicDashboard({
 
   const { shifts, leaveRequests, attendance, loading, refreshing, refresh } =
     useDashboardData(dateRange);
+
+  const workingNow = useWorkingNow({
+    timeZone: settings.timeZone,
+    employees,
+    locations,
+    locationFilter,
+  });
 
   const analytics = useMemo(
     () => {
@@ -284,6 +298,20 @@ export function DynamicDashboard({
 
     if (widgetId === 'kpis') {
       return <KpiGrid metrics={metrics} loadingIds={loadingIds} />;
+    }
+
+    if (widgetId === 'working-now') {
+      return (
+        <WorkingNowWidget
+          groups={workingNow.groups}
+          people={workingNow.people}
+          loading={workingNow.loading || employeesLoading}
+          nowMs={workingNow.nowMs}
+          timeZone={settings.timeZone}
+          workingCount={workingNow.workingCount}
+          onBreakCount={workingNow.onBreakCount}
+        />
+      );
     }
 
     switch (widgetId) {
@@ -445,7 +473,12 @@ export function DynamicDashboard({
               key={widgetId}
               title={definition.title}
               description={definition.description}
-              summary={getWidgetSummary(widgetId, analytics, settings.currency)}
+              summary={getWidgetSummary(
+                widgetId,
+                analytics,
+                settings.currency,
+                workingNow.totalCount,
+              )}
               collapsed={collapsed}
               onToggle={() => toggleWidgetCollapsed(widgetId)}
             >
