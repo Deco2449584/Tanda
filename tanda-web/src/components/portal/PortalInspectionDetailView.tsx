@@ -1,18 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
   CheckCircle2,
   ExternalLink,
-  FileText,
-  Loader2,
   MapPin,
 } from 'lucide-react';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
-import { exportCargoInspectionPdf } from '@/lib/inspections/export-pdf';
 import { formatInspectionDate } from '@/lib/inspections/format';
 import { resolveInspectionMapsUrl } from '@/lib/inspections/inspection-maps-url';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
@@ -37,30 +33,12 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export function PortalInspectionDetailView({
   inspection,
 }: PortalInspectionDetailViewProps) {
-  const [exportingPdf, setExportingPdf] = useState(false);
-  const [exportError, setExportError] = useState('');
-
   const detailStatus = getInspectionDetailStatus(inspection);
   const mapsUrl = resolveInspectionMapsUrl(inspection);
 
-  async function handleExportPdf() {
-    setExportError('');
-    setExportingPdf(true);
-
-    try {
-      await exportCargoInspectionPdf(inspection);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Could not export PDF.';
-      setExportError(message);
-    } finally {
-      setExportingPdf(false);
-    }
-  }
-
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
         <Link
           href="/portal/track"
           className="inline-flex items-center gap-2 text-sm font-medium text-white/65 transition hover:text-white"
@@ -68,20 +46,6 @@ export function PortalInspectionDetailView({
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to list
         </Link>
-
-        <button
-          type="button"
-          onClick={() => void handleExportPdf()}
-          disabled={exportingPdf}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#262626]/25 bg-[#262626] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1a1a1a] disabled:opacity-50"
-        >
-          {exportingPdf ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <FileText className="h-3.5 w-3.5" aria-hidden />
-          )}
-          Export PDF
-        </button>
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-[#262626]/15 bg-gradient-to-br from-[#262626] to-[#4A4A4A] p-5 text-white shadow-lg md:p-6">
@@ -114,12 +78,6 @@ export function PortalInspectionDetailView({
             : ''}
         </p>
       </section>
-
-      {exportError && (
-        <p className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {exportError}
-        </p>
-      )}
 
       <section className="grid gap-4 rounded-2xl border border-[#262626]/12 bg-[#2F2F2F] p-5 shadow-md sm:grid-cols-2 md:p-6">
         {inspection.clientLocationName ? (
