@@ -20,8 +20,10 @@ import {
   type BirthdayEntry,
 } from '@/lib/employees/birthdays';
 import { cn } from '@/lib/cn';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { Employee } from '@/lib/types/employee';
+import { isFirebaseStorageUrl } from '@/utils/imageOptimizer';
 
 interface EmployeeBirthdaysCalendarProps {
   employees: readonly Employee[];
@@ -36,6 +38,53 @@ function initials(name: string): string {
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 }
 
+function PhotoThumb({
+  photoUrl,
+  name,
+  className,
+}: {
+  photoUrl?: string;
+  name: string;
+  className?: string;
+}) {
+  if (photoUrl) {
+    if (isFirebaseStorageUrl(photoUrl)) {
+      return (
+        <FirebaseImage
+          src={photoUrl}
+          alt={name}
+          width={48}
+          height={48}
+          className={cn('h-full w-full object-cover', className)}
+          sizes="48px"
+        />
+      );
+    }
+
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt={name}
+        className={cn('h-full w-full object-cover', className)}
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        'flex h-full w-full items-center justify-center bg-primary/25 font-semibold text-primary',
+        className,
+      )}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
 function Avatar({
   entry,
   size = 'md',
@@ -46,26 +95,61 @@ function Avatar({
   const sizeClass =
     size === 'lg' ? 'h-12 w-12 text-sm' : size === 'sm' ? 'h-7 w-7 text-[9px]' : 'h-9 w-9 text-[10px]';
 
-  if (entry.photoUrl) {
+  return (
+    <div
+      className={cn(
+        'overflow-hidden rounded-full ring-2 ring-surface-raised',
+        sizeClass,
+        !entry.photoUrl && 'bg-primary/20',
+      )}
+    >
+      <PhotoThumb photoUrl={entry.photoUrl} name={entry.name} className="text-[inherit]" />
+    </div>
+  );
+}
+
+function DayCellPhotos({ entries }: { entries: BirthdayEntry[] }) {
+  const visible = entries.slice(0, 2);
+  const extra = entries.length - visible.length;
+
+  if (entries.length === 1) {
+    const entry = entries[0];
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={entry.photoUrl}
-        alt=""
-        className={cn('rounded-full object-cover ring-2 ring-surface-raised', sizeClass)}
-      />
+      <span className="absolute inset-0.5 overflow-hidden rounded-md ring-1 ring-primary/40">
+        <PhotoThumb photoUrl={entry.photoUrl} name={entry.name} className="text-[8px]" />
+        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-0.5 pb-px pt-2 text-center text-[8px] font-bold leading-none text-white tabular-nums">
+          {entry.day}
+        </span>
+      </span>
     );
   }
 
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center rounded-full bg-primary/20 font-semibold text-primary ring-2 ring-surface-raised',
-        sizeClass,
-      )}
-    >
-      {initials(entry.name)}
-    </div>
+    <span className="absolute inset-0.5 flex items-center justify-center overflow-hidden rounded-md bg-primary/15 ring-1 ring-primary/35">
+      <span className="flex items-center -space-x-1.5">
+        {visible.map((entry, index) => (
+          <span
+            key={entry.employeeDocId}
+            className="relative h-4 w-4 overflow-hidden rounded-full ring-1 ring-surface-raised"
+            style={{ zIndex: visible.length - index }}
+          >
+            <PhotoThumb photoUrl={entry.photoUrl} name={entry.name} className="text-[6px]" />
+          </span>
+        ))}
+      </span>
+      {extra > 0 ? (
+        <span className="absolute -right-0.5 -top-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-foreground px-0.5 text-[7px] font-bold text-surface-base">
+          +{extra}
+        </span>
+      ) : entries.length > 1 ? (
+        <span className="absolute -right-0.5 -top-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-foreground px-0.5 text-[7px] font-bold text-surface-base">
+          {entries.length}
+        </span>
+      ) : null}
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-0.5 pb-px pt-1.5 text-center text-[7px] font-bold leading-none text-white tabular-nums">
+        {entries[0]?.day}
+      </span>
+    </span>
   );
 }
 
@@ -174,17 +258,10 @@ function MonthCard({
               }
               className={cn(
                 'relative flex aspect-square items-center justify-center rounded-md text-[10px] tabular-nums transition',
-                hasBirthday
-                  ? 'bg-primary text-white font-semibold shadow-sm shadow-primary/30'
-                  : 'text-muted/80',
+                hasBirthday ? 'text-transparent' : 'text-muted/80',
               )}
             >
-              {day}
-              {dayEntries.length > 1 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-foreground px-0.5 text-[7px] font-bold text-surface-base">
-                  {dayEntries.length}
-                </span>
-              ) : null}
+              {hasBirthday ? <DayCellPhotos entries={dayEntries} /> : day}
             </span>
           );
         })}
@@ -405,7 +482,7 @@ export function EmployeeBirthdaysCalendar({
             <div>
               <h3 className="text-sm font-semibold text-foreground">Year calendar</h3>
               <p className="text-xs text-muted">
-                Highlighted days have birthdays. Select a month for the full list.
+                Photos mark birthday days. Select a month for the full list.
               </p>
             </div>
           </div>

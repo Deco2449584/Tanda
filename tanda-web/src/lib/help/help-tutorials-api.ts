@@ -1,6 +1,8 @@
 import { auth } from '@/lib/firebase';
 import type {
   CreateHelpTutorialInput,
+  HelpResourceKind,
+  HelpTutorialAttachment,
   UpdateHelpTutorialInput,
 } from '@/lib/types/help-tutorial';
 
@@ -22,8 +24,16 @@ export interface SerializedHelpTutorial {
   audience: string;
   audienceValue?: string;
   audienceRoles?: string[];
-  videoUrl: string;
-  videoPath: string;
+  kind: HelpResourceKind;
+  videoUrl?: string;
+  videoPath?: string;
+  fileUrl?: string;
+  filePath?: string;
+  fileName?: string;
+  contentType?: string;
+  sizeBytes?: number;
+  externalUrl?: string;
+  attachments?: HelpTutorialAttachment[];
   thumbnailUrl?: string;
   durationSeconds?: number;
   sortOrder: number;

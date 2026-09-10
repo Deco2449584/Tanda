@@ -52,8 +52,8 @@ export default function HelpTutorialsAdminPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
-        title="Help tutorials"
-        description="Upload and categorize training videos for employees and admins."
+        title="Help guides"
+        description="Upload videos, PDFs, documents, images or external links for staff."
       />
 
       {pageLoading ? (
@@ -72,7 +72,7 @@ export default function HelpTutorialsAdminPage() {
           onChanged={() => {
             setToast({
               id: crypto.randomUUID(),
-              text: 'Tutorial saved.',
+              text: 'Guide saved.',
               variant: 'success',
             });
             void loadTutorials();

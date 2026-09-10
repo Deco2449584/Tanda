@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import {
+  BookOpen,
   CalendarDays,
   ClipboardList,
   Clock,
@@ -19,7 +20,6 @@ import {
   Settings,
   ShieldCheck,
   Users,
-  Video,
   X,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth/roles';
@@ -69,7 +69,7 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: 'Help', href: '/help', icon: HelpCircle },
       { label: 'Issue reports', href: '/issue-reports', icon: Flag },
-      { label: 'Help tutorials', href: '/help-tutorials', icon: Video },
+      { label: 'Help guides', href: '/help-tutorials', icon: BookOpen },
     ],
   },
   {

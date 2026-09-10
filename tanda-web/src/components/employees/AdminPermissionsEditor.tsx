@@ -26,7 +26,7 @@ const MODULE_LABELS: Record<AdminModuleKey, string> = {
   leaveRequests: 'Leave requests',
   inspections: 'Inspections',
   issueReports: 'Issue reports',
-  helpTutorials: 'Help tutorials',
+  helpTutorials: 'Help guides',
   kiosk: 'Kiosk check-in',
   settings: 'Settings',
 };

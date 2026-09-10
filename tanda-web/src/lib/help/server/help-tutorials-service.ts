@@ -9,7 +9,9 @@ import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import type {
   CreateHelpTutorialInput,
+  HelpResourceKind,
   HelpTutorial,
+  HelpTutorialAttachment,
   UpdateHelpTutorialInput,
 } from '@/lib/types/help-tutorial';
 import {
@@ -17,6 +19,7 @@ import {
   validateHelpTutorialCategoryName,
 } from '@/lib/help/help-tutorial-categories';
 import {
+  HELP_RESOURCE_KINDS,
   HELP_TUTORIAL_AUDIENCES,
 } from '@/lib/types/help-tutorial';
 
@@ -35,6 +38,92 @@ function parseAudience(value: string): CreateHelpTutorialInput['audience'] {
     return trimmed as CreateHelpTutorialInput['audience'];
   }
   return 'all';
+}
+
+function parseKind(value: string | undefined): HelpResourceKind {
+  const trimmed = value?.trim() ?? '';
+  if ((HELP_RESOURCE_KINDS as readonly string[]).includes(trimmed)) {
+    return trimmed as HelpResourceKind;
+  }
+  return 'video';
+}
+
+function normalizeExternalUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error('External URL is required.');
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error('Enter a valid URL (https://…).');
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error('External links must start with http:// or https://.');
+  }
+
+  return parsed.toString();
+}
+
+function sanitizeAttachments(
+  attachments: HelpTutorialAttachment[] | undefined,
+): HelpTutorialAttachment[] {
+  if (!attachments?.length) return [];
+
+  return attachments
+    .map((item) => {
+      const id = item.id?.trim();
+      const url = item.url?.trim();
+      const kind = parseKind(item.kind);
+      if (!id || !url) return null;
+      return {
+        id,
+        kind,
+        url,
+        ...(item.path?.trim() ? { path: item.path.trim() } : {}),
+        ...(item.fileName?.trim() ? { fileName: item.fileName.trim() } : {}),
+        ...(item.contentType?.trim()
+          ? { contentType: item.contentType.trim() }
+          : {}),
+        ...(typeof item.sizeBytes === 'number' ? { sizeBytes: item.sizeBytes } : {}),
+      };
+    })
+    .filter((item): item is HelpTutorialAttachment => Boolean(item));
+}
+
+function assertAudience(input: CreateHelpTutorialInput | UpdateHelpTutorialInput) {
+  if (input.audience === 'department' || input.audience === 'location') {
+    if (!input.audienceValue?.trim()) {
+      throw new Error('Select a department or location for this audience.');
+    }
+  }
+
+  if (input.audience === 'userRole') {
+    if (!('audienceRoles' in input) || !input.audienceRoles?.length) {
+      throw new Error('Select at least one user role.');
+    }
+  }
+}
+
+function assertResource(input: CreateHelpTutorialInput): void {
+  const kind = parseKind(input.kind);
+
+  if (kind === 'link') {
+    normalizeExternalUrl(input.externalUrl ?? '');
+    return;
+  }
+
+  if (kind === 'video') {
+    if (!input.videoUrl?.trim() || !input.videoPath?.trim()) {
+      throw new Error('Video is required.');
+    }
+    return;
+  }
+
+  if (!input.fileUrl?.trim() || !input.filePath?.trim()) {
+    throw new Error('A file attachment is required.');
+  }
 }
 
 export async function listHelpTutorialsForViewer(
@@ -82,24 +171,13 @@ export async function createHelpTutorial(input: {
 }): Promise<HelpTutorial> {
   const title = input.payload.title.trim();
   const description = input.payload.description.trim();
-  const videoUrl = input.payload.videoUrl.trim();
-  const videoPath = input.payload.videoPath.trim();
+  const kind = parseKind(input.payload.kind);
 
   if (!title) throw new Error('Title is required.');
-  if (!videoUrl || !videoPath) throw new Error('Video is required.');
+  assertAudience(input.payload);
+  assertResource({ ...input.payload, kind });
 
-  if (input.payload.audience === 'department' || input.payload.audience === 'location') {
-    if (!input.payload.audienceValue?.trim()) {
-      throw new Error('Select a department or location for this audience.');
-    }
-  }
-
-  if (input.payload.audience === 'userRole') {
-    if (!input.payload.audienceRoles?.length) {
-      throw new Error('Select at least one user role.');
-    }
-  }
-
+  const attachments = sanitizeAttachments(input.payload.attachments);
   const ref = getAdminFirestore().collection(COLLECTIONS.HELP_TUTORIALS).doc();
 
   const payload: Record<string, unknown> = {
@@ -107,8 +185,7 @@ export async function createHelpTutorial(input: {
     description,
     category: parseCategory(input.payload.category),
     audience: parseAudience(input.payload.audience),
-    videoUrl,
-    videoPath,
+    kind,
     sortOrder: input.payload.sortOrder ?? 0,
     published: input.payload.published === true,
     active: true,
@@ -122,6 +199,29 @@ export async function createHelpTutorial(input: {
   }
   if (input.payload.audienceRoles?.length) {
     payload.audienceRoles = input.payload.audienceRoles;
+  }
+
+  if (kind === 'video') {
+    payload.videoUrl = input.payload.videoUrl!.trim();
+    payload.videoPath = input.payload.videoPath!.trim();
+  } else if (kind === 'link') {
+    payload.externalUrl = normalizeExternalUrl(input.payload.externalUrl ?? '');
+  } else {
+    payload.fileUrl = input.payload.fileUrl!.trim();
+    payload.filePath = input.payload.filePath!.trim();
+    if (input.payload.fileName?.trim()) {
+      payload.fileName = input.payload.fileName.trim();
+    }
+    if (input.payload.contentType?.trim()) {
+      payload.contentType = input.payload.contentType.trim();
+    }
+    if (typeof input.payload.sizeBytes === 'number') {
+      payload.sizeBytes = input.payload.sizeBytes;
+    }
+  }
+
+  if (attachments.length > 0) {
+    payload.attachments = attachments;
   }
   if (input.payload.thumbnailUrl?.trim()) {
     payload.thumbnailUrl = input.payload.thumbnailUrl.trim();
@@ -147,6 +247,13 @@ export async function updateHelpTutorial(
     throw new Error('Tutorial not found.');
   }
 
+  if (input.audience === 'department' || input.audience === 'location') {
+    assertAudience(input);
+  }
+  if (input.audience === 'userRole') {
+    assertAudience(input);
+  }
+
   const update: Record<string, unknown> = {
     updatedAt: FieldValue.serverTimestamp(),
   };
@@ -161,6 +268,9 @@ export async function updateHelpTutorial(
   if (typeof input.audience === 'string') {
     update.audience = parseAudience(input.audience);
   }
+  if (typeof input.kind === 'string') {
+    update.kind = parseKind(input.kind);
+  }
   if (input.audienceValue === null) {
     update.audienceValue = FieldValue.delete();
   } else if (typeof input.audienceValue === 'string') {
@@ -173,6 +283,32 @@ export async function updateHelpTutorial(
   }
   if (typeof input.videoUrl === 'string') update.videoUrl = input.videoUrl.trim();
   if (typeof input.videoPath === 'string') update.videoPath = input.videoPath.trim();
+
+  if (input.fileUrl === null) update.fileUrl = FieldValue.delete();
+  else if (typeof input.fileUrl === 'string') update.fileUrl = input.fileUrl.trim();
+  if (input.filePath === null) update.filePath = FieldValue.delete();
+  else if (typeof input.filePath === 'string') update.filePath = input.filePath.trim();
+  if (input.fileName === null) update.fileName = FieldValue.delete();
+  else if (typeof input.fileName === 'string') update.fileName = input.fileName.trim();
+  if (input.contentType === null) update.contentType = FieldValue.delete();
+  else if (typeof input.contentType === 'string') {
+    update.contentType = input.contentType.trim();
+  }
+  if (input.sizeBytes === null) update.sizeBytes = FieldValue.delete();
+  else if (typeof input.sizeBytes === 'number') update.sizeBytes = input.sizeBytes;
+
+  if (input.externalUrl === null) {
+    update.externalUrl = FieldValue.delete();
+  } else if (typeof input.externalUrl === 'string') {
+    update.externalUrl = normalizeExternalUrl(input.externalUrl);
+  }
+
+  if (input.attachments === null) {
+    update.attachments = FieldValue.delete();
+  } else if (Array.isArray(input.attachments)) {
+    update.attachments = sanitizeAttachments(input.attachments);
+  }
+
   if (input.thumbnailUrl === null) {
     update.thumbnailUrl = FieldValue.delete();
   } else if (typeof input.thumbnailUrl === 'string') {

@@ -228,14 +228,14 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         <OptionRow
           checked={options.helpTutorialsStorage}
           onChange={() => toggleOption('helpTutorialsStorage')}
-          label="Help tutorial media (Storage)"
-          hint="Videos under help_tutorials/"
+          label="Help guide media (Storage)"
+          hint="Videos, PDFs and docs under help_tutorials/"
         />
         <OptionRow
           checked={options.helpTutorials}
           onChange={() => toggleOption('helpTutorials')}
-          label="Help tutorials (Firestore)"
-          hint="In-app help centre tutorial records"
+          label="Help guides (Firestore)"
+          hint="In-app help centre tutorial and guide records"
         />
         <OptionRow
           checked={options.employeeDocumentsStorage}

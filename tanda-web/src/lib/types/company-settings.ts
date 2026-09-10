@@ -47,7 +47,7 @@ export interface CompanySettings {
   pushNotificationsEnabled?: boolean;
   /** When true, shift assignment/cancellation emails are sent (Resend). Master-only setting. */
   shiftEmailNotificationsEnabled?: boolean;
-  /** Custom help tutorial video categories (merged with defaults and in-use values). */
+  /** Custom help guide categories (merged with defaults and in-use values). */
   helpTutorialCategories?: string[];
   /** Account codes used in payroll journal CSV exports. */
   payrollAccounting?: PayrollAccountingSettings;
