@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Search, Users } from 'lucide-react';
+import { Cake, Plus, Search, Users } from 'lucide-react';
 import { EmployeeTable } from '@/components/employees/EmployeeTable';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -83,7 +83,14 @@ export default function EmployeesPage() {
           <div />
         )}
 
-        <div className="flex w-full flex-col gap-3 sm:max-w-lg sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-center">
+          <Link
+            href="/employees/birthdays"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+          >
+            <Cake className="h-3.5 w-3.5" aria-hidden />
+            Birthdays
+          </Link>
           <Link
             href="/employees/profiles?status=pending"
             className="inline-flex shrink-0 items-center justify-center rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-muted transition hover:bg-surface-hover hover:text-foreground"
