@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Globe, Loader2 } from 'lucide-react';
 import { updateInspectionPortalAccess } from '@/lib/inspections/update-portal-access';
-import { fetchLocations } from '@/lib/locations/locations-service';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
-import type { Location } from '@/lib/types/location';
 
 interface InspectionPortalAccessProps {
   inspection: CargoInspection;
@@ -17,44 +15,49 @@ export function InspectionPortalAccess({
   inspection,
   onUpdated,
 }: InspectionPortalAccessProps) {
-  const [clients, setClients] = useState<Location[]>([]);
   const [portalEnabled, setPortalEnabled] = useState(inspection.portalEnabled);
-  const [portalClientId, setPortalClientId] = useState(
-    inspection.portalClientId ?? '',
-  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const detectedClientId =
+    inspection.clientLocationId?.trim() ||
+    inspection.portalClientId?.trim() ||
+    '';
+  const detectedClientName =
+    inspection.clientLocationName?.trim() ||
+    (detectedClientId ? 'Assigned client' : '');
+
   useEffect(() => {
     setPortalEnabled(inspection.portalEnabled);
-    setPortalClientId(inspection.portalClientId ?? '');
-  }, [inspection.portalClientId, inspection.portalEnabled]);
+  }, [inspection.portalEnabled]);
 
-  useEffect(() => {
-    void fetchLocations()
-      .then(setClients)
-      .catch(() => setClients([]));
-  }, []);
-
-  const selectableClients = clients.filter(
-    (client) => client.active && client.hasPortalPin,
-  );
-
-  async function handleSave() {
+  async function handleToggle(nextEnabled: boolean) {
+    setPortalEnabled(nextEnabled);
     setSaving(true);
     setError('');
     setMessage('');
 
     try {
+      if (nextEnabled && !detectedClientId) {
+        throw new Error(
+          'This inspection has no client/site assigned. Register it again from Continental Inspect with a client selected.',
+        );
+      }
+
       await updateInspectionPortalAccess(inspection.id, {
-        portalEnabled,
-        portalClientId: portalEnabled ? portalClientId : undefined,
+        portalEnabled: nextEnabled,
+        portalClientId: nextEnabled ? detectedClientId : undefined,
         awbNumber: inspection.awbNumber,
       });
-      setMessage('Portal access updated.');
+      setMessage(
+        nextEnabled
+          ? 'Portal enabled for the assigned client.'
+          : 'Portal access disabled.',
+      );
       onUpdated?.();
     } catch (saveError) {
+      setPortalEnabled(!nextEnabled);
       const text =
         saveError instanceof Error
           ? saveError.message
@@ -98,61 +101,48 @@ export function InspectionPortalAccess({
       </div>
 
       <div className="mt-4 space-y-4">
-        <label className="flex cursor-pointer items-center gap-3">
+        {detectedClientName ? (
+          <p className="text-xs text-subtle">
+            Client:{' '}
+            <span className="font-medium text-foreground">{detectedClientName}</span>
+            {' '}(detected from the inspection — not selectable)
+          </p>
+        ) : (
+          <p className="text-xs text-amber-400">
+            No client/site on this inspection. It must be registered with a client in
+            Continental Inspect before portal access can be enabled.
+          </p>
+        )}
+
+        <label
+          className={`flex items-center gap-3 ${
+            !detectedClientId || saving ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+          }`}
+        >
           <input
             type="checkbox"
             checked={portalEnabled}
-            onChange={(e) => setPortalEnabled(e.target.checked)}
+            disabled={!detectedClientId || saving}
+            onChange={(e) => void handleToggle(e.target.checked)}
             className="h-4 w-4 rounded border-zinc-600 bg-surface-raised text-primary focus:ring-primary/30"
           />
-          <span className="text-sm text-foreground">Enable portal for this inspection</span>
+          <span className="text-sm text-foreground">
+            Enable portal for this inspection
+          </span>
+          {saving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted" aria-hidden />
+          ) : null}
         </label>
 
-        {portalEnabled ? (
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted">
-              Client
-            </label>
-            <select
-              value={portalClientId}
-              onChange={(e) => setPortalClientId(e.target.value)}
-              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
-            >
-              <option value="">Select a client…</option>
-              {selectableClients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                  {client.code ? ` (${client.code})` : ''}
-                </option>
-              ))}
-            </select>
-            {selectableClients.length === 0 ? (
-              <p className="mt-2 text-xs text-amber-400">
-                Create a client with a PIN in Settings → Clients first.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        {portalEnabled && portalClientId ? (
+        {portalEnabled && detectedClientId ? (
           <p className="text-xs text-subtle">
             AWB for portal lookup:{' '}
             <span className="font-mono text-muted">
               {inspection.awbNumber.trim()}
-            </span>
-            {' '}(with or without dashes when logging in)
+            </span>{' '}
+            (with or without dashes when logging in)
           </p>
         ) : null}
-
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-          Save portal settings
-        </button>
 
         {message ? (
           <p className="text-xs text-emerald-400">{message}</p>

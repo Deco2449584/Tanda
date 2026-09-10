@@ -21,7 +21,9 @@ export async function updateInspectionPortalAccess(
 
   if (input.portalEnabled) {
     if (!input.portalClientId?.trim()) {
-      throw new Error('Select a portal client before enabling access.');
+      throw new Error(
+        'This inspection has no assigned client. Register it with a client in Continental Inspect first.',
+      );
     }
     payload.portalClientId = input.portalClientId.trim();
     if (input.awbNumber?.trim()) {
