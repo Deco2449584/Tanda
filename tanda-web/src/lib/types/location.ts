@@ -11,6 +11,10 @@ export interface LocationFirestore {
   /** Plaintext PIN for admin display and copy — never exposed on the public portal. */
   pin?: string;
   pinHash?: string;
+  /** Session QR/NFC clock-in at this site (employee must be signed in). */
+  scanPunchEnabled?: boolean;
+  /** Opaque token embedded in /punch/s/{token} — rotate to invalidate stickers. */
+  scanPunchToken?: string;
   billing?: SiteBilling;
   billingHistory?: SiteBilling[];
   createdAt?: Timestamp;
@@ -26,6 +30,8 @@ export interface Location {
   pin?: string;
   /** True when pinHash (or plaintext pin) is stored — eligible for portal assignment. */
   hasPortalPin?: boolean;
+  scanPunchEnabled?: boolean;
+  scanPunchToken?: string;
   billing?: SiteBilling;
   billingHistory?: SiteBilling[];
   createdAt?: string;

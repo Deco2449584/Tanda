@@ -176,7 +176,7 @@ export async function logAttendanceRestrictionBlocked(input: {
   actorUid?: string;
   employeeId: string;
   employeeName?: string;
-  channel: 'kiosk' | 'admin_manual';
+  channel: 'kiosk' | 'admin_manual' | 'scan';
   violation: AttendanceRestrictionViolation;
   punchAt: Date;
   ipAddress?: string;

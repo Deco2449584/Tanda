@@ -19,6 +19,7 @@ import {
 } from '@/lib/auth/employee-session';
 import { isKioskRole } from '@/lib/auth/roles';
 import { resolvePostLoginHref } from '@/lib/auth/resolve-post-login-href';
+import { sanitizeReturnPath } from '@/lib/auth/sanitize-return-path';
 import {
   claimAuthSession,
   releaseOwnedAuthSession,
@@ -96,6 +97,7 @@ function LoginPageContent() {
   const [error, setError] = useState('');
   const passwordJustSet = searchParams.get('passwordSet') === '1';
   const sessionSuperseded = searchParams.get('session') === 'superseded';
+  const returnPath = sanitizeReturnPath(searchParams.get('next'));
 
   useEffect(() => {
     const message = consumeAuthSessionMessage();
@@ -112,16 +114,18 @@ function LoginPageContent() {
     if (authLoading || !user || !role) return;
 
     let cancelled = false;
-    void resolvePostLoginHref(user.email, role).then((href) => {
+    void (async () => {
+      const href =
+        returnPath ?? (await resolvePostLoginHref(user.email, role));
       if (!cancelled) {
         router.replace(href);
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [authLoading, role, router, user]);
+  }, [authLoading, returnPath, role, router, user]);
 
   if (authLoading) {
     return <LoadingSplash message="Loading session…" />;
@@ -156,7 +160,10 @@ function LoginPageContent() {
         }
       }
 
-      router.push(await resolvePostLoginHref(credential.user.email, session.role));
+      router.push(
+        returnPath ??
+          (await resolvePostLoginHref(credential.user.email, session.role)),
+      );
     } catch (err) {
       const code =
         err && typeof err === 'object' && 'code' in err

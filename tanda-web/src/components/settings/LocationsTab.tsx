@@ -7,21 +7,30 @@ import Link from 'next/link';
 import {
   Building2,
   Copy,
+  Download,
   ExternalLink,
   MapPin,
   Pencil,
   Plus,
+  QrCode,
   RefreshCw,
   Sparkles,
   Trash2,
 } from 'lucide-react';
 import { ClientPhotoUpload } from '@/components/settings/ClientPhotoUpload';
+import {
+  downloadScanPunchQr,
+  ScanPunchQr,
+} from '@/components/settings/ScanPunchQr';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
+import { buildScanPunchUrl } from '@/lib/attendance/scan-punch-token';
 import {
   createLocation,
   deleteLocation,
   regenerateLocationPin,
+  regenerateLocationScanPunchToken,
   setLocationActive,
+  setLocationScanPunchEnabled,
   updateLocation,
 } from '@/lib/locations/locations-service';
 import { uploadLocationPhoto } from '@/lib/locations/upload-location-photo';
@@ -90,6 +99,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [scanBusyId, setScanBusyId] = useState<string | null>(null);
 
   const takenPins = useMemo(
     () =>
@@ -236,6 +246,50 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       );
     } catch {
       onToast('Could not update client status.', 'error');
+    }
+  }
+
+  async function handleToggleScanPunch(location: Location) {
+    setScanBusyId(location.id);
+    try {
+      const enabled = !location.scanPunchEnabled;
+      await setLocationScanPunchEnabled(
+        location.id,
+        enabled,
+        location.scanPunchToken,
+      );
+      void refresh();
+      onToast(
+        enabled
+          ? `Scan clock-in enabled for ${location.name}.`
+          : `Scan clock-in disabled for ${location.name}.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Could not update scan clock-in.';
+      onToast(message, 'error');
+    } finally {
+      setScanBusyId(null);
+    }
+  }
+
+  async function handleRegenerateScanToken(location: Location) {
+    const confirmed = window.confirm(
+      `Generate a new scan link for "${location.name}"?\n\nExisting QR codes and NFC tags will stop working until you update them.`,
+    );
+    if (!confirmed) return;
+
+    setScanBusyId(location.id);
+    try {
+      await regenerateLocationScanPunchToken(location.id);
+      void refresh();
+      onToast(`New scan link generated for ${location.name}.`);
+    } catch {
+      onToast('Could not regenerate scan link.', 'error');
+    } finally {
+      setScanBusyId(null);
     }
   }
 
@@ -419,14 +473,14 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         ) : locations.length === 0 ? (
           <p className="mt-4 text-sm text-subtle">No clients yet.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-800">
+          <ul className="mt-5 space-y-5">
             {locations.map((location) => (
               <li
                 key={location.id}
-                className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
+                className="rounded-2xl border border-border bg-surface-base/30 p-4 md:p-5"
               >
                 {editingId === location.id ? (
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 space-y-3">
                     <ClientPhotoUpload
                       currentPhotoUrl={location.photoUrl}
                       selectedFile={editPhotoFile}
@@ -483,95 +537,249 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <div className="flex min-w-0 items-start gap-3">
-                      <ClientPhotoThumb
-                        photoUrl={location.photoUrl}
-                        name={location.name}
-                      />
-                      <div className="min-w-0">
-                        <p className="font-medium text-white">{location.name}</p>
-                        <p className="text-xs text-subtle">
-                          {location.city}
-                          {location.code ? ` · ${location.code}` : ''}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-muted">PIN:</span>
-                          {location.pin ? (
-                            <>
-                              <span className="font-mono text-sm tracking-wider text-white">
-                                {location.pin}
-                              </span>
-                              <PinCopyButton
-                                pin={location.pin}
-                                onCopied={() =>
-                                  onToast(`PIN copied for ${location.name}.`)
-                                }
-                                label={`Copy PIN for ${location.name}`}
-                              />
-                            </>
-                          ) : (
-                            <span className="text-xs text-subtle">
-                              Unknown — use New PIN to set one
+                  <div className="space-y-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <ClientPhotoThumb
+                          photoUrl={location.photoUrl}
+                          name={location.name}
+                        />
+                        <div className="min-w-0 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium text-white">
+                              {location.name}
+                            </p>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                                location.active
+                                  ? 'bg-emerald-500/20 text-emerald-300'
+                                  : 'bg-zinc-700 text-muted'
+                              }`}
+                            >
+                              {location.active ? 'Active' : 'Inactive'}
                             </span>
-                          )}
+                          </div>
+                          <p className="text-xs text-subtle">
+                            {location.city}
+                            {location.code ? ` · ${location.code}` : ''}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted">PIN:</span>
+                            {location.pin ? (
+                              <>
+                                <span className="font-mono text-sm tracking-wider text-white">
+                                  {location.pin}
+                                </span>
+                                <PinCopyButton
+                                  pin={location.pin}
+                                  onCopied={() =>
+                                    onToast(`PIN copied for ${location.name}.`)
+                                  }
+                                  label={`Copy PIN for ${location.name}`}
+                                />
+                              </>
+                            ) : (
+                              <span className="text-xs text-subtle">
+                                Unknown — use New PIN to set one
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+
+                      <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(location)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
+                        >
+                          <Pencil className="h-3 w-3" aria-hidden />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleRegeneratePin(location)}
+                          disabled={regeneratingId === location.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 disabled:opacity-50"
+                        >
+                          <RefreshCw
+                            className={`h-3 w-3 ${regeneratingId === location.id ? 'animate-spin' : ''}`}
+                            aria-hidden
+                          />
+                          New PIN
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleActive(location)}
+                          className="rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
+                        >
+                          {location.active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(location)}
+                          disabled={deletingId === location.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-900/60 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:border-red-700 hover:bg-red-950/40 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3 w-3" aria-hidden />
+                          {deletingId === location.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                          location.active
-                            ? 'bg-emerald-500/20 text-emerald-300'
-                            : 'bg-zinc-700 text-muted'
-                        }`}
-                      >
-                        {location.active ? 'Active' : 'Inactive'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(location)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
-                      >
-                        <Pencil className="h-3 w-3" aria-hidden />
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleRegeneratePin(location)}
-                        disabled={regeneratingId === location.id}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 disabled:opacity-50"
-                      >
-                        <RefreshCw
-                          className={`h-3 w-3 ${regeneratingId === location.id ? 'animate-spin' : ''}`}
-                          aria-hidden
-                        />
-                        New PIN
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleToggleActive(location)}
-                        className="rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500"
-                      >
-                        {location.active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDelete(location)}
-                        disabled={deletingId === location.id}
-                        className="inline-flex items-center gap-1 rounded-lg border border-red-900/60 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:border-red-700 hover:bg-red-950/40 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3 w-3" aria-hidden />
-                        {deletingId === location.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </div>
-                  </>
+
+                    <ScanPunchControls
+                      location={location}
+                      busy={scanBusyId === location.id}
+                      onToggle={() => void handleToggleScanPunch(location)}
+                      onRegenerate={() =>
+                        void handleRegenerateScanToken(location)
+                      }
+                      onCopied={() =>
+                        onToast(`Scan link copied for ${location.name}.`)
+                      }
+                      onDownloaded={() =>
+                        onToast(`QR downloaded for ${location.name}.`)
+                      }
+                      onDownloadError={() =>
+                        onToast('Could not download QR.', 'error')
+                      }
+                    />
+                  </div>
                 )}
               </li>
             ))}
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function ScanPunchControls({
+  location,
+  busy,
+  onToggle,
+  onRegenerate,
+  onCopied,
+  onDownloaded,
+  onDownloadError,
+}: {
+  location: Location;
+  busy: boolean;
+  onToggle: () => void;
+  onRegenerate: () => void;
+  onCopied: () => void;
+  onDownloaded: () => void;
+  onDownloadError: () => void;
+}) {
+  const enabled = location.scanPunchEnabled === true;
+  const token = location.scanPunchToken?.trim();
+  const url = token ? buildScanPunchUrl(token) : null;
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    if (!url) return;
+    setDownloading(true);
+    try {
+      await downloadScanPunchQr({
+        url,
+        fileName: `${location.name}-${location.code ?? location.city}-scan`,
+        size: 1024,
+      });
+      onDownloaded();
+    } catch {
+      onDownloadError();
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-border bg-surface-raised/60 p-4 md:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+            <QrCode className="h-4 w-4 text-primary" aria-hidden />
+            QR / NFC clock-in
+          </p>
+          <p className="max-w-xl text-xs leading-relaxed text-subtle">
+            Staff signed into the app scan this link to punch automatically (no
+            PIN or photo). Use the same URL on NFC tags.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onToggle}
+          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+            enabled
+              ? 'border border-emerald-800/50 bg-emerald-950/40 text-emerald-300'
+              : 'border border-border-strong text-muted hover:text-foreground'
+          }`}
+        >
+          {busy ? 'Saving…' : enabled ? 'Disable' : 'Enable'}
+        </button>
+      </div>
+
+      {enabled && url ? (
+        <div className="grid gap-5 border-t border-border/80 pt-4 md:grid-cols-[auto_1fr] md:items-start">
+          <div className="mx-auto md:mx-0">
+            <ScanPunchQr url={url} size={168} />
+          </div>
+
+          <div className="min-w-0 space-y-4">
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
+                Scan link
+              </p>
+              <p className="break-all rounded-lg border border-border bg-surface-base/70 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-muted">
+                {url}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(url);
+                  onCopied();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary"
+              >
+                <Copy className="h-3.5 w-3.5" aria-hidden />
+                Copy link
+              </button>
+              <button
+                type="button"
+                disabled={downloading}
+                onClick={() => void handleDownload()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden />
+                {downloading ? 'Downloading…' : 'Download QR'}
+              </button>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary"
+              >
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                Open
+              </a>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onRegenerate}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary disabled:opacity-50"
+              >
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                New link
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

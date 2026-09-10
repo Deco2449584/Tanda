@@ -40,6 +40,11 @@ export function mapLocationDoc(
     hasPortalPin:
       (typeof record.pinHash === 'string' && record.pinHash.length > 0) ||
       (typeof record.pin === 'string' && record.pin.trim().length > 0),
+    scanPunchEnabled: record.scanPunchEnabled === true,
+    scanPunchToken:
+      typeof record.scanPunchToken === 'string' && record.scanPunchToken.trim()
+        ? record.scanPunchToken.trim()
+        : undefined,
     billing: mapSiteBilling(record.billing),
     billingHistory: Array.isArray(record.billingHistory)
       ? record.billingHistory

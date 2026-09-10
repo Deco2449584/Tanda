@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import { generateScanPunchToken } from '@/lib/attendance/scan-punch-token';
 import { mapLocationDoc } from '@/lib/locations/map-location';
 import {
   generatePortalPin,
@@ -157,6 +158,42 @@ export async function regenerateLocationPin(locationId: string): Promise<string>
   });
 
   return pin;
+}
+
+export async function setLocationScanPunchEnabled(
+  locationId: string,
+  enabled: boolean,
+  existingToken?: string,
+): Promise<string | undefined> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  if (!enabled) {
+    await updateDoc(doc(db, COLLECTIONS.LOCATIONS, locationId), {
+      scanPunchEnabled: false,
+    });
+    return existingToken?.trim() || undefined;
+  }
+
+  const token = existingToken?.trim() || generateScanPunchToken();
+  await updateDoc(doc(db, COLLECTIONS.LOCATIONS, locationId), {
+    scanPunchEnabled: true,
+    scanPunchToken: token,
+  });
+  return token;
+}
+
+/** Rotates the QR/NFC token so previous stickers/tags stop working. */
+export async function regenerateLocationScanPunchToken(
+  locationId: string,
+): Promise<string> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  const token = generateScanPunchToken();
+  await updateDoc(doc(db, COLLECTIONS.LOCATIONS, locationId), {
+    scanPunchEnabled: true,
+    scanPunchToken: token,
+  });
+  return token;
 }
 
 export async function setLocationActive(
