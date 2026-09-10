@@ -511,6 +511,14 @@ export async function purgeOperationalDataAdmin(
   if (options.locations) {
     await runStep(
       result,
+      'location photos',
+      () => deleteStoragePrefix('location_photos', onProgress),
+      (count) => {
+        result.storageFilesDeleted += count;
+      },
+    );
+    await runStep(
+      result,
       'locations',
       () => deleteCollectionDocuments(COLLECTIONS.LOCATIONS, onProgress),
       (count) => {

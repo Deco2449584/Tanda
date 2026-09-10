@@ -31,6 +31,22 @@ service firebase.storage {
         request.resource.contentType.matches('image/.*');
     }
 
+    // Client / location photos from Settings → Clients
+    match /location_photos/{fileName} {
+      allow read: if true;
+      allow write: if
+        request.auth != null &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    match /location_photos {
+      allow list: if request.auth != null;
+    }
+    match /location_photos/{allPaths=**} {
+      allow list, delete: if request.auth != null;
+    }
+
     // Continental Inspect — evidencias logísticas (fotos y videos)
     // Ruta en app: cargo_inspections/{userId}/{inspectionId}/photos|videos/{fileName}
     match /cargo_inspections/{userId}/{inspectionId}/{folder}/{fileName} {

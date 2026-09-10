@@ -28,6 +28,10 @@ export function mapLocationDoc(
     name: record.name?.trim() ?? '',
     city: record.city?.trim() ?? '',
     code,
+    photoUrl:
+      typeof record.photoUrl === 'string' && record.photoUrl.trim()
+        ? record.photoUrl.trim()
+        : undefined,
     active: record.active !== false,
     pin:
       typeof record.pin === 'string' && record.pin.trim()

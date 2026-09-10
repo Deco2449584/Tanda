@@ -105,10 +105,13 @@ export async function createLocation(
 
   await assertLocationPinAvailable(pin);
 
+  const photoUrl = input.photoUrl?.trim();
+
   const docRef = await addDoc(collection(db, COLLECTIONS.LOCATIONS), {
     name,
     city,
     ...(code ? { code } : {}),
+    ...(photoUrl ? { photoUrl } : {}),
     pinHash: hashPortalPin(pin),
     pin,
     active: true,
@@ -136,6 +139,11 @@ export async function updateLocation(
     name,
     city,
     code: code ? code : deleteField(),
+    ...(input.photoUrl === null
+      ? { photoUrl: deleteField() }
+      : typeof input.photoUrl === 'string' && input.photoUrl.trim()
+        ? { photoUrl: input.photoUrl.trim() }
+        : {}),
   });
 }
 

@@ -5,6 +5,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  Building2,
   Copy,
   ExternalLink,
   MapPin,
@@ -14,6 +15,8 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
+import { ClientPhotoUpload } from '@/components/settings/ClientPhotoUpload';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import {
   createLocation,
   deleteLocation,
@@ -21,6 +24,7 @@ import {
   setLocationActive,
   updateLocation,
 } from '@/lib/locations/locations-service';
+import { uploadLocationPhoto } from '@/lib/locations/upload-location-photo';
 import {
   generateUniquePortalPinFromList,
   isPortalPinTaken,
@@ -29,6 +33,7 @@ import {
 import type { Location } from '@/lib/types/location';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useLocations } from '@/providers/LocationsProvider';
+import { isFirebaseStorageUrl } from '@/utils/imageOptimizer';
 
 interface LocationsTabProps {
   onToast: (message: string, variant?: 'success' | 'error' | 'info') => void;
@@ -76,10 +81,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [city, setCity] = useState('');
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>(emptyEditForm);
+  const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -131,11 +138,23 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         code: code || undefined,
         pin,
       });
+
+      if (photoFile) {
+        const photoUrl = await uploadLocationPhoto(result.locationId, photoFile);
+        await updateLocation(result.locationId, {
+          name: name.trim(),
+          city: city.trim(),
+          code: code || undefined,
+          photoUrl,
+        });
+      }
+
       setRevealedPin(result.pin);
       setName('');
       setCity('');
       setCode('');
       setPin('');
+      setPhotoFile(null);
       void refresh();
       onToast('Client created. Share the PIN for portal access.');
     } catch (error) {
@@ -154,21 +173,29 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       city: location.city,
       code: location.code ?? '',
     });
+    setEditPhotoFile(null);
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditForm(emptyEditForm);
+    setEditPhotoFile(null);
   }
 
-  async function handleSaveEdit(locationId: string) {
-    setSavingEditId(locationId);
+  async function handleSaveEdit(location: Location) {
+    setSavingEditId(location.id);
 
     try {
-      await updateLocation(locationId, {
+      let photoUrl: string | undefined;
+      if (editPhotoFile) {
+        photoUrl = await uploadLocationPhoto(location.id, editPhotoFile);
+      }
+
+      await updateLocation(location.id, {
         name: editForm.name,
         city: editForm.city,
         code: editForm.code || undefined,
+        ...(photoUrl ? { photoUrl } : {}),
       });
       cancelEdit();
       void refresh();
@@ -369,6 +396,11 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               </p>
             )}
           </div>
+          <ClientPhotoUpload
+            selectedFile={photoFile}
+            onFileChange={setPhotoFile}
+            disabled={saving}
+          />
           <button
             type="submit"
             disabled={saving || pinTakenInForm || !pin.trim()}
@@ -395,6 +427,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               >
                 {editingId === location.id ? (
                   <div className="min-w-0 flex-1 space-y-3">
+                    <ClientPhotoUpload
+                      currentPhotoUrl={location.photoUrl}
+                      selectedFile={editPhotoFile}
+                      onFileChange={setEditPhotoFile}
+                      disabled={savingEditId === location.id}
+                    />
                     <input
                       value={editForm.name}
                       onChange={(e) =>
@@ -429,7 +467,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => void handleSaveEdit(location.id)}
+                        onClick={() => void handleSaveEdit(location)}
                         disabled={savingEditId === location.id}
                         className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                       >
@@ -446,32 +484,38 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                   </div>
                 ) : (
                   <>
-                    <div className="min-w-0">
-                      <p className="font-medium text-white">{location.name}</p>
-                      <p className="text-xs text-subtle">
-                        {location.city}
-                        {location.code ? ` · ${location.code}` : ''}
-                      </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-muted">PIN:</span>
-                        {location.pin ? (
-                          <>
-                            <span className="font-mono text-sm tracking-wider text-white">
-                              {location.pin}
+                    <div className="flex min-w-0 items-start gap-3">
+                      <ClientPhotoThumb
+                        photoUrl={location.photoUrl}
+                        name={location.name}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-medium text-white">{location.name}</p>
+                        <p className="text-xs text-subtle">
+                          {location.city}
+                          {location.code ? ` · ${location.code}` : ''}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted">PIN:</span>
+                          {location.pin ? (
+                            <>
+                              <span className="font-mono text-sm tracking-wider text-white">
+                                {location.pin}
+                              </span>
+                              <PinCopyButton
+                                pin={location.pin}
+                                onCopied={() =>
+                                  onToast(`PIN copied for ${location.name}.`)
+                                }
+                                label={`Copy PIN for ${location.name}`}
+                              />
+                            </>
+                          ) : (
+                            <span className="text-xs text-subtle">
+                              Unknown — use New PIN to set one
                             </span>
-                            <PinCopyButton
-                              pin={location.pin}
-                              onCopied={() =>
-                                onToast(`PIN copied for ${location.name}.`)
-                              }
-                              label={`Copy PIN for ${location.name}`}
-                            />
-                          </>
-                        ) : (
-                          <span className="text-xs text-subtle">
-                            Unknown — use New PIN to set one
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -528,6 +572,42 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function ClientPhotoThumb({
+  photoUrl,
+  name,
+}: {
+  photoUrl?: string;
+  name: string;
+}) {
+  return (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-hover ring-1 ring-zinc-700">
+      {photoUrl ? (
+        isFirebaseStorageUrl(photoUrl) ? (
+          <FirebaseImage
+            src={photoUrl}
+            alt={name}
+            width={48}
+            height={48}
+            className="h-full w-full object-cover"
+            sizes="48px"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photoUrl}
+            alt={name}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        )
+      ) : (
+        <Building2 className="h-5 w-5 text-subtle" aria-hidden />
+      )}
     </div>
   );
 }

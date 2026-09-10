@@ -5,6 +5,8 @@ export interface LocationFirestore {
   name: string;
   city: string;
   code?: string;
+  /** Client / site photo (Firebase Storage download URL). */
+  photoUrl?: string;
   active: boolean;
   /** Plaintext PIN for admin display and copy — never exposed on the public portal. */
   pin?: string;
@@ -19,6 +21,7 @@ export interface Location {
   name: string;
   city: string;
   code?: string;
+  photoUrl?: string;
   active: boolean;
   pin?: string;
   /** True when pinHash (or plaintext pin) is stored — eligible for portal assignment. */
@@ -32,6 +35,7 @@ export interface CreateLocationInput {
   name: string;
   city: string;
   code?: string;
+  photoUrl?: string;
   /** Required for new clients — 6–8 digit portal PIN. */
   pin: string;
 }
@@ -40,4 +44,6 @@ export interface UpdateLocationInput {
   name: string;
   city: string;
   code?: string;
+  /** Pass a URL to set/replace, or null to clear. Omit to leave unchanged. */
+  photoUrl?: string | null;
 }
