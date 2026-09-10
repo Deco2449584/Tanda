@@ -64,7 +64,7 @@ export async function submitEmployeeProfileRequest(
 
 export async function reviewEmployeeProfileRequest(
   employeeDocId: string,
-  status: 'Approved' | 'Rejected',
+  status: 'Pending' | 'Approved' | 'Rejected',
   rejectionReason?: string,
 ): Promise<void> {
   const headers = await getAuthHeaders();

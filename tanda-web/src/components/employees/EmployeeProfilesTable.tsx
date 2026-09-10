@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Check, ExternalLink, Pencil, X } from 'lucide-react';
+import { Check, ExternalLink, Pencil, RefreshCw, X } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
@@ -11,6 +11,14 @@ import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile
 import type { Employee, PersonalProfileStatus } from '@/lib/types/employee';
 
 export type ProfileStatusFilter = 'all' | PersonalProfileStatus;
+
+type ReviewStatus = 'Pending' | 'Approved' | 'Rejected';
+
+const STATUS_CHANGE_OPTIONS: { value: ReviewStatus; label: string }[] = [
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Approved', label: 'Approved' },
+  { value: 'Rejected', label: 'Rejected' },
+];
 
 function isStaffProfileEmployee(employee: Employee): boolean {
   const role = (employee.role ?? 'empleado').trim().toLowerCase();
@@ -56,13 +64,15 @@ export function EmployeeProfilesTable({
     });
   }, [employees, searchQuery, statusFilter]);
 
-  async function handleReview(
-    employee: Employee,
-    status: 'Approved' | 'Rejected',
-  ) {
+  async function handleReview(employee: Employee, status: ReviewStatus) {
+    const current = normalizePersonalProfileStatus(employee.personalProfileStatus);
+    if (current === status) return;
+
     let rejectionReason: string | undefined;
     if (status === 'Rejected') {
-      const reason = window.prompt(`Reason for rejecting ${employee.name}'s profile:`);
+      const reason = window.prompt(
+        `Reason for rejecting ${employee.name}'s profile:`,
+      );
       if (reason === null) return;
       rejectionReason = reason.trim();
       if (!rejectionReason) {
@@ -75,8 +85,12 @@ export function EmployeeProfilesTable({
     try {
       await reviewEmployeeProfileRequest(employee.id, status, rejectionReason);
       onReviewed?.();
-    } catch {
-      window.alert('Could not update the profile status.');
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : 'Could not update the profile status.',
+      );
     } finally {
       setUpdatingId(null);
     }
@@ -115,6 +129,12 @@ export function EmployeeProfilesTable({
               employee.personalProfileStatus,
             );
             const busy = updatingId === employee.id;
+            const selectValue =
+              status === 'Pending' ||
+              status === 'Approved' ||
+              status === 'Rejected'
+                ? status
+                : '';
 
             return (
               <tr key={employee.id} className="align-top">
@@ -137,7 +157,8 @@ export function EmployeeProfilesTable({
                 </td>
                 <td className="px-4 py-3">
                   <PersonalProfileStatusBadge status={status} />
-                  {status === 'Rejected' && employee.personalProfileRejectionReason ? (
+                  {status === 'Rejected' &&
+                  employee.personalProfileRejectionReason ? (
                     <p className="mt-2 max-w-xs text-xs text-red-300/90">
                       {employee.personalProfileRejectionReason}
                     </p>
@@ -172,7 +193,7 @@ export function EmployeeProfilesTable({
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {canReview && status === 'Pending' ? (
                       <>
                         <button
@@ -195,6 +216,41 @@ export function EmployeeProfilesTable({
                         </button>
                       </>
                     ) : null}
+
+                    {canReview ? (
+                      <label className="inline-flex items-center gap-1.5">
+                        <span className="sr-only">Change profile status</span>
+                        <RefreshCw
+                          className="h-3.5 w-3.5 text-muted"
+                          aria-hidden
+                        />
+                        <select
+                          value={selectValue}
+                          disabled={busy}
+                          onChange={(event) => {
+                            const next = event.target.value as ReviewStatus | '';
+                            if (!next) return;
+                            void handleReview(employee, next);
+                          }}
+                          className="rounded-lg border border-border bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
+                          aria-label={`Change status for ${employee.name}`}
+                        >
+                          <option value="" disabled>
+                            Change status…
+                          </option>
+                          {STATUS_CHANGE_OPTIONS.map((option) => (
+                            <option
+                              key={option.value}
+                              value={option.value}
+                              className="bg-surface-raised"
+                            >
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+
                     {canUpdate ? (
                       <Link
                         href={`/employees/${employee.id}/edit`}

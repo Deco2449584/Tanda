@@ -6,6 +6,8 @@ import { recordAuditFromRequest } from '@/lib/audit/server/record-audit-from-req
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 
+const REVIEW_STATUSES = new Set(['Pending', 'Approved', 'Rejected']);
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -26,28 +28,32 @@ export async function PATCH(
       rejectionReason?: string;
     };
 
-    if (body.status !== 'Approved' && body.status !== 'Rejected') {
+    if (!body.status || !REVIEW_STATUSES.has(body.status)) {
       return NextResponse.json({ error: 'Invalid status.' }, { status: 400 });
     }
 
-    const docRef = getAdminFirestore().collection(COLLECTIONS.EMPLOYEES).doc(id);
+    const nextStatus = body.status as 'Pending' | 'Approved' | 'Rejected';
+
+    const docRef = getAdminDb().collection(COLLECTIONS.EMPLOYEES).doc(id);
     const existing = await docRef.get();
     if (!existing.exists) {
       return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
     }
 
     const data = existing.data() ?? {};
-    if (data.personalProfileStatus !== 'Pending') {
-      return NextResponse.json(
-        { error: 'Only pending profiles can be approved or rejected.' },
-        { status: 400 },
-      );
+    const previousStatus =
+      typeof data.personalProfileStatus === 'string'
+        ? data.personalProfileStatus
+        : 'none';
+
+    if (previousStatus === nextStatus) {
+      return NextResponse.json({ ok: true, unchanged: true });
     }
 
     const rejectionReason =
       typeof body.rejectionReason === 'string' ? body.rejectionReason.trim() : '';
 
-    if (body.status === 'Rejected' && !rejectionReason) {
+    if (nextStatus === 'Rejected' && !rejectionReason) {
       return NextResponse.json(
         { error: 'A rejection reason is required.' },
         { status: 400 },
@@ -55,11 +61,11 @@ export async function PATCH(
     }
 
     const payload: Record<string, unknown> = {
-      personalProfileStatus: body.status,
+      personalProfileStatus: nextStatus,
       personalProfileReviewedAt: FieldValue.serverTimestamp(),
     };
 
-    if (body.status === 'Rejected') {
+    if (nextStatus === 'Rejected') {
       payload.personalProfileRejectionReason = rejectionReason;
     } else {
       payload.personalProfileRejectionReason = FieldValue.delete();
@@ -71,18 +77,21 @@ export async function PATCH(
       typeof data.employeeId === 'string' ? data.employeeId : id;
     const employeeName = typeof data.name === 'string' ? data.name : employeeCode;
 
+    const actionByStatus = {
+      Approved: 'employee.profile_approved',
+      Rejected: 'employee.profile_rejected',
+      Pending: 'employee.profile_status_changed',
+    } as const;
+
     await recordAuditFromRequest(request, authContext.user, {
-      action:
-        body.status === 'Approved'
-          ? 'employee.profile_approved'
-          : 'employee.profile_rejected',
+      action: actionByStatus[nextStatus],
       entityType: 'employee',
       entityId: id,
-      summary: `${body.status === 'Approved' ? 'Approved' : 'Rejected'} personal profile for ${employeeName} (${employeeCode})`,
-      before: { personalProfileStatus: data.personalProfileStatus },
+      summary: `Changed personal profile status for ${employeeName} (${employeeCode}) from ${previousStatus} to ${nextStatus}`,
+      before: { personalProfileStatus: previousStatus },
       after: {
-        personalProfileStatus: body.status,
-        ...(body.status === 'Rejected'
+        personalProfileStatus: nextStatus,
+        ...(nextStatus === 'Rejected'
           ? { personalProfileRejectionReason: rejectionReason }
           : {}),
       },
