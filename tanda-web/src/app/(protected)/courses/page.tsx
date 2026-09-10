@@ -13,10 +13,12 @@ import {
   type SerializedCourse,
   type SerializedCourseEnrollment,
 } from '@/lib/courses/courses-api';
+import { useEmployees } from '@/providers/EmployeesProvider';
 
 export default function CoursesAdminPage() {
   const { canAccessModule, canPerformAction } = useAdminAccess();
   const canView = canAccessModule('courses');
+  const { employees, loading: employeesLoading } = useEmployees();
   const [courses, setCourses] = useState<SerializedCourse[]>([]);
   const [enrollments, setEnrollments] = useState<SerializedCourseEnrollment[]>(
     [],
@@ -56,19 +58,22 @@ export default function CoursesAdminPage() {
     );
   }
 
+  const pageLoading = employeesLoading || (loading && courses.length === 0);
+
   return (
     <PageContent className="space-y-6">
       <PageHeader
         title="Courses"
-        description="Track external training platforms, collect evidence, and approve completions."
+        description="Assign external training to selected staff, collect evidence, and approve completions."
       />
 
-      {loading && courses.length === 0 ? (
+      {pageLoading ? (
         <LoadingIndicator message="Loading courses…" />
       ) : (
         <CoursesAdminPanel
           courses={courses}
           enrollments={enrollments}
+          employees={employees}
           loading={loading}
           canCreate={canPerformAction('courses', 'create')}
           canUpdate={canPerformAction('courses', 'update')}

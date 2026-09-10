@@ -9,13 +9,17 @@ import {
   Loader2,
   Plus,
   Trash2,
+  UserPlus,
+  X,
   XCircle,
 } from 'lucide-react';
+import { CourseAssigneePicker } from '@/components/courses/CourseAssigneePicker';
 import {
   courseStatusBadgeClass,
   courseStatusLabel,
 } from '@/components/courses/course-status';
 import {
+  assignCourseRequest,
   createCourseRequest,
   deleteCourseRequest,
   reviewCourseEnrollmentRequest,
@@ -27,10 +31,12 @@ import {
   COURSE_CATEGORIES,
   type CourseCategory,
 } from '@/lib/types/course';
+import type { Employee } from '@/lib/types/employee';
 
 interface CoursesAdminPanelProps {
   courses: SerializedCourse[];
   enrollments: SerializedCourseEnrollment[];
+  employees: Employee[];
   loading?: boolean;
   canCreate?: boolean;
   canUpdate?: boolean;
@@ -43,6 +49,7 @@ interface CoursesAdminPanelProps {
 export function CoursesAdminPanel({
   courses,
   enrollments,
+  employees,
   loading,
   canCreate = true,
   canUpdate = true,
@@ -58,9 +65,23 @@ export function CoursesAdminPanel({
   const [platformName, setPlatformName] = useState('');
   const [category, setCategory] = useState<CourseCategory>('Compliance');
   const [dueDate, setDueDate] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [assignCourse, setAssignCourse] = useState<SerializedCourse | null>(null);
+  const [assignIds, setAssignIds] = useState<string[]>([]);
+  const [assigning, setAssigning] = useState(false);
+
+  const enrolledByCourse = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const enrollment of enrollments) {
+      const set = map.get(enrollment.courseId) ?? new Set<string>();
+      set.add(enrollment.employeeDocId);
+      map.set(enrollment.courseId, set);
+    }
+    return map;
+  }, [enrollments]);
 
   const stats = useMemo(() => {
     const submitted = enrollments.filter((item) => item.status === 'submitted').length;
@@ -84,6 +105,10 @@ export function CoursesAdminPanel({
       onError('Title and course URL are required.');
       return;
     }
+    if (assigneeIds.length === 0) {
+      onError('Select at least one employee to assign this course.');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -95,6 +120,7 @@ export function CoursesAdminPanel({
         category,
         dueDate: dueDate || undefined,
         active: true,
+        assigneeEmployeeDocIds: assigneeIds,
       });
       setTitle('');
       setDescription('');
@@ -102,6 +128,7 @@ export function CoursesAdminPanel({
       setPlatformName('');
       setCategory('Compliance');
       setDueDate('');
+      setAssigneeIds([]);
       onChanged();
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Could not create course.');
@@ -162,6 +189,39 @@ export function CoursesAdminPanel({
       setBusyId(null);
     }
   }
+
+  function openAssign(course: SerializedCourse) {
+    setAssignCourse(course);
+    setAssignIds([]);
+  }
+
+  async function handleAssignMore() {
+    if (!assignCourse) return;
+    if (assignIds.length === 0) {
+      onError('Select at least one employee to assign.');
+      return;
+    }
+
+    setAssigning(true);
+    try {
+      const result = await assignCourseRequest(assignCourse.id, {
+        employeeDocIds: assignIds,
+      });
+      setAssignCourse(null);
+      setAssignIds([]);
+      onChanged();
+      if (result.assigned === 0) {
+        // Still refresh; toast as info via error channel is fine for now.
+        onError('No new assignments — selected people may already be enrolled.');
+      }
+    } catch (error) {
+      onError(error instanceof Error ? error.message : 'Could not assign course.');
+    } finally {
+      setAssigning(false);
+    }
+  }
+
+  const canAssignMore = canManage || canUpdate;
 
   return (
     <div className="space-y-6">
@@ -233,7 +293,7 @@ export function CoursesAdminPanel({
               <div>
                 <h3 className="text-sm font-semibold text-foreground">New course</h3>
                 <p className="mt-1 text-xs text-subtle">
-                  Active staff are enrolled automatically when you publish a course.
+                  Choose who should take this course. You can assign more people later.
                 </p>
               </div>
 
@@ -317,11 +377,18 @@ export function CoursesAdminPanel({
                     className="w-full rounded-lg border border-border bg-surface-base px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
                   />
                 </div>
+
+                <CourseAssigneePicker
+                  employees={employees}
+                  selectedIds={assigneeIds}
+                  onChange={setAssigneeIds}
+                  disabled={saving}
+                />
               </div>
 
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || assigneeIds.length === 0}
                 className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
               >
                 {saving ? (
@@ -329,7 +396,9 @@ export function CoursesAdminPanel({
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                {saving ? 'Creating…' : 'Create course'}
+                {saving
+                  ? 'Creating…'
+                  : `Create & assign (${assigneeIds.length})`}
               </button>
             </form>
           ) : null}
@@ -342,7 +411,10 @@ export function CoursesAdminPanel({
               <p className="mt-4 text-sm text-muted">No courses yet.</p>
             ) : (
               <ul className="mt-4 space-y-3">
-                {courses.map((course) => (
+                {courses.map((course) => {
+                  const enrolledCount = enrolledByCourse.get(course.id)?.size ?? 0;
+
+                  return (
                   <li
                     key={course.id}
                     className="flex flex-col gap-3 rounded-xl border border-border bg-surface-base/40 p-4 sm:flex-row sm:items-start sm:justify-between"
@@ -353,6 +425,7 @@ export function CoursesAdminPanel({
                         {course.category}
                         {course.platformName ? ` · ${course.platformName}` : ''}
                         {course.dueDate ? ` · due ${course.dueDate}` : ''}
+                        {` · ${enrolledCount} assigned`}
                       </p>
                       {course.description ? (
                         <p className="mt-2 line-clamp-2 text-sm text-muted">
@@ -379,6 +452,17 @@ export function CoursesAdminPanel({
                       >
                         {course.active ? 'Active' : 'Inactive'}
                       </span>
+                      {canAssignMore ? (
+                        <button
+                          type="button"
+                          disabled={busyId === course.id}
+                          onClick={() => openAssign(course)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-muted hover:text-foreground disabled:opacity-50"
+                        >
+                          <UserPlus className="h-3 w-3" />
+                          Assign
+                        </button>
+                      ) : null}
                       {canUpdate ? (
                         <button
                           type="button"
@@ -402,7 +486,8 @@ export function CoursesAdminPanel({
                       ) : null}
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>
@@ -548,6 +633,70 @@ export function CoursesAdminPanel({
           </section>
         </section>
       )}
+
+      {assignCourse ? (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-4 sm:items-center">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface-raised p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Assign more people
+                </h3>
+                <p className="mt-1 text-xs text-muted">{assignCourse.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAssignCourse(null);
+                  setAssignIds([]);
+                }}
+                className="rounded-lg p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <CourseAssigneePicker
+                employees={employees}
+                selectedIds={assignIds}
+                onChange={setAssignIds}
+                disabled={assigning}
+                alreadyAssignedIds={enrolledByCourse.get(assignCourse.id)}
+                title="Add assignees"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                disabled={assigning}
+                onClick={() => {
+                  setAssignCourse(null);
+                  setAssignIds([]);
+                }}
+                className="rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={assigning || assignIds.length === 0}
+                onClick={() => void handleAssignMore()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                {assigning ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <UserPlus className="h-3.5 w-3.5" />
+                )}
+                Assign selected
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

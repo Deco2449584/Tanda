@@ -6,7 +6,7 @@ import {
   listAllCourses,
   serializeCourses,
 } from '@/lib/courses/server/courses-service';
-import { seedEnrollmentsForCourse } from '@/lib/courses/server/course-enrollments-service';
+import { assignEnrollmentsForCourse } from '@/lib/courses/server/course-enrollments-service';
 import type { CreateCourseInput } from '@/lib/types/course';
 
 export async function GET(request: Request) {
@@ -40,18 +40,31 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as CreateCourseInput;
+    const assigneeEmployeeDocIds = Array.isArray(body.assigneeEmployeeDocIds)
+      ? body.assigneeEmployeeDocIds
+      : [];
+
+    if (assigneeEmployeeDocIds.length === 0) {
+      return NextResponse.json(
+        { error: 'Select at least one employee to assign this course.' },
+        { status: 400 },
+      );
+    }
+
     const course = await createCourse({
       payload: body,
       createdByEmail: authContext.user.email,
     });
 
-    if (course.active) {
-      await seedEnrollmentsForCourse(course);
-    }
+    const assignment = await assignEnrollmentsForCourse(
+      course,
+      assigneeEmployeeDocIds,
+    );
 
     return NextResponse.json({
       ok: true,
       course: serializeCourses([course])[0],
+      assignment,
     });
   } catch (error) {
     const message =

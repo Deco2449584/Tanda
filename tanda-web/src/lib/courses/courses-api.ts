@@ -1,5 +1,6 @@
 import { auth } from '@/lib/firebase';
 import type {
+  AssignCourseInput,
   CreateCourseInput,
   ReviewCourseEnrollmentInput,
   SubmitCourseEnrollmentInput,
@@ -112,6 +113,25 @@ export async function deleteCourseRequest(id: string): Promise<void> {
     } | null;
     throw new Error(data?.error ?? 'Could not delete course.');
   }
+}
+
+export async function assignCourseRequest(
+  id: string,
+  payload: AssignCourseInput,
+): Promise<{ assigned: number; skipped: number }> {
+  const response = await fetch(`/api/courses/${id}/assign`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const data = (await response.json().catch(() => null)) as {
+    assignment?: { assigned: number; skipped: number };
+    error?: string;
+  } | null;
+  if (!response.ok || !data?.assignment) {
+    throw new Error(data?.error ?? 'Could not assign course.');
+  }
+  return data.assignment;
 }
 
 export async function fetchMyCourses(): Promise<{

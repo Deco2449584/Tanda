@@ -38,6 +38,8 @@ export interface CreateCourseInput {
   dueDate?: string;
   sortOrder?: number;
   active?: boolean;
+  /** Firestore employee document IDs to enroll. Required on create. */
+  assigneeEmployeeDocIds: string[];
 }
 
 export interface UpdateCourseInput {
@@ -49,6 +51,10 @@ export interface UpdateCourseInput {
   dueDate?: string | null;
   sortOrder?: number;
   active?: boolean;
+}
+
+export interface AssignCourseInput {
+  employeeDocIds: string[];
 }
 
 export const COURSE_ENROLLMENT_STATUSES = [

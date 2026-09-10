@@ -231,22 +231,63 @@ export async function deleteEnrollmentsForCourse(courseId: string): Promise<numb
   return deleted;
 }
 
-/** Seed enrollments for all workforce employees when a course is created. */
-export async function seedEnrollmentsForCourse(course: Course): Promise<number> {
-  const employeesSnap = await getAdminFirestore()
-    .collection(COLLECTIONS.EMPLOYEES)
-    .where('active', '==', true)
-    .get();
+/**
+ * Enroll specific employees on a course.
+ * Skips employees that are inactive / non-workforce / already enrolled.
+ */
+export async function assignEnrollmentsForCourse(
+  course: Course,
+  employeeDocIds: string[],
+): Promise<{ assigned: number; skipped: number }> {
+  const uniqueIds = Array.from(
+    new Set(
+      employeeDocIds
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    ),
+  );
 
-  let created = 0;
-  for (const document of employeesSnap.docs) {
-    const data = document.data();
+  if (uniqueIds.length === 0) {
+    throw new Error('Select at least one employee to assign.');
+  }
+
+  let assigned = 0;
+  let skipped = 0;
+
+  for (const employeeDocId of uniqueIds) {
+    const document = await getAdminFirestore()
+      .collection(COLLECTIONS.EMPLOYEES)
+      .doc(employeeDocId)
+      .get();
+
+    if (!document.exists) {
+      skipped += 1;
+      continue;
+    }
+
+    const data = document.data() ?? {};
+    if (data.active === false) {
+      skipped += 1;
+      continue;
+    }
+
     const role = typeof data.role === 'string' ? data.role : 'empleado';
-    if (!isWorkforceEmployeeRole(role)) continue;
+    if (!isWorkforceEmployeeRole(role)) {
+      skipped += 1;
+      continue;
+    }
 
     const email =
       typeof data.email === 'string' ? data.email.trim().toLowerCase() : '';
-    if (!email) continue;
+    if (!email) {
+      skipped += 1;
+      continue;
+    }
+
+    const before = await getAdminFirestore()
+      .collection(COLLECTIONS.COURSE_ENROLLMENTS)
+      .doc(enrollmentDocId(course.id, employeeDocId))
+      .get();
 
     await ensureEnrollmentForEmployee({
       course,
@@ -258,10 +299,34 @@ export async function seedEnrollmentsForCourse(course: Course): Promise<number> 
         email,
       },
     });
-    created += 1;
+
+    if (before.exists) {
+      skipped += 1;
+    } else {
+      assigned += 1;
+    }
   }
 
-  return created;
+  return { assigned, skipped };
+}
+
+/** @deprecated Prefer assignEnrollmentsForCourse with explicit IDs. */
+export async function seedEnrollmentsForCourse(course: Course): Promise<number> {
+  const employeesSnap = await getAdminFirestore()
+    .collection(COLLECTIONS.EMPLOYEES)
+    .where('active', '==', true)
+    .get();
+
+  const ids = employeesSnap.docs
+    .filter((document) => {
+      const data = document.data();
+      const role = typeof data.role === 'string' ? data.role : 'empleado';
+      return isWorkforceEmployeeRole(role);
+    })
+    .map((document) => document.id);
+
+  const result = await assignEnrollmentsForCourse(course, ids);
+  return result.assigned;
 }
 
 export async function refreshEnrollmentCourseTitles(

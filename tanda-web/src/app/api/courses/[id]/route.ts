@@ -3,15 +3,14 @@ import { canPerformAction } from '@/lib/auth/admin-action-permissions';
 import { loadAdminAccessFromRequest } from '@/lib/auth/load-admin-access';
 import {
   deleteCourse,
+  getCourseById,
   serializeCourses,
   updateCourse,
 } from '@/lib/courses/server/courses-service';
 import {
   deleteEnrollmentsForCourse,
   refreshEnrollmentCourseTitles,
-  seedEnrollmentsForCourse,
 } from '@/lib/courses/server/course-enrollments-service';
-import { getCourseById } from '@/lib/courses/server/courses-service';
 import type { UpdateCourseInput } from '@/lib/types/course';
 
 export async function PATCH(
@@ -34,10 +33,6 @@ export async function PATCH(
 
     if (typeof body.title === 'string') {
       await refreshEnrollmentCourseTitles(course.id, course.title);
-    }
-
-    if (body.active === true) {
-      await seedEnrollmentsForCourse(course);
     }
 
     return NextResponse.json({
