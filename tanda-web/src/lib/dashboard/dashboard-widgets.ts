@@ -4,10 +4,10 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'kpis',
     title: 'Key metrics',
-    description: 'Active staff, payroll, late arrivals and pending leave',
+    description: 'Active staff, late arrivals and pending leave',
     category: 'overview',
     chartType: 'kpi',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: true,
   },
   {
@@ -16,7 +16,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Live view of who is clocked in and which client site they are at',
     category: 'overview',
     chartType: 'live',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: true,
   },
   {
@@ -25,8 +25,9 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Actual payroll cost distributed by location',
     category: 'payroll',
     chartType: 'pie',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: true,
+    requiresAccounting: true,
   },
   {
     id: 'payroll-projected-by-location',
@@ -36,6 +37,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     chartType: 'pie',
     defaultVisible: false,
     defaultExpanded: true,
+    requiresAccounting: true,
   },
   {
     id: 'hours-worked-by-location',
@@ -43,7 +45,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Billable hours per location in the selected period',
     category: 'payroll',
     chartType: 'bar',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: true,
   },
   {
@@ -52,7 +54,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Compare programmed hours against worked hours per site',
     category: 'payroll',
     chartType: 'grouped-bar',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: false,
   },
   {
@@ -63,6 +65,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     chartType: 'area',
     defaultVisible: false,
     defaultExpanded: true,
+    requiresAccounting: true,
   },
   {
     id: 'weekly-hours',
@@ -70,7 +73,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Scheduled hours per day in the selected period',
     category: 'scheduling',
     chartType: 'area',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: false,
   },
   {
@@ -79,7 +82,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Number of shifts per department in the period',
     category: 'scheduling',
     chartType: 'bar',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: false,
   },
   {
@@ -97,7 +100,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Late check-ins attributed to shift location',
     category: 'attendance',
     chartType: 'bar',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: false,
   },
   {
@@ -115,7 +118,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     description: 'Headcount of active employees per location',
     category: 'overview',
     chartType: 'pie',
-    defaultVisible: true,
+    defaultVisible: false,
     defaultExpanded: false,
   },
   {
@@ -144,6 +147,9 @@ export const DASHBOARD_WIDGET_MAP = new Map(
 
 export const DEFAULT_WIDGET_ORDER = DASHBOARD_WIDGETS.map((widget) => widget.id);
 
+/** KPI ids that expose payroll / cost figures. */
+export const ACCOUNTING_KPI_IDS = new Set(['payroll-cost']);
+
 export function getDefaultVisibleWidgets(): string[] {
   return DASHBOARD_WIDGETS.filter((widget) => widget.defaultVisible).map(
     (widget) => widget.id,
@@ -153,6 +159,16 @@ export function getDefaultVisibleWidgets(): string[] {
 export function getDefaultExpandedWidgets(): string[] {
   return DASHBOARD_WIDGETS.filter((widget) => widget.defaultExpanded).map(
     (widget) => widget.id,
+  );
+}
+
+export function getAllowedDashboardWidgetIds(
+  canAccessAccounting: boolean,
+): Set<string> {
+  return new Set(
+    DASHBOARD_WIDGETS.filter(
+      (widget) => canAccessAccounting || !widget.requiresAccounting,
+    ).map((widget) => widget.id),
   );
 }
 

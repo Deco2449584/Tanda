@@ -2,14 +2,13 @@
 
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
-import {
-  DASHBOARD_CATEGORY_LABELS,
-  DASHBOARD_WIDGETS,
-} from '@/lib/dashboard/dashboard-widgets';
+import { DASHBOARD_CATEGORY_LABELS } from '@/lib/dashboard/dashboard-widgets';
+import type { DashboardWidgetDefinition } from '@/lib/dashboard/types';
 
 interface DashboardCustomizeDialogProps {
   open: boolean;
   onClose: () => void;
+  widgets: DashboardWidgetDefinition[];
   visibleWidgets: string[];
   onToggleWidget: (widgetId: string) => void;
   onShowAll: () => void;
@@ -19,6 +18,7 @@ interface DashboardCustomizeDialogProps {
 export function DashboardCustomizeDialog({
   open,
   onClose,
+  widgets,
   visibleWidgets,
   onToggleWidget,
   onShowAll,
@@ -27,7 +27,7 @@ export function DashboardCustomizeDialog({
   const visibleSet = new Set(visibleWidgets);
 
   const categories = Array.from(
-    new Set(DASHBOARD_WIDGETS.map((widget) => widget.category)),
+    new Set(widgets.map((widget) => widget.category)),
   );
 
   return (
@@ -35,12 +35,12 @@ export function DashboardCustomizeDialog({
       open={open}
       onClose={onClose}
       title="Customize dashboard"
-      description="Choose which analytics cards to show. Each card can be collapsed to keep the view tidy."
+      description="Choose which analytics cards to show. Widgets start hidden by default."
       size="lg"
     >
       <div className="space-y-6">
         {categories.map((category) => {
-          const widgets = DASHBOARD_WIDGETS.filter(
+          const categoryWidgets = widgets.filter(
             (widget) => widget.category === category,
           );
 
@@ -50,7 +50,7 @@ export function DashboardCustomizeDialog({
                 {DASHBOARD_CATEGORY_LABELS[category]}
               </h3>
               <div className="space-y-2">
-                {widgets.map((widget) => {
+                {categoryWidgets.map((widget) => {
                   const checked = visibleSet.has(widget.id);
 
                   return (
@@ -79,6 +79,10 @@ export function DashboardCustomizeDialog({
             </section>
           );
         })}
+
+        {widgets.length === 0 ? (
+          <p className="text-sm text-muted">No widgets available for your role.</p>
+        ) : null}
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
           <Button type="button" variant="ghost" size="sm" onClick={onReset}>

@@ -64,4 +64,6 @@ export interface DashboardWidgetDefinition {
   chartType: DashboardChartType;
   defaultVisible: boolean;
   defaultExpanded: boolean;
+  /** Hide unless the admin has the Accounting module. */
+  requiresAccounting?: boolean;
 }

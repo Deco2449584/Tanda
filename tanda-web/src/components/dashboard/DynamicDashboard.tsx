@@ -25,11 +25,15 @@ import {
   type DateRange,
 } from '@/lib/attendance/date-range';
 import { computeDashboardAnalytics } from '@/lib/dashboard/compute-analytics';
-import { DASHBOARD_WIDGET_MAP } from '@/lib/dashboard/dashboard-widgets';
+import {
+  ACCOUNTING_KPI_IDS,
+  DASHBOARD_WIDGET_MAP,
+} from '@/lib/dashboard/dashboard-widgets';
 import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 import { baseKpiMetrics } from '@/lib/dashboard/kpi-definitions';
 import type { DashboardAnalytics } from '@/lib/dashboard/compute-analytics';
 import type { KpiMetric } from '@/lib/dashboard/types';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
@@ -74,14 +78,16 @@ function getWidgetSummary(
   widgetId: string,
   analytics: DashboardAnalytics,
   currency: string,
-  workingNowCount?: number,
+  options?: { workingNowCount?: number; canAccessAccounting?: boolean },
 ): string {
   switch (widgetId) {
     case 'kpis':
-      return `${analytics.activeStaffLabel} active · ${analytics.payrollActualFormatted} payroll`;
+      return options?.canAccessAccounting
+        ? `${analytics.activeStaffLabel} active · ${analytics.payrollActualFormatted} payroll`
+        : `${analytics.activeStaffLabel} active`;
     case 'working-now':
-      return workingNowCount != null
-        ? `${workingNowCount} clocked in live`
+      return options?.workingNowCount != null
+        ? `${options.workingNowCount} clocked in live`
         : 'Live presence';
     case 'payroll-by-location':
       return formatTopSlice(analytics.payrollByLocation, (v) =>
@@ -147,6 +153,8 @@ export function DynamicDashboard({
   const { settings } = useCompanySettings();
   const { locations } = useLocations();
   const { groups } = useLocationGroups();
+  const { canAccessModule } = useAdminAccess();
+  const canAccessAccounting = canAccessModule('accounting');
 
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
   const [periodPreset, setPeriodPreset] =
@@ -156,13 +164,14 @@ export function DynamicDashboard({
 
   const {
     orderedVisibleWidgets,
+    availableWidgets,
     toggleWidgetVisibility,
     toggleWidgetCollapsed,
     isWidgetCollapsed,
     resetLayout,
     showAllWidgets,
     layout,
-  } = useDashboardLayout();
+  } = useDashboardLayout(canAccessAccounting);
 
   const { shifts, leaveRequests, attendance, loading, refreshing, refresh } =
     useDashboardData(dateRange);
@@ -239,56 +248,64 @@ export function DynamicDashboard({
 
   const metrics: KpiMetric[] = useMemo(
     () =>
-      baseKpiMetrics.map((metric) => {
-        if (metric.id === 'active-staff') {
-          return {
-            ...metric,
-            title: periodPreset === 'today' ? 'Active Staff Today' : 'Active Staff',
-            value: analytics.activeStaffLabel,
-            description: 'Checked in / total active',
-          };
-        }
+      baseKpiMetrics
+        .filter(
+          (metric) =>
+            canAccessAccounting || !ACCOUNTING_KPI_IDS.has(metric.id),
+        )
+        .map((metric) => {
+          if (metric.id === 'active-staff') {
+            return {
+              ...metric,
+              title: periodPreset === 'today' ? 'Active Staff Today' : 'Active Staff',
+              value: analytics.activeStaffLabel,
+              description: 'Checked in / total active',
+            };
+          }
 
-        if (metric.id === 'payroll-cost') {
-          return {
-            ...metric,
-            title:
-              periodPreset === 'today' ? "Today's Payroll Cost" : 'Payroll Cost',
-            value: analytics.payrollActualFormatted,
-            valueLabel: 'Actual',
-            description: `Projected: ${analytics.payrollProjectedFormatted}`,
-          };
-        }
+          if (metric.id === 'payroll-cost') {
+            return {
+              ...metric,
+              title:
+                periodPreset === 'today' ? "Today's Payroll Cost" : 'Payroll Cost',
+              value: analytics.payrollActualFormatted,
+              valueLabel: 'Actual',
+              description: `Projected: ${analytics.payrollProjectedFormatted}`,
+            };
+          }
 
-        if (metric.id === 'late-alerts') {
-          return {
-            ...metric,
-            value: String(analytics.lateAlertsTotal),
-          };
-        }
+          if (metric.id === 'late-alerts') {
+            return {
+              ...metric,
+              value: String(analytics.lateAlertsTotal),
+            };
+          }
 
-        if (metric.id === 'pending-permits') {
-          return {
-            ...metric,
-            value: String(analytics.pendingLeaveTotal),
-          };
-        }
+          if (metric.id === 'pending-permits') {
+            return {
+              ...metric,
+              value: String(analytics.pendingLeaveTotal),
+            };
+          }
 
-        return metric;
-      }),
-    [analytics, periodPreset],
+          return metric;
+        }),
+    [analytics, canAccessAccounting, periodPreset],
   );
 
   const loadingIds = useMemo(() => {
     const ids: string[] = [];
     if (employeesLoading) ids.push('active-staff');
-    if (employeesLoading || loading.shifts || loading.attendance) {
+    if (
+      canAccessAccounting &&
+      (employeesLoading || loading.shifts || loading.attendance)
+    ) {
       ids.push('payroll-cost');
     }
     if (loading.leaveRequests) ids.push('pending-permits');
     if (loading.shifts || loading.attendance) ids.push('late-alerts');
     return ids;
-  }, [employeesLoading, loading]);
+  }, [canAccessAccounting, employeesLoading, loading]);
 
   const chartsLoading = loading.shifts || loading.attendance;
 
@@ -473,12 +490,10 @@ export function DynamicDashboard({
               key={widgetId}
               title={definition.title}
               description={definition.description}
-              summary={getWidgetSummary(
-                widgetId,
-                analytics,
-                settings.currency,
-                workingNow.totalCount,
-              )}
+              summary={getWidgetSummary(widgetId, analytics, settings.currency, {
+                workingNowCount: workingNow.totalCount,
+                canAccessAccounting,
+              })}
               collapsed={collapsed}
               onToggle={() => toggleWidgetCollapsed(widgetId)}
             >
@@ -497,6 +512,7 @@ export function DynamicDashboard({
       <DashboardCustomizeDialog
         open={customizeOpen}
         onClose={() => setCustomizeOpen(false)}
+        widgets={availableWidgets}
         visibleWidgets={layout.visibleWidgets}
         onToggleWidget={toggleWidgetVisibility}
         onShowAll={showAllWidgets}

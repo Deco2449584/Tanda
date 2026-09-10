@@ -4,7 +4,8 @@ import {
   getDefaultVisibleWidgets,
 } from './dashboard-widgets';
 
-const STORAGE_KEY = 'tanda-dashboard-layout-v1';
+/** Bumped when default visibility policy changes. */
+const STORAGE_KEY = 'tanda-dashboard-layout-v2';
 
 export interface DashboardLayoutState {
   visibleWidgets: string[];
@@ -59,30 +60,10 @@ export function loadDashboardLayout(
       allowedWidgetIds,
     );
 
-    // Newly added default-visible widgets appear for existing saved layouts.
-    const newlyVisibleDefaults = getDefaultVisibleWidgets().filter(
-      (id) =>
-        allowedWidgetIds.has(id) &&
-        !savedOrder.includes(id) &&
-        !visibleWidgets.includes(id),
-    );
-    newlyVisibleDefaults.forEach((id) => {
-      visibleWidgets.push(id);
-    });
-
     const missingOrderIds = DEFAULT_WIDGET_ORDER.filter(
       (id) => allowedWidgetIds.has(id) && !savedOrder.includes(id),
     );
-    const widgetOrder = [...savedOrder];
-    missingOrderIds.forEach((id) => {
-      if (widgetOrder.includes(id)) return;
-      const kpiIndex = widgetOrder.indexOf('kpis');
-      if (kpiIndex >= 0 && (id === 'working-now' || newlyVisibleDefaults.includes(id))) {
-        widgetOrder.splice(kpiIndex + 1, 0, id);
-        return;
-      }
-      widgetOrder.push(id);
-    });
+    const widgetOrder = [...savedOrder, ...missingOrderIds];
 
     const collapsedWidgets = sanitizeWidgetIds(
       parsed.collapsedWidgets ?? defaults.collapsedWidgets,
@@ -90,10 +71,12 @@ export function loadDashboardLayout(
     );
 
     return {
-      visibleWidgets:
-        visibleWidgets.length > 0 ? visibleWidgets : defaults.visibleWidgets,
+      visibleWidgets,
       collapsedWidgets,
-      widgetOrder,
+      widgetOrder:
+        widgetOrder.length > 0
+          ? widgetOrder
+          : DEFAULT_WIDGET_ORDER.filter((id) => allowedWidgetIds.has(id)),
     };
   } catch {
     return createDefaultLayout();
@@ -110,8 +93,24 @@ export function saveDashboardLayout(state: DashboardLayoutState): void {
   }
 }
 
-export function resetDashboardLayout(): DashboardLayoutState {
+export function resetDashboardLayout(
+  allowedWidgetIds?: Set<string>,
+): DashboardLayoutState {
   const defaults = createDefaultLayout();
+  if (allowedWidgetIds) {
+    defaults.visibleWidgets = sanitizeWidgetIds(
+      defaults.visibleWidgets,
+      allowedWidgetIds,
+    );
+    defaults.widgetOrder = sanitizeWidgetIds(
+      defaults.widgetOrder,
+      allowedWidgetIds,
+    );
+    defaults.collapsedWidgets = sanitizeWidgetIds(
+      defaults.collapsedWidgets,
+      new Set(defaults.visibleWidgets),
+    );
+  }
   saveDashboardLayout(defaults);
   return defaults;
 }

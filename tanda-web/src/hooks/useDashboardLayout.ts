@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DASHBOARD_WIDGETS,
   DEFAULT_WIDGET_ORDER,
+  getAllowedDashboardWidgetIds,
 } from '@/lib/dashboard/dashboard-widgets';
 import {
   loadDashboardLayout,
@@ -12,21 +13,26 @@ import {
   type DashboardLayoutState,
 } from '@/lib/dashboard/dashboard-layout';
 
-const ALLOWED_WIDGET_IDS = new Set(DASHBOARD_WIDGETS.map((widget) => widget.id));
+export function useDashboardLayout(canAccessAccounting: boolean) {
+  const allowedWidgetIds = useMemo(
+    () => getAllowedDashboardWidgetIds(canAccessAccounting),
+    [canAccessAccounting],
+  );
 
-export function useDashboardLayout() {
   const [layout, setLayout] = useState<DashboardLayoutState>(() =>
-    loadDashboardLayout(ALLOWED_WIDGET_IDS),
+    loadDashboardLayout(allowedWidgetIds),
   );
 
   useEffect(() => {
-    setLayout(loadDashboardLayout(ALLOWED_WIDGET_IDS));
-  }, []);
+    setLayout(loadDashboardLayout(allowedWidgetIds));
+  }, [allowedWidgetIds]);
 
   const orderedVisibleWidgets = useMemo(() => {
     const visible = new Set(layout.visibleWidgets);
-    return layout.widgetOrder.filter((id) => visible.has(id));
-  }, [layout.visibleWidgets, layout.widgetOrder]);
+    return layout.widgetOrder.filter(
+      (id) => visible.has(id) && allowedWidgetIds.has(id),
+    );
+  }, [layout.visibleWidgets, layout.widgetOrder, allowedWidgetIds]);
 
   const persist = useCallback((next: DashboardLayoutState) => {
     setLayout(next);
@@ -35,6 +41,8 @@ export function useDashboardLayout() {
 
   const toggleWidgetVisibility = useCallback(
     (widgetId: string) => {
+      if (!allowedWidgetIds.has(widgetId)) return;
+
       const isVisible = layout.visibleWidgets.includes(widgetId);
       const visibleWidgets = isVisible
         ? layout.visibleWidgets.filter((id) => id !== widgetId)
@@ -53,7 +61,7 @@ export function useDashboardLayout() {
           : [...layout.widgetOrder, widgetId],
       });
     },
-    [layout, persist],
+    [allowedWidgetIds, layout, persist],
   );
 
   const toggleWidgetCollapsed = useCallback(
@@ -74,21 +82,30 @@ export function useDashboardLayout() {
   );
 
   const resetLayout = useCallback(() => {
-    const defaults = resetDashboardLayout();
+    const defaults = resetDashboardLayout(allowedWidgetIds);
     setLayout(defaults);
-  }, []);
+  }, [allowedWidgetIds]);
 
   const showAllWidgets = useCallback(() => {
+    const allAllowed = DEFAULT_WIDGET_ORDER.filter((id) =>
+      allowedWidgetIds.has(id),
+    );
     persist({
-      visibleWidgets: [...DEFAULT_WIDGET_ORDER],
+      visibleWidgets: allAllowed,
       collapsedWidgets: [],
-      widgetOrder: [...DEFAULT_WIDGET_ORDER],
+      widgetOrder: allAllowed,
     });
-  }, [persist]);
+  }, [allowedWidgetIds, persist]);
+
+  const availableWidgets = useMemo(
+    () => DASHBOARD_WIDGETS.filter((widget) => allowedWidgetIds.has(widget.id)),
+    [allowedWidgetIds],
+  );
 
   return {
     layout,
     orderedVisibleWidgets,
+    availableWidgets,
     toggleWidgetVisibility,
     toggleWidgetCollapsed,
     isWidgetCollapsed,
