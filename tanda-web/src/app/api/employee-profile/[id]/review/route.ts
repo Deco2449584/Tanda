@@ -34,7 +34,7 @@ export async function PATCH(
 
     const nextStatus = body.status as 'Pending' | 'Approved' | 'Rejected';
 
-    const docRef = getAdminDb().collection(COLLECTIONS.EMPLOYEES).doc(id);
+    const docRef = getAdminFirestore().collection(COLLECTIONS.EMPLOYEES).doc(id);
     const existing = await docRef.get();
     if (!existing.exists) {
       return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
