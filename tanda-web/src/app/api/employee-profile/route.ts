@@ -87,22 +87,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: personalDetailsError }, { status: 400 });
     }
 
-    if (!documentsPending) {
-      if (!photoUrl) {
-        return NextResponse.json(
-          { error: 'A profile photo is required to submit your profile.' },
-          { status: 400 },
-        );
-      }
-
-      if (!passportUrl || !visaUrl) {
-        return NextResponse.json(
-          { error: 'Passport and visa documents are required to submit your profile.' },
-          { status: 400 },
-        );
-      }
-    }
-
     const payload: Record<string, unknown> = {
       personalProfileStatus: documentsPending ? 'Uploading' : 'Pending',
       personalProfileSubmittedAt: FieldValue.serverTimestamp(),

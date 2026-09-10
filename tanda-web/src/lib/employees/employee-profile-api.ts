@@ -23,9 +23,9 @@ export type EmployeeProfilePersonalPayload = EmployeePersonalDetails & {
 };
 
 export type SubmitEmployeeProfileInput = EmployeeProfilePersonalPayload & {
-  photoUrl: string;
-  passportUrl: string;
-  visaUrl: string;
+  photoUrl?: string;
+  passportUrl?: string;
+  visaUrl?: string;
 };
 
 /** Saves personal details and marks the profile as uploading documents. */

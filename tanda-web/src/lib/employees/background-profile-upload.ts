@@ -121,24 +121,33 @@ export async function beginBackgroundProfileUpload(
         customTask,
       ]).then(([photo, passport, visa]) => [photo, passport, visa] as const);
 
-      if (!photoUrl.trim() || !passportUpload.url.trim() || !visaUpload.url.trim()) {
-        throw new Error(
-          'Could not finish document upload. Open My profile and submit again.',
-        );
+      if (!photoUrl.trim() && !passportUpload.url.trim() && !visaUpload.url.trim()) {
+        // No new/existing docs — still finalize personal details as Pending.
+        await submitEmployeeProfileRequest({
+          ...job.personal,
+        });
+      } else {
+        await submitEmployeeProfileRequest({
+          ...job.personal,
+          ...(photoUrl.trim() ? { photoUrl } : {}),
+          ...(passportUpload.url.trim()
+            ? {
+                passportUrl: passportUpload.url,
+                passportFileName: passportUpload.fileName,
+              }
+            : {}),
+          ...(visaUpload.url.trim()
+            ? {
+                visaUrl: visaUpload.url,
+                visaFileName: visaUpload.fileName,
+              }
+            : {}),
+        });
       }
-
-      await submitEmployeeProfileRequest({
-        ...job.personal,
-        photoUrl,
-        passportUrl: passportUpload.url,
-        visaUrl: visaUpload.url,
-        passportFileName: passportUpload.fileName,
-        visaFileName: visaUpload.fileName,
-      });
 
       publish({
         phase: 'done',
-        message: 'Documents uploaded. Your profile is pending admin review.',
+        message: 'Profile submitted. Pending admin review.',
       });
     } catch (error) {
       publish({

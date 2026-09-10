@@ -33,38 +33,6 @@ import type {
 } from '@/lib/types/employee-custom-field';
 import { UserRound } from 'lucide-react';
 
-function validateRequiredCustomFields(
-  fields: EmployeeCustomField[],
-  drafts: Record<string, CustomFieldDraft>,
-): string | null {
-  for (const field of fields) {
-    if (!field.required) continue;
-
-    const draft = drafts[field.id];
-    if (!draft) {
-      return `"${field.title}" is required.`;
-    }
-
-    if (field.type === 'text' && !draft.valueText.trim()) {
-      return `"${field.title}" is required.`;
-    }
-
-    if (field.type === 'number' && !draft.valueNumber.trim()) {
-      return `"${field.title}" is required.`;
-    }
-
-    if (
-      (field.type === 'file' || field.type === 'image') &&
-      !draft.file &&
-      !draft.url?.trim()
-    ) {
-      return `"${field.title}" is required.`;
-    }
-  }
-
-  return null;
-}
-
 function cloneCustomDrafts(
   drafts: Record<string, CustomFieldDraft>,
 ): Record<string, CustomFieldDraft> {
@@ -154,31 +122,9 @@ export default function MyProfilePage() {
     setError('');
     setSuccess('');
 
-    const hasPhoto = Boolean(photoFile || employee.photoUrl?.trim());
-    if (!hasPhoto) {
-      setError('A profile photo is required before submitting.');
-      return;
-    }
-
-    const hasPassport = Boolean(passportFile || employee.passportUrl);
-    const hasVisa = Boolean(visaFile || employee.visaUrl);
-    if (!hasPassport || !hasVisa) {
-      setError('Passport and visa documents are required before submitting.');
-      return;
-    }
-
     const personalDetailsError = validatePersonalDetails(form);
     if (personalDetailsError) {
       setError(personalDetailsError);
-      return;
-    }
-
-    const requiredCustomError = validateRequiredCustomFields(
-      customFields,
-      customDraftsRef.current,
-    );
-    if (requiredCustomError) {
-      setError(requiredCustomError);
       return;
     }
 
@@ -316,9 +262,9 @@ export default function MyProfilePage() {
               </p>
             ) : (
               <p className="text-xs text-subtle">
-                Upload your profile photo, complete your personal details, passport/visa,
-                and any required additional fields, then submit. You will go to the
-                dashboard while documents upload in the background.
+                Add any personal details and documents you have, then submit. Nothing is
+                mandatory here — an admin will review and approve or reject your profile.
+                You will go to the dashboard while any files upload in the background.
               </p>
             )}
             {profileStatus === 'Rejected' &&
@@ -334,7 +280,7 @@ export default function MyProfilePage() {
             description={
               isReadOnly
                 ? 'Your photo on file for scheduling and attendance.'
-                : 'A clear photo of your face is required for your staff profile.'
+                : 'Optional. A clear face photo helps with your staff profile.'
             }
             icon={UserRound}
           >
@@ -344,7 +290,7 @@ export default function MyProfilePage() {
               onFileChange={setPhotoFile}
               disabled={personalBusy}
               readOnly={isReadOnly}
-              required={!isReadOnly}
+              required={false}
             />
           </FormSection>
 
@@ -362,7 +308,7 @@ export default function MyProfilePage() {
             currentVisaFileName={employee.visaFileName}
             currentPassportUrl={employee.passportUrl}
             currentVisaUrl={employee.visaUrl}
-            requireDocuments={!isReadOnly}
+            requireDocuments={false}
           />
 
           {!customLoading && customFields.length > 0 ? (
@@ -372,6 +318,7 @@ export default function MyProfilePage() {
               disabled={busy}
               readOnly={isReadOnly}
               allowOptionalDocumentUpload={isReadOnly}
+              forceOptional
               idPrefix="my-custom"
               draftsRef={customDraftsRef}
             />

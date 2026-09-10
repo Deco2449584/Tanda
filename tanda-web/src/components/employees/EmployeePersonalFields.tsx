@@ -214,7 +214,7 @@ export function EmployeePersonalFields({
             ? 'Your uploaded identity documents.'
             : requireDocuments
               ? 'Passport and visa files are required to submit for review. Images or PDF up to 10 MB.'
-              : 'Attach passport and visa files. Images or PDF up to 10 MB.'
+              : 'Optional. Attach passport and visa files when you have them. Images or PDF up to 10 MB.'
         }
         icon={FileText}
       >

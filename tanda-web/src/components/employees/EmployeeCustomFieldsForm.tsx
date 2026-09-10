@@ -69,6 +69,8 @@ interface EmployeeCustomFieldsFormProps {
    * fields that were never filled.
    */
   allowOptionalDocumentUpload?: boolean;
+  /** Hide required markers and treat every field as optional (employee self-serve). */
+  forceOptional?: boolean;
   idPrefix?: string;
   draftsRef?: MutableRefObject<Record<string, CustomFieldDraft>>;
 }
@@ -79,6 +81,7 @@ export function EmployeeCustomFieldsForm({
   disabled = false,
   readOnly = false,
   allowOptionalDocumentUpload = false,
+  forceOptional = false,
   idPrefix = 'custom',
   draftsRef,
 }: EmployeeCustomFieldsFormProps) {
@@ -132,8 +135,10 @@ export function EmployeeCustomFieldsForm({
       title="Additional information"
       description={
         allowOptionalDocumentUpload
-          ? 'Your profile is approved. You can still upload optional documents that were not required.'
-          : 'Extra details requested by your organisation.'
+          ? 'Your profile is approved. You can still upload optional documents that were not filled.'
+          : forceOptional
+            ? 'Extra details requested by your organisation. All fields are optional.'
+            : 'Extra details requested by your organisation.'
       }
       icon={ClipboardList}
     >
@@ -144,6 +149,7 @@ export function EmployeeCustomFieldsForm({
             valueNumber: '',
             file: null,
           };
+          const showRequired = field.required && !forceOptional;
           const optionalDocEditable =
             allowOptionalDocumentUpload &&
             isOptionalMissingDocumentField(field, draft);
@@ -156,7 +162,7 @@ export function EmployeeCustomFieldsForm({
                 <FormField
                   label={field.title}
                   htmlFor={`${idPrefix}-${field.id}`}
-                  required={field.required}
+                  required={showRequired}
                   hint={field.description}
                 >
                   <input
@@ -177,7 +183,7 @@ export function EmployeeCustomFieldsForm({
                 <FormField
                   label={field.title}
                   htmlFor={`${idPrefix}-${field.id}`}
-                  required={field.required}
+                  required={showRequired}
                   hint={field.description}
                 >
                   <input
@@ -196,7 +202,7 @@ export function EmployeeCustomFieldsForm({
 
               {field.type === 'file' || field.type === 'image' ? (
                 <EmployeeDocumentUpload
-                  label={field.required ? `${field.title} *` : field.title}
+                  label={showRequired ? `${field.title} *` : field.title}
                   description={field.description}
                   currentFileName={draft.fileName}
                   currentFileUrl={draft.url}
