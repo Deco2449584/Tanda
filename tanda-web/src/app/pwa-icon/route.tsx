@@ -11,5 +11,6 @@ export async function GET(request: NextRequest) {
   return renderLogoIcon({
     size,
     paddingRatio: maskable ? 0.2 : 0.1,
+    variant: 'pwa',
   });
 }

@@ -8,7 +8,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
   const iconUrl = `${self.location.origin}/icons/icon-192.png`;
-  const badgeUrl = `${self.location.origin}/icons/icon-32.png`;
+  const badgeUrl = `${self.location.origin}/icons/favicon-32.png`;
 
   let payload = {
     title: 'Continental Cargo Workspace',

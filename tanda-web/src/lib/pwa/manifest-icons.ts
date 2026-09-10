@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next';
 
 /**
- * Prefer static white-background brand icons (same mark as continentalcargo.com.au)
- * so crawlers, install prompts, and home-screen icons stay consistent.
+ * PWA / home-screen icons: dark mark on white.
+ * Browser tab favicons use `/icons/favicon-*.png` (dark tile) via metadata.
  */
 export function buildPwaIconEntries(): MetadataRoute.Manifest['icons'] {
   return [
@@ -33,12 +33,6 @@ export function buildPwaIconEntries(): MetadataRoute.Manifest['icons'] {
     {
       src: '/icons/icon-180.png',
       sizes: '180x180',
-      type: 'image/png',
-      purpose: 'any',
-    },
-    {
-      src: '/icons/icon-32.png',
-      sizes: '32x32',
       type: 'image/png',
       purpose: 'any',
     },

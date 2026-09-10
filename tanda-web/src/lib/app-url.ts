@@ -35,6 +35,8 @@ export function getAppLogoUrl(
   variant: 'light' | 'horizontal' | 'mark-light' = 'horizontal',
 ): string {
   const file =
-    variant === 'mark-light' ? 'logo-mark-light.png' : 'logo-horizontal.png';
+    variant === 'mark-light'
+      ? 'logos/logo-mark-light.png'
+      : 'logos/logo-horizontal.png';
   return `${getAppBaseUrl()}/${file}`;
 }
