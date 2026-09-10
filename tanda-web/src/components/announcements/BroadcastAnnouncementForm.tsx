@@ -5,6 +5,7 @@ import { Megaphone, Send } from 'lucide-react';
 import { broadcastAnnouncementRequest } from '@/lib/announcements/announcement-api';
 import type { AnnouncementAudience } from '@/lib/types/announcement';
 import type { Employee } from '@/lib/types/employee';
+import { isWorkforceEmployee } from '@/lib/employees/is-workforce-employee';
 import { useDepartments } from '@/providers/DepartmentsProvider';
 import type { Location } from '@/lib/types/location';
 
@@ -28,7 +29,9 @@ function normalizeEmail(email: string): string {
 }
 
 function isEligibleRecipient(employee: Employee): boolean {
-  return employee.active !== false && Boolean(employee.email?.trim());
+  return (
+    isWorkforceEmployee(employee) && Boolean(employee.email?.trim())
+  );
 }
 
 export function BroadcastAnnouncementForm({

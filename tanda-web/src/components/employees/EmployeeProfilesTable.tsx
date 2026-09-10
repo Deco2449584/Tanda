@@ -8,6 +8,7 @@ import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfi
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { reviewEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
 import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile-status';
+import { isWorkforceEmployeeRole } from '@/lib/employees/is-workforce-employee';
 import type { Employee, PersonalProfileStatus } from '@/lib/types/employee';
 
 export type ProfileStatusFilter = 'all' | PersonalProfileStatus;
@@ -21,8 +22,7 @@ const STATUS_CHANGE_OPTIONS: { value: ReviewStatus; label: string }[] = [
 ];
 
 function isStaffProfileEmployee(employee: Employee): boolean {
-  const role = (employee.role ?? 'empleado').trim().toLowerCase();
-  return role !== 'kiosk' && role !== 'master' && role !== 'admin';
+  return isWorkforceEmployeeRole(employee.role);
 }
 
 interface EmployeeProfilesTableProps {

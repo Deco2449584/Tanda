@@ -6,6 +6,7 @@ import {
   isResendConfigured,
   sendAnnouncementEmail,
 } from '@/lib/email/send-announcement-email';
+import { isWorkforceEmployeeRole } from '@/lib/employees/is-workforce-employee';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { buildAttendanceNotificationDocId } from '@/lib/notifications/build-attendance-notification';
 import { sendPushNotification } from '@/lib/notifications/send-push';
@@ -73,6 +74,8 @@ async function loadActiveRecipients(input: {
       const active = data.active !== false;
       if (!active) return null;
 
+      if (!isWorkforceEmployeeRole(data.role)) return null;
+
       const department = typeof data.department === 'string' ? data.department.trim() : '';
       const locationId =
         typeof data.locationId === 'string' ? data.locationId.trim() : '';
@@ -108,6 +111,7 @@ interface EmployeeAudienceProfile {
   active: boolean;
   department: string;
   locationId: string;
+  role: string;
 }
 
 async function getEmployeeAudienceProfile(
@@ -130,6 +134,7 @@ async function getEmployeeAudienceProfile(
     active: data.active !== false,
     department: typeof data.department === 'string' ? data.department.trim() : '',
     locationId: typeof data.locationId === 'string' ? data.locationId.trim() : '',
+    role: typeof data.role === 'string' ? data.role : 'empleado',
   };
 }
 
@@ -138,6 +143,7 @@ export function employeeMatchesAnnouncementAudience(
   announcement: Pick<Announcement, 'audience' | 'audienceValue' | 'recipientEmails'>,
 ): boolean {
   if (!employee.active) return false;
+  if (!isWorkforceEmployeeRole(employee.role)) return false;
 
   if (announcement.audience === 'all') {
     return true;
