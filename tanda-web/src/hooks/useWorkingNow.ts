@@ -108,7 +108,10 @@ export function useWorkingNow(input: {
     ],
   );
 
-  const groups = useMemo(() => groupWorkingNowBySite(people), [people]);
+  const groups = useMemo(
+    () => groupWorkingNowBySite(people, input.locations),
+    [people, input.locations],
+  );
 
   const workingCount = people.filter((person) => person.status === 'working')
     .length;

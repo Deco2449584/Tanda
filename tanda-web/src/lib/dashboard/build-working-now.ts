@@ -23,6 +23,7 @@ export interface WorkingNowSiteGroup {
   locationKey: string;
   locationLabel: string;
   locationId?: string;
+  locationPhotoUrl?: string;
   people: WorkingNowPerson[];
 }
 
@@ -148,7 +149,11 @@ export function buildWorkingNowPeople(input: {
 
 export function groupWorkingNowBySite(
   people: WorkingNowPerson[],
+  locations: readonly Location[] = [],
 ): WorkingNowSiteGroup[] {
+  const locationsById = new Map(
+    locations.map((location) => [location.id, location]),
+  );
   const groups = new Map<string, WorkingNowSiteGroup>();
 
   for (const person of people) {
@@ -159,10 +164,15 @@ export function groupWorkingNowBySite(
       continue;
     }
 
+    const location = person.locationId
+      ? locationsById.get(person.locationId)
+      : undefined;
+
     groups.set(locationKey, {
       locationKey,
       locationLabel: person.locationLabel,
       locationId: person.locationId,
+      locationPhotoUrl: location?.photoUrl?.trim() || undefined,
       people: [person],
     });
   }

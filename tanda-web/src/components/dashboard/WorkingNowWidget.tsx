@@ -8,7 +8,9 @@ import {
   type WorkingNowSiteGroup,
 } from '@/lib/dashboard/build-working-now';
 import { cn } from '@/lib/cn';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { isFirebaseStorageUrl } from '@/utils/imageOptimizer';
 
 interface WorkingNowWidgetProps {
   groups: WorkingNowSiteGroup[];
@@ -208,10 +210,11 @@ export function WorkingNowWidget({
               className="overflow-hidden rounded-2xl border border-border bg-surface-raised/40"
             >
               <header className="flex items-center justify-between gap-3 border-b border-border/80 bg-surface-hover/40 px-4 py-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <MapPin className="h-4 w-4" aria-hidden />
-                  </span>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <SiteThumb
+                    photoUrl={group.locationPhotoUrl}
+                    label={group.locationLabel}
+                  />
                   <div className="min-w-0">
                     <h3 className="truncate text-sm font-semibold text-foreground">
                       {group.locationLabel}
@@ -259,5 +262,45 @@ export function WorkingNowWidget({
         </div>
       )}
     </div>
+  );
+}
+
+function SiteThumb({
+  photoUrl,
+  label,
+}: {
+  photoUrl?: string;
+  label: string;
+}) {
+  if (photoUrl) {
+    return (
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-base ring-1 ring-border">
+        {isFirebaseStorageUrl(photoUrl) ? (
+          <FirebaseImage
+            src={photoUrl}
+            alt={label}
+            width={36}
+            height={36}
+            className="h-full w-full object-cover"
+            sizes="36px"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photoUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <MapPin className="h-4 w-4" aria-hidden />
+    </span>
   );
 }
