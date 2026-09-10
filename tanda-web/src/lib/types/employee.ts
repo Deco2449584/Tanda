@@ -4,6 +4,7 @@ import type { StaffPayRates } from '@/lib/types/pay-rules';
 
 export const PERSONAL_PROFILE_STATUSES = [
   'none',
+  'Uploading',
   'Pending',
   'Approved',
   'Rejected',

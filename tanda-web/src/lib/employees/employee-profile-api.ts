@@ -14,14 +14,38 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
-export type SubmitEmployeeProfileInput = EmployeePersonalDetails & {
-  photoUrl: string;
-  passportUrl: string;
-  visaUrl: string;
+export type EmployeeProfilePersonalPayload = EmployeePersonalDetails & {
+  photoUrl?: string;
+  passportUrl?: string;
+  visaUrl?: string;
   passportFileName?: string;
   visaFileName?: string;
 };
 
+export type SubmitEmployeeProfileInput = EmployeeProfilePersonalPayload & {
+  photoUrl: string;
+  passportUrl: string;
+  visaUrl: string;
+};
+
+/** Saves personal details and marks the profile as uploading documents. */
+export async function startEmployeeProfileUploadRequest(
+  input: EmployeeProfilePersonalPayload,
+): Promise<void> {
+  const headers = await getAuthHeaders();
+  const response = await fetch('/api/employee-profile', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ ...input, documentsPending: true }),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? 'Could not submit personal profile.');
+  }
+}
+
+/** Finalizes profile with document URLs and marks it Pending review. */
 export async function submitEmployeeProfileRequest(
   input: SubmitEmployeeProfileInput,
 ): Promise<void> {

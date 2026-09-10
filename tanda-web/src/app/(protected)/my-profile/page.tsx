@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
 import {
@@ -20,13 +21,11 @@ import {
   fetchEmployeeCustomFields,
   saveEmployeeCustomFieldValuesRequest,
 } from '@/lib/employees/employee-custom-fields-api';
-import { submitEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
-import { employeeToFormValues } from '@/lib/employees/employee-to-form';
+import { beginBackgroundProfileUpload } from '@/lib/employees/background-profile-upload';
 import { normalizePersonalProfileStatus } from '@/lib/employees/personal-profile-status';
 import { validatePersonalDetails } from '@/lib/employees/validate-personal-details';
-import { uploadEmployeeAvatar } from '@/lib/employees/upload-avatar';
-import { uploadEmployeeDocument } from '@/lib/employees/upload-document';
 import { initialCreateEmployeeForm } from '@/lib/employees/build-create-payload';
+import { employeeToFormValues } from '@/lib/employees/employee-to-form';
 import type { CreateEmployeeFormValues } from '@/lib/types/employee';
 import type {
   EmployeeCustomField,
@@ -66,13 +65,23 @@ function validateRequiredCustomFields(
   return null;
 }
 
+function cloneCustomDrafts(
+  drafts: Record<string, CustomFieldDraft>,
+): Record<string, CustomFieldDraft> {
+  const cloned: Record<string, CustomFieldDraft> = {};
+  for (const [fieldId, draft] of Object.entries(drafts)) {
+    cloned[fieldId] = { ...draft };
+  }
+  return cloned;
+}
+
 export default function MyProfilePage() {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuthRole();
   const {
     employee,
     loading: employeeLoading,
     error: employeeError,
-    refresh,
   } = useCurrentEmployee(user?.email);
 
   const [form, setForm] = useState<CreateEmployeeFormValues>(initialCreateEmployeeForm);
@@ -175,48 +184,7 @@ export default function MyProfilePage() {
 
     setIsSubmitting(true);
     try {
-      if (customFields.length > 0) {
-        const values = await buildCustomFieldValuePayloads({
-          fields: customFields,
-          drafts: customDraftsRef.current,
-          employeeCode: employee.employeeId,
-        });
-        if (values.length > 0) {
-          await saveEmployeeCustomFieldValuesRequest({ values });
-        }
-      }
-
-      let photoUrl = employee.photoUrl?.trim() ?? '';
-      let passportUrl = employee.passportUrl ?? '';
-      let passportFileName = employee.passportFileName;
-      let visaUrl = employee.visaUrl ?? '';
-      let visaFileName = employee.visaFileName;
-
-      if (photoFile) {
-        photoUrl = await uploadEmployeeAvatar(employee.employeeId, photoFile);
-      }
-
-      if (passportFile) {
-        const uploaded = await uploadEmployeeDocument(
-          employee.employeeId,
-          passportFile,
-          'passport',
-        );
-        passportUrl = uploaded.url;
-        passportFileName = uploaded.fileName;
-      }
-
-      if (visaFile) {
-        const uploaded = await uploadEmployeeDocument(
-          employee.employeeId,
-          visaFile,
-          'visa',
-        );
-        visaUrl = uploaded.url;
-        visaFileName = uploaded.fileName;
-      }
-
-      await submitEmployeeProfileRequest({
+      const personal = {
         phone: form.phone,
         dateOfBirth: form.dateOfBirth,
         addressLine1: form.addressLine1,
@@ -229,25 +197,34 @@ export default function MyProfilePage() {
         emergencyContactPhone: form.emergencyContactPhone,
         passportNumber: form.passportNumber,
         visaExpiry: form.visaExpiry,
-        photoUrl,
-        passportUrl,
-        visaUrl,
-        passportFileName,
-        visaFileName,
+      };
+
+      // Capture files before clearing state / navigating away.
+      await beginBackgroundProfileUpload({
+        employeeCode: employee.employeeId,
+        personal,
+        existingPhotoUrl: employee.photoUrl,
+        existingPassportUrl: employee.passportUrl,
+        existingPassportFileName: employee.passportFileName,
+        existingVisaUrl: employee.visaUrl,
+        existingVisaFileName: employee.visaFileName,
+        photoFile,
+        passportFile,
+        visaFile,
+        customFields,
+        customDrafts: cloneCustomDrafts(customDraftsRef.current),
       });
 
       setPhotoFile(null);
       setPassportFile(null);
       setVisaFile(null);
-      setSuccess('Profile submitted for admin review.');
-      await Promise.all([refresh(), loadCustomFields()]);
+      router.replace('/employee-dashboard');
     } catch (submitError) {
       setError(
         submitError instanceof Error
           ? submitError.message
           : 'Could not submit your profile.',
       );
-    } finally {
       setIsSubmitting(false);
     }
   }
@@ -331,10 +308,17 @@ export default function MyProfilePage() {
                 Your profile is approved. Personal details stay locked; you can still
                 upload optional documents that were not required.
               </p>
+            ) : profileStatus === 'Uploading' ? (
+              <p className="text-xs text-subtle">
+                Your details were saved. Documents are still uploading in the background.
+                You can keep using the app — status will move to pending review when
+                uploads finish.
+              </p>
             ) : (
               <p className="text-xs text-subtle">
                 Upload your profile photo, complete your personal details, passport/visa,
-                and any required additional fields, then submit for admin approval.
+                and any required additional fields, then submit. You will go to the
+                dashboard while documents upload in the background.
               </p>
             )}
             {profileStatus === 'Rejected' &&
@@ -398,7 +382,13 @@ export default function MyProfilePage() {
 
           {!isReadOnly ? (
             <FormActions
-              submitLabel={isSubmitting ? 'Submitting…' : 'Submit for review'}
+              submitLabel={
+                isSubmitting
+                  ? 'Starting…'
+                  : profileStatus === 'Uploading'
+                    ? 'Retry submit'
+                    : 'Submit for review'
+              }
               disabled={personalBusy}
               hideCancel
             />

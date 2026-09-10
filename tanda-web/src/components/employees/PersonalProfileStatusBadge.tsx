@@ -11,6 +11,7 @@ const statusStyles: Record<
   string
 > = {
   none: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-300',
+  Uploading: 'border-sky-500/30 bg-sky-500/10 text-sky-300',
   Pending: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
   Approved: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
   Rejected: 'border-red-500/30 bg-red-500/10 text-red-400',

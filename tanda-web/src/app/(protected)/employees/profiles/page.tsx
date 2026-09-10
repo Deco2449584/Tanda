@@ -22,6 +22,13 @@ const STATUS_FILTERS: {
   idleClass: string;
 }[] = [
   {
+    value: 'Uploading',
+    label: 'Uploading',
+    activeClass: 'border-sky-400/50 bg-sky-500/20 text-sky-200',
+    idleClass:
+      'border-sky-500/25 bg-sky-500/5 text-sky-400/80 hover:bg-sky-500/15 hover:text-sky-200',
+  },
+  {
     value: 'Pending',
     label: 'Pending',
     activeClass: 'border-amber-400/50 bg-amber-500/20 text-amber-200',
@@ -62,6 +69,7 @@ function parseStatusFilter(raw: string | null): ProfileStatusFilter {
   if (
     raw === 'all' ||
     raw === 'none' ||
+    raw === 'Uploading' ||
     raw === 'Pending' ||
     raw === 'Approved' ||
     raw === 'Rejected'
@@ -69,6 +77,7 @@ function parseStatusFilter(raw: string | null): ProfileStatusFilter {
     return raw;
   }
   if (raw === 'pending') return 'Pending';
+  if (raw === 'uploading') return 'Uploading';
   if (raw === 'approved') return 'Approved';
   if (raw === 'rejected') return 'Rejected';
   return 'Pending';
@@ -89,6 +98,7 @@ export default function EmployeeProfilesPage() {
     const result: Record<PersonalProfileStatus | 'all', number> = {
       all: 0,
       none: 0,
+      Uploading: 0,
       Pending: 0,
       Approved: 0,
       Rejected: 0,
@@ -99,7 +109,10 @@ export default function EmployeeProfilesPage() {
 
       const status = employee.personalProfileStatus ?? 'none';
       const key =
-        status === 'Pending' || status === 'Approved' || status === 'Rejected'
+        status === 'Uploading' ||
+        status === 'Pending' ||
+        status === 'Approved' ||
+        status === 'Rejected'
           ? status
           : 'none';
       result[key] += 1;

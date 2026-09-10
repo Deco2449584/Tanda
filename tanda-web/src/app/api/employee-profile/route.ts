@@ -39,7 +39,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
     }
 
-    if (existing.data()?.personalProfileStatus === 'Approved') {
+    const existingData = existing.data() ?? {};
+    if (existingData.personalProfileStatus === 'Approved') {
       return NextResponse.json(
         {
           error:
@@ -50,26 +51,23 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as Record<string, unknown>;
+    const documentsPending = body.documentsPending === true;
 
-    const passportUrl = optionalTrim(body.passportUrl);
-    const visaUrl = optionalTrim(body.visaUrl);
-    const photoUrl = optionalTrim(body.photoUrl);
-    const passportFileName = optionalTrim(body.passportFileName);
-    const visaFileName = optionalTrim(body.visaFileName);
-
-    if (!photoUrl) {
-      return NextResponse.json(
-        { error: 'A profile photo is required to submit your profile.' },
-        { status: 400 },
-      );
-    }
-
-    if (!passportUrl || !visaUrl) {
-      return NextResponse.json(
-        { error: 'Passport and visa documents are required to submit your profile.' },
-        { status: 400 },
-      );
-    }
+    const passportUrl =
+      optionalTrim(body.passportUrl) ??
+      (documentsPending ? optionalTrim(existingData.passportUrl) : undefined);
+    const visaUrl =
+      optionalTrim(body.visaUrl) ??
+      (documentsPending ? optionalTrim(existingData.visaUrl) : undefined);
+    const photoUrl =
+      optionalTrim(body.photoUrl) ??
+      (documentsPending ? optionalTrim(existingData.photoUrl) : undefined);
+    const passportFileName =
+      optionalTrim(body.passportFileName) ??
+      (documentsPending ? optionalTrim(existingData.passportFileName) : undefined);
+    const visaFileName =
+      optionalTrim(body.visaFileName) ??
+      (documentsPending ? optionalTrim(existingData.visaFileName) : undefined);
 
     const personalDetailsError = validatePersonalDetails({
       phone: optionalTrim(body.phone),
@@ -89,16 +87,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: personalDetailsError }, { status: 400 });
     }
 
+    if (!documentsPending) {
+      if (!photoUrl) {
+        return NextResponse.json(
+          { error: 'A profile photo is required to submit your profile.' },
+          { status: 400 },
+        );
+      }
+
+      if (!passportUrl || !visaUrl) {
+        return NextResponse.json(
+          { error: 'Passport and visa documents are required to submit your profile.' },
+          { status: 400 },
+        );
+      }
+    }
+
     const payload: Record<string, unknown> = {
-      personalProfileStatus: 'Pending',
+      personalProfileStatus: documentsPending ? 'Uploading' : 'Pending',
       personalProfileSubmittedAt: FieldValue.serverTimestamp(),
       personalProfileRejectionReason: FieldValue.delete(),
       personalProfileReviewedAt: FieldValue.delete(),
-      photoUrl,
-      passportUrl,
-      visaUrl,
     };
 
+    if (photoUrl) payload.photoUrl = photoUrl;
+    if (passportUrl) payload.passportUrl = passportUrl;
+    if (visaUrl) payload.visaUrl = visaUrl;
     if (passportFileName) payload.passportFileName = passportFileName;
     if (visaFileName) payload.visaFileName = visaFileName;
 
@@ -113,7 +127,10 @@ export async function POST(request: Request) {
 
     await employeeRef.update(payload);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      status: documentsPending ? 'Uploading' : 'Pending',
+    });
   } catch (error) {
     console.error('POST /api/employee-profile', error);
     return NextResponse.json(
