@@ -80,7 +80,8 @@ export async function beginBackgroundProfileUpload(
     message: 'Uploading your documents in the background…',
   });
 
-  const run = (async () => {
+  let run!: Promise<void>;
+  run = (async () => {
     try {
       const customTask =
         job.customFields.length > 0
