@@ -2,13 +2,16 @@ import {
   Bell,
   CalendarClock,
   CalendarX,
+  CheckCircle2,
   Clock,
   FileWarning,
+  GraduationCap,
   IdCard,
   LogOut,
   Megaphone,
   Palmtree,
   UserX,
+  XCircle,
   type LucideIcon,
 } from 'lucide-react';
 import type { NotificationType } from '@/lib/types/notification';
@@ -46,6 +49,18 @@ const EMPLOYEE_NOTIFICATION_VISUALS: Record<NotificationType, NotificationVisual
   late_arrival: {
     icon: CalendarClock,
     badgeClass: 'bg-amber-500/15 text-amber-300',
+  },
+  course_assigned: {
+    icon: GraduationCap,
+    badgeClass: 'bg-primary/15 text-primary',
+  },
+  course_approved: {
+    icon: CheckCircle2,
+    badgeClass: 'bg-emerald-500/15 text-emerald-300',
+  },
+  course_rejected: {
+    icon: XCircle,
+    badgeClass: 'bg-red-500/15 text-red-300',
   },
 };
 

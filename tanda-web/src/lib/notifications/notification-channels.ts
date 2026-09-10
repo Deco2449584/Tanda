@@ -5,6 +5,7 @@ export const NOTIFICATION_CHANNEL_KEYS = [
   'announcements',
   'attendance',
   'leaveRequests',
+  'courses',
 ] as const;
 
 export type NotificationChannelKey = (typeof NOTIFICATION_CHANNEL_KEYS)[number];
@@ -14,6 +15,7 @@ export const EMPLOYEE_NOTIFICATION_CHANNEL_KEYS: NotificationChannelKey[] = [
   'shifts',
   'announcements',
   'attendance',
+  'courses',
 ];
 
 /** Channels for admin/master personal alert preferences. */
@@ -22,6 +24,7 @@ export const ADMIN_NOTIFICATION_CHANNEL_KEYS: NotificationChannelKey[] = [
   'announcements',
   'attendance',
   'leaveRequests',
+  'courses',
 ];
 
 export interface NotificationChannelPreferences {
@@ -29,6 +32,7 @@ export interface NotificationChannelPreferences {
   announcements: boolean;
   attendance: boolean;
   leaveRequests: boolean;
+  courses: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_CHANNELS: NotificationChannelPreferences = {
@@ -36,6 +40,7 @@ export const DEFAULT_NOTIFICATION_CHANNELS: NotificationChannelPreferences = {
   announcements: true,
   attendance: true,
   leaveRequests: true,
+  courses: true,
 };
 
 export function mapNotificationChannels(
@@ -46,6 +51,7 @@ export function mapNotificationChannels(
     announcements: raw?.announcements !== false,
     attendance: raw?.attendance !== false,
     leaveRequests: raw?.leaveRequests !== false,
+    courses: raw?.courses !== false,
   };
 }
 
@@ -63,6 +69,10 @@ export function notificationTypeToChannel(
     case 'late_arrival':
     case 'no_show':
       return 'attendance';
+    case 'course_assigned':
+    case 'course_approved':
+    case 'course_rejected':
+      return 'courses';
     default:
       return null;
   }
@@ -97,5 +107,9 @@ export const NOTIFICATION_CHANNEL_LABELS: Record<
   leaveRequests: {
     title: 'Leave requests',
     description: 'Pending leave requests and related admin alerts.',
+  },
+  courses: {
+    title: 'Courses & training',
+    description: 'New course assignments and manager approval decisions.',
   },
 };

@@ -49,7 +49,7 @@ export default function MyCoursesPage() {
     <PageContent className="space-y-6">
       <PageHeader
         title="My courses"
-        description="Complete assigned training on external platforms and submit proof."
+        description="Complete assigned training before the deadline, then submit proof for manager approval."
       />
 
       <MyCoursesPanel

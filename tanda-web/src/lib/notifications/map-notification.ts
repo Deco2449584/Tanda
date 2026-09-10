@@ -1,4 +1,27 @@
-import type { AppNotification, NotificationFirestore } from '@/lib/types/notification';
+import type { AppNotification, NotificationFirestore, NotificationType } from '@/lib/types/notification';
+
+const NOTIFICATION_TYPES: readonly NotificationType[] = [
+  'shift_assigned',
+  'shift_cancelled',
+  'announcement',
+  'justification_required',
+  'missing_checkin',
+  'late_arrival',
+  'no_show',
+  'course_assigned',
+  'course_approved',
+  'course_rejected',
+] as const;
+
+function parseNotificationType(value: unknown): NotificationType {
+  if (
+    typeof value === 'string' &&
+    (NOTIFICATION_TYPES as readonly string[]).includes(value)
+  ) {
+    return value as NotificationType;
+  }
+  return 'shift_assigned';
+}
 
 export function mapNotificationDoc(
   id: string,
@@ -13,20 +36,7 @@ export function mapNotificationDoc(
         ? record.recipientEmail.trim().toLowerCase()
         : '',
     audience: record.audience === 'admin' ? 'admin' : 'employee',
-    type:
-      record.type === 'shift_cancelled'
-        ? 'shift_cancelled'
-        : record.type === 'announcement'
-          ? 'announcement'
-          : record.type === 'justification_required'
-            ? 'justification_required'
-            : record.type === 'missing_checkin'
-              ? 'missing_checkin'
-              : record.type === 'late_arrival'
-                ? 'late_arrival'
-                : record.type === 'no_show'
-                  ? 'no_show'
-                  : 'shift_assigned',
+    type: parseNotificationType(record.type),
     title: typeof record.title === 'string' ? record.title : 'Notification',
     body: typeof record.body === 'string' ? record.body : '',
     href: typeof record.href === 'string' ? record.href : '/',

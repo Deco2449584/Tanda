@@ -5,6 +5,8 @@ import { Search, Users } from 'lucide-react';
 import { isWorkforceEmployee } from '@/lib/employees/is-workforce-employee';
 import type { Employee } from '@/lib/types/employee';
 
+const VISIBLE_PAGE_SIZE = 8;
+
 interface CourseAssigneePickerProps {
   employees: Employee[];
   selectedIds: string[];
@@ -25,6 +27,7 @@ export function CourseAssigneePicker({
 }: CourseAssigneePickerProps) {
   const [query, setQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_PAGE_SIZE);
 
   const workforce = useMemo(
     () =>
@@ -62,6 +65,8 @@ export function CourseAssigneePicker({
     });
   }, [workforce, query, departmentFilter]);
 
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > visibleCount;
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   function toggle(id: string) {
@@ -75,17 +80,23 @@ export function CourseAssigneePicker({
 
   function selectVisible() {
     const next = new Set(selectedIds);
-    filtered.forEach((employee) => next.add(employee.id));
+    visible.forEach((employee) => next.add(employee.id));
     onChange(Array.from(next));
   }
 
   function clearVisible() {
-    const visible = new Set(filtered.map((employee) => employee.id));
-    onChange(selectedIds.filter((id) => !visible.has(id)));
+    const visibleIds = new Set(visible.map((employee) => employee.id));
+    onChange(selectedIds.filter((id) => !visibleIds.has(id)));
   }
 
   function selectAllWorkforce() {
     onChange(workforce.map((employee) => employee.id));
+  }
+
+  function handleFilterChange(nextQuery: string, nextDepartment: string) {
+    setQuery(nextQuery);
+    setDepartmentFilter(nextDepartment);
+    setVisibleCount(VISIBLE_PAGE_SIZE);
   }
 
   return (
@@ -97,6 +108,9 @@ export function CourseAssigneePicker({
             {selectedIds.length} selected
             {alreadyAssignedIds && alreadyAssignedIds.size > 0
               ? ` · ${alreadyAssignedIds.size} already enrolled`
+              : ''}
+            {filtered.length > 0
+              ? ` · showing ${visible.length} of ${filtered.length}`
               : ''}
           </p>
         </div>
@@ -111,7 +125,7 @@ export function CourseAssigneePicker({
           </button>
           <button
             type="button"
-            disabled={disabled || filtered.length === 0}
+            disabled={disabled || visible.length === 0}
             onClick={selectVisible}
             className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-muted hover:text-foreground disabled:opacity-50"
           >
@@ -135,7 +149,7 @@ export function CourseAssigneePicker({
             type="search"
             value={query}
             disabled={disabled}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleFilterChange(e.target.value, departmentFilter)}
             placeholder="Search name, code, email…"
             className="w-full rounded-lg border border-border bg-surface-base py-2 pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary disabled:opacity-50"
           />
@@ -143,7 +157,7 @@ export function CourseAssigneePicker({
         <select
           value={departmentFilter}
           disabled={disabled}
-          onChange={(e) => setDepartmentFilter(e.target.value)}
+          onChange={(e) => handleFilterChange(query, e.target.value)}
           className="rounded-lg border border-border bg-surface-base px-3 py-2 text-sm text-foreground outline-none focus:border-primary disabled:opacity-50"
         >
           <option value="all">All departments</option>
@@ -155,47 +169,63 @@ export function CourseAssigneePicker({
         </select>
       </div>
 
-      <div className="max-h-56 overflow-y-auto rounded-xl border border-border bg-surface-base/50">
+      <div className="rounded-xl border border-border bg-surface-base/50">
         {filtered.length === 0 ? (
           <p className="flex items-center gap-2 px-3 py-6 text-xs text-muted">
             <Users className="h-4 w-4" />
             No matching employees.
           </p>
         ) : (
-          <ul className="divide-y divide-border/70">
-            {filtered.map((employee) => {
-              const checked = selectedSet.has(employee.id);
-              const already = alreadyAssignedIds?.has(employee.id) === true;
+          <>
+            <ul className="divide-y divide-border/70">
+              {visible.map((employee) => {
+                const checked = selectedSet.has(employee.id);
+                const already = alreadyAssignedIds?.has(employee.id) === true;
 
-              return (
-                <li key={employee.id}>
-                  <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-surface-hover/40">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={disabled}
-                      onChange={() => toggle(employee.id)}
-                      className="h-4 w-4 rounded border-zinc-600"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">
-                        {employee.name}
-                        {already ? (
-                          <span className="ml-2 text-[10px] font-semibold uppercase text-subtle">
-                            enrolled
-                          </span>
-                        ) : null}
+                return (
+                  <li key={employee.id}>
+                    <label className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-surface-hover/40">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggle(employee.id)}
+                        className="h-4 w-4 rounded border-zinc-600"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {employee.name}
+                          {already ? (
+                            <span className="ml-2 text-[10px] font-semibold uppercase text-subtle">
+                              enrolled
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="block truncate text-[11px] text-subtle">
+                          {employee.employeeId}
+                          {employee.department ? ` · ${employee.department}` : ''}
+                        </span>
                       </span>
-                      <span className="block truncate text-[11px] text-subtle">
-                        {employee.employeeId}
-                        {employee.department ? ` · ${employee.department}` : ''}
-                      </span>
-                    </span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            {hasMore ? (
+              <div className="border-t border-border px-3 py-2">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() =>
+                    setVisibleCount((count) => count + VISIBLE_PAGE_SIZE)
+                  }
+                  className="w-full rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition hover:text-foreground disabled:opacity-50"
+                >
+                  Show more ({filtered.length - visibleCount} left)
+                </button>
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>

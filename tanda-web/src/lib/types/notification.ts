@@ -10,7 +10,10 @@ export type NotificationType =
   | 'justification_required'
   | 'missing_checkin'
   | 'late_arrival'
-  | 'no_show';
+  | 'no_show'
+  | 'course_assigned'
+  | 'course_approved'
+  | 'course_rejected';
 
 export interface NotificationFirestore {
   recipientEmail: string;

@@ -14,6 +14,10 @@ import type {
   SubmitCourseEnrollmentInput,
 } from '@/lib/types/course';
 import { isWorkforceEmployeeRole } from '@/lib/employees/is-workforce-employee';
+import {
+  notifyCourseAssigned,
+  notifyCourseReviewed,
+} from '@/lib/notifications/server/course-notification-service';
 
 function enrollmentDocId(courseId: string, employeeDocId: string): string {
   return `${courseId}_${employeeDocId}`;
@@ -47,7 +51,17 @@ export async function ensureEnrollmentForEmployee(input: {
   });
 
   const snapshot = await ref.get();
-  return mapCourseEnrollmentDoc(snapshot.id, snapshot.data() ?? {});
+  const enrollment = mapCourseEnrollmentDoc(snapshot.id, snapshot.data() ?? {});
+
+  await notifyCourseAssigned({
+    recipientEmail: enrollment.employeeEmail,
+    enrollmentId: enrollment.id,
+    courseId: input.course.id,
+    courseTitle: input.course.title,
+    dueDate: input.course.dueDate,
+  });
+
+  return enrollment;
 }
 
 /** Ensure the employee has an enrollment row for every active course. */
@@ -199,7 +213,18 @@ export async function reviewCourseEnrollment(input: {
   });
 
   const snapshot = await ref.get();
-  return mapCourseEnrollmentDoc(snapshot.id, snapshot.data() ?? {});
+  const reviewed = mapCourseEnrollmentDoc(snapshot.id, snapshot.data() ?? {});
+
+  await notifyCourseReviewed({
+    recipientEmail: reviewed.employeeEmail,
+    enrollmentId: reviewed.id,
+    courseId: reviewed.courseId,
+    courseTitle: reviewed.courseTitle,
+    status: input.payload.status,
+    reviewNotes: input.payload.reviewNotes,
+  });
+
+  return reviewed;
 }
 
 /** When a course is deleted, remove related enrollments. */
