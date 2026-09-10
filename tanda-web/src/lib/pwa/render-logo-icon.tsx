@@ -2,9 +2,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ImageResponse } from 'next/og';
 
-import { BRAND } from '@/lib/brand/tokens';
-
-const BRAND_BACKGROUND = BRAND.graphite;
+/** Match continentalcargo.com.au favicon: dark mark on white. */
+const ICON_BACKGROUND = '#FFFFFF';
 
 let cachedMarkDataUrl: string | null = null;
 
@@ -14,7 +13,7 @@ async function getMarkDataUrl(): Promise<string> {
   }
 
   const png = await readFile(
-    path.join(process.cwd(), 'public/logos/logo-mark-light.png'),
+    path.join(process.cwd(), 'public/logos/logo-mark-icon.png'),
   );
   cachedMarkDataUrl = `data:image/png;base64,${png.toString('base64')}`;
   return cachedMarkDataUrl;
@@ -29,7 +28,7 @@ interface RenderLogoIconOptions {
 export async function renderLogoIcon({
   size,
   paddingRatio = 0.18,
-  background = BRAND_BACKGROUND,
+  background = ICON_BACKGROUND,
 }: RenderLogoIconOptions) {
   const markSrc = await getMarkDataUrl();
   const padding = Math.round(size * paddingRatio);
@@ -48,7 +47,8 @@ export async function renderLogoIcon({
           borderRadius: Math.round(size * 0.2),
         }}
       >
-        <img src={markSrc} width={markSize} height={markSize} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={markSrc} width={markSize} height={markSize} alt="" />
       </div>
     ),
     { width: size, height: size },
