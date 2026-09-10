@@ -42,6 +42,7 @@ export const ADMIN_MODULE_ROUTES: Record<AdminModuleKey, string> = {
   inspections: '/inspections',
   issueReports: '/issue-reports',
   helpTutorials: '/help-tutorials',
+  courses: '/courses',
   kiosk: '/kiosk',
   settings: '/settings',
 };
@@ -58,6 +59,7 @@ const MODULE_ORDER: AdminModuleKey[] = [
   'inspections',
   'issueReports',
   'helpTutorials',
+  'courses',
   'payroll',
   'kiosk',
   'settings',

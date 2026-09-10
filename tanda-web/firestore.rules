@@ -393,6 +393,15 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // 18b. Cursos externos y matrículas — solo Admin SDK (API routes)
+    match /courses/{courseId} {
+      allow read, write: if false;
+    }
+
+    match /course_enrollments/{enrollmentId} {
+      allow read, write: if false;
+    }
+
     // 19. Sesión activa por usuario (lectura propia; escritura solo Admin SDK)
     match /auth_sessions/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;

@@ -5,6 +5,7 @@ import type { HelpResourceKind } from '@/lib/types/help-tutorial';
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_COURSE_EVIDENCE_BYTES = 10 * 1024 * 1024;
 
 export function detectHelpResourceKind(file: File): HelpResourceKind {
   const type = file.type.toLowerCase();
@@ -167,4 +168,49 @@ export async function uploadIssueAttachment(
 
   const attachmentUrl = await getDownloadURL(storageRef);
   return { attachmentUrl, attachmentPath };
+}
+
+export async function uploadCourseEvidence(
+  employeeId: string,
+  enrollmentId: string,
+  file: File,
+): Promise<{ evidenceUrl: string; evidencePath: string; evidenceFileName: string }> {
+  if (!storage) {
+    throw new Error('Firebase Storage is not available.');
+  }
+
+  if (file.size > MAX_COURSE_EVIDENCE_BYTES) {
+    throw new Error('Evidence must be under 10 MB.');
+  }
+
+  const isImage = file.type.startsWith('image/');
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (!isImage && !isPdf) {
+    throw new Error('Upload a screenshot (image) or PDF certificate.');
+  }
+
+  const safeCode = employeeId.trim().replace(/[^\w-]/g, '_');
+  const safeEnrollment = enrollmentId.trim().replace(/[^\w-]/g, '_');
+  const extension = isPdf
+    ? 'pdf'
+    : file.type.includes('png')
+      ? 'png'
+      : file.type.includes('webp')
+        ? 'webp'
+        : 'jpg';
+  const evidencePath = `course_evidence/${safeCode}/${safeEnrollment}/${Date.now()}.${extension}`;
+  const storageRef = ref(storage, evidencePath);
+  const contentType = isPdf ? 'application/pdf' : file.type || 'image/jpeg';
+
+  await uploadBytes(storageRef, file, {
+    contentType,
+    cacheControl: 'private, max-age=3600',
+  });
+
+  const evidenceUrl = await getDownloadURL(storageRef);
+  return {
+    evidenceUrl,
+    evidencePath,
+    evidenceFileName: file.name,
+  };
 }

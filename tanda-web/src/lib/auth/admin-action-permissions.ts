@@ -60,6 +60,12 @@ export const ADMIN_ACTION_LABELS: {
     update: 'Edit tutorials',
     delete: 'Delete tutorials',
   },
+  courses: {
+    create: 'Create courses',
+    update: 'Edit courses',
+    delete: 'Delete courses',
+    manage: 'Approve / reject completions',
+  },
   settings: {
     update: 'Save system settings',
     viewLocalization: 'Localization tab',
@@ -88,7 +94,7 @@ function applyLegacyActionFallback(
   moduleActions: Record<string, boolean>,
   rawModule: Partial<Record<string, boolean>>,
 ) {
-  if (moduleKey === 'leaveRequests' || moduleKey === 'issueReports') {
+  if (moduleKey === 'leaveRequests' || moduleKey === 'issueReports' || moduleKey === 'courses') {
     if (moduleActions.manage === true) {
       if (rawModule.update === undefined) moduleActions.update = true;
       if (rawModule.delete === undefined) moduleActions.delete = true;

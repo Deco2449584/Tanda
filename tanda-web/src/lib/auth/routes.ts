@@ -8,6 +8,7 @@ export const EMPLOYEE_ROUTES = [
   '/my-records',
   '/my-schedule',
   '/my-requests',
+  '/my-courses',
   '/my-profile',
   '/my-settings',
 ] as const;

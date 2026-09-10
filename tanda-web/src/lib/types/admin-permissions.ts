@@ -10,6 +10,7 @@ export const ADMIN_MODULE_KEYS = [
   'inspections',
   'issueReports',
   'helpTutorials',
+  'courses',
   'kiosk',
   'settings',
 ] as const;
@@ -26,6 +27,7 @@ export const ADMIN_EDIT_MODULE_KEYS = [
   'announcements',
   'issueReports',
   'helpTutorials',
+  'courses',
   'settings',
 ] as const;
 
@@ -42,6 +44,7 @@ export const ADMIN_MODULE_ACTIONS = {
   announcements: ['publish', 'update', 'delete'] as const,
   issueReports: ['manage', 'update', 'delete'] as const,
   helpTutorials: ['create', 'update', 'delete'] as const,
+  courses: ['create', 'update', 'delete', 'manage'] as const,
   settings: [
     'update',
     'viewLocalization',

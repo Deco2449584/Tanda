@@ -20,6 +20,8 @@ export const COLLECTIONS = {
   ACCOUNTING_PERIOD_LOCKS: 'accounting_period_locks',
   ISSUE_REPORTS: 'issue_reports',
   HELP_TUTORIALS: 'help_tutorials',
+  COURSES: 'courses',
+  COURSE_ENROLLMENTS: 'course_enrollments',
   AUTH_SESSIONS: 'auth_sessions',
   EMPLOYEE_CUSTOM_FIELDS: 'employee_custom_fields',
   EMPLOYEE_CUSTOM_FIELD_VALUES: 'employee_custom_field_values',

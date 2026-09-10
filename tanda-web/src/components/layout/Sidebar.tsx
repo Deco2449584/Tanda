@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Clock,
   Flag,
+  GraduationCap,
   HelpCircle,
   IdCard,
   Landmark,
@@ -58,6 +59,7 @@ const adminNavGroups: NavGroup[] = [
       { label: 'Employees', href: '/employees', icon: Users },
       { label: 'Announcements', href: '/announcements', icon: Megaphone },
       { label: 'Staff requests', href: '/leave-requests', icon: ShieldCheck },
+      { label: 'Courses', href: '/courses', icon: GraduationCap },
     ],
   },
   {
@@ -92,6 +94,7 @@ const employeeNavGroups: NavGroup[] = [
       { label: 'My records', href: '/my-records', icon: ClipboardList },
       { label: 'My schedule', href: '/my-schedule', icon: CalendarDays },
       { label: 'My leave', href: '/my-requests', icon: ShieldCheck },
+      { label: 'My courses', href: '/my-courses', icon: GraduationCap },
       { label: 'My profile', href: '/my-profile', icon: IdCard },
     ],
   },
