@@ -1,14 +1,11 @@
 import 'react-native-gesture-handler';
 
 import {
-  Oxanium_600SemiBold,
-  Oxanium_700Bold,
-} from '@expo-google-fonts/oxanium';
-import {
-  Sarabun_400Regular,
-  Sarabun_500Medium,
-  Sarabun_600SemiBold,
-} from '@expo-google-fonts/sarabun';
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from '@expo-google-fonts/poppins';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -46,11 +43,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Oxanium_600SemiBold,
-    Oxanium_700Bold,
-    Sarabun_400Regular,
-    Sarabun_500Medium,
-    Sarabun_600SemiBold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
   });
 
   useEffect(() => {

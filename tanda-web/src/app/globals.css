@@ -53,7 +53,7 @@
   --color-danger: var(--danger);
 
   --font-sans: var(--font-poppins);
-  --font-serif: var(--font-tex-gyre);
+  --font-serif: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -73,8 +73,8 @@ h1,
 h2,
 h3,
 .font-display {
-  font-family: var(--font-tex-gyre), Georgia, 'Times New Roman', serif;
-  letter-spacing: 0.05em;
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  letter-spacing: 0.02em;
 }
 
 input,

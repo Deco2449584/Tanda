@@ -185,7 +185,7 @@ function buildInspectionHtml(
       margin: 0;
       color: ${INK};
       background: #fff;
-      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-family: Poppins, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       font-size: 12.5px;
       line-height: 1.45;
     }
@@ -248,7 +248,7 @@ function buildInspectionHtml(
     }
     .hero h1 {
       margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: Poppins, "Segoe UI", Arial, sans-serif;
       font-size: 28px;
       font-weight: 400;
       letter-spacing: 0.01em;
