@@ -9,6 +9,7 @@ import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
 import { KioskAlert } from '@/components/kiosk/KioskAlert';
 import { KioskActionChooser } from '@/components/kiosk/KioskActionChooser';
+import { KioskConfirmPunch } from '@/components/kiosk/KioskConfirmPunch';
 import {
   KioskSuccessModal,
   type KioskSuccessData,
@@ -18,7 +19,12 @@ import { getKioskAuthHeaders } from '@/lib/kiosk/kiosk-auth-headers';
 import { recordLocalKioskPunch } from '@/lib/kiosk/local-punch-history';
 import type { AttendanceType } from '@/lib/types/attendance';
 
-type KioskStep = 'pin' | 'choose' | 'camera' | 'success';
+type KioskStep = 'pin' | 'choose' | 'camera' | 'confirm' | 'success';
+
+interface PendingCapture {
+  imageBlob: Blob;
+  previewUrl: string;
+}
 
 const PIN_LENGTH = 4;
 const SUCCESS_AUTO_RESET_MS = 2600;
@@ -50,12 +56,25 @@ export function KioskScreen({
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [session, setSession] = useState<KioskSession | null>(null);
+  const [pendingCapture, setPendingCapture] = useState<PendingCapture | null>(
+    null,
+  );
   const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const warehouseLabel = locationLabel || 'Assigned client';
 
+  const clearPendingCapture = useCallback(() => {
+    setPendingCapture((current) => {
+      if (current?.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return null;
+    });
+  }, []);
+
   const resetToPin = useCallback(() => {
+    clearPendingCapture();
     setSuccessData((current) => {
       if (current?.photoPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(current.photoPreviewUrl);
@@ -67,7 +86,7 @@ export function KioskScreen({
     setSession(null);
     setProcessing(false);
     setLoading(false);
-  }, []);
+  }, [clearPendingCapture]);
 
   useEffect(() => {
     if (step !== 'success' || !successData) return;
@@ -233,11 +252,29 @@ export function KioskScreen({
       return;
     }
 
+    clearPendingCapture();
+    setPendingCapture({
+      imageBlob,
+      previewUrl: previewDataUrl,
+    });
+    setStep('confirm');
+  };
+
+  const handleConfirmAccept = () => {
+    if (!session || !pendingCapture) {
+      showError('Session expired. Enter your ID again.');
+      resetToPin();
+      return;
+    }
+
+    const { imageBlob, previewUrl } = pendingCapture;
+    setPendingCapture(null);
+
     setSuccessData({
       employeeName: session.employeeName,
       actionType: session.actionType,
       recordedAt: new Date(),
-      photoPreviewUrl: previewDataUrl,
+      photoPreviewUrl: previewUrl,
       warehouseLabel,
     });
     setStep('success');
@@ -249,6 +286,11 @@ export function KioskScreen({
       employeePin: pin,
       actionType: session.actionType,
     });
+  };
+
+  const handleConfirmCancel = () => {
+    clearPendingCapture();
+    setStep('camera');
   };
 
   const showLogo = step !== 'success';
@@ -350,6 +392,17 @@ export function KioskScreen({
                 onCapture={(blob, previewUrl) => handleCapture(blob, previewUrl)}
                 onCancel={resetToPin}
                 onError={showError}
+              />
+            )}
+
+            {step === 'confirm' && session && pendingCapture && (
+              <KioskConfirmPunch
+                actionType={session.actionType}
+                employeeName={session.employeeName}
+                warehouseLabel={warehouseLabel}
+                photoPreviewUrl={pendingCapture.previewUrl}
+                onAccept={handleConfirmAccept}
+                onCancel={handleConfirmCancel}
               />
             )}
 
