@@ -1,13 +1,12 @@
 import type { MetadataRoute } from 'next';
 import { BRAND } from '@/lib/brand/tokens';
-import { COMPANY_NAME } from '@/lib/types/company-settings';
 import { buildPwaIconEntries } from '@/lib/pwa/manifest-icons';
 
 export function getWorkforceManifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: `${COMPANY_NAME} | TimeTracker PRO`,
-    short_name: 'TimeTracker',
+    name: 'Continental Cargo Workspace',
+    short_name: 'CC Workspace',
     description: 'Employee schedule, attendance, and leave management.',
     start_url: '/',
     scope: '/',

@@ -23,9 +23,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Continental Cargo | Workforce',
+  title: 'Continental Cargo Workspace',
   description: 'Continental Cargo workforce operations platform',
-  applicationName: 'Continental Cargo',
+  applicationName: 'Continental Cargo Workspace',
   ...workforcePwaMetadata,
 };
 

@@ -10,7 +10,7 @@ self.addEventListener('push', (event) => {
   const iconUrl = `${self.location.origin}/apple-icon`;
 
   let payload = {
-    title: 'TimeTracker',
+    title: 'Continental Cargo Workspace',
     body: 'Your schedule was updated.',
     url: '/my-schedule',
   };

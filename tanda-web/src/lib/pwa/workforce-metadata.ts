@@ -7,7 +7,7 @@ export const workforcePwaMetadata: Metadata = {
   manifest: WORKFORCE_MANIFEST_HREF,
   appleWebApp: {
     capable: true,
-    title: 'Continental Cargo',
+    title: 'Continental Cargo Workspace',
     statusBarStyle: 'black-translucent',
   },
   icons: {
