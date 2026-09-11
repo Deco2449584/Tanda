@@ -7,7 +7,14 @@ const VIDEO_BASE_BITRATE = 850_000;
 const VIDEO_MIN_BITRATE = 450_000;
 const TARGET_FPS = 30;
 
+/**
+ * MP4/H.264 first: it is the only output the iOS mobile app can decode, so we
+ * only accept WebM where the browser offers nothing else.
+ */
 const CANDIDATE_MIME_TYPES = [
+  'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+  'video/mp4;codecs=avc1',
+  'video/mp4',
   'video/webm;codecs=vp9,opus',
   'video/webm;codecs=vp8,opus',
   'video/webm;codecs=vp9',
@@ -108,9 +115,9 @@ async function startPlayback(video: CaptureVideoElement): Promise<void> {
   }
 }
 
-function webmFileName(name: string): string {
+function reEncodedFileName(name: string, mimeType: string): string {
   const base = name.replace(/\.[^.]+$/, '') || 'video';
-  return `${base}.webm`;
+  return `${base}.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
 }
 
 async function runCompressPass(
@@ -213,7 +220,7 @@ async function runCompressPass(
       throw new Error('VIDEO_ENCODER_FAILED');
     }
 
-    return new File([blob], webmFileName(file.name), {
+    return new File([blob], reEncodedFileName(file.name, mimeType), {
       type: mimeType,
       lastModified: Date.now(),
     });
@@ -241,7 +248,11 @@ async function readDurationSeconds(file: File): Promise<number | null> {
 }
 
 /**
- * Re-encodes an evidence clip to 720p-class WebM in the browser before upload.
+ * Fallback path for clips that blow the storage budget: re-encodes to
+ * 720p-class WebM in the browser. Only worth calling when the original is too
+ * large, because re-encoding runs in real time (a 60 s clip takes ~60 s) and
+ * WebM is not decodable by the iOS mobile app.
+ *
  * Falls back to the original file when the browser has no usable encoder.
  */
 export async function compressVideoEvidence(

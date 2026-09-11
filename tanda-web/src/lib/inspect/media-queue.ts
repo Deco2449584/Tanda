@@ -9,6 +9,7 @@ import {
 import {
   MAX_PHOTO_BYTES,
   MAX_VIDEO_BYTES,
+  videoNeedsCompression,
 } from '@/lib/inspections/evidence-validation';
 import { compressVideoEvidence } from '@/lib/inspect/compress-video';
 import { optimizeImageForUpload } from '@/utils/imageOptimizer';
@@ -30,6 +31,11 @@ export interface MediaJob {
   userId: string;
   label: string;
   file: File;
+  /**
+   * False for clips already within the storage budget: they skip re-encoding
+   * and upload in their original quality.
+   */
+  needsCompression: boolean;
   /** Result of the compression phase, reused when a job is retried. */
   preparedFile?: File;
   index: number;
@@ -70,17 +76,27 @@ function createJobId(): string {
   return `media-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Upload owns the whole bar when there is no compression phase. */
+function progressWeights(needsCompression: boolean) {
+  return needsCompression
+    ? { compress: COMPRESS_WEIGHT, upload: UPLOAD_WEIGHT }
+    : { compress: 0, upload: 1 };
+}
+
 function combineProgress(
+  job: Pick<MediaJob, 'needsCompression'>,
   compress01: number,
   upload01: number,
   status: MediaJobStatus,
 ): number {
+  const weights = progressWeights(job.needsCompression);
+
   if (status === 'uploaded') return 100;
   if (status === 'uploading' || status === 'compressed') {
-    return Math.round((COMPRESS_WEIGHT + upload01 * UPLOAD_WEIGHT) * 100);
+    return Math.round((weights.compress + upload01 * weights.upload) * 100);
   }
   if (status === 'compressing') {
-    return Math.round(compress01 * COMPRESS_WEIGHT * 100);
+    return Math.round(compress01 * weights.compress * 100);
   }
   return 0;
 }
@@ -111,7 +127,7 @@ function describeError(error: unknown): string {
       return 'Photo still exceeds 3 MB after optimization.';
     }
     if (error.message === 'VIDEO_TOO_LARGE') {
-      return 'Video still exceeds 100 MB after optimization.';
+      return 'Video still exceeds 300 MB after optimization. Record a shorter clip.';
     }
     return error.message;
   }
@@ -127,10 +143,14 @@ async function prepareFile(job: MediaJob): Promise<File> {
     return optimized;
   }
 
+  if (!job.needsCompression) {
+    return job.file;
+  }
+
   const { file } = await compressVideoEvidence(job.file, (ratio) => {
     patchJob(job.id, {
       status: 'compressing',
-      progress: combineProgress(ratio, 0, 'compressing'),
+      progress: combineProgress(job, ratio, 0, 'compressing'),
     });
   });
 
@@ -146,7 +166,7 @@ async function uploadPrepared(job: MediaJob, prepared: File): Promise<string> {
   const onProgress = (ratio: number) => {
     patchJob(job.id, {
       status: 'uploading',
-      progress: combineProgress(1, ratio, 'uploading'),
+      progress: combineProgress(job, 1, ratio, 'uploading'),
     });
   };
 
@@ -185,13 +205,13 @@ async function processQueue(): Promise<void> {
           patchJob(job.id, {
             status: 'compressed',
             preparedFile: prepared,
-            progress: combineProgress(1, 0, 'compressed'),
+            progress: combineProgress(job, 1, 0, 'compressed'),
           });
         }
 
         patchJob(job.id, {
           status: 'uploading',
-          progress: combineProgress(1, 0, 'uploading'),
+          progress: combineProgress(job, 1, 0, 'uploading'),
         });
 
         const downloadUrl = await uploadPrepared(job, prepared);
@@ -247,6 +267,7 @@ export function enqueueInspectionMedia(
       userId: options.userId,
       label: options.label,
       file,
+      needsCompression: true,
       index: index + 1,
       status: 'queued',
       progress: 0,
@@ -261,6 +282,7 @@ export function enqueueInspectionMedia(
       userId: options.userId,
       label: options.label,
       file,
+      needsCompression: videoNeedsCompression(file),
       index: index + 1,
       status: 'queued',
       progress: 0,

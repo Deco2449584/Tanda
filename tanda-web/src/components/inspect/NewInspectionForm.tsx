@@ -460,8 +460,8 @@ export function NewInspectionForm() {
       </button>
 
       <p className="text-center text-xs text-subtle">
-        Photos and videos keep uploading in the background after you save. Keep
-        this tab open until they finish.
+        Evidence keeps uploading in the background after you save. Keep this tab
+        open until the progress bar finishes.
       </p>
     </form>
   );
