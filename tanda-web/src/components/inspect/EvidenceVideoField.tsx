@@ -5,7 +5,6 @@ import { Film, Upload, Video, X } from 'lucide-react';
 import {
   formatMegabytes,
   validateInspectionVideoFile,
-  videoNeedsCompression,
 } from '@/lib/inspections/evidence-validation';
 
 interface EvidenceVideoFieldProps {
@@ -51,8 +50,7 @@ export function EvidenceVideoField({
         Video evidence
       </span>
       <p className="mt-1 text-xs text-subtle">
-        No duration limit · uploaded in original quality (clips over 300 MB are
-        optimized to 720p first)
+        No size or duration limit · uploaded in original quality after you save
       </p>
       <p className="mt-2 text-xs font-medium text-muted">
         {files.length} video{files.length === 1 ? '' : 's'} attached
@@ -116,10 +114,7 @@ export function EvidenceVideoField({
                   Video {index + 1}
                 </p>
                 <p className="text-xs text-subtle">
-                  {formatMegabytes(file.size)} ·{' '}
-                  {videoNeedsCompression(file)
-                    ? 'will be optimized to 720p'
-                    : 'original quality'}
+                  {formatMegabytes(file.size)} · original quality
                 </p>
               </div>
               <button

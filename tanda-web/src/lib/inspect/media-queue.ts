@@ -6,12 +6,7 @@ import {
   uploadInspectionOptimizedPhoto,
   uploadInspectionVideoFile,
 } from '@/lib/inspections/cargo-storage-upload';
-import {
-  MAX_PHOTO_BYTES,
-  MAX_VIDEO_BYTES,
-  videoNeedsCompression,
-} from '@/lib/inspections/evidence-validation';
-import { compressVideoEvidence } from '@/lib/inspect/compress-video';
+import { MAX_PHOTO_BYTES } from '@/lib/inspections/evidence-validation';
 import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 
 export type MediaJobKind = 'photo' | 'video';
@@ -19,7 +14,6 @@ export type MediaJobKind = 'photo' | 'video';
 export type MediaJobStatus =
   | 'queued'
   | 'compressing'
-  | 'compressed'
   | 'uploading'
   | 'uploaded'
   | 'error';
@@ -31,16 +25,11 @@ export interface MediaJob {
   userId: string;
   label: string;
   file: File;
-  /**
-   * False for clips already within the storage budget: they skip re-encoding
-   * and upload in their original quality.
-   */
-  needsCompression: boolean;
-  /** Result of the compression phase, reused when a job is retried. */
+  /** Optimized photo blob, reused on retry. Videos always use the original file. */
   preparedFile?: File;
   index: number;
   status: MediaJobStatus;
-  /** 0-100, weighted across compression and upload. */
+  /** 0-100 upload progress (photos include a brief optimize step). */
   progress: number;
   errorMessage?: string;
 }
@@ -59,9 +48,6 @@ export interface EnqueueInspectionMediaOptions {
   videos: readonly File[];
 }
 
-const COMPRESS_WEIGHT = 0.35;
-const UPLOAD_WEIGHT = 0.65;
-
 type Listener = (jobs: MediaJob[]) => void;
 
 let jobs: MediaJob[] = [];
@@ -76,31 +62,6 @@ function createJobId(): string {
   return `media-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Upload owns the whole bar when there is no compression phase. */
-function progressWeights(needsCompression: boolean) {
-  return needsCompression
-    ? { compress: COMPRESS_WEIGHT, upload: UPLOAD_WEIGHT }
-    : { compress: 0, upload: 1 };
-}
-
-function combineProgress(
-  job: Pick<MediaJob, 'needsCompression'>,
-  compress01: number,
-  upload01: number,
-  status: MediaJobStatus,
-): number {
-  const weights = progressWeights(job.needsCompression);
-
-  if (status === 'uploaded') return 100;
-  if (status === 'uploading' || status === 'compressed') {
-    return Math.round((weights.compress + upload01 * weights.upload) * 100);
-  }
-  if (status === 'compressing') {
-    return Math.round(compress01 * weights.compress * 100);
-  }
-  return 0;
-}
-
 function patchJob(jobId: string, patch: Partial<MediaJob>) {
   jobs = jobs.map((job) => (job.id === jobId ? { ...job, ...patch } : job));
   publish();
@@ -110,15 +71,12 @@ function isActive(status: MediaJobStatus): boolean {
   return (
     status === 'queued' ||
     status === 'compressing' ||
-    status === 'compressed' ||
     status === 'uploading'
   );
 }
 
 function needsWork(status: MediaJobStatus): boolean {
-  return (
-    status === 'queued' || status === 'compressing' || status === 'compressed'
-  );
+  return status === 'queued' || status === 'compressing';
 }
 
 function describeError(error: unknown): string {
@@ -126,47 +84,24 @@ function describeError(error: unknown): string {
     if (error.message === 'PHOTO_TOO_LARGE') {
       return 'Photo still exceeds 3 MB after optimization.';
     }
-    if (error.message === 'VIDEO_TOO_LARGE') {
-      return 'Video still exceeds 300 MB after optimization. Record a shorter clip.';
-    }
     return error.message;
   }
   return 'Media processing failed.';
 }
 
-async function prepareFile(job: MediaJob): Promise<File> {
-  if (job.kind === 'photo') {
-    const optimized = await optimizeImageForUpload(job.file, 'inspection');
-    if (optimized.size > MAX_PHOTO_BYTES) {
-      throw new Error('PHOTO_TOO_LARGE');
-    }
-    return optimized;
+async function preparePhoto(job: MediaJob): Promise<File> {
+  const optimized = await optimizeImageForUpload(job.file, 'inspection');
+  if (optimized.size > MAX_PHOTO_BYTES) {
+    throw new Error('PHOTO_TOO_LARGE');
   }
-
-  if (!job.needsCompression) {
-    return job.file;
-  }
-
-  const { file } = await compressVideoEvidence(job.file, (ratio) => {
-    patchJob(job.id, {
-      status: 'compressing',
-      progress: combineProgress(job, ratio, 0, 'compressing'),
-    });
-  });
-
-  // Guards the fallback path where the browser had no usable encoder.
-  if (file.size > MAX_VIDEO_BYTES) {
-    throw new Error('VIDEO_TOO_LARGE');
-  }
-
-  return file;
+  return optimized;
 }
 
 async function uploadPrepared(job: MediaJob, prepared: File): Promise<string> {
   const onProgress = (ratio: number) => {
     patchJob(job.id, {
       status: 'uploading',
-      progress: combineProgress(job, 1, ratio, 'uploading'),
+      progress: Math.round(ratio * 100),
     });
   };
 
@@ -200,19 +135,18 @@ async function processQueue(): Promise<void> {
         let prepared = job.preparedFile;
 
         if (!prepared) {
-          patchJob(job.id, { status: 'compressing', progress: 0 });
-          prepared = await prepareFile(job);
-          patchJob(job.id, {
-            status: 'compressed',
-            preparedFile: prepared,
-            progress: combineProgress(job, 1, 0, 'compressed'),
-          });
+          if (job.kind === 'photo') {
+            patchJob(job.id, { status: 'compressing', progress: 0 });
+            prepared = await preparePhoto(job);
+            patchJob(job.id, { preparedFile: prepared, progress: 0 });
+          } else {
+            // Videos always upload in original quality — no re-encode.
+            prepared = job.file;
+            patchJob(job.id, { preparedFile: prepared });
+          }
         }
 
-        patchJob(job.id, {
-          status: 'uploading',
-          progress: combineProgress(job, 1, 0, 'uploading'),
-        });
+        patchJob(job.id, { status: 'uploading', progress: 0 });
 
         const downloadUrl = await uploadPrepared(job, prepared);
 
@@ -252,7 +186,7 @@ export function getInspectionMediaJobs(): MediaJob[] {
 
 /**
  * Queues evidence for an already-saved inspection. Returns immediately so the
- * operator can keep working while compression and upload run in the background.
+ * operator can keep working while uploads run in the background.
  */
 export function enqueueInspectionMedia(
   options: EnqueueInspectionMediaOptions,
@@ -267,7 +201,6 @@ export function enqueueInspectionMedia(
       userId: options.userId,
       label: options.label,
       file,
-      needsCompression: true,
       index: index + 1,
       status: 'queued',
       progress: 0,
@@ -282,7 +215,6 @@ export function enqueueInspectionMedia(
       userId: options.userId,
       label: options.label,
       file,
-      needsCompression: videoNeedsCompression(file),
       index: index + 1,
       status: 'queued',
       progress: 0,

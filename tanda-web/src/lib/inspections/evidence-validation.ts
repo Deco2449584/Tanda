@@ -4,20 +4,6 @@ export const MAX_INSPECTION_PHOTOS = 12;
 /** Source photo cap before client-side WebP compression. */
 export const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 
-/**
- * Storage budget per clip. Anything at or below this is uploaded untouched so
- * the original camera MP4/MOV reaches Firebase — it plays everywhere, including
- * the iOS mobile app, which cannot decode the WebM our re-encoder produces.
- */
-export const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
-
-/** Above the budget we re-encode; above this we refuse to even try. */
-export const MAX_SOURCE_VIDEO_BYTES = 1536 * 1024 * 1024;
-
-export function videoNeedsCompression(file: File): boolean {
-  return file.size > MAX_VIDEO_BYTES;
-}
-
 export function getVideoDurationSeconds(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
@@ -51,16 +37,13 @@ export async function validateInspectionPhotoFile(
   return null;
 }
 
+/** Videos upload in original quality — no size or duration cap. */
 export async function validateInspectionVideoFile(
   file: File,
 ): Promise<string | null> {
   if (!file.type.startsWith('video/')) {
     return 'Please choose a video file.';
   }
-  if (file.size > MAX_SOURCE_VIDEO_BYTES) {
-    return 'Video is too large to process. Record a shorter clip.';
-  }
-
   return null;
 }
 
