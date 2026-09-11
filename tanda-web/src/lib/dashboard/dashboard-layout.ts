@@ -4,8 +4,8 @@ import {
   getDefaultVisibleWidgets,
 } from './dashboard-widgets';
 
-/** Bumped when default visibility policy changes. */
-const STORAGE_KEY = 'tanda-dashboard-layout-v2';
+/** Bumped when default visibility / widget set changes. */
+const STORAGE_KEY = 'tanda-dashboard-layout-v3';
 
 export interface DashboardLayoutState {
   visibleWidgets: string[];

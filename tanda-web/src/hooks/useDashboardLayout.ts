@@ -12,11 +12,18 @@ import {
   saveDashboardLayout,
   type DashboardLayoutState,
 } from '@/lib/dashboard/dashboard-layout';
+import type { AdminModuleKey } from '@/lib/types/admin-permissions';
 
-export function useDashboardLayout(canAccessAccounting: boolean) {
+export function useDashboardLayout(input: {
+  canAccessModule: (moduleKey: AdminModuleKey) => boolean;
+  /** Stable dependency key built from module access flags. */
+  accessKey: string;
+}) {
   const allowedWidgetIds = useMemo(
-    () => getAllowedDashboardWidgetIds(canAccessAccounting),
-    [canAccessAccounting],
+    () => getAllowedDashboardWidgetIds(input.canAccessModule),
+    // accessKey encodes module flags so we don't depend on function identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [input.accessKey],
   );
 
   const [layout, setLayout] = useState<DashboardLayoutState>(() =>

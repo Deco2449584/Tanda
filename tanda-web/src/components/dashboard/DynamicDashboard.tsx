@@ -16,21 +16,23 @@ import { DashboardGroupedBarChart } from '@/components/dashboard/charts/Dashboar
 import { DashboardCurrencyPieChart, DashboardPieChart } from '@/components/dashboard/charts/DashboardPieChart';
 import { COLOR_HORAS_EXTRA_FALLBACK } from '@/components/dashboard/chart-theme';
 import { KpiGrid } from '@/components/dashboard/KpiGrid';
+import { UpcomingBirthdaysWidget } from '@/components/dashboard/UpcomingBirthdaysWidget';
 import { WorkingNowWidget } from '@/components/dashboard/WorkingNowWidget';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useDashboardOpsMetrics } from '@/hooks/useDashboardOpsMetrics';
 import { useWorkingNow } from '@/hooks/useWorkingNow';
 import {
   getCurrentWeekDateRange,
   type DateRange,
 } from '@/lib/attendance/date-range';
 import { computeDashboardAnalytics } from '@/lib/dashboard/compute-analytics';
-import {
-  ACCOUNTING_KPI_IDS,
-  DASHBOARD_WIDGET_MAP,
-} from '@/lib/dashboard/dashboard-widgets';
+import { DASHBOARD_WIDGET_MAP } from '@/lib/dashboard/dashboard-widgets';
 import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
-import { baseKpiMetrics } from '@/lib/dashboard/kpi-definitions';
+import {
+  baseKpiMetrics,
+  filterKpisForModules,
+} from '@/lib/dashboard/kpi-definitions';
 import type { DashboardAnalytics } from '@/lib/dashboard/compute-analytics';
 import type { KpiMetric } from '@/lib/dashboard/types';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
@@ -54,11 +56,21 @@ function createEmptyAnalytics(currency: string): DashboardAnalytics {
     headcountByLocation: [],
     leaveByType: [],
     attendanceComplianceByLocation: [],
+    punchesBySource: [],
+    coursesByStatus: [],
+    openIssuesByCategory: [],
+    inspectionsOverview: [],
+    upcomingBirthdays: [],
     payrollTotal: 0,
     projectedPayrollTotal: 0,
     lateAlertsTotal: 0,
     noShowsTotal: 0,
     pendingLeaveTotal: 0,
+    coursesAwaitingReview: 0,
+    coursesOverdue: 0,
+    openIssuesTotal: 0,
+    birthdaysThisWeek: 0,
+    inspectionsWithIssues: 0,
     activeStaffLabel: '0/0',
     payrollActualFormatted: formatDashboardCurrency(0, currency),
     payrollProjectedFormatted: formatDashboardCurrency(0, currency),
@@ -89,6 +101,18 @@ function getWidgetSummary(
       return options?.workingNowCount != null
         ? `${options.workingNowCount} clocked in live`
         : 'Live presence';
+    case 'upcoming-birthdays':
+      return analytics.birthdaysThisWeek === 1
+        ? '1 birthday this week'
+        : `${analytics.birthdaysThisWeek} birthdays this week`;
+    case 'punches-by-source':
+      return `${analytics.punchesBySource.reduce((sum, item) => sum + item.value, 0)} punches`;
+    case 'courses-status':
+      return `${analytics.coursesAwaitingReview} awaiting review · ${analytics.coursesOverdue} overdue`;
+    case 'open-issues':
+      return `${analytics.openIssuesTotal} open`;
+    case 'inspections-overview':
+      return `${analytics.inspectionsOverview.reduce((sum, item) => sum + item.value, 0)} inspections · ${analytics.inspectionsWithIssues} with issues`;
     case 'payroll-by-location':
       return formatTopSlice(analytics.payrollByLocation, (v) =>
         formatDashboardCurrency(v, currency),
@@ -155,6 +179,26 @@ export function DynamicDashboard({
   const { groups } = useLocationGroups();
   const { canAccessModule } = useAdminAccess();
   const canAccessAccounting = canAccessModule('accounting');
+  const canAccessCourses = canAccessModule('courses');
+  const canAccessIssueReports = canAccessModule('issueReports');
+  const canAccessAttendance = canAccessModule('attendance');
+  const canAccessEmployees = canAccessModule('employees');
+  const canAccessLeave = canAccessModule('leaveRequests');
+  const canAccessPayroll = canAccessModule('payroll');
+  const canAccessSchedule = canAccessModule('schedule');
+  const canAccessInspections = canAccessModule('inspections');
+
+  const moduleAccessKey = [
+    `attendance:${canAccessAttendance}`,
+    `employees:${canAccessEmployees}`,
+    `leaveRequests:${canAccessLeave}`,
+    `courses:${canAccessCourses}`,
+    `issueReports:${canAccessIssueReports}`,
+    `inspections:${canAccessInspections}`,
+    `payroll:${canAccessPayroll}`,
+    `accounting:${canAccessAccounting}`,
+    `schedule:${canAccessSchedule}`,
+  ].join('|');
 
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
   const [periodPreset, setPeriodPreset] =
@@ -171,10 +215,14 @@ export function DynamicDashboard({
     resetLayout,
     showAllWidgets,
     layout,
-  } = useDashboardLayout(canAccessAccounting);
+  } = useDashboardLayout({
+    canAccessModule,
+    accessKey: moduleAccessKey,
+  });
 
   const { shifts, leaveRequests, attendance, loading, refreshing, refresh } =
     useDashboardData(dateRange);
+  const ops = useDashboardOpsMetrics(dateRange);
 
   const workingNow = useWorkingNow({
     timeZone: settings.timeZone,
@@ -201,6 +249,9 @@ export function DynamicDashboard({
           currency: settings.currency,
           payRules: settings.payRules,
           payrollAccounting: settings.payrollAccounting,
+          courses: ops.metrics.courses,
+          issues: ops.metrics.issues,
+          inspections: ops.metrics.inspections,
         });
       } catch (error) {
         console.error('DynamicDashboard analytics failed', {
@@ -223,6 +274,9 @@ export function DynamicDashboard({
       leaveRequests,
       locationFilter,
       locations,
+      ops.metrics.courses,
+      ops.metrics.inspections,
+      ops.metrics.issues,
       settings.attendanceBreak,
       settings.attendancePolicy,
       settings.currency,
@@ -248,12 +302,7 @@ export function DynamicDashboard({
 
   const metrics: KpiMetric[] = useMemo(
     () =>
-      baseKpiMetrics
-        .filter(
-          (metric) =>
-            canAccessAccounting || !ACCOUNTING_KPI_IDS.has(metric.id),
-        )
-        .map((metric) => {
+      filterKpisForModules(baseKpiMetrics, canAccessModule).map((metric) => {
           if (metric.id === 'active-staff') {
             return {
               ...metric,
@@ -288,26 +337,73 @@ export function DynamicDashboard({
             };
           }
 
+          if (metric.id === 'course-review') {
+            return {
+              ...metric,
+              value: String(analytics.coursesAwaitingReview),
+              description:
+                analytics.coursesOverdue > 0
+                  ? `${analytics.coursesOverdue} overdue`
+                  : 'SUBMISSIONS',
+            };
+          }
+
+          if (metric.id === 'open-issues') {
+            return {
+              ...metric,
+              value: String(analytics.openIssuesTotal),
+            };
+          }
+
+          if (metric.id === 'birthdays-week') {
+            return {
+              ...metric,
+              value: String(analytics.birthdaysThisWeek),
+            };
+          }
+
           return metric;
         }),
-    [analytics, canAccessAccounting, periodPreset],
+    // moduleAccessKey keeps KPI filter in sync without depending on fn identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [analytics, moduleAccessKey, periodPreset],
   );
 
   const loadingIds = useMemo(() => {
     const ids: string[] = [];
-    if (employeesLoading) ids.push('active-staff');
+    if (employeesLoading && canAccessAttendance) ids.push('active-staff');
+    if (employeesLoading && canAccessEmployees) ids.push('birthdays-week');
     if (
       canAccessAccounting &&
       (employeesLoading || loading.shifts || loading.attendance)
     ) {
       ids.push('payroll-cost');
     }
-    if (loading.leaveRequests) ids.push('pending-permits');
-    if (loading.shifts || loading.attendance) ids.push('late-alerts');
+    if (loading.leaveRequests && canAccessLeave) ids.push('pending-permits');
+    if ((loading.shifts || loading.attendance) && canAccessAttendance) {
+      ids.push('late-alerts');
+    }
+    if (ops.loading && canAccessCourses) ids.push('course-review');
+    if (ops.loading && canAccessIssueReports) ids.push('open-issues');
     return ids;
-  }, [canAccessAccounting, employeesLoading, loading]);
+  }, [
+    canAccessAccounting,
+    canAccessAttendance,
+    canAccessCourses,
+    canAccessEmployees,
+    canAccessIssueReports,
+    canAccessLeave,
+    employeesLoading,
+    loading,
+    ops.loading,
+  ]);
 
   const chartsLoading = loading.shifts || loading.attendance;
+
+  function handleRefresh() {
+    void refresh();
+    void ops.refresh();
+  }
 
   function renderWidget(widgetId: string) {
     const definition = DASHBOARD_WIDGET_MAP.get(widgetId);
@@ -331,7 +427,58 @@ export function DynamicDashboard({
       );
     }
 
+    if (widgetId === 'upcoming-birthdays') {
+      return (
+        <UpcomingBirthdaysWidget
+          entries={analytics.upcomingBirthdays}
+          loading={employeesLoading}
+        />
+      );
+    }
+
     switch (widgetId) {
+      case 'punches-by-source':
+        return (
+          <DashboardPieChart
+            data={analytics.punchesBySource}
+            loading={chartsLoading}
+            emptyMessage="No punches recorded for the selected period."
+            valueFormatter={(value) => `${value} punches`}
+          />
+        );
+      case 'courses-status':
+        return (
+          <DashboardBarChart
+            data={analytics.coursesByStatus}
+            loading={ops.loading}
+            valueLabel="Enrollments"
+            yAxisLabel="Count"
+            color="#8b5cf6"
+            variedColors={false}
+          />
+        );
+      case 'open-issues':
+        return (
+          <DashboardBarChart
+            data={analytics.openIssuesByCategory}
+            loading={ops.loading}
+            valueLabel="Open reports"
+            yAxisLabel="Count"
+            color="#f97316"
+            variedColors={false}
+          />
+        );
+      case 'inspections-overview':
+        return (
+          <DashboardBarChart
+            data={analytics.inspectionsOverview}
+            loading={ops.loading}
+            valueLabel="Inspections"
+            yAxisLabel="Count"
+            color="#06b6d4"
+            variedColors={false}
+          />
+        );
       case 'payroll-by-location':
         return (
           <DashboardCurrencyPieChart
@@ -474,8 +621,8 @@ export function DynamicDashboard({
         locationOptions={locationOptions}
         onCustomize={() => setCustomizeOpen(true)}
         onResetLayout={resetLayout}
-        onRefresh={refresh}
-        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        refreshing={refreshing || ops.refreshing}
       />
 
       <div className="space-y-4">

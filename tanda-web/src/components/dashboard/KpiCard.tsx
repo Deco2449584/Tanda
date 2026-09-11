@@ -32,6 +32,27 @@ const accentStyles = {
     value: 'text-warning',
     sparkline: 'bg-warning',
   },
+  violet: {
+    bar: 'bg-violet-500',
+    iconBg: 'bg-violet-500/15',
+    icon: 'text-violet-300',
+    value: 'text-violet-300',
+    sparkline: 'bg-violet-500',
+  },
+  rose: {
+    bar: 'bg-rose-500',
+    iconBg: 'bg-rose-500/15',
+    icon: 'text-rose-300',
+    value: 'text-rose-300',
+    sparkline: 'bg-rose-500',
+  },
+  cyan: {
+    bar: 'bg-cyan-500',
+    iconBg: 'bg-cyan-500/15',
+    icon: 'text-cyan-300',
+    value: 'text-cyan-300',
+    sparkline: 'bg-cyan-500',
+  },
 } as const;
 
 interface KpiCardProps {

@@ -1,6 +1,14 @@
 import type { LucideIcon } from 'lucide-react';
+import type { AdminModuleKey } from '@/lib/types/admin-permissions';
 
-export type KpiAccent = 'blue' | 'emerald' | 'orange' | 'yellow';
+export type KpiAccent =
+  | 'blue'
+  | 'emerald'
+  | 'orange'
+  | 'yellow'
+  | 'violet'
+  | 'rose'
+  | 'cyan';
 
 export interface KpiMetric {
   id: string;
@@ -12,6 +20,8 @@ export interface KpiMetric {
   accent: KpiAccent;
   icon: LucideIcon;
   sparkline?: number[];
+  /** Module required to show this KPI. Omit = always (when dashboard is open). */
+  requiresModule?: AdminModuleKey;
 }
 
 export interface WeeklyHoursDatum {
@@ -46,7 +56,9 @@ export type DashboardWidgetCategory =
   | 'payroll'
   | 'attendance'
   | 'scheduling'
-  | 'leave';
+  | 'leave'
+  | 'training'
+  | 'operations';
 
 export type DashboardChartType =
   | 'kpi'
@@ -54,7 +66,8 @@ export type DashboardChartType =
   | 'pie'
   | 'bar'
   | 'grouped-bar'
-  | 'area';
+  | 'area'
+  | 'list';
 
 export interface DashboardWidgetDefinition {
   id: string;
@@ -64,6 +77,9 @@ export interface DashboardWidgetDefinition {
   chartType: DashboardChartType;
   defaultVisible: boolean;
   defaultExpanded: boolean;
-  /** Hide unless the admin has the Accounting module. */
-  requiresAccounting?: boolean;
+  /**
+   * Module permission required to see this widget.
+   * Omit for always-available dashboard chrome (e.g. Key metrics shell).
+   */
+  requiresModule?: AdminModuleKey;
 }

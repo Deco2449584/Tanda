@@ -40,6 +40,17 @@ import type { Location } from '@/lib/types/location';
 import type { LocationGroup } from '@/lib/types/location-group';
 import type { PayRules } from '@/lib/types/pay-rules';
 import type { Shift } from '@/lib/types/shift';
+import {
+  buildBirthdayEntries,
+  daysUntilBirthday,
+  getUpcomingBirthdays,
+  type BirthdayEntry,
+} from '@/lib/employees/birthdays';
+import type {
+  DashboardCoursesMetrics,
+  DashboardInspectionsMetrics,
+  DashboardIssuesMetrics,
+} from '@/lib/dashboard/ops-metrics-api';
 
 export interface DashboardAnalyticsInput {
   employees: Employee[];
@@ -56,6 +67,9 @@ export interface DashboardAnalyticsInput {
   currency: string;
   payRules?: PayRules;
   payrollAccounting?: PayrollAccountingSettings;
+  courses?: DashboardCoursesMetrics | null;
+  issues?: DashboardIssuesMetrics | null;
+  inspections?: DashboardInspectionsMetrics | null;
 }
 
 export interface DashboardAnalytics {
@@ -72,11 +86,21 @@ export interface DashboardAnalytics {
   headcountByLocation: NamedValueDatum[];
   leaveByType: NamedValueDatum[];
   attendanceComplianceByLocation: NamedValueDatum[];
+  punchesBySource: NamedValueDatum[];
+  coursesByStatus: NamedValueDatum[];
+  openIssuesByCategory: NamedValueDatum[];
+  inspectionsOverview: NamedValueDatum[];
+  upcomingBirthdays: BirthdayEntry[];
   payrollTotal: number;
   projectedPayrollTotal: number;
   lateAlertsTotal: number;
   noShowsTotal: number;
   pendingLeaveTotal: number;
+  coursesAwaitingReview: number;
+  coursesOverdue: number;
+  openIssuesTotal: number;
+  birthdaysThisWeek: number;
+  inspectionsWithIssues: number;
   activeStaffLabel: string;
   payrollActualFormatted: string;
   payrollProjectedFormatted: string;
@@ -562,13 +586,17 @@ export function computeDashboardAnalytics(
     })),
   );
 
+  const leaveRequests = input.leaveRequests.filter((request) => {
+    if (request.status !== 'Pending') return false;
+    if (!request.employeeId?.trim()) return true;
+    return allowedEmployeeIds.has(request.employeeId.trim());
+  });
+
   const leaveByType = aggregateByKey(
-    input.leaveRequests
-      .filter((request) => request.status === 'Pending')
-      .map((request) => ({
-        key: request.type?.trim() || 'Other',
-        value: 1,
-      })),
+    leaveRequests.map((request) => ({
+      key: request.type?.trim() || 'Other',
+      value: 1,
+    })),
   );
 
   const attendanceComplianceByLocation = buildAttendanceComplianceByLocation(
@@ -576,6 +604,21 @@ export function computeDashboardAnalytics(
     attendance,
     input.locations,
     policyOptions,
+  );
+
+  const punchesBySource = aggregateByKey(
+    attendance.map((record) => ({
+      key: formatPunchSource(record.source),
+      value: 1,
+    })),
+  );
+
+  const birthdayEntries = buildBirthdayEntries(filteredEmployees, new Date().getFullYear(), {
+    activeOnly: true,
+  });
+  const now = new Date();
+  const upcomingBirthdays = getUpcomingBirthdays(birthdayEntries, now, 40).filter(
+    (entry) => daysUntilBirthday(entry, now) <= 7,
   );
 
   const projectedPayrollTotal = projectedPayrollByLocation.reduce(
@@ -587,6 +630,10 @@ export function computeDashboardAnalytics(
     (employee) =>
       employee.lastAction === 'check_in' || employee.lastAction === 'break_start',
   );
+
+  const courses = input.courses ?? null;
+  const issues = input.issues ?? null;
+  const inspections = input.inspections ?? null;
 
   return {
     payrollByLocation,
@@ -602,6 +649,11 @@ export function computeDashboardAnalytics(
     headcountByLocation,
     leaveByType,
     attendanceComplianceByLocation,
+    punchesBySource,
+    coursesByStatus: courses?.byStatus ?? [],
+    openIssuesByCategory: issues?.byCategory ?? [],
+    inspectionsOverview: inspections?.byStatus ?? [],
+    upcomingBirthdays,
     payrollTotal: payrollReport.totals.grossPay,
     projectedPayrollTotal,
     lateAlertsTotal: computeLateAlertsInRange(
@@ -610,9 +662,12 @@ export function computeDashboardAnalytics(
       policyOptions,
     ),
     noShowsTotal: computeNoShowsInRange(shifts, attendance, policyOptions),
-    pendingLeaveTotal: input.leaveRequests.filter(
-      (request) => request.status === 'Pending',
-    ).length,
+    pendingLeaveTotal: leaveRequests.length,
+    coursesAwaitingReview: courses?.awaitingReview ?? 0,
+    coursesOverdue: courses?.overdue ?? 0,
+    openIssuesTotal: issues?.openTotal ?? 0,
+    birthdaysThisWeek: upcomingBirthdays.length,
+    inspectionsWithIssues: inspections?.withIssues ?? 0,
     activeStaffLabel: `${checkedIn.length}/${filteredEmployees.length}`,
     payrollActualFormatted: formatDashboardCurrency(
       payrollReport.totals.grossPay,
@@ -623,4 +678,15 @@ export function computeDashboardAnalytics(
       input.currency,
     ),
   };
+}
+
+function formatPunchSource(source: string | undefined): string {
+  const value = source?.trim().toLowerCase() ?? '';
+  if (value === 'web-scan') return 'QR / NFC scan';
+  if (value === 'web-kiosk') return 'Kiosk';
+  if (value === 'web-admin-manual' || value === 'web-admin-manual-checkout') {
+    return 'Admin manual';
+  }
+  if (!value) return 'Unknown';
+  return source!.trim();
 }

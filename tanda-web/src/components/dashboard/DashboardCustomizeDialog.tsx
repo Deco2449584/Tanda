@@ -35,7 +35,7 @@ export function DashboardCustomizeDialog({
       open={open}
       onClose={onClose}
       title="Customize dashboard"
-      description="Choose which analytics cards to show. Widgets start hidden by default."
+      description="Choose which analytics cards to show. Reset restores the recommended defaults."
       size="lg"
     >
       <div className="space-y-6">
