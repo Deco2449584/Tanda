@@ -61,7 +61,9 @@ export default function MySchedulePage() {
   return (
     <PageContent className="space-y-5">
       <PageHeader
+        eyebrow="Scheduling"
         title="My schedule"
+        description="Your upcoming shifts and roster for the week."
         actions={
           <RefreshButton
             onClick={refresh}

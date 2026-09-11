@@ -284,6 +284,7 @@ export default function PayrollPage() {
   return (
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
+        eyebrow="Finance"
         title="Payroll"
         description="Weekly payroll summary and CSV exports. Gross pay uses configured award rules and staff rates."
       />

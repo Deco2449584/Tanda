@@ -3,9 +3,10 @@
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Download, Package, Search, Truck } from 'lucide-react';
+import { ClipboardCheck, Download, Search } from 'lucide-react';
 import { InspectionCard } from '@/components/inspections/InspectionCard';
 import { InspectionsFilterBar } from '@/components/inspections/InspectionsFilterBar';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { RefreshButton } from '@/components/ui/RefreshButton';
 import { exportInspectionsToCsv } from '@/lib/inspections/export-inspections-csv';
 import {
@@ -17,41 +18,6 @@ import {
 } from '@/lib/inspections/filters';
 import { resolveInspectionStatus } from '@/lib/inspections/status';
 import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  tone,
-}: {
-  label: string;
-  value: number;
-  icon: typeof Package;
-  tone: 'sky' | 'emerald' | 'amber';
-}) {
-  const toneClass =
-    tone === 'sky'
-      ? 'border-sky-500/30 bg-sky-950/20 text-sky-300'
-      : tone === 'emerald'
-        ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300'
-        : 'border-amber-500/30 bg-amber-950/20 text-amber-300';
-
-  return (
-    <article className={`rounded-lg border px-2.5 py-2 sm:rounded-xl sm:p-4 ${toneClass}`}>
-      <div className="text-center sm:flex sm:items-center sm:justify-between sm:gap-3 sm:text-left">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wide opacity-80 sm:text-xs">
-            {label}
-          </p>
-          <p className="mt-0.5 text-lg font-bold leading-none text-white sm:mt-1 sm:text-2xl">
-            {value}
-          </p>
-        </div>
-        <Icon className="mx-auto mt-1 hidden h-5 w-5 opacity-80 sm:mx-0 sm:mt-0 sm:block" aria-hidden />
-      </div>
-    </article>
-  );
-}
 
 export function InspectionsPageClient() {
   const { inspections, loading, error, refresh } = useCargoInspections();
@@ -102,38 +68,22 @@ export function InspectionsPageClient() {
 
   return (
     <div className="min-h-full space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-base font-bold tracking-wide text-white uppercase">
-            Cargo inspections
-          </h1>
-          <p className="mt-1 text-sm text-subtle">
-            ULD / AWB records from Continental Inspect — same data as the mobile app.
-          </p>
-        </div>
-        <RefreshButton onClick={refresh} refreshing={loading} />
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <StatCard
-          label="New today"
-          value={todayStats.newCargo}
-          icon={Package}
-          tone="sky"
-        />
-        <StatCard
-          label="Loaded today"
-          value={todayStats.loaded}
-          icon={Truck}
-          tone="emerald"
-        />
-        <StatCard
-          label="Attention"
-          value={todayStats.requiresAttention}
-          icon={AlertTriangle}
-          tone="amber"
-        />
-      </div>
+      <PageHeader
+        eyebrow="Compliance"
+        eyebrowIcon={ClipboardCheck}
+        title="Cargo inspections"
+        description="ULD / AWB records from Continental Inspect — same data as the mobile app."
+        actions={<RefreshButton onClick={refresh} refreshing={loading} />}
+        stats={[
+          { label: 'New today', value: todayStats.newCargo },
+          { label: 'Loaded today', value: todayStats.loaded },
+          {
+            label: 'Attention',
+            value: todayStats.requiresAttention,
+            accent: todayStats.requiresAttention > 0,
+          },
+        ]}
+      />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-md">

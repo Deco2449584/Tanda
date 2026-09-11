@@ -244,7 +244,11 @@ export default function MyProfilePage() {
 
   return (
     <PageContent className="space-y-6">
-      <PageHeader title="My profile" />
+      <PageHeader
+        eyebrow="Account"
+        title="My profile"
+        description="Update your personal details and contact information."
+      />
 
       {loading ? (
         <p className="text-sm text-muted">Loading your profile…</p>

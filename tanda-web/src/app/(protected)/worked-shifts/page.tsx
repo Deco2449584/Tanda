@@ -396,6 +396,7 @@ export default function WorkedShiftsPage() {
   return (
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
+        eyebrow="Attendance"
         title="Worked shifts"
         description={
           isAdmin

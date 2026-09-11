@@ -65,7 +65,8 @@ export default function MySettingsPage() {
   return (
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
-        title="Settings"
+        eyebrow="Account"
+        title="My settings"
         description="Your personal alert preferences. Organization-wide push is controlled by Master."
       />
 

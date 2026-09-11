@@ -297,8 +297,9 @@ export default function SchedulePage() {
   return (
     <PageContent className="flex h-full min-h-0 flex-col gap-3 md:gap-6">
       <PageHeader
-        title="Scheduling and rosters (Agenda)"
-        description="Weekly schedule"
+        eyebrow="Scheduling"
+        title="Rosters & shifts"
+        description="Plan weekly and monthly shifts across teams and client sites."
       />
 
       {scheduleAlert === 'missing_checkin' ? (

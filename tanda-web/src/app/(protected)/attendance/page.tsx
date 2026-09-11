@@ -225,7 +225,11 @@ export default function AttendancePage() {
 
   return (
     <PageContent className="space-y-6">
-      <PageHeader title="Time tracking and attendance (Audit)" />
+      <PageHeader
+        eyebrow="Attendance"
+        title="Time tracking"
+        description="Review punches, fix exceptions, and export attendance for the period."
+      />
 
       <AttendanceFilterToolbar
         dateRange={dateRange}

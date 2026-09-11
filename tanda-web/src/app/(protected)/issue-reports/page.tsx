@@ -42,6 +42,7 @@ export default function IssueReportsAdminPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Support"
         title="Issue reports"
         description="Review employee-reported issues and update their status."
       />

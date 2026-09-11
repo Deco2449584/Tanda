@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronRight,
   ExternalLink,
-  GraduationCap,
   Loader2,
   Plus,
   Trash2,
@@ -232,34 +231,6 @@ export function CoursesAdminPanel({
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.14] via-surface-raised to-surface-raised p-5 md:p-6">
-        <div
-          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/15 blur-3xl"
-          aria-hidden
-        />
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-              <GraduationCap className="h-3.5 w-3.5" aria-hidden />
-              External training tracker
-            </div>
-            <h2 className="mt-3 font-display text-2xl font-normal tracking-wide text-foreground md:text-3xl">
-              Courses & certifications
-            </h2>
-            <p className="mt-2 text-sm text-muted">
-              Assign courses hosted on other platforms, collect completion evidence,
-              then verify and approve once you confirm it on the provider.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <StatChip label="Active courses" value={courses.filter((c) => c.active).length} />
-            <StatChip label="Awaiting review" value={stats.submitted} accent />
-            <StatChip label="Approved" value={stats.approved} />
-            <StatChip label="Assigned" value={stats.assigned} />
-          </div>
-        </div>
-      </section>
-
       <div className="inline-flex rounded-xl border border-border bg-surface-base/60 p-1">
         <button
           type="button"
@@ -750,37 +721,6 @@ export function CoursesAdminPanel({
           </div>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function StatChip({
-  label,
-  value,
-  accent = false,
-}: {
-  label: string;
-  value: number;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-xl border px-3 py-2 ${
-        accent
-          ? 'border-primary/30 bg-primary/10'
-          : 'border-border/70 bg-surface-base/50'
-      }`}
-    >
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-xl font-semibold tabular-nums ${
-          accent ? 'text-primary' : 'text-foreground'
-        }`}
-      >
-        {value}
-      </p>
     </div>
   );
 }

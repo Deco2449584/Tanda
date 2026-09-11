@@ -36,6 +36,7 @@ export default function MyRecordsPage() {
   return (
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
+        eyebrow="Attendance"
         title="My attendance records"
         description="Check-ins, check-outs, and photo verification for your shifts."
         actions={

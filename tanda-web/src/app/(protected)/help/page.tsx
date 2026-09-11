@@ -40,6 +40,7 @@ export default function HelpPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Support"
         title="Help & guides"
         description="Videos, PDFs, documents and links matched to your role, department and location."
       />

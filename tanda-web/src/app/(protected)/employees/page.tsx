@@ -60,7 +60,9 @@ export default function EmployeesPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
-        title="Staff Management"
+        eyebrow="People"
+        title="Staff"
+        description="Manage employee profiles, access, and assignments."
         actions={
           <RefreshButton
             onClick={refresh}

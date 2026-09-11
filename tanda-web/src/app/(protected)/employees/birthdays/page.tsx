@@ -17,6 +17,7 @@ export default function EmployeeBirthdaysPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="People"
         title="Birthday calendar"
         description="Yearly view of staff birthdays across Continental Cargo."
         actions={

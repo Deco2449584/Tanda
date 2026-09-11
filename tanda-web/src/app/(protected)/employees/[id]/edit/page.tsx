@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { EmployeeForm } from '@/components/employees/EmployeeForm';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { canEditStaffAccount } from '@/lib/employees/is-protected-admin';
 import { useEmployees } from '@/providers/EmployeesProvider';
@@ -58,25 +59,22 @@ export default function EditEmployeePage() {
 
   return (
     <PageContent className="mx-auto max-w-4xl space-y-6 pb-8">
-      <div className="space-y-3">
-        <Link
-          href="/employees"
-          className="inline-flex items-center gap-2 text-sm text-subtle transition hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to staff
-        </Link>
-
-        <div>
-          <h1 className="text-2xl font-bold text-white">
-            {employee?.name?.trim() ? `Edit ${employee.name}` : 'Edit employee'}
-          </h1>
-          <p className="mt-1 text-sm text-subtle">
-            Update work details, personal information, and access settings. Empty fields can
-            be filled in at any time.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="People"
+        title={
+          employee?.name?.trim() ? `Edit ${employee.name}` : 'Edit employee'
+        }
+        description="Update work details, personal information, and access settings. Empty fields can be filled in at any time."
+        actions={
+          <Link
+            href="/employees"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition hover:bg-surface-hover hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            Back to staff
+          </Link>
+        }
+      />
 
       {employeesLoading ? (
         <LoadingIndicator message="Loading employee…" className="h-64" />

@@ -45,6 +45,7 @@ export default function ReportIssuePage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Support"
         title="Report an issue"
         description="Tell us about a problem with the app, kiosk, schedule or your account."
       />

@@ -8,8 +8,9 @@ export default function DashboardPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
-        title="General control panel"
-        description="Customizable analytics by location, period and metric."
+        eyebrow="Operations"
+        title="Dashboard"
+        description="Live presence, KPIs, and analytics for the modules you can access."
       />
 
       <DynamicDashboard />

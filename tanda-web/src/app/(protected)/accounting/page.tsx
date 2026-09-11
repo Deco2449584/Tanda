@@ -7,11 +7,13 @@ import { AccountingRatesPanel } from '@/components/accounting/AccountingRatesPan
 import { AccountingReportsPanel } from '@/components/accounting/AccountingReportsPanel';
 import { AccountingRulesPanel } from '@/components/accounting/AccountingRulesPanel';
 import { PageContent } from '@/components/ui/PageContent';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { DEFAULT_PAY_RULES } from '@/lib/payroll/default-pay-rules';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocations } from '@/providers/LocationsProvider';
+import { Calculator } from 'lucide-react';
 
 type AccountingTab = 'overview' | 'setup' | 'weekly-close' | 'exports';
 
@@ -35,12 +37,12 @@ export default function AccountingPage() {
 
   return (
     <PageContent className="space-y-5 md:space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white md:text-2xl">Accounting</h1>
-        <p className="mt-1 text-sm text-muted">
-          Configure pay and charge rules, review the week, then export files for your systems.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Finance"
+        eyebrowIcon={Calculator}
+        title="Accounting"
+        description="Configure pay and charge rules, review the week, then export files for your systems."
+      />
 
       <nav className="-mx-1 flex gap-1 overflow-x-auto overscroll-x-contain rounded-xl border border-border bg-surface-raised p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:flex-wrap md:overflow-visible">
         {TABS.map((item) => (

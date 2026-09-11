@@ -129,6 +129,7 @@ export default function SettingsPage() {
   return (
     <PageContent className="relative min-h-full space-y-6">
       <PageHeader
+        eyebrow="Administration"
         title="System settings"
         description={`Regional configuration for ${COMPANY_NAME}`}
       />

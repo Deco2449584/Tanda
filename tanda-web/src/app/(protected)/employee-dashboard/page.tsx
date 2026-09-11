@@ -134,7 +134,9 @@ export default function EmployeeDashboardPage() {
   return (
     <PageContent className="space-y-5 md:space-y-6">
       <PageHeader
+        eyebrow="Home"
         title="My overview"
+        description="Your shifts, attendance, and quick links for today."
         actions={
           <RefreshButton
             onClick={handleRefresh}

@@ -48,6 +48,7 @@ export default function MyCoursesPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Training"
         title="My courses"
         description="Complete assigned training before the deadline, then submit proof for manager approval."
       />

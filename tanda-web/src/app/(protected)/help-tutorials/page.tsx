@@ -52,6 +52,7 @@ export default function HelpTutorialsAdminPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Support"
         title="Help guides"
         description="Upload videos, PDFs, documents, images or external links for staff."
       />

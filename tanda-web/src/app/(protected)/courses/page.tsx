@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { GraduationCap } from 'lucide-react';
 import { CoursesAdminPanel } from '@/components/courses/CoursesAdminPanel';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
@@ -50,10 +51,27 @@ export default function CoursesAdminPage() {
     if (canView) void load();
   }, [canView, load]);
 
+  const stats = useMemo(() => {
+    const submitted = enrollments.filter((item) => item.status === 'submitted').length;
+    const approved = enrollments.filter((item) => item.status === 'approved').length;
+    const assigned = enrollments.filter((item) => item.status === 'assigned').length;
+    return {
+      active: courses.filter((course) => course.active).length,
+      submitted,
+      approved,
+      assigned,
+    };
+  }, [courses, enrollments]);
+
   if (!canView) {
     return (
       <PageContent>
-        <PageHeader title="Courses" description="You do not have access to courses." />
+        <PageHeader
+          eyebrow="Training"
+          eyebrowIcon={GraduationCap}
+          title="Courses"
+          description="You do not have access to courses."
+        />
       </PageContent>
     );
   }
@@ -63,8 +81,16 @@ export default function CoursesAdminPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
-        title="Courses"
-        description="Assign external training to selected staff, collect evidence, and approve completions."
+        eyebrow="External training"
+        eyebrowIcon={GraduationCap}
+        title="Courses & certifications"
+        description="Assign courses hosted on other platforms, collect completion evidence, then verify and approve once you confirm it on the provider."
+        stats={[
+          { label: 'Active courses', value: stats.active },
+          { label: 'Awaiting review', value: stats.submitted, accent: true },
+          { label: 'Approved', value: stats.approved },
+          { label: 'Assigned', value: stats.assigned },
+        ]}
       />
 
       {pageLoading ? (

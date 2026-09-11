@@ -79,6 +79,7 @@ function EmployeeAnnouncementsPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Communications"
         title="Announcements"
         description="Company messages sent to you based on your department and location."
       />
@@ -135,6 +136,7 @@ function AdminAnnouncementsPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Communications"
         title="Announcements"
         description="Broadcast messages to employees via in-app notifications and email."
       />

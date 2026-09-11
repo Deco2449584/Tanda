@@ -76,7 +76,9 @@ export default function MyRequestsPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="Leave"
         title="My leave"
+        description="Submit and track your leave requests."
         actions={
           <RefreshButton
             onClick={loadRequests}

@@ -124,7 +124,9 @@ export default function EmployeeProfilesPage() {
   return (
     <PageContent className="space-y-6">
       <PageHeader
+        eyebrow="People"
         title="Personal profiles"
+        description="Review staff personal details and document submissions."
         actions={
           <div className="flex items-center gap-2">
             <Link
