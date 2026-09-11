@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import {
   Bus,
   FileDown,
@@ -11,6 +10,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { InspectScreenHeader } from '@/components/inspect/InspectScreenHeader';
+import { EditInspectionModal } from '@/components/inspections/EditInspectionModal';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -70,12 +70,14 @@ export function InspectDetailScreen({
   inspectionId: string;
 }) {
   const { inspectionsById, loading } = useInspectInspections();
-  const { isInspectAdmin } = useInspectSession();
+  const { user, employee, isInspectAdmin } = useInspectSession();
 
   const inspection = inspectionsById.get(inspectionId) ?? null;
+  const editorEmail = employee?.email || user.email || '';
 
   const [dispatching, setDispatching] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
 
@@ -151,14 +153,15 @@ export function InspectDetailScreen({
         backLabel="Records"
         actions={
           isInspectAdmin ? (
-            <Link
-              href={`/inspections/${inspection.id}`}
-              aria-label="Open in admin module"
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              aria-label="Edit inspection"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-2 text-xs font-semibold text-muted transition hover:bg-surface-hover hover:text-foreground"
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               Edit
-            </Link>
+            </button>
           ) : null
         }
       />
@@ -376,6 +379,14 @@ export function InspectDetailScreen({
           </button>
         </div>
       </Dialog>
+
+      {editOpen ? (
+        <EditInspectionModal
+          inspection={inspection}
+          editorEmail={editorEmail}
+          onClose={() => setEditOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

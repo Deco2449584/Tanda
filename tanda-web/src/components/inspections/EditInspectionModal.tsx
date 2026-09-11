@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { Film, X } from 'lucide-react';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import {
   MAX_INSPECTION_PHOTOS,
@@ -31,6 +31,11 @@ type DraftVideo = { kind: 'url'; url: string } | { kind: 'file'; file: File; pre
 function parseNumber(value: string, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function videoLabel(video: DraftVideo, index: number): string {
+  if (video.kind === 'file') return video.file.name;
+  return `Video ${index + 1}`;
 }
 
 export function EditInspectionModal({
@@ -79,24 +84,18 @@ export function EditInspectionModal({
     );
   }, [awbNumber, foodType, hasIssues, issueDescription, uldId]);
 
-  if (!inspection) return null;
-
   function removePhoto(index: number) {
     setPhotos((current) => {
-      const removed = current[index];
-      if (removed?.kind === 'file') {
-        URL.revokeObjectURL(removed.preview);
-      }
+      const target = current[index];
+      if (target?.kind === 'file') URL.revokeObjectURL(target.preview);
       return current.filter((_, i) => i !== index);
     });
   }
 
   function removeVideo(index: number) {
     setVideos((current) => {
-      const removed = current[index];
-      if (removed?.kind === 'file') {
-        URL.revokeObjectURL(removed.preview);
-      }
+      const target = current[index];
+      if (target?.kind === 'file') URL.revokeObjectURL(target.preview);
       return current.filter((_, i) => i !== index);
     });
   }
@@ -152,35 +151,30 @@ export function EditInspectionModal({
     event.preventDefault();
     if (!inspection || !formValid || saving) return;
 
-    if (!inspection.userId) {
-      setError('Missing operator ID for this inspection. Cannot upload media.');
-      return;
-    }
-
     setSaving(true);
     setError('');
 
-    const input: CargoInspectionFormInput = {
-      uldId: normalizeUldId(uldId),
-      awbNumber: awbNumber.trim(),
-      conservationType,
-      foodType: foodType.trim(),
-      weightKg: parseNumber(weightKg),
-      boxCount: Math.round(parseNumber(boxCount)),
-      hasIssues,
-      issueDescription: hasIssues ? issueDescription.trim() : '',
-      photoEvidence: [],
-      videoEvidence: [],
-    };
-
-    const photoItems: InspectionMediaItem[] = photos.map((photo) =>
-      photo.kind === 'url' ? photo.url : photo.file,
-    );
-    const videoItems: InspectionMediaItem[] = videos.map((video) =>
-      video.kind === 'url' ? video.url : video.file,
-    );
-
     try {
+      const input: CargoInspectionFormInput = {
+        uldId: normalizeUldId(uldId),
+        awbNumber: awbNumber.trim(),
+        conservationType,
+        foodType: foodType.trim(),
+        weightKg: parseNumber(weightKg),
+        boxCount: Math.round(parseNumber(boxCount)),
+        hasIssues,
+        issueDescription: issueDescription.trim(),
+        photoEvidence: [],
+        videoEvidence: [],
+      };
+
+      const photoItems: InspectionMediaItem[] = photos.map((photo) =>
+        photo.kind === 'url' ? photo.url : photo.file,
+      );
+      const videoItems: InspectionMediaItem[] = videos.map((video) =>
+        video.kind === 'url' ? video.url : video.file,
+      );
+
       await updateCargoInspection(
         inspection.userId,
         inspection.id,
@@ -191,35 +185,54 @@ export function EditInspectionModal({
         videoItems,
         inspection.unitType,
       );
+
       onSaved?.();
       onClose();
     } catch (submitError) {
       console.error('EditInspectionModal', submitError);
-      setError('Could not save the inspection. Please try again.');
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Could not save changes. Please try again.',
+      );
     } finally {
       setSaving(false);
     }
   }
 
+  if (!inspection) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0"
+        aria-label="Close dialog"
+        onClick={onClose}
+      />
+
       <div
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-border bg-surface-base shadow-2xl sm:rounded-2xl"
+        className="relative z-10 flex max-h-[min(92dvh,900px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-border bg-surface-base shadow-2xl sm:rounded-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-inspection-title"
       >
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <div>
-            <h2 id="edit-inspection-title" className="text-lg font-bold text-white">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2
+              id="edit-inspection-title"
+              className="text-lg font-bold text-foreground"
+            >
               Edit inspection
             </h2>
-            <p className="text-xs text-subtle">ULD cannot be changed after registration.</p>
+            <p className="mt-0.5 text-xs text-subtle">
+              ULD cannot be changed after registration.
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-muted hover:bg-surface-hover hover:text-foreground"
+            className="shrink-0 rounded-lg p-2 text-muted transition hover:bg-surface-hover hover:text-foreground"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -228,62 +241,62 @@ export function EditInspectionModal({
 
         <form
           onSubmit={(event) => void handleSubmit(event)}
-          className="overflow-y-auto px-5 py-5"
+          className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="space-y-4">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
-                ULD ID
-              </span>
-              <input
-                value={uldId}
-                readOnly
-                className="w-full rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-muted"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
-                AWB number
-              </span>
-              <input
-                value={awbNumber}
-                onChange={(event) => setAwbNumber(event.target.value)}
-                className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
-                Conservation
-              </span>
-              <select
-                value={conservationType}
-                onChange={(event) =>
-                  setConservationType(event.target.value as ConservationType)
-                }
-                className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
-              >
-                {CONSERVATION_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
-                Food type
-              </span>
-              <input
-                value={foodType}
-                onChange={(event) => setFoodType(event.target.value)}
-                className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
-              />
-            </label>
-
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
             <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block sm:col-span-2">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
+                  ULD ID
+                </span>
+                <input
+                  value={uldId}
+                  readOnly
+                  className="w-full rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-muted"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
+                  AWB number
+                </span>
+                <input
+                  value={awbNumber}
+                  onChange={(event) => setAwbNumber(event.target.value)}
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
+                  Conservation
+                </span>
+                <select
+                  value={conservationType}
+                  onChange={(event) =>
+                    setConservationType(event.target.value as ConservationType)
+                  }
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50"
+                >
+                  {CONSERVATION_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
+                  Food type
+                </span>
+                <input
+                  value={foodType}
+                  onChange={(event) => setFoodType(event.target.value)}
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50"
+                />
+              </label>
+
               <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
                   Weight (kg)
@@ -294,7 +307,7 @@ export function EditInspectionModal({
                   step="0.1"
                   value={weightKg}
                   onChange={(event) => setWeightKg(event.target.value)}
-                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50"
                 />
               </label>
 
@@ -308,135 +321,147 @@ export function EditInspectionModal({
                   step="1"
                   value={boxCount}
                   onChange={(event) => setBoxCount(event.target.value)}
-                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50"
                 />
               </label>
-            </div>
 
-            <label className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised px-4 py-3">
-              <input
-                type="checkbox"
-                checked={hasIssues}
-                onChange={(event) => setHasIssues(event.target.checked)}
-                className="h-4 w-4 rounded border-zinc-600"
-              />
-              <span className="text-sm text-foreground">Report damage or issues</span>
-            </label>
-
-            {hasIssues && (
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Issue description
-                </span>
-                <textarea
-                  value={issueDescription}
-                  onChange={(event) => setIssueDescription(event.target.value)}
-                  rows={4}
-                  className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-white outline-none focus:border-primary/50"
+              <label className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised px-4 py-3 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={hasIssues}
+                  onChange={(event) => setHasIssues(event.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-600"
                 />
-              </label>
-            )}
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Photo evidence ({photoCount}/{MAX_INSPECTION_PHOTOS})
+                <span className="text-sm text-foreground">
+                  Report damage or issues
                 </span>
-                <label className="cursor-pointer rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-zinc-700">
-                  Add photos
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    className="hidden"
-                    onChange={(event) => void handleAddPhotos(event.target.files)}
+              </label>
+
+              {hasIssues ? (
+                <label className="block sm:col-span-2">
+                  <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-subtle">
+                    Issue description
+                  </span>
+                  <textarea
+                    value={issueDescription}
+                    onChange={(event) => setIssueDescription(event.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-border-strong bg-surface-raised px-4 py-3 text-sm text-foreground outline-none focus:border-primary/50"
                   />
                 </label>
+              ) : null}
+
+              <div className="sm:col-span-2">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                    Photo evidence ({photoCount}/{MAX_INSPECTION_PHOTOS})
+                  </span>
+                  <label className="cursor-pointer rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-zinc-700">
+                    Add photos
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(event) => {
+                        void handleAddPhotos(event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {photos.map((photo, index) => {
+                    const src = photo.kind === 'url' ? photo.url : photo.preview;
+                    return (
+                      <div key={`${src}-${index}`} className="relative">
+                        <FirebaseImage
+                          src={src}
+                          alt={`Photo ${index + 1}`}
+                          width={80}
+                          height={80}
+                          className="h-20 w-20 rounded-lg object-cover ring-1 ring-zinc-700"
+                          sizes="80px"
+                          quality={70}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white"
+                          aria-label="Remove photo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {photos.map((photo, index) => {
-                  const src = photo.kind === 'url' ? photo.url : photo.preview;
-                  return (
-                    <div key={`${src}-${index}`} className="relative">
-                      <FirebaseImage
-                        src={src}
-                        alt={`Photo ${index + 1}`}
-                        width={80}
-                        height={80}
-                        className="h-20 w-20 rounded-lg object-cover ring-1 ring-zinc-700"
-                        sizes="80px"
-                        quality={70}
+
+              <div className="sm:col-span-2">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                    Video evidence ({videos.length})
+                  </span>
+                  <label className="cursor-pointer rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-zinc-700">
+                    Add video
+                    <input
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      className="hidden"
+                      onChange={(event) => {
+                        void handleAddVideos(event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  {videos.map((video, index) => (
+                    <div
+                      key={`video-${index}`}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-3 py-2.5"
+                    >
+                      <Film
+                        className="h-4 w-4 shrink-0 text-subtle"
+                        aria-hidden
                       />
+                      <span className="min-w-0 flex-1 truncate text-xs text-muted">
+                        {videoLabel(video, index)}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => removePhoto(index)}
-                        className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white"
-                        aria-label="Remove photo"
+                        onClick={() => removeVideo(index)}
+                        className="shrink-0 rounded p-1 text-muted transition hover:bg-surface-hover hover:text-foreground"
+                        aria-label="Remove video"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Video evidence ({videos.length})
-                </span>
-                <label className="cursor-pointer rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-zinc-700">
-                  Add video
-                  <input
-                    type="file"
-                    accept="video/mp4,video/quicktime,video/webm"
-                    className="hidden"
-                    onChange={(event) => void handleAddVideos(event.target.files)}
-                  />
-                </label>
-              </div>
-              <div className="space-y-2">
-                {videos.map((video, index) => (
-                  <div
-                    key={`video-${index}`}
-                    className="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-3 py-2"
-                  >
-                    <span className="truncate text-xs text-muted">
-                      {video.kind === 'url' ? video.url : video.file.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeVideo(index)}
-                      className="rounded p-1 text-muted hover:bg-surface-hover hover:text-foreground"
-                      aria-label="Remove video"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {error ? (
+              <p className="mt-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+                {error}
+              </p>
+            ) : null}
           </div>
 
-          {error && (
-            <p className="mt-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
-              {error}
-            </p>
-          )}
-
-          <div className="mt-6 flex gap-3">
+          <div className="flex shrink-0 gap-3 border-t border-border bg-surface-base px-5 py-4 sm:px-6">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-border-strong py-3 text-sm font-semibold text-muted hover:bg-surface-hover"
+              className="flex-1 rounded-xl border border-border-strong py-3 text-sm font-semibold text-muted transition hover:bg-surface-hover hover:text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!formValid || saving}
-              className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save changes'}
             </button>

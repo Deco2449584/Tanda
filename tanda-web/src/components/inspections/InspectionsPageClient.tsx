@@ -3,8 +3,7 @@
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
-import { ClipboardCheck, Download, Plus, Search } from 'lucide-react';
+import { ClipboardCheck, Download, Search } from 'lucide-react';
 import { InspectionCard } from '@/components/inspections/InspectionCard';
 import { InspectionsFilterBar } from '@/components/inspections/InspectionsFilterBar';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -74,18 +73,7 @@ export function InspectionsPageClient() {
         eyebrowIcon={ClipboardCheck}
         title="Cargo inspections"
         description="ULD / AWB records from Continental Inspect — same data as the mobile app."
-        actions={
-          <>
-            <Link
-              href="/inspect/new"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition hover:bg-primary/90"
-            >
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-              New inspection
-            </Link>
-            <RefreshButton onClick={refresh} refreshing={loading} />
-          </>
-        }
+        actions={<RefreshButton onClick={refresh} refreshing={loading} />}
         stats={[
           { label: 'New today', value: todayStats.newCargo },
           { label: 'Loaded today', value: todayStats.loaded },
