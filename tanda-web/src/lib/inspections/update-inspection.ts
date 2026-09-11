@@ -6,10 +6,12 @@ import {
   uploadCargoInspectionVideos,
   type InspectionMediaItem,
 } from '@/lib/inspections/cargo-storage-upload';
+import { resolveUnitType } from '@/lib/inspections/cargo-unit-type';
 import { normalizeUldId } from '@/lib/inspections/normalize-uld-id';
 import type {
   CargoInspectionFormInput,
   CargoInspectionStatus,
+  CargoUnitType,
 } from '@/lib/types/cargo-inspection';
 
 export async function updateCargoInspection(
@@ -20,6 +22,7 @@ export async function updateCargoInspection(
   existingStatus: CargoInspectionStatus,
   photoItems: InspectionMediaItem[],
   videoItems: InspectionMediaItem[],
+  existingUnitType?: CargoUnitType,
 ): Promise<{ updatedAtIso: string }> {
   if (!db) {
     throw new Error('Firestore is not available.');
@@ -38,9 +41,11 @@ export async function updateCargoInspection(
 
   const updatedAtIso = new Date().toISOString();
   const issueDescription = input.hasIssues ? input.issueDescription.trim() : '';
+  const uldId = normalizeUldId(input.uldId);
 
   await updateDoc(doc(db, COLLECTIONS.CARGO_INSPECTIONS, inspectionId), {
-    uldId: normalizeUldId(input.uldId),
+    unitType: resolveUnitType(existingUnitType, uldId),
+    uldId,
     awbNumber: input.awbNumber.trim(),
     conservationType: input.conservationType,
     foodType: input.foodType.trim(),

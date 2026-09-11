@@ -13,6 +13,7 @@ import {
   collection,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
 } from 'firebase/firestore';
@@ -35,23 +36,15 @@ interface CargoInspectionsContextValue {
 const CargoInspectionsContext =
   createContext<CargoInspectionsContextValue | null>(null);
 
-async function fetchInspections(): Promise<CargoInspection[]> {
+function inspectionsQuery() {
   if (!db) {
     throw new Error('Firestore is not available.');
   }
 
-  const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTIONS.CARGO_INSPECTIONS),
-      orderBy('registeredAt', 'desc'),
-      limit(INSPECTIONS_FETCH_LIMIT),
-    ),
-  );
-
-  return sortInspectionsByNewest(
-    snapshot.docs.map((document) =>
-      mapInspectionDoc(document.id, document.data()),
-    ),
+  return query(
+    collection(db, COLLECTIONS.CARGO_INSPECTIONS),
+    orderBy('registeredAt', 'desc'),
+    limit(INSPECTIONS_FETCH_LIMIT),
   );
 }
 
@@ -60,24 +53,55 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Live so records created on /inspect (and evidence URLs appended by the
+  // background upload queue) show up without a manual refresh.
+  useEffect(() => {
+    if (!db) return;
+
+    const unsubscribe = onSnapshot(
+      inspectionsQuery(),
+      (snapshot) => {
+        setInspections(
+          sortInspectionsByNewest(
+            snapshot.docs.map((document) =>
+              mapInspectionDoc(document.id, document.data()),
+            ),
+          ),
+        );
+        setError('');
+        setLoading(false);
+      },
+      (snapshotError) => {
+        console.error('CargoInspectionsProvider', snapshotError);
+        setInspections([]);
+        setError('Could not load cargo inspections.');
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  /** Kept for explicit refresh buttons; the snapshot already streams updates. */
   const refresh = useCallback(async () => {
-    setLoading(true);
+    if (!db) return;
+
     setError('');
 
     try {
-      setInspections(await fetchInspections());
+      const snapshot = await getDocs(inspectionsQuery());
+      setInspections(
+        sortInspectionsByNewest(
+          snapshot.docs.map((document) =>
+            mapInspectionDoc(document.id, document.data()),
+          ),
+        ),
+      );
     } catch (fetchError) {
-      console.error('CargoInspectionsProvider', fetchError);
-      setInspections([]);
+      console.error('CargoInspectionsProvider refresh', fetchError);
       setError('Could not load cargo inspections.');
-    } finally {
-      setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const inspectionsById = useMemo(() => {
     const map = new Map<string, CargoInspection>();

@@ -123,6 +123,11 @@ export function getModuleKeyForPath(pathname: string): AdminModuleKey | null {
     return 'attendance';
   }
 
+  // Continental Inspect capture app shares the inspections module permission.
+  if (normalized === '/inspect' || normalized.startsWith('/inspect/')) {
+    return 'inspections';
+  }
+
   for (const key of MODULE_ORDER) {
     const href = ADMIN_MODULE_ROUTES[key];
     if (normalized === href || normalized.startsWith(`${href}/`)) {

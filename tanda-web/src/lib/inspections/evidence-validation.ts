@@ -1,7 +1,14 @@
-export const MAX_INSPECTION_PHOTOS = 3;
+/** Sanity cap on evidence photos per inspection. */
+export const MAX_INSPECTION_PHOTOS = 12;
+
+/** Source photo cap before client-side WebP compression. */
 export const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
-export const MAX_VIDEO_DURATION_SEC = 30;
-export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+/** Cap applied to the clip that actually reaches Firebase Storage. */
+export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+
+/** Source clips above this are rejected before we attempt to re-encode. */
+export const MAX_SOURCE_VIDEO_BYTES = 600 * 1024 * 1024;
 
 export function getVideoDurationSeconds(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -24,7 +31,9 @@ export function getVideoDurationSeconds(file: File): Promise<number> {
   });
 }
 
-export async function validateInspectionPhotoFile(file: File): Promise<string | null> {
+export async function validateInspectionPhotoFile(
+  file: File,
+): Promise<string | null> {
   if (!file.type.startsWith('image/')) {
     return 'Please choose a JPEG, PNG, or WebP photo.';
   }
@@ -34,21 +43,14 @@ export async function validateInspectionPhotoFile(file: File): Promise<string | 
   return null;
 }
 
-export async function validateInspectionVideoFile(file: File): Promise<string | null> {
+export async function validateInspectionVideoFile(
+  file: File,
+): Promise<string | null> {
   if (!file.type.startsWith('video/')) {
     return 'Please choose a video file.';
   }
-  if (file.size > MAX_VIDEO_BYTES) {
-    return 'Video is too large. Maximum size is 50 MB.';
-  }
-
-  try {
-    const duration = await getVideoDurationSeconds(file);
-    if (duration > MAX_VIDEO_DURATION_SEC) {
-      return `Video exceeds the ${MAX_VIDEO_DURATION_SEC}-second limit.`;
-    }
-  } catch {
-    return 'Could not validate video duration.';
+  if (file.size > MAX_SOURCE_VIDEO_BYTES) {
+    return 'Video is too large to process. Record a shorter clip.';
   }
 
   return null;

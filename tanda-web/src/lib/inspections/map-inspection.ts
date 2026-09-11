@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import { resolveUnitType } from '@/lib/inspections/cargo-unit-type';
 import { normalizeConservationType } from '@/lib/inspections/normalize-conservation';
 import { normalizeInspectionStatus } from '@/lib/inspections/status';
 import type {
@@ -38,10 +39,13 @@ export function mapInspectionDoc(
       ? record.portalClientId.trim()
       : clientLocationId;
 
+  const uldId = record.uldId ?? '';
+
   return {
     id,
     userId: record.userId ?? '',
-    uldId: record.uldId ?? '',
+    unitType: resolveUnitType(record.unitType as string | undefined, uldId),
+    uldId,
     awbNumber: record.awbNumber ?? '',
     conservationType: normalizeConservationType(
       record.conservationType as string | undefined,

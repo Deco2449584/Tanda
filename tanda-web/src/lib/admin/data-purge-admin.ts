@@ -1,6 +1,6 @@
 import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
-import { getAdminDb, getAdminStorage } from '@/lib/firebase-admin';
+import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
 import {
   createEmptyPurgeResult,
   purgeOptionsHasWork,
@@ -16,7 +16,7 @@ async function deleteCollectionDocuments(
   collectionName: string,
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminDb();
+  const db = getAdminFirestore();
   let totalDeleted = 0;
 
   while (true) {
@@ -67,7 +67,7 @@ async function deleteStoragePrefix(
 async function clearInspectionPortalAccess(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminDb();
+  const db = getAdminFirestore();
   let cleared = 0;
 
   while (true) {
@@ -102,7 +102,7 @@ async function clearInspectionPortalAccess(
 async function resetAllEmployeePresence(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminDb();
+  const db = getAdminFirestore();
   let resetCount = 0;
   let cursor: QueryDocumentSnapshot | undefined;
 
@@ -135,7 +135,7 @@ async function resetAllEmployeePresence(
 async function clearEmployeeDocumentRefs(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminDb();
+  const db = getAdminFirestore();
   let cleared = 0;
   let cursor: QueryDocumentSnapshot | undefined;
 
@@ -172,7 +172,7 @@ async function clearEmployeeDocumentRefs(
 async function clearEmployeeLocationRefs(
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
-  const db = getAdminDb();
+  const db = getAdminFirestore();
   let cleared = 0;
   let cursor: QueryDocumentSnapshot | undefined;
 

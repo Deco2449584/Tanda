@@ -189,6 +189,7 @@ export function EditInspectionModal({
         inspection.status,
         photoItems,
         videoItems,
+        inspection.unitType,
       );
       onSaved?.();
       onClose();

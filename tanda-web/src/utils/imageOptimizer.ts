@@ -1,7 +1,7 @@
 import imageCompression from 'browser-image-compression';
 import { MAX_SOURCE_IMAGE_BYTES } from '@/lib/images/constants';
 
-export type ImageUploadProfile = 'avatar' | 'attendance';
+export type ImageUploadProfile = 'avatar' | 'attendance' | 'inspection';
 
 const PROFILE_OPTIONS = {
   avatar: {
@@ -13,6 +13,17 @@ const PROFILE_OPTIONS = {
   attendance: {
     maxSizeMB: 0.12,
     maxWidthOrHeight: 720,
+    useWebWorker: true,
+    fileType: 'image/webp',
+  },
+  /**
+   * Cargo evidence needs legible labels and damage detail, so it keeps a much
+   * larger long edge than attendance selfies. Matches the mobile app.
+   */
+  inspection: {
+    maxSizeMB: 3,
+    maxWidthOrHeight: 1600,
+    initialQuality: 0.72,
     useWebWorker: true,
     fileType: 'image/webp',
   },
