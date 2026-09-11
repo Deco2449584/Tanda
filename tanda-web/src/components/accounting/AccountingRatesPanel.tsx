@@ -693,7 +693,7 @@ export function AccountingRatesPanel({
                 rules={rules}
                 cells={companyPay ?? rules.defaultPayCells}
                 disabled={!canEditRules}
-                emptyCellLabel="Base"
+                editingMode="defaults"
                 onChange={setCompanyPay}
               />
             </div>
@@ -712,7 +712,7 @@ export function AccountingRatesPanel({
                 rules={rules}
                 cells={companyCharge ?? rules.defaultChargeCells}
                 disabled={!canEditRules}
-                emptyCellLabel="Base"
+                editingMode="defaults"
                 onChange={setCompanyCharge}
               />
             </div>

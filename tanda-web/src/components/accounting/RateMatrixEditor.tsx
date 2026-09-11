@@ -12,7 +12,7 @@ import {
   type PayRateCells,
   type PayRules,
 } from '@/lib/types/pay-rules';
-import { OverrideValueField, type OverrideMode } from '@/components/accounting/OverrideValueField';
+import { type OverrideMode } from '@/components/accounting/OverrideValueField';
 
 const selectClass =
   'shrink-0 rounded-lg border border-border-strong bg-surface-base px-1.5 py-1.5 text-xs text-muted outline-none focus:border-primary disabled:opacity-50';
@@ -29,6 +29,11 @@ interface RateMatrixEditorProps {
   emptyCellLabel?: string;
   /** Used when a weekday base cell switches to Edit with no stored override. */
   baseRateHint?: number;
+  /**
+   * `override` — staff/site cards: Default/Edit inherits from company.
+   * `defaults` — company matrix: edit values directly (no inherit dropdown).
+   */
+  editingMode?: 'override' | 'defaults';
 }
 
 function cellHasOverride(cell: PayRateCell): boolean {
@@ -60,7 +65,84 @@ function resolveCustomSeed(
   return { rate: 0 };
 }
 
-function RateCellInputs({
+function DirectCellInputs({
+  cells,
+  dayTypeId,
+  bandId,
+  disabled,
+  onChange,
+}: {
+  cells: PayRateCells | undefined;
+  dayTypeId: string;
+  bandId: string;
+  disabled?: boolean;
+  onChange: (cells: PayRateCells) => void;
+}) {
+  const cell = readRateCell(cells, dayTypeId, bandId);
+  const hasValue = cellHasOverride(cell);
+  const valueMode =
+    typeof cell.percent === 'number'
+      ? 'percent'
+      : typeof cell.rate === 'number'
+        ? 'rate'
+        : 'percent';
+  const value = valueMode === 'percent' ? cell.percent : cell.rate;
+
+  return (
+    <div className="flex min-w-0 gap-1">
+      <select
+        disabled={disabled}
+        value={valueMode}
+        onChange={(event) => {
+          const nextMode = event.target.value;
+          const current = value ?? 100;
+          onChange(
+            writeRateCell(
+              cells,
+              dayTypeId,
+              bandId,
+              nextMode === 'percent' ? { percent: current } : { rate: current },
+            ),
+          );
+        }}
+        className={selectClass}
+        aria-label="Value type"
+      >
+        <option value="percent">%</option>
+        <option value="rate">$</option>
+      </select>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        inputMode="decimal"
+        disabled={disabled}
+        value={hasValue ? (value ?? '') : ''}
+        placeholder={valueMode === 'percent' ? '100' : '0'}
+        onChange={(event) => {
+          const raw = event.target.value;
+          if (raw === '') {
+            onChange(writeRateCell(cells, dayTypeId, bandId, null));
+            return;
+          }
+          const parsed = Number(raw);
+          if (!Number.isFinite(parsed)) return;
+          onChange(
+            writeRateCell(
+              cells,
+              dayTypeId,
+              bandId,
+              valueMode === 'percent' ? { percent: parsed } : { rate: parsed },
+            ),
+          );
+        }}
+        className={inputClass}
+      />
+    </div>
+  );
+}
+
+function OverrideCellInputs({
   rules,
   cells,
   dayTypeId,
@@ -174,17 +256,24 @@ export function RateMatrixEditor({
   cells,
   onChange,
   disabled,
-  emptyHint = 'Empty inherits company/base rate.',
+  emptyHint,
   emptyCellLabel = 'Default',
   baseRateHint = 0,
+  editingMode = 'override',
 }: RateMatrixEditorProps) {
   const rows = rateMatrixRows(rules);
   const resolvedBaseHint =
     baseRateHint > 0 ? baseRateHint : baseHourlyRateFromCells(cells, 0);
+  const isDefaults = editingMode === 'defaults';
+  const hint =
+    emptyHint ??
+    (isDefaults
+      ? 'Set % of hourly rate or a fixed $. Clear a cell to fall back to the staff weekday base rate.'
+      : 'Empty inherits company/base rate.');
 
   return (
     <div className="min-w-0">
-      <p className="mb-2 text-xs text-subtle">{emptyHint}</p>
+      <p className="mb-2 text-xs text-subtle">{hint}</p>
 
       <div className="space-y-3 md:hidden">
         {rows.map((row) => (
@@ -196,17 +285,29 @@ export function RateMatrixEditor({
             <div className="space-y-2.5">
               {rules.dayTypes.map((dayType) => (
                 <label key={dayType.id} className="block">
-                  <span className="mb-1 block text-[11px] text-subtle">{dayType.name}</span>
-                  <RateCellInputs
-                    rules={rules}
-                    cells={cells}
-                    dayTypeId={dayType.id}
-                    bandId={row.id}
-                    disabled={disabled}
-                    emptyCellLabel={emptyCellLabel}
-                    baseRateHint={resolvedBaseHint}
-                    onChange={onChange}
-                  />
+                  <span className="mb-1 block text-[11px] text-subtle">
+                    {dayType.name}
+                  </span>
+                  {isDefaults ? (
+                    <DirectCellInputs
+                      cells={cells}
+                      dayTypeId={dayType.id}
+                      bandId={row.id}
+                      disabled={disabled}
+                      onChange={onChange}
+                    />
+                  ) : (
+                    <OverrideCellInputs
+                      rules={rules}
+                      cells={cells}
+                      dayTypeId={dayType.id}
+                      bandId={row.id}
+                      disabled={disabled}
+                      emptyCellLabel={emptyCellLabel}
+                      baseRateHint={resolvedBaseHint}
+                      onChange={onChange}
+                    />
+                  )}
                 </label>
               ))}
             </div>
@@ -229,19 +330,31 @@ export function RateMatrixEditor({
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="border-b border-border/60">
-                <td className="whitespace-nowrap px-2 py-2 text-foreground">{row.name}</td>
+                <td className="whitespace-nowrap px-2 py-2 text-foreground">
+                  {row.name}
+                </td>
                 {rules.dayTypes.map((dayType) => (
                   <td key={dayType.id} className="px-2 py-2 align-top">
-                    <RateCellInputs
-                      rules={rules}
-                      cells={cells}
-                      dayTypeId={dayType.id}
-                      bandId={row.id}
-                      disabled={disabled}
-                      emptyCellLabel={emptyCellLabel}
-                      baseRateHint={resolvedBaseHint}
-                      onChange={onChange}
-                    />
+                    {isDefaults ? (
+                      <DirectCellInputs
+                        cells={cells}
+                        dayTypeId={dayType.id}
+                        bandId={row.id}
+                        disabled={disabled}
+                        onChange={onChange}
+                      />
+                    ) : (
+                      <OverrideCellInputs
+                        rules={rules}
+                        cells={cells}
+                        dayTypeId={dayType.id}
+                        bandId={row.id}
+                        disabled={disabled}
+                        emptyCellLabel={emptyCellLabel}
+                        baseRateHint={resolvedBaseHint}
+                        onChange={onChange}
+                      />
+                    )}
                   </td>
                 ))}
               </tr>
