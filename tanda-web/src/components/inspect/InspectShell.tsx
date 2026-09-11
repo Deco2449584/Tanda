@@ -8,6 +8,10 @@ import { InspectTabBar } from '@/components/inspect/InspectTabBar';
 import { LoadingSplash } from '@/components/ui/LoadingSplash';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
+import {
+  useInspectPwa,
+  usePendingUploadUnloadGuard,
+} from '@/hooks/useInspectPwa';
 import { resolveInspectAccess } from '@/lib/inspect/access';
 import { INSPECT_BRAND } from '@/lib/inspect/brand';
 import { InspectInspectionsProvider } from '@/providers/InspectInspectionsProvider';
@@ -41,6 +45,9 @@ export function InspectShell({ children }: { children: ReactNode }) {
   const { employee, loading: employeeLoading } = useCurrentEmployee(
     user?.email,
   );
+
+  useInspectPwa();
+  usePendingUploadUnloadGuard();
 
   useEffect(() => {
     if (!authLoading && !user) {

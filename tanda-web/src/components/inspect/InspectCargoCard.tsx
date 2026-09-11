@@ -11,8 +11,9 @@ import {
 import { formatInspectionDate } from '@/lib/inspections/format';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
 import {
+  getFailedJobsForInspection,
   getInspectionUploadSummary,
-  retryInspectionMediaJob,
+  retryFailedInspectionMedia,
 } from '@/lib/inspect/media-queue';
 import { getInspectLifecycle } from '@/lib/inspect/status-labels';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
@@ -30,13 +31,7 @@ export function InspectCargoCard({
 }) {
   const jobs = useInspectionMediaQueue();
   const summary = getInspectionUploadSummary(jobs, inspection.id);
-  const failedJob =
-    summary?.status === 'error'
-      ? jobs.find(
-          (job) =>
-            job.inspectionId === inspection.id && job.status === 'error',
-        )
-      : undefined;
+  const failedJobs = getFailedJobsForInspection(jobs, inspection.id);
 
   const thumbUri = inspection.photoEvidence[0] ?? null;
   const mediaCount =
@@ -127,10 +122,10 @@ export function InspectCargoCard({
               {summary.status === 'pending' ? ` · ${summary.progress}%` : ''}
             </p>
 
-            {failedJob ? (
+            {failedJobs.length > 0 ? (
               <button
                 type="button"
-                onClick={() => retryInspectionMediaJob(failedJob.id)}
+                onClick={() => retryFailedInspectionMedia(inspection.id)}
                 className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-muted transition hover:bg-surface-hover hover:text-foreground"
               >
                 <RotateCcw className="h-3 w-3" aria-hidden />
@@ -155,9 +150,16 @@ export function InspectCargoCard({
             </div>
           ) : null}
 
-          {failedJob?.errorMessage ? (
+          {failedJobs[0]?.errorMessage ? (
             <p className="mt-1.5 text-[11px] text-subtle">
-              {failedJob.errorMessage}
+              {failedJobs.length > 1
+                ? `${failedJobs.length} uploads failed. Open the record to re-upload if Retry does not recover them.`
+                : failedJobs[0].errorMessage}
+            </p>
+          ) : summary.status === 'error' ? (
+            <p className="mt-1.5 text-[11px] text-subtle">
+              Open the record to re-upload evidence if the original files are no
+              longer in memory.
             </p>
           ) : null}
         </div>

@@ -10,6 +10,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { InspectScreenHeader } from '@/components/inspect/InspectScreenHeader';
+import { InspectEvidenceReupload } from '@/components/inspect/InspectEvidenceReupload';
 import { EditInspectionModal } from '@/components/inspections/EditInspectionModal';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
@@ -352,6 +353,11 @@ export function InspectDetailScreen({
           </h3>
           <InspectionVideoGallery videos={inspection.videoEvidence} />
         </section>
+
+        <InspectEvidenceReupload
+          inspection={inspection}
+          userId={inspection.userId || user.uid}
+        />
       </div>
 
       <Dialog

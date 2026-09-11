@@ -229,8 +229,45 @@ export function enqueueInspectionMedia(
 }
 
 export function retryInspectionMediaJob(jobId: string): void {
-  patchJob(jobId, { status: 'queued', progress: 0, errorMessage: undefined });
+  patchJob(jobId, {
+    status: 'queued',
+    progress: 0,
+    errorMessage: undefined,
+    // Force a fresh prepare so a retry after a partial photo optimize restarts cleanly.
+    preparedFile: undefined,
+  });
   void processQueue();
+}
+
+/** Re-queues every failed job for one inspection (e.g. after a network blip). */
+export function retryFailedInspectionMedia(inspectionId: string): number {
+  const failed = jobs.filter(
+    (job) => job.inspectionId === inspectionId && job.status === 'error',
+  );
+
+  failed.forEach((job) => {
+    patchJob(job.id, {
+      status: 'queued',
+      progress: 0,
+      errorMessage: undefined,
+      preparedFile: undefined,
+    });
+  });
+
+  if (failed.length > 0) {
+    void processQueue();
+  }
+
+  return failed.length;
+}
+
+export function getFailedJobsForInspection(
+  allJobs: readonly MediaJob[],
+  inspectionId: string,
+): MediaJob[] {
+  return allJobs.filter(
+    (job) => job.inspectionId === inspectionId && job.status === 'error',
+  );
 }
 
 export function clearFinishedInspectionMedia(inspectionId: string): void {

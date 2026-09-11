@@ -9,6 +9,7 @@ import {
   CircleQuestionMark,
   ShieldCheck,
 } from 'lucide-react';
+import { InspectInstallCard } from '@/components/inspect/InspectInstallCard';
 import { INSPECT_BRAND } from '@/lib/inspect/brand';
 import { useInspectSession } from '@/providers/InspectSessionProvider';
 
@@ -76,6 +77,10 @@ export function InspectAccountScreen() {
           value={employee?.active ? 'Active' : 'Inactive'}
         />
       </section>
+
+      <div className="mt-4">
+        <InspectInstallCard />
+      </div>
 
       <div className="mt-4 space-y-2">
         <Link
