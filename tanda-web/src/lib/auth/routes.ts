@@ -24,7 +24,14 @@ export function isEmployeeOnlyRoute(pathname: string): boolean {
   );
 }
 
-export function isRouteAllowedForEmployee(pathname: string): boolean {
+export function isInspectionsRoute(pathname: string): boolean {
+  return pathname === '/inspections' || pathname.startsWith('/inspections/');
+}
+
+export function isRouteAllowedForEmployee(
+  pathname: string,
+  options?: { webInspectionsEnabled?: boolean },
+): boolean {
   if (isSharedStaffRoute(pathname)) {
     return true;
   }
@@ -40,6 +47,10 @@ export function isRouteAllowedForEmployee(pathname: string): boolean {
     return true;
   }
 
+  if (options?.webInspectionsEnabled === true && isInspectionsRoute(pathname)) {
+    return true;
+  }
+
   return isEmployeeOnlyRoute(pathname);
 }
 
@@ -47,12 +58,13 @@ export function getRedirectForRole(
   role: UserRole,
   pathname: string,
   access?: ResolvedAdminAccess | null,
+  options?: { webInspectionsEnabled?: boolean },
 ): string | null {
   if (role === 'kiosk') {
     return '/kiosk';
   }
 
-  if (role === 'empleado' && !isRouteAllowedForEmployee(pathname)) {
+  if (role === 'empleado' && !isRouteAllowedForEmployee(pathname, options)) {
     return '/employee-dashboard';
   }
 

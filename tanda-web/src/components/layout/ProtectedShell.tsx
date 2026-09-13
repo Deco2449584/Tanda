@@ -105,7 +105,16 @@ function RouteGuard({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const redirectTo = getRedirectForRole(role, pathname);
+  const { user } = useAuthRole();
+  const { employee, loading: employeeLoading } = useCurrentEmployee(
+    role === 'empleado' ? user?.email : null,
+  );
+  const redirectTo =
+    role === 'empleado' && employeeLoading
+      ? null
+      : getRedirectForRole(role, pathname, null, {
+          webInspectionsEnabled: employee?.webInspectionsEnabled === true,
+        });
 
   useEffect(() => {
     if (redirectTo) {
@@ -113,8 +122,12 @@ function RouteGuard({
     }
   }, [redirectTo, router]);
 
-  if (redirectTo) {
-    return <LoadingScreen message="Redirecting…" />;
+  if ((role === 'empleado' && employeeLoading) || redirectTo) {
+    return (
+      <LoadingScreen
+        message={employeeLoading ? 'Loading profile…' : 'Redirecting…'}
+      />
+    );
   }
 
   return <>{children}</>;

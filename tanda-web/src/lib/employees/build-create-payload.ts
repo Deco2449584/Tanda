@@ -30,6 +30,7 @@ export function buildEmployeeCreatePayload(input: {
   visa?: { url: string; fileName: string };
   continentalInspectEnabled?: boolean;
   continentalInspectAdmin?: boolean;
+  webInspectionsEnabled?: boolean;
 }): Record<string, unknown> {
   const { form, photoUrl, passport, visa } = input;
 
@@ -45,6 +46,7 @@ export function buildEmployeeCreatePayload(input: {
     continentalInspectAdmin:
       input.continentalInspectEnabled === true &&
       input.continentalInspectAdmin === true,
+    webInspectionsEnabled: input.webInspectionsEnabled === true,
     lastAction: 'none',
   };
 
@@ -99,6 +101,7 @@ export function buildEmployeeUpdatePayload(input: {
   kioskEnabled: boolean;
   continentalInspectEnabled: boolean;
   continentalInspectAdmin: boolean;
+  webInspectionsEnabled: boolean;
   photoUrl?: string;
   passport?: { url: string; fileName: string };
   visa?: { url: string; fileName: string };
@@ -110,6 +113,7 @@ export function buildEmployeeUpdatePayload(input: {
     visa: input.visa,
     continentalInspectEnabled: input.continentalInspectEnabled,
     continentalInspectAdmin: input.continentalInspectAdmin,
+    webInspectionsEnabled: input.webInspectionsEnabled,
   });
 
   delete payload.lastAction;
@@ -120,6 +124,7 @@ export function buildEmployeeUpdatePayload(input: {
   payload.continentalInspectAdmin =
     input.continentalInspectEnabled === true &&
     input.continentalInspectAdmin === true;
+  payload.webInspectionsEnabled = input.webInspectionsEnabled === true;
   payload.allowCheckInWithoutScheduledShift =
     input.form.allowCheckInWithoutScheduledShift === true;
 

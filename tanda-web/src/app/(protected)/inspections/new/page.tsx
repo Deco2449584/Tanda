@@ -8,19 +8,18 @@ import { NewInspectionForm } from '@/components/inspections/NewInspectionForm';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { PageContent } from '@/components/ui/PageContent';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { useInspectionsAccess } from '@/hooks/useInspectionsAccess';
 
 export default function NewInspectionPage() {
   const router = useRouter();
-  const { loading, canAccessModule, canPerformAction } = useAdminAccess();
-  const canCreate = canPerformAction('inspections', 'create');
+  const { loading, canCreate } = useInspectionsAccess();
 
   useEffect(() => {
     if (loading) return;
-    if (!canAccessModule('inspections') || !canCreate) {
+    if (!canCreate) {
       router.replace('/inspections');
     }
-  }, [canAccessModule, canCreate, loading, router]);
+  }, [canCreate, loading, router]);
 
   if (loading || !canCreate) {
     return (

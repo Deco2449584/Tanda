@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
 import { PageContent } from '@/components/ui/PageContent';
-import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { useInspectionsAccess } from '@/hooks/useInspectionsAccess';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
@@ -14,8 +14,7 @@ export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
   const { user } = useAuthRole();
-  const { canPerformAction } = useAdminAccess();
-  const canUpdate = canPerformAction('inspections', 'update');
+  const { canUpdate } = useInspectionsAccess();
   const { inspectionsById, loading, error, refresh } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);

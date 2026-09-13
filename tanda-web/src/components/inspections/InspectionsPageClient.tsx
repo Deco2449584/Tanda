@@ -16,7 +16,7 @@ import { InspectionCard } from '@/components/inspections/InspectionCard';
 import { InspectionsFilterBar } from '@/components/inspections/InspectionsFilterBar';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { RefreshButton } from '@/components/ui/RefreshButton';
-import { useAdminAccess } from '@/hooks/useAdminAccess';
+import { useInspectionsAccess } from '@/hooks/useInspectionsAccess';
 import { useInspectionMediaQueue } from '@/hooks/useInspectionMediaQueue';
 import { exportInspectionsToCsv } from '@/lib/inspections/export-inspections-csv';
 import {
@@ -35,9 +35,7 @@ import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
 export function InspectionsPageClient() {
   const { inspections, loading, error, refresh } = useCargoInspections();
-  const { canPerformAction } = useAdminAccess();
-  const canRead = canPerformAction('inspections', 'read');
-  const canCreate = canPerformAction('inspections', 'create');
+  const { canRead, canCreate } = useInspectionsAccess();
   const mediaJobs = useInspectionMediaQueue();
   const [searchQuery, setSearchQuery] = useState('');
   const [datePreset, setDatePreset] = useState<InspectionDatePreset>('week');

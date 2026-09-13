@@ -61,6 +61,8 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   continentalInspectEnabled?: boolean;
   /** Grants Inspect admin powers (CSV export, edit, all clients). Master is always admin. */
   continentalInspectAdmin?: boolean;
+  /** Grants the web Inspections menu (/inspections) in the employee workspace. */
+  webInspectionsEnabled?: boolean;
   /** Allows kiosk check-in even if the employee has no scheduled shift that day. */
   allowCheckInWithoutScheduledShift?: boolean;
   lastAction: string;

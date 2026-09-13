@@ -56,6 +56,7 @@ export function mapEmployeeDoc(
     kioskEnabled: employee.kioskEnabled === true,
     continentalInspectEnabled: employee.continentalInspectEnabled === true,
     continentalInspectAdmin: employee.continentalInspectAdmin === true,
+    webInspectionsEnabled: employee.webInspectionsEnabled === true,
     allowCheckInWithoutScheduledShift:
       employee.allowCheckInWithoutScheduledShift === true,
     lastAction: employee.lastAction ?? 'none',

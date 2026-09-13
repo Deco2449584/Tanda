@@ -139,6 +139,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
   const [kioskEnabled, setKioskEnabled] = useState(false);
   const [continentalInspectEnabled, setContinentalInspectEnabled] = useState(false);
   const [continentalInspectAdmin, setContinentalInspectAdmin] = useState(false);
+  const [webInspectionsEnabled, setWebInspectionsEnabled] = useState(false);
   const { roles: adminRoleTemplates } = useAdminRoleTemplates(
     isMaster && accessRole === 'admin',
   );
@@ -198,6 +199,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
     setKioskEnabled(employee.kioskEnabled === true);
     setContinentalInspectEnabled(employee.continentalInspectEnabled === true);
     setContinentalInspectAdmin(employee.continentalInspectAdmin === true);
+    setWebInspectionsEnabled(employee.webInspectionsEnabled === true);
     setEmployeeIdEdited(true);
     setPhotoFile(null);
     setPassportFile(null);
@@ -487,6 +489,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           continentalInspectAdmin: isWorkforce
             ? continentalInspectEnabled && continentalInspectAdmin
             : false,
+          webInspectionsEnabled: isWorkforce ? webInspectionsEnabled : false,
           photoUrl: isWorkforce ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
           visa: isWorkforce ? visa : undefined,
@@ -599,6 +602,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           continentalInspectAdmin: isWorkforce
             ? continentalInspectEnabled && continentalInspectAdmin
             : false,
+          webInspectionsEnabled: isWorkforce ? webInspectionsEnabled : false,
         });
 
         payload.lastTimestampServer = serverTimestamp();
@@ -1049,6 +1053,15 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             ) : null}
             {isWorkforce ? (
               <FormToggle
+                label="Web Inspections access"
+                description="Shows the Inspections menu in the web app so they can view and register cargo inspections."
+                checked={webInspectionsEnabled}
+                onChange={setWebInspectionsEnabled}
+                disabled={isBusy}
+              />
+            ) : null}
+            {isWorkforce ? (
+              <FormToggle
                 label="Continental Inspect access"
                 description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."
                 checked={continentalInspectEnabled}
@@ -1078,6 +1091,13 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         ) : null}
         {!isEditMode && isWorkforce ? (
           <>
+            <FormToggle
+              label="Web Inspections access"
+              description="Shows the Inspections menu in the web app so they can view and register cargo inspections."
+              checked={webInspectionsEnabled}
+              onChange={setWebInspectionsEnabled}
+              disabled={isBusy}
+            />
             <FormToggle
               label="Continental Inspect access"
               description="Lets this employee sign in to Continental Inspect and upload cargo inspection records."

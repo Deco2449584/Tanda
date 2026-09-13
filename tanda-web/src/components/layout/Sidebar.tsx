@@ -126,12 +126,18 @@ const kioskNavGroup: NavGroup = {
   items: [{ label: 'Kiosk check-in', href: '/kiosk', icon: MonitorSmartphone }],
 };
 
+const inspectionsNavGroup: NavGroup = {
+  title: 'Compliance',
+  items: [{ label: 'Inspections', href: '/inspections', icon: PackageSearch }],
+};
+
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
   const { user } = useAuthRole();
   const { canAccessModule } = useAdminAccess();
   const { employee } = useCurrentEmployee(role === 'empleado' ? user?.email : null);
   const kioskEnabled = employee?.kioskEnabled === true;
+  const webInspectionsEnabled = employee?.webInspectionsEnabled === true;
 
   const navGroups = useMemo(() => {
     if (isAdminAreaRole(role)) {
@@ -150,9 +156,10 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     }
     return [
       ...employeeNavGroups,
+      ...(webInspectionsEnabled ? [inspectionsNavGroup] : []),
       ...(kioskEnabled ? [kioskNavGroup] : []),
     ];
-  }, [role, kioskEnabled, canAccessModule]);
+  }, [role, kioskEnabled, webInspectionsEnabled, canAccessModule]);
 
   const roleLabel = getRoleLabel(role);
 
