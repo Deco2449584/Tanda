@@ -6,15 +6,16 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { InspectionDetailView } from '@/components/inspections/InspectionDetailView';
 import { PageContent } from '@/components/ui/PageContent';
+import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useAuthRole } from '@/hooks/useAuthRole';
-import { isAdminAreaRole } from '@/lib/auth/roles';
 import { useCargoInspections } from '@/providers/CargoInspectionsProvider';
 
 export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
-  const { user, role } = useAuthRole();
-  const isAdmin = isAdminAreaRole(role ?? 'empleado');
+  const { user } = useAuthRole();
+  const { canPerformAction } = useAdminAccess();
+  const canUpdate = canPerformAction('inspections', 'update');
   const { inspectionsById, loading, error, refresh } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);
@@ -58,7 +59,7 @@ export default function InspectionDetailPage() {
     <PageContent className="max-w-4xl">
       <InspectionDetailView
         inspection={inspection}
-        canEdit={isAdmin}
+        canEdit={canUpdate}
         editorEmail={user?.email ?? ''}
         onUpdated={() => void refresh()}
       />

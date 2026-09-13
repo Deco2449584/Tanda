@@ -5,7 +5,7 @@ import {
   getInspectionMediaJobs,
   subscribeInspectionMedia,
   type MediaJob,
-} from '@/lib/inspect/media-queue';
+} from '@/lib/inspections/media-queue';
 
 const EMPTY_JOBS: MediaJob[] = [];
 

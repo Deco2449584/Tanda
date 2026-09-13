@@ -172,7 +172,7 @@ export function InspectionDetailView({
           </p>
         </section>
 
-        {detailStatus.isNewInWarehouse && (
+        {canEdit && detailStatus.isNewInWarehouse ? (
           <button
             type="button"
             onClick={() => void handleMarkAsLoaded()}
@@ -186,13 +186,13 @@ export function InspectionDetailView({
             )}
             Mark as Loaded
           </button>
-        )}
+        ) : null}
 
-        {markError && (
+        {canEdit && markError ? (
           <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
             {markError}
           </p>
-        )}
+        ) : null}
 
         {exportError && (
           <p className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">

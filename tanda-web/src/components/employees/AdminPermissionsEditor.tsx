@@ -52,9 +52,21 @@ export function AdminPermissionsEditor({
   }
 
   function toggleModule(moduleKey: AdminModuleKey, enabled: boolean) {
+    const nextActions = { ...value.actions };
+
+    if (moduleKey === 'inspections') {
+      nextActions.inspections = {
+        ...(value.actions?.inspections ?? {}),
+        read: enabled,
+        ...(enabled
+          ? {}
+          : { create: false, update: false }),
+      };
+    }
+
     commit({
       modules: { ...value.modules, [moduleKey]: enabled },
-      actions: value.actions,
+      actions: nextActions,
       edit: value.edit,
     });
   }
@@ -69,8 +81,28 @@ export function AdminPermissionsEditor({
     } as Partial<Record<AdminActionName<M>, boolean>>;
     currentModule[action] = enabled;
 
+    let nextModules = value.modules;
+
+    if (moduleKey === 'inspections') {
+      const inspectionsActions = currentModule as Partial<
+        Record<'read' | 'create' | 'update', boolean>
+      >;
+
+      if (action === 'read') {
+        nextModules = { ...value.modules, inspections: enabled };
+        if (!enabled) {
+          inspectionsActions.create = false;
+          inspectionsActions.update = false;
+        }
+      } else if (enabled) {
+        // Create/edit imply view access.
+        inspectionsActions.read = true;
+        nextModules = { ...value.modules, inspections: true };
+      }
+    }
+
     commit({
-      modules: value.modules,
+      modules: nextModules,
       edit: value.edit,
       actions: {
         ...value.actions,
@@ -84,8 +116,13 @@ export function AdminPermissionsEditor({
       ADMIN_MODULE_ACTIONS[moduleKey].map((action) => [action, enabled]),
     );
 
+    const nextModules =
+      moduleKey === 'inspections'
+        ? { ...value.modules, inspections: enabled }
+        : value.modules;
+
     commit({
-      modules: value.modules,
+      modules: nextModules,
       edit: value.edit,
       actions: {
         ...value.actions,

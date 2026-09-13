@@ -11,7 +11,7 @@ import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { resolveUnitType } from '@/lib/inspections/cargo-unit-type';
 import { normalizeUldId } from '@/lib/inspections/normalize-uld-id';
-import type { RegistrationGeoSnapshot } from '@/lib/inspect/capture-location';
+import type { RegistrationGeoSnapshot } from '@/lib/inspections/capture-location';
 import type { CargoInspectionCreateInput } from '@/lib/types/cargo-inspection';
 
 export interface CreateCargoInspectionResult {

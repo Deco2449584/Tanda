@@ -50,6 +50,11 @@ export const ADMIN_ACTION_LABELS: {
     update: 'Edit announcements',
     delete: 'Delete announcements',
   },
+  inspections: {
+    read: 'View inspections',
+    create: 'Create inspections',
+    update: 'Edit inspections',
+  },
   issueReports: {
     manage: 'Update status and admin notes',
     update: 'Edit issue details',
@@ -93,6 +98,7 @@ function applyLegacyActionFallback(
   moduleKey: AdminEditModuleKey,
   moduleActions: Record<string, boolean>,
   rawModule: Partial<Record<string, boolean>>,
+  moduleEnabled: boolean,
 ) {
   if (moduleKey === 'leaveRequests' || moduleKey === 'issueReports' || moduleKey === 'courses') {
     if (moduleActions.manage === true) {
@@ -120,6 +126,12 @@ function applyLegacyActionFallback(
         moduleActions[key] = true;
       }
     }
+  }
+
+  // Inspections: module access historically meant view-only. Keep read on when
+  // the module is enabled and read was never stored explicitly.
+  if (moduleKey === 'inspections' && moduleEnabled && rawModule.read === undefined) {
+    moduleActions.read = true;
   }
 }
 
@@ -149,7 +161,7 @@ function resolveModuleActions(
       }
     }
 
-    applyLegacyActionFallback(moduleKey, moduleActions, rawModule);
+    applyLegacyActionFallback(moduleKey, moduleActions, rawModule, moduleEnabled);
 
     resolved[moduleKey] = moduleActions;
   }
@@ -164,7 +176,11 @@ function deriveLegacyEdit(
   return Object.fromEntries(
     ADMIN_EDIT_MODULE_KEYS.map((moduleKey) => {
       if (!modules[moduleKey]) return [moduleKey, false];
-      const hasAny = ADMIN_MODULE_ACTIONS[moduleKey].some(
+      const writeActions =
+        moduleKey === 'inspections'
+          ? (['create', 'update'] as const)
+          : ADMIN_MODULE_ACTIONS[moduleKey];
+      const hasAny = writeActions.some(
         (action) =>
           (actions[moduleKey] as Record<string, boolean>)[action] === true,
       );

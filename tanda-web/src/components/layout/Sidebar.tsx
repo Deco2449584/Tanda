@@ -18,7 +18,6 @@ import {
   Megaphone,
   MonitorSmartphone,
   PackageSearch,
-  ScanLine,
   Settings,
   ShieldCheck,
   Users,
@@ -67,7 +66,6 @@ const adminNavGroups: NavGroup[] = [
     title: 'Compliance',
     items: [
       { label: 'Inspections', href: '/inspections', icon: PackageSearch },
-      { label: 'Inspect app', href: '/inspect', icon: ScanLine },
     ],
   },
   {
@@ -128,18 +126,12 @@ const kioskNavGroup: NavGroup = {
   items: [{ label: 'Kiosk check-in', href: '/kiosk', icon: MonitorSmartphone }],
 };
 
-const inspectNavGroup: NavGroup = {
-  title: 'Compliance',
-  items: [{ label: 'Inspect app', href: '/inspect', icon: ScanLine }],
-};
-
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname() ?? '';
   const { user } = useAuthRole();
   const { canAccessModule } = useAdminAccess();
   const { employee } = useCurrentEmployee(role === 'empleado' ? user?.email : null);
   const kioskEnabled = employee?.kioskEnabled === true;
-  const inspectEnabled = employee?.continentalInspectEnabled === true;
 
   const navGroups = useMemo(() => {
     if (isAdminAreaRole(role)) {
@@ -158,10 +150,9 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     }
     return [
       ...employeeNavGroups,
-      ...(inspectEnabled ? [inspectNavGroup] : []),
       ...(kioskEnabled ? [kioskNavGroup] : []),
     ];
-  }, [role, kioskEnabled, inspectEnabled, canAccessModule]);
+  }, [role, kioskEnabled, canAccessModule]);
 
   const roleLabel = getRoleLabel(role);
 

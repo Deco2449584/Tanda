@@ -53,8 +53,8 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Live so records created on /inspect (and evidence URLs appended by the
-  // background upload queue) show up without a manual refresh.
+  // Live so new records and evidence URLs appended by the background media
+  // queue appear without a manual refresh.
   useEffect(() => {
     if (!db) return;
 

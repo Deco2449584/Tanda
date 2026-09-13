@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { loadAdminAccessFromRequest } from '@/lib/auth/load-admin-access';
+import { canPerformAction } from '@/lib/auth/admin-permissions';
 import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { listAllCourses } from '@/lib/courses/server/courses-service';
@@ -24,11 +25,16 @@ export async function GET(request: Request) {
     const start = parseDateParam(searchParams.get('start'));
     const end = parseDateParam(searchParams.get('end'));
     const access = authContext.access.modules;
+    const canReadInspections = canPerformAction(
+      authContext.access,
+      'inspections',
+      'read',
+    );
 
     const [coursesBlock, issuesBlock, inspectionsBlock] = await Promise.all([
       access.courses ? buildCoursesMetrics() : Promise.resolve(null),
       access.issueReports ? buildIssuesMetrics() : Promise.resolve(null),
-      access.inspections
+      access.inspections && canReadInspections
         ? buildInspectionsMetrics(start, end)
         : Promise.resolve(null),
     ]);

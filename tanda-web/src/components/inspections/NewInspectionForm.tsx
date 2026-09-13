@@ -11,15 +11,16 @@ import {
   Nut,
   TriangleAlert,
 } from 'lucide-react';
-import { EvidencePhotosField } from '@/components/inspect/EvidencePhotosField';
-import { EvidenceVideoField } from '@/components/inspect/EvidenceVideoField';
+import { EvidencePhotosField } from '@/components/inspections/EvidencePhotosField';
+import { EvidenceVideoField } from '@/components/inspections/EvidenceVideoField';
 import {
   FieldLabel,
   FormSectionCard,
   OptionGroup,
-} from '@/components/inspect/FormSectionCard';
+} from '@/components/inspections/FormSectionCard';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+import { useAuthRole } from '@/hooks/useAuthRole';
 import {
   getUldKindLabel,
   getUnitTypeHint,
@@ -36,14 +37,14 @@ import { normalizeUldId } from '@/lib/inspections/normalize-uld-id';
 import {
   captureRegistrationLocation,
   RegistrationLocationError,
-} from '@/lib/inspect/capture-location';
-import { enqueueInspectionMedia } from '@/lib/inspect/media-queue';
+} from '@/lib/inspections/capture-location';
+import { enqueueInspectionMedia } from '@/lib/inspections/media-queue';
 import {
   CONSERVATION_TYPES,
   type CargoUnitType,
   type ConservationType,
 } from '@/lib/types/cargo-inspection';
-import { useInspectSession } from '@/providers/InspectSessionProvider';
+import { useLocations } from '@/providers/LocationsProvider';
 
 const CONSERVATION_OPTIONS = CONSERVATION_TYPES.map((value) => ({
   value,
@@ -63,8 +64,9 @@ function parseNonNegativeNumber(value: string): number {
 
 export function NewInspectionForm() {
   const router = useRouter();
-  const { user, employee, clients, clientsLoading, clientsError } =
-    useInspectSession();
+  const { user } = useAuthRole();
+  const { activeLocations, loading: clientsLoading, error: locationsError } =
+    useLocations();
 
   const [uldId, setUldId] = useState('');
   const [manualUnitType, setManualUnitType] =
@@ -88,6 +90,9 @@ export function NewInspectionForm() {
   const [saving, setSaving] = useState(false);
   const [savingMessage, setSavingMessage] = useState('');
 
+  const clients = activeLocations;
+  const clientsError = locationsError;
+
   const inferredUnitType = useMemo(
     () => inferUnitTypeFromUldId(uldId),
     [uldId],
@@ -104,12 +109,15 @@ export function NewInspectionForm() {
   const effectiveClient = singleClient ?? selectedClient;
 
   function validate(): string | null {
+    if (!user?.uid) {
+      return 'You must be signed in to register cargo.';
+    }
     if (requiresUldId(unitType) && !normalizeUldId(uldId)) {
-      return 'Enter or scan the ULD ID (e.g. AKE 12345 CX).';
+      return 'Enter the ULD ID (e.g. AKE 12345 CX).';
     }
     if (!effectiveClient) {
       return clients.length === 0
-        ? 'No client assigned — contact an administrator.'
+        ? 'No active clients found. Add a client in Settings first.'
         : 'Select the client this cargo belongs to.';
     }
     if (!awbNumber.trim()) {
@@ -128,7 +136,7 @@ export function NewInspectionForm() {
   }
 
   async function handleSubmit() {
-    if (saving) return;
+    if (saving || !user?.uid) return;
 
     const validationError = validate();
     if (validationError) {
@@ -164,7 +172,7 @@ export function NewInspectionForm() {
       setSavingMessage('Saving inspection…');
       const created = await createCargoInspectionRecord(
         user.uid,
-        employee?.email || user.email || '',
+        user.email || '',
         {
           unitType,
           uldId: normalizedUld,
@@ -195,7 +203,7 @@ export function NewInspectionForm() {
         videos,
       });
 
-      router.replace('/inspect');
+      router.replace('/inspections');
     } catch (submitError) {
       if (submitError instanceof RegistrationLocationError) {
         setError(submitError.message);
@@ -211,47 +219,46 @@ export function NewInspectionForm() {
 
   return (
     <form
-      className="space-y-4 px-4 pb-8"
+      className="mx-auto max-w-3xl space-y-4 pb-8"
       onSubmit={(event) => {
         event.preventDefault();
         void handleSubmit();
       }}
     >
-      <section className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.14] via-surface-raised to-surface-raised p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-          Warehouse intake
-        </p>
-        <h2 className="mt-1.5 font-display text-xl font-normal tracking-wide text-foreground">
-          Register cargo
-        </h2>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-          Capture identification, commodity details, and evidence before the unit
-          moves to dispatch.
-        </p>
-        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-base/60 px-2.5 py-1 text-[11px] font-medium text-subtle">
-          <MapPin className="h-3 w-3" aria-hidden />
-          GPS is captured when you save
-        </p>
-      </section>
+      <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-raised px-2.5 py-1 text-[11px] font-medium text-subtle">
+        <MapPin className="h-3 w-3" aria-hidden />
+        GPS is captured when you save
+      </p>
 
       <FormSectionCard
         icon={Barcode}
         title="Identification"
         subtitle="ULD code and air waybill"
       >
-        <FieldLabel
-          label={requiresUldId(unitType) ? 'ULD ID' : 'ULD ID (optional)'}
-        >
-          <Input
-            value={uldId}
-            onChange={(event) => setUldId(event.target.value)}
-            placeholder={
-              requiresUldId(unitType) ? 'AKE 12345 CX' : 'Optional reference'
-            }
-            autoCapitalize="characters"
-            spellCheck={false}
-          />
-        </FieldLabel>
+        <div className="grid gap-4 md:grid-cols-2">
+          <FieldLabel
+            label={requiresUldId(unitType) ? 'ULD ID' : 'ULD ID (optional)'}
+          >
+            <Input
+              value={uldId}
+              onChange={(event) => setUldId(event.target.value)}
+              placeholder={
+                requiresUldId(unitType) ? 'AKE 12345 CX' : 'Optional reference'
+              }
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+          </FieldLabel>
+
+          <FieldLabel label="Air waybill (AWB)">
+            <Input
+              value={awbNumber}
+              onChange={(event) => setAwbNumber(event.target.value)}
+              placeholder="123-45678901"
+              inputMode="numeric"
+            />
+          </FieldLabel>
+        </div>
 
         {inferredUnitType ? (
           <div className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
@@ -272,38 +279,33 @@ export function NewInspectionForm() {
           />
         )}
 
-        <FieldLabel label="Air waybill (AWB)">
-          <Input
-            value={awbNumber}
-            onChange={(event) => setAwbNumber(event.target.value)}
-            placeholder="123-45678901"
-            inputMode="numeric"
-          />
-        </FieldLabel>
-
         {clientsLoading ? (
-          <p className="text-xs text-subtle">Loading assigned clients…</p>
+          <p className="text-xs text-subtle">Loading clients…</p>
         ) : clientsError ? (
           <p className="text-xs text-danger">{clientsError}</p>
         ) : clients.length === 0 ? (
           <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-            No client assigned — ask an administrator to link your account to a
-            client site.
+            No active clients found. Add a client in Settings first.
           </p>
         ) : singleClient ? (
           <FieldLabel label="Client">
             <Input value={singleClient.name} readOnly disabled />
           </FieldLabel>
         ) : (
-          <OptionGroup
-            label="Client"
-            options={clients.map((client) => ({
-              value: client.id,
-              label: client.name,
-            }))}
-            value={clientLocationId}
-            onChange={setClientLocationId}
-          />
+          <FieldLabel label="Client">
+            <select
+              value={clientLocationId}
+              onChange={(event) => setClientLocationId(event.target.value)}
+              className="h-10 w-full rounded-lg border border-border-strong bg-surface-base px-3 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">Select a client…</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+          </FieldLabel>
         )}
       </FormSectionCard>
 
@@ -327,7 +329,7 @@ export function NewInspectionForm() {
           />
         </FieldLabel>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <FieldLabel label="Weight (kg)">
             <Input
               value={weightKg}
@@ -344,16 +346,15 @@ export function NewInspectionForm() {
               inputMode="numeric"
             />
           </FieldLabel>
+          <FieldLabel label="Temperature (°C)">
+            <Input
+              value={temperature}
+              onChange={(event) => setTemperature(event.target.value)}
+              placeholder="Optional"
+              inputMode="decimal"
+            />
+          </FieldLabel>
         </div>
-
-        <FieldLabel label="Temperature (°C) — optional">
-          <Input
-            value={temperature}
-            onChange={(event) => setTemperature(event.target.value)}
-            placeholder="e.g. -18 or 4"
-            inputMode="decimal"
-          />
-        </FieldLabel>
 
         <div className="rounded-lg border border-border-strong bg-surface-base p-3">
           <div className="flex items-start justify-between gap-3">
@@ -400,28 +401,30 @@ export function NewInspectionForm() {
         title="Outbound transport"
         subtitle="Optional — truck, driver, and carrier"
       >
-        <FieldLabel label="Exit vehicle plate">
-          <Input
-            value={exitVehiclePlate}
-            onChange={(event) => setExitVehiclePlate(event.target.value)}
-            placeholder="e.g. ABC-123"
-            autoCapitalize="characters"
-          />
-        </FieldLabel>
-        <FieldLabel label="Driver name">
-          <Input
-            value={driverName}
-            onChange={(event) => setDriverName(event.target.value)}
-            placeholder="Driver full name"
-          />
-        </FieldLabel>
-        <FieldLabel label="Transport company">
-          <Input
-            value={transportCompany}
-            onChange={(event) => setTransportCompany(event.target.value)}
-            placeholder="Carrier / haulage company"
-          />
-        </FieldLabel>
+        <div className="grid gap-4 md:grid-cols-3">
+          <FieldLabel label="Exit vehicle plate">
+            <Input
+              value={exitVehiclePlate}
+              onChange={(event) => setExitVehiclePlate(event.target.value)}
+              placeholder="e.g. ABC-123"
+              autoCapitalize="characters"
+            />
+          </FieldLabel>
+          <FieldLabel label="Driver name">
+            <Input
+              value={driverName}
+              onChange={(event) => setDriverName(event.target.value)}
+              placeholder="Driver full name"
+            />
+          </FieldLabel>
+          <FieldLabel label="Transport company">
+            <Input
+              value={transportCompany}
+              onChange={(event) => setTransportCompany(event.target.value)}
+              placeholder="Carrier / haulage company"
+            />
+          </FieldLabel>
+        </div>
       </FormSectionCard>
 
       <FormSectionCard
@@ -453,13 +456,13 @@ export function NewInspectionForm() {
       <button
         type="submit"
         disabled={saving}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-bold tracking-wide text-white transition hover:bg-primary/90 disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-bold tracking-wide text-white transition hover:bg-primary/90 disabled:opacity-60 md:w-auto md:min-w-[220px]"
       >
         <Check className="h-4 w-4" aria-hidden />
         {saving ? savingMessage || 'Saving…' : 'Save inspection'}
       </button>
 
-      <p className="text-center text-xs text-subtle">
+      <p className="text-xs text-subtle md:text-center">
         The inspection saves right away. Photos and videos keep uploading in the
         background — keep this tab open until the progress bar finishes.
       </p>
