@@ -1,13 +1,20 @@
-import { formatRecordDate, formatRecordTime } from '@/lib/attendance/format';
+import {
+  formatRecordDate,
+  formatRecordTime,
+} from '@/lib/attendance/format';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Timestamp } from 'firebase/firestore';
 
-export type AttendanceProvenanceKind = 'none' | 'added' | 'edited';
+export type AttendanceProvenanceKind = 'none' | 'added' | 'edited' | 'scan';
+
+export type AttendanceScanChannel = 'qr' | 'nfc' | 'scan';
 
 export interface AttendanceProvenance {
   kind: AttendanceProvenanceKind;
   wasManuallyAdded: boolean;
   wasEdited: boolean;
+  wasScan: boolean;
+  scanChannel?: AttendanceScanChannel;
   createdByEmail?: string;
   createdAtLabel?: string;
   lastEditedByEmail?: string;
@@ -17,34 +24,62 @@ export interface AttendanceProvenance {
   tooltip: string;
 }
 
-function isManualSource(source: string | undefined): boolean {
+export function isAdminManualSource(source: string | undefined): boolean {
   if (!source) return false;
   return (
     source === 'web-admin-manual' ||
-    source === 'web-admin-manual-checkout' ||
-    source.startsWith('web-admin')
+    source === 'web-admin-manual-checkout'
   );
 }
 
-function formatProvenanceTimestamp(value: Timestamp | null | undefined): string | undefined {
+export function resolveAttendanceScanChannel(
+  source: string | undefined,
+): AttendanceScanChannel | null {
+  if (!source) return null;
+  if (source === 'web-scan-qr') return 'qr';
+  if (source === 'web-scan-nfc') return 'nfc';
+  if (source === 'web-scan') return 'scan';
+  return null;
+}
+
+export function isScanAttendanceSource(source: string | undefined): boolean {
+  return resolveAttendanceScanChannel(source) !== null;
+}
+
+function formatProvenanceTimestamp(
+  value: Timestamp | null | undefined,
+): string | undefined {
   if (!value) return undefined;
   return `${formatRecordDate(value)} ${formatRecordTime(value)}`;
 }
 
-export function getAttendanceProvenance(record: AttendanceRecord): AttendanceProvenance {
-  const wasManuallyAdded =
-    isManualSource(record.source) || Boolean(record.createdByEmail);
+function scanLabels(channel: AttendanceScanChannel): {
+  badge: string;
+  kind: string;
+} {
+  if (channel === 'qr') return { badge: 'QR', kind: 'QR scan' };
+  if (channel === 'nfc') return { badge: 'NFC', kind: 'NFC tap' };
+  return { badge: 'Scan', kind: 'QR / NFC scan' };
+}
+
+export function getAttendanceProvenance(
+  record: AttendanceRecord,
+): AttendanceProvenance {
+  const scanChannel = resolveAttendanceScanChannel(record.source);
+  const wasScan = scanChannel !== null;
+  const wasManuallyAdded = isAdminManualSource(record.source);
   const wasEdited = Boolean(record.lastEditedByEmail);
   const createdByEmail = record.createdByEmail;
   const lastEditedByEmail = record.lastEditedByEmail;
   const createdAtLabel = formatProvenanceTimestamp(record.createdAt);
   const lastEditedAtLabel = formatProvenanceTimestamp(record.lastEditedAt);
 
-  if (!wasManuallyAdded && !wasEdited) {
+  if (!wasManuallyAdded && !wasEdited && !wasScan) {
     return {
       kind: 'none',
       wasManuallyAdded: false,
       wasEdited: false,
+      wasScan: false,
       badgeLabel: '',
       shortLabel: '',
       tooltip: '',
@@ -54,15 +89,19 @@ export function getAttendanceProvenance(record: AttendanceRecord): AttendancePro
   if (wasEdited) {
     const editor = lastEditedByEmail ?? 'an administrator';
     const editedWhen = lastEditedAtLabel ? ` on ${lastEditedAtLabel}` : '';
-    const origin =
-      wasManuallyAdded && createdByEmail
-        ? ` Originally added by ${createdByEmail}${createdAtLabel ? ` on ${createdAtLabel}` : ''}.`
-        : '';
+    let origin = '';
+    if (wasManuallyAdded && createdByEmail) {
+      origin = ` Originally added by ${createdByEmail}${createdAtLabel ? ` on ${createdAtLabel}` : ''}.`;
+    } else if (wasScan && scanChannel) {
+      origin = ` Originally recorded via ${scanLabels(scanChannel).kind}.`;
+    }
 
     return {
       kind: 'edited',
       wasManuallyAdded,
       wasEdited: true,
+      wasScan,
+      scanChannel: scanChannel ?? undefined,
       createdByEmail,
       createdAtLabel,
       lastEditedByEmail,
@@ -73,15 +112,36 @@ export function getAttendanceProvenance(record: AttendanceRecord): AttendancePro
     };
   }
 
+  if (wasScan && scanChannel) {
+    const labels = scanLabels(scanChannel);
+    const when = createdAtLabel ? ` on ${createdAtLabel}` : '';
+    const who = createdByEmail ? ` · ${createdByEmail}` : '';
+    return {
+      kind: 'scan',
+      wasManuallyAdded: false,
+      wasEdited: false,
+      wasScan: true,
+      scanChannel,
+      createdByEmail,
+      createdAtLabel,
+      badgeLabel: labels.badge,
+      shortLabel: `${labels.kind}${who}${when}`,
+      tooltip: `${labels.kind} check-in${who}${when}.`,
+    };
+  }
+
   const creator = createdByEmail ?? 'an administrator';
   const addedWhen = createdAtLabel ? ` on ${createdAtLabel}` : '';
   const manualKind =
-    record.source === 'web-admin-manual-checkout' ? 'Manual check-out' : 'Manual entry';
+    record.source === 'web-admin-manual-checkout'
+      ? 'Manual check-out'
+      : 'Manual entry';
 
   return {
     kind: 'added',
     wasManuallyAdded: true,
     wasEdited: false,
+    wasScan: false,
     createdByEmail,
     createdAtLabel,
     badgeLabel: 'Added',
@@ -96,7 +156,7 @@ export function hasAttendanceProvenance(record: AttendanceRecord): boolean {
 
 /** @deprecated Use hasAttendanceProvenance */
 export function isManualAttendanceRecord(record: AttendanceRecord): boolean {
-  return hasAttendanceProvenance(record);
+  return getAttendanceProvenance(record).wasManuallyAdded;
 }
 
 /** @deprecated Use getAttendanceProvenance(record).shortLabel */
@@ -115,7 +175,8 @@ export function formatAttendanceProvenanceForExport(record: AttendanceRecord): {
   const provenance = getAttendanceProvenance(record);
 
   return {
-    manualFlag: provenance.kind === 'none' ? 'No' : 'Yes',
+    manualFlag:
+      provenance.wasManuallyAdded || provenance.wasEdited ? 'Yes' : 'No',
     addedBy: provenance.createdByEmail ?? '',
     addedAt: provenance.createdAtLabel ?? '',
     editedBy: provenance.lastEditedByEmail ?? '',

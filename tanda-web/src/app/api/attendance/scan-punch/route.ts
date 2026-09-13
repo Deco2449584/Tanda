@@ -4,6 +4,7 @@ import {
   ScanPunchError,
 } from '@/lib/attendance/server/scan-punch-service';
 import { loadEmployeeContext } from '@/lib/auth/load-employee-context';
+import { parseScanPunchVia } from '@/lib/attendance/scan-punch-token';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       token?: unknown;
+      via?: unknown;
       latitude?: unknown;
       longitude?: unknown;
       geoAccuracy?: unknown;
@@ -25,9 +27,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Scan token is required.' }, { status: 400 });
     }
 
+    const via = parseScanPunchVia(
+      typeof body.via === 'string' ? body.via : undefined,
+    );
+
     const result = await recordScanPunch({
       employee,
       token,
+      via,
       latitude: typeof body.latitude === 'number' ? body.latitude : undefined,
       longitude: typeof body.longitude === 'number' ? body.longitude : undefined,
       geoAccuracy:

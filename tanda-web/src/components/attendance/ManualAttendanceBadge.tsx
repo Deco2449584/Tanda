@@ -16,18 +16,19 @@ export function AttendanceProvenanceBadge({
   const provenance = getAttendanceProvenance(record);
   if (provenance.kind === 'none') return null;
 
-  const isEdited = provenance.kind === 'edited';
+  const tone =
+    provenance.kind === 'edited'
+      ? 'bg-amber-500/15 text-amber-300'
+      : provenance.kind === 'scan'
+        ? 'bg-violet-500/15 text-violet-300'
+        : 'bg-sky-500/15 text-sky-300';
 
   return (
     <span
       title={provenance.tooltip}
       className={`inline-flex rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${
         compact ? 'text-[9px]' : 'text-[10px]'
-      } ${
-        isEdited
-          ? 'bg-amber-500/15 text-amber-300'
-          : 'bg-sky-500/15 text-sky-300'
-      }`}
+      } ${tone}`}
     >
       {provenance.badgeLabel}
     </span>
@@ -51,13 +52,18 @@ export function AttendanceProvenanceNote({
   const text = employeeView
     ? provenance.kind === 'edited'
       ? `Adjusted by an administrator${provenance.lastEditedAtLabel ? ` · ${provenance.lastEditedAtLabel}` : ''}`
-      : `Added manually by an administrator${provenance.createdAtLabel ? ` · ${provenance.createdAtLabel}` : ''}`
+      : provenance.kind === 'scan'
+        ? `${provenance.badgeLabel} clock-in${provenance.createdAtLabel ? ` · ${provenance.createdAtLabel}` : ''}`
+        : `Added manually by an administrator${provenance.createdAtLabel ? ` · ${provenance.createdAtLabel}` : ''}`
     : provenance.shortLabel;
+
+  const color =
+    provenance.kind === 'scan' ? 'text-violet-300/90' : 'text-amber-300/90';
 
   return (
     <p
       title={provenance.tooltip}
-      className={`leading-snug text-amber-300/90 ${
+      className={`leading-snug ${color} ${
         compact ? 'mt-1 text-[10px]' : 'text-xs'
       }`}
     >
@@ -71,21 +77,36 @@ export function AttendanceProvenancePanel({ record }: { record: AttendanceRecord
 
   const provenance = getAttendanceProvenance(record);
   const isEdited = provenance.kind === 'edited';
+  const isScan = provenance.kind === 'scan';
 
   return (
     <div
       className={`mb-3 rounded-lg border px-3 py-3 ${
         isEdited
           ? 'border-amber-500/30 bg-amber-950/20'
-          : 'border-sky-500/30 bg-sky-950/20'
+          : isScan
+            ? 'border-violet-500/30 bg-violet-950/20'
+            : 'border-sky-500/30 bg-sky-950/20'
       }`}
     >
       <p
         className={`text-xs font-semibold uppercase tracking-wide ${
-          isEdited ? 'text-amber-300' : 'text-sky-300'
+          isEdited
+            ? 'text-amber-300'
+            : isScan
+              ? 'text-violet-300'
+              : 'text-sky-300'
         }`}
       >
-        {isEdited ? 'Administrator edit' : 'Manual entry'}
+        {isEdited
+          ? 'Administrator edit'
+          : isScan
+            ? provenance.scanChannel === 'nfc'
+              ? 'NFC check-in'
+              : provenance.scanChannel === 'qr'
+                ? 'QR check-in'
+                : 'QR / NFC check-in'
+            : 'Manual entry'}
       </p>
       <p className="mt-1 text-sm text-foreground">{provenance.shortLabel}</p>
       {provenance.wasManuallyAdded && provenance.wasEdited ? (

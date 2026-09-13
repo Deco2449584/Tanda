@@ -15,7 +15,8 @@ import {
   submitScanPunchRequest,
   type ScanPunchResponse,
 } from '@/lib/attendance/scan-punch-api';
-import { captureCurrentPosition } from '@/lib/geo/capture-position';
+import type { ScanPunchVia } from '@/lib/attendance/scan-punch-token';
+import { captureScanPunchPosition } from '@/lib/geo/capture-position';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
@@ -31,9 +32,10 @@ const RECENT_PUNCH_MS = 8_000;
 
 interface ScanPunchPanelProps {
   token: string;
+  via?: ScanPunchVia;
 }
 
-export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
+export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
   const router = useRouter();
   const { user, role, loading: authLoading } = useAuthRole();
   const [phase, setPhase] = useState<PunchPhase>('auth');
@@ -55,9 +57,11 @@ export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
     let request = pendingPunches.get(lockKey);
     if (!request) {
       request = (async () => {
-        const geo = await captureCurrentPosition();
+        // Fast geo (max ~1.5s) — do not block punch on high-accuracy GPS.
+        const geo = await captureScanPunchPosition();
         return submitScanPunchRequest({
           token,
+          via,
           latitude: geo?.latitude,
           longitude: geo?.longitude,
           geoAccuracy: geo?.accuracy,
@@ -79,22 +83,26 @@ export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
     } finally {
       pendingPunches.delete(lockKey);
     }
-  }, [token]);
+  }, [token, via]);
 
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
       setPhase('auth');
-      const next = encodeURIComponent(`/punch/s/${token}`);
+      const nextPath =
+        via === 'nfc'
+          ? `/punch/s/${token}?via=nfc`
+          : `/punch/s/${token}?via=qr`;
+      const next = encodeURIComponent(nextPath);
       router.replace(`/login?next=${next}`);
       return;
     }
 
     if (startedRef.current) return;
     startedRef.current = true;
-    void runPunch(`${user.uid}:${token}`);
-  }, [authLoading, router, runPunch, token, user]);
+    void runPunch(`${user.uid}:${token}:${via}`);
+  }, [authLoading, router, runPunch, token, user, via]);
 
   const homeHref = role ? getHomeRouteForRole(role) : '/employee-dashboard';
 
@@ -117,7 +125,11 @@ export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
           <StatusBlock
             icon={<Loader2 className="h-8 w-8 animate-spin text-primary" />}
             title="Recording punch…"
-            body="Using your signed-in account and this site’s scan link."
+            body={
+              via === 'nfc'
+                ? 'NFC tag detected — recording your clock action…'
+                : 'QR scan detected — recording your clock action…'
+            }
           />
         ) : null}
 
@@ -129,6 +141,9 @@ export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
                 {formatAttendanceType(result.actionType)} recorded
               </p>
               <p className="mt-1 text-sm text-muted">{result.employeeName}</p>
+              <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-violet-300">
+                via {via === 'nfc' ? 'NFC' : 'QR'}
+              </p>
             </div>
             <p className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-base/60 px-3 py-2 text-xs text-muted">
               <MapPin className="h-3.5 w-3.5 text-primary" />
@@ -158,7 +173,7 @@ export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
               <button
                 type="button"
                 onClick={() => {
-                  const lockKey = user ? `${user.uid}:${token}` : token;
+                  const lockKey = user ? `${user.uid}:${token}:${via}` : token;
                   recentPunchResults.delete(lockKey);
                   pendingPunches.delete(lockKey);
                   startedRef.current = true;
@@ -169,7 +184,7 @@ export function ScanPunchPanel({ token }: ScanPunchPanelProps) {
                 Try again
               </button>
               <Link
-                href={`/login?next=${encodeURIComponent(`/punch/s/${token}`)}`}
+                href={`/login?next=${encodeURIComponent(`/punch/s/${token}?via=${via}`)}`}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-muted hover:text-foreground"
               >
                 <LogIn className="h-4 w-4" />

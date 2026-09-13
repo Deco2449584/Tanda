@@ -52,6 +52,8 @@ export interface ScanPunchResult {
 export async function recordScanPunch(input: {
   employee: EmployeeContext;
   token: string;
+  /** How the staff opened the link: QR printout vs NFC tag. */
+  via?: 'qr' | 'nfc';
   latitude?: number;
   longitude?: number;
   geoAccuracy?: number;
@@ -61,6 +63,9 @@ export async function recordScanPunch(input: {
   if (!token) {
     throw new ScanPunchError('Scan token is required.', 400);
   }
+
+  const scanSource =
+    input.via === 'nfc' ? 'web-scan-nfc' : 'web-scan-qr';
 
   const location = await requireScanLocation(token);
   const employeeDoc = await requireAuthorizedSessionEmployee(
@@ -123,6 +128,7 @@ export async function recordScanPunch(input: {
           metadata: {
             locationId: location.id,
             scanTokenPrefix: token.slice(0, 8),
+            via: input.via ?? 'qr',
           },
         });
         throw new ScanPunchError(violation.message, 403);
@@ -141,8 +147,11 @@ export async function recordScanPunch(input: {
       }
     }
 
+    // Keep geo on the critical path light — reverse geocode after write.
     const geoFields: Record<string, unknown> = {};
-    if (isValidLatitude(input.latitude) && isValidLongitude(input.longitude)) {
+    const hasGeo =
+      isValidLatitude(input.latitude) && isValidLongitude(input.longitude);
+    if (hasGeo) {
       geoFields.latitude = input.latitude;
       geoFields.longitude = input.longitude;
       if (
@@ -153,11 +162,6 @@ export async function recordScanPunch(input: {
       }
       if (typeof input.geoCapturedAt === 'string' && input.geoCapturedAt.trim()) {
         geoFields.geoCapturedAt = input.geoCapturedAt.trim();
-      }
-
-      const address = await reverseGeocode(input.latitude, input.longitude);
-      if (address) {
-        geoFields.geoAddress = address;
       }
     }
 
@@ -192,7 +196,7 @@ export async function recordScanPunch(input: {
           employeeEmailSnapshot: employeeEmail,
           type: actionType,
           timestampServer: FieldValue.serverTimestamp(),
-          source: 'web-scan',
+          source: scanSource,
           photoCaptured: false,
           photoUrl: '',
           locationId: location.id,
@@ -212,6 +216,16 @@ export async function recordScanPunch(input: {
         return new Date().toISOString();
       });
 
+      // Enrich address after the punch succeeds (do not block the response).
+      if (hasGeo) {
+        void reverseGeocode(input.latitude!, input.longitude!)
+          .then(async (address) => {
+            if (!address) return;
+            await attendanceRef.update({ geoAddress: address });
+          })
+          .catch(() => undefined);
+      }
+
       break;
     } catch (error) {
       if (error instanceof ScanPunchConflictError) {
@@ -227,14 +241,20 @@ export async function recordScanPunch(input: {
     }
   }
 
+  // Late alerts + presence reconcile after response path is prepared —
+  // still awaited so presence stays consistent, but geocode no longer blocks.
   if (actionType === 'check_in') {
-    await evaluateLateCheckIn({
+    void evaluateLateCheckIn({
       employeeId: employeeCode,
       checkInAt: new Date(recordedAt),
+    }).catch((error) => {
+      console.error('scan-punch evaluateLateCheckIn', error);
     });
   }
 
-  await reconcileEmployeePresence(employeeDocId, employeeCode);
+  void reconcileEmployeePresence(employeeDocId, employeeCode).catch((error) => {
+    console.error('scan-punch reconcileEmployeePresence', error);
+  });
 
   return {
     employeeDocId,

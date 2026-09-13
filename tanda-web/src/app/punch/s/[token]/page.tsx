@@ -1,12 +1,19 @@
 import { ScanPunchPanel } from '@/components/attendance/ScanPunchPanel';
+import { parseScanPunchVia } from '@/lib/attendance/scan-punch-token';
 
 interface PunchScanPageProps {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ via?: string }>;
 }
 
-export default async function PunchScanPage({ params }: PunchScanPageProps) {
+export default async function PunchScanPage({
+  params,
+  searchParams,
+}: PunchScanPageProps) {
   const { token } = await params;
+  const query = await searchParams;
   const cleanToken = decodeURIComponent(token ?? '').trim();
+  const via = parseScanPunchVia(query.via);
 
   if (!cleanToken) {
     return (
@@ -16,5 +23,5 @@ export default async function PunchScanPage({ params }: PunchScanPageProps) {
     );
   }
 
-  return <ScanPunchPanel token={cleanToken} />;
+  return <ScanPunchPanel token={cleanToken} via={via} />;
 }

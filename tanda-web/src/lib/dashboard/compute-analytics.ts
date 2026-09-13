@@ -682,8 +682,10 @@ export function computeDashboardAnalytics(
 
 function formatPunchSource(source: string | undefined): string {
   const value = source?.trim().toLowerCase() ?? '';
+  if (value === 'web-scan-qr') return 'QR scan';
+  if (value === 'web-scan-nfc') return 'NFC tap';
   if (value === 'web-scan') return 'QR / NFC scan';
-  if (value === 'web-kiosk') return 'Kiosk';
+  if (value === 'web-kiosk' || value === 'expo-app') return 'Kiosk';
   if (value === 'web-admin-manual' || value === 'web-admin-manual-checkout') {
     return 'Admin manual';
   }

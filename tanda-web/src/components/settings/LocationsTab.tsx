@@ -734,15 +734,16 @@ function ScanPunchControls({
 }) {
   const enabled = location.scanPunchEnabled === true;
   const token = location.scanPunchToken?.trim();
-  const url = token ? buildScanPunchUrl(token) : null;
+  const qrUrl = token ? buildScanPunchUrl(token, undefined, 'qr') : null;
+  const nfcUrl = token ? buildScanPunchUrl(token, undefined, 'nfc') : null;
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
-    if (!url) return;
+    if (!qrUrl) return;
     setDownloading(true);
     try {
       await downloadScanPunchQr({
-        url,
+        url: qrUrl,
         fileName: `${location.name}-${location.code ?? location.city}-scan`,
         size: 1024,
       });
@@ -763,8 +764,9 @@ function ScanPunchControls({
             QR / NFC clock-in
           </p>
           <p className="max-w-xl text-xs leading-relaxed text-subtle">
-            Staff signed into the app scan this link to punch automatically (no
-            PIN or photo). Use the same URL on NFC tags.
+            Staff signed into the app scan the QR or tap an NFC tag to punch
+            (no PIN or photo). Use the QR link for printed codes and the NFC
+            link when programming tags so attendance shows the right source.
           </p>
         </div>
         <button
@@ -781,19 +783,28 @@ function ScanPunchControls({
         </button>
       </div>
 
-      {enabled && url ? (
+      {enabled && qrUrl && nfcUrl ? (
         <div className="grid gap-5 border-t border-border/80 pt-4 md:grid-cols-[auto_1fr] md:items-start">
           <div className="mx-auto md:mx-0">
-            <ScanPunchQr url={url} size={168} />
+            <ScanPunchQr url={qrUrl} size={168} />
           </div>
 
           <div className="min-w-0 space-y-4">
             <div className="space-y-1.5">
               <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
-                Scan link
+                QR link
               </p>
               <p className="break-all rounded-lg border border-border bg-surface-base/70 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-muted">
-                {url}
+                {qrUrl}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-subtle">
+                NFC link
+              </p>
+              <p className="break-all rounded-lg border border-border bg-surface-base/70 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-muted">
+                {nfcUrl}
               </p>
             </div>
 
@@ -801,13 +812,24 @@ function ScanPunchControls({
               <button
                 type="button"
                 onClick={() => {
-                  void navigator.clipboard.writeText(url);
+                  void navigator.clipboard.writeText(qrUrl);
                   onCopied();
                 }}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary"
               >
                 <Copy className="h-3.5 w-3.5" aria-hidden />
-                Copy link
+                Copy QR link
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(nfcUrl);
+                  onCopied();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary"
+              >
+                <Copy className="h-3.5 w-3.5" aria-hidden />
+                Copy NFC link
               </button>
               <button
                 type="button"
@@ -819,7 +841,7 @@ function ScanPunchControls({
                 {downloading ? 'Downloading…' : 'Download QR'}
               </button>
               <a
-                href={url}
+                href={qrUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary"

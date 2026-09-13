@@ -27,6 +27,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 
 export async function submitScanPunchRequest(input: {
   token: string;
+  via?: 'qr' | 'nfc';
   latitude?: number;
   longitude?: number;
   geoAccuracy?: number;
@@ -38,6 +39,7 @@ export async function submitScanPunchRequest(input: {
     headers,
     body: JSON.stringify({
       token: input.token,
+      via: input.via ?? 'qr',
       latitude: input.latitude,
       longitude: input.longitude,
       geoAccuracy: input.geoAccuracy,
