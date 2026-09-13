@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Continental Cargo — Accounting Module Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+    }
+
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #e2e8f0;
+      --bg: #ffffff;
+      --soft: #f8fafc;
+      --brand: #001a3f;
+      --accent: #c0266b;
+      --ok: #047857;
+      --warn: #b45309;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+    }
+
+    .cover {
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8mm 2mm 4mm;
+      page-break-after: always;
+      background:
+        linear-gradient(165deg, #001a3f 0%, #0b2a5c 55%, #132f4f 100%);
+      color: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .cover::after {
+      content: "";
+      position: absolute;
+      right: -40px;
+      bottom: -40px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(192, 38, 107, 0.25);
+    }
+
+    .cover-top { position: relative; z-index: 1; }
+    .eyebrow {
+      display: inline-block;
+      font-size: 9pt;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #f9a8d4;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .cover h1 {
+      font-size: 28pt;
+      line-height: 1.15;
+      margin: 0 0 14px;
+      font-weight: 700;
+      max-width: 14ch;
+    }
+    .cover-lead {
+      font-size: 12pt;
+      color: #cbd5e1;
+      max-width: 42ch;
+      margin: 0;
+    }
+    .cover-meta {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid rgba(255,255,255,0.18);
+      padding-top: 16px;
+      display: grid;
+      gap: 6px;
+      font-size: 9.5pt;
+      color: #e2e8f0;
+    }
+    .cover-meta strong { color: #fff; }
+
+    h2 {
+      font-size: 14pt;
+      color: var(--brand);
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--accent);
+    }
+    h3 {
+      font-size: 11.5pt;
+      color: var(--brand);
+      margin: 18px 0 8px;
+    }
+    h4 {
+      font-size: 10.5pt;
+      margin: 14px 0 6px;
+      color: #1e293b;
+    }
+    p { margin: 0 0 10px; }
+    ul, ol { margin: 0 0 12px; padding-left: 1.2em; }
+    li { margin-bottom: 4px; }
+
+    .section {
+      page-break-inside: avoid;
+      margin-bottom: 18px;
+    }
+
+    .callout {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+    .callout.ok { border-left-color: var(--ok); }
+    .callout.warn { border-left-color: var(--warn); }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #001a3f;
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+
+    .path {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 9pt;
+      background: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+    }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding: 10px 12px 10px 42px;
+      margin-bottom: 8px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      font-size: 9pt;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    .card h4 { margin-top: 0; }
+
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+
+    @media print {
+      .cover { border-radius: 0; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="cover-top">
+      <div class="eyebrow">Continental Cargo · TimeTracker PRO</div>
+      <h1>Accounting module user guide</h1>
+      <p class="cover-lead">
+        How to configure rates and rules, run a clean test week, and use every
+        export — including Xero Location tracking by state.
+      </p>
+    </div>
+    <div class="cover-meta">
+      <div><strong>Audience:</strong> Accounting / finance administrators</div>
+      <div><strong>Module path:</strong> Finance → Accounting</div>
+      <div><strong>Prepared for:</strong> Holly · Continental Cargo</div>
+      <div><strong>Version:</strong> March 2026</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>1. What this module does</h2>
+    <p>
+      Accounting turns real clocked hours into <strong>pay</strong> (wage cost)
+      and <strong>charge</strong> (client billing), then produces the files you
+      need for invoicing, Xero, and internal analysis.
+    </p>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Pay</h4>
+        <p>What labour costs — based on staff hourly rates and pay matrices.</p>
+      </div>
+      <div class="card">
+        <h4>Charge</h4>
+        <p>What you bill clients — based on client/site rate cards.</p>
+      </div>
+      <div class="card">
+        <h4>Margin</h4>
+        <p>Charge − Pay for the selected week or filters.</p>
+      </div>
+      <div class="card">
+        <h4>Exports</h4>
+        <p>Xero sales &amp; bills, client timesheets, journals, charge packs.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Important</strong>
+      Admin / master / kiosk accounts are not workforce staff. Always use a real
+      employee record for timesheets and rate cards.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>2. Configure this first (recommended order)</h2>
+    <p>Do these steps before expecting non-zero dollars or working exports.</p>
+    <ol class="steps">
+      <li>
+        <strong>Confirm your access role</strong><br />
+        Your role needs the Accounting module plus:
+        <em>Edit staff and site rate cards</em>,
+        <em>Edit pay rules, bands, and holidays</em>, and
+        <em>Export accounting reports (CSV)</em>.
+        Without Export you will see “No export permission”.
+      </li>
+      <li>
+        <strong>Set client states (for Xero Location tracking)</strong><br />
+        Go to <span class="path">Settings → Clients</span>.
+        For each client/site, set <strong>State</strong> to NSW, QLD, VIC, etc.
+        This matches your Xero tracking category <em>Location</em>.
+      </li>
+      <li>
+        <strong>Company rules</strong><br />
+        <span class="path">Accounting → Setup → Pay and charge rules</span><br />
+        Review week start, rounding, minimum hours, time bands, day types,
+        overtime, public holidays, employment types / GL codes, and Xero settings.
+      </li>
+      <li>
+        <strong>Company default matrices</strong><br />
+        <span class="path">Accounting → Setup → Rate cards → Company defaults</span><br />
+        Adjust default pay % and charge % (or switch cells to fixed $).
+      </li>
+      <li>
+        <strong>Staff rates</strong><br />
+        <span class="path">Accounting → Setup → Rate cards → Staff</span><br />
+        Select a real employee and set a <strong>base hourly rate greater than $0</strong>.
+        Most default cells are percentages of this rate.
+      </li>
+      <li>
+        <strong>Client charge cards</strong><br />
+        <span class="path">Accounting → Setup → Rate cards → Clients</span><br />
+        Set charge matrix and optional <strong>Client time bands</strong>
+        (e.g. early morning 02:00–05:00). Leave bands empty to inherit company bands.
+      </li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <h2>3. Key concepts (quick reference)</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Client / site</td>
+          <td>Same record as Settings → Clients (warehouse / customer site).</td>
+        </tr>
+        <tr>
+          <td>Time band</td>
+          <td>Part of the day (e.g. Early morning 00:00–06:00). A shift is split across bands.</td>
+        </tr>
+        <tr>
+          <td>Day type</td>
+          <td>Weekday, Saturday, Sunday, or Public holiday.</td>
+        </tr>
+        <tr>
+          <td>Rate matrix</td>
+          <td>Day type × time band grid. Each cell is <strong>$</strong> or <strong>%</strong>.</td>
+        </tr>
+        <tr>
+          <td>Hourly rate</td>
+          <td>Staff base $/hour. If cells are %, $0 hourly → $0 everywhere.</td>
+        </tr>
+        <tr>
+          <td>Weekly close</td>
+          <td>Freezes the week’s figures so late punches don’t change locked totals.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>4. How to run a test (end-to-end)</h2>
+    <div class="callout ok">
+      <strong>Goal of the test</strong>
+      Prove that hours → non-zero pay/charge → exports (including Xero Location).
+    </div>
+    <ol class="steps">
+      <li>
+        Finish Section 2 setup for at least <strong>one employee</strong> and
+        <strong>one client</strong> (with State set).
+      </li>
+      <li>
+        Create attendance for that employee (kiosk, employee app, or
+        Attendance → Add manual record). Do <strong>not</strong> clock the
+        accounting admin user.
+      </li>
+      <li>
+        Open <span class="path">Accounting → Overview</span>. Confirm Pay / Charge
+        are not $0 for the week. If they are, check hourly rate and matrices.
+      </li>
+      <li>
+        Open <span class="path">Accounting → Weekly close</span>, select the week,
+        review exceptions, then click <strong>Close week</strong>.
+      </li>
+      <li>
+        Open <span class="path">Accounting → Exports</span> and download:
+        Xero sales invoices, Xero bills, Client timesheet, Charge pack.
+      </li>
+      <li>
+        In the Xero sales CSV, confirm columns
+        <strong>TrackingName1</strong> / <strong>TrackingOption1</strong>
+        (e.g. Location / NSW) when Location tracking is enabled.
+      </li>
+    </ol>
+    <div class="callout warn">
+      <strong>If everything is $0</strong>
+      Almost always: staff hourly rate is still 0 while matrices are %, or hours
+      were logged on an admin account. Fix the rate card, then re-check Overview.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>5. Using each area of the module</h2>
+
+    <h3>5.1 Overview</h3>
+    <p>
+      Health dashboard for the latest week: Open/Closed status, totals, setup
+      warnings, and shortcuts into Setup, Weekly close, and Exports.
+    </p>
+
+    <h3>5.2 Setup → Pay and charge rules</h3>
+    <table>
+      <thead>
+        <tr><th>Section</th><th>What you configure</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Week rules</td>
+          <td>Week start day and hours rounding.</td>
+        </tr>
+        <tr>
+          <td>Minimums &amp; leave</td>
+          <td>Minimum pay/charge hours; optional paid approved leave.</td>
+        </tr>
+        <tr>
+          <td>Time bands</td>
+          <td>Company-wide bands (default Early morning / Afternoon). Change to 02:00–05:00 if needed.</td>
+        </tr>
+        <tr>
+          <td>Day types</td>
+          <td>Rows of the matrix (weekday / Sat / Sun / public holiday).</td>
+        </tr>
+        <tr>
+          <td>Overtime</td>
+          <td>Daily and weekly thresholds (0 = off).</td>
+        </tr>
+        <tr>
+          <td>Public holidays</td>
+          <td>Dates; optionally limited to specific clients.</td>
+        </tr>
+        <tr>
+          <td>Allowances</td>
+          <td>Fixed add-ons per hour or session (pay, charge, or both).</td>
+        </tr>
+        <tr>
+          <td>Employment types &amp; GL</td>
+          <td>FT/PT/Casual/Contractor labels and expense/payable account codes.</td>
+        </tr>
+        <tr>
+          <td>Xero export settings</td>
+          <td>Sales/bill account codes, tax types, prefixes, description templates, due days, Location tracking.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>5.3 Setup → Rate cards</h3>
+    <h4>Staff</h4>
+    <ul>
+      <li>Employment type</li>
+      <li><strong>Base hourly rate ($)</strong> — required for % matrices</li>
+      <li>Optional min pay hours / effective from</li>
+      <li>Pay matrix overrides (or inherit company defaults)</li>
+    </ul>
+    <h4>Clients</h4>
+    <ul>
+      <li>Charge matrix for that site</li>
+      <li><strong>Client time bands</strong> — empty = inherit company; otherwise per-client early morning windows</li>
+      <li>Optional min charge hours</li>
+    </ul>
+    <h4>Company defaults</h4>
+    <p>Fallback pay and charge matrices for anyone without a personal/site override.</p>
+
+    <h3>5.4 Weekly close</h3>
+    <ul>
+      <li>Pick the pay week</li>
+      <li>Review exceptions (incomplete sessions, min hours, overtime, missing cards)</li>
+      <li><strong>Close week</strong> freezes totals</li>
+      <li><strong>Reopen week</strong> returns to live calculation (needs rules permission)</li>
+    </ul>
+
+    <h3>5.5 Exports</h3>
+    <table>
+      <thead>
+        <tr><th>File</th><th>Use it for</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Xero sales invoices</td>
+          <td>Import client labour charges into Xero (one line per site/week). Includes Location tracking when enabled.</td>
+        </tr>
+        <tr>
+          <td>Xero bills</td>
+          <td>Import wage/contractor expense lines. With Location tracking on, lines split by staff + site so each can carry a state.</td>
+        </tr>
+        <tr>
+          <td>Client timesheet CSV</td>
+          <td>Detailed staff/band hours and amounts to send with a client invoice.</td>
+        </tr>
+        <tr>
+          <td>Charge pack</td>
+          <td>Internal billing pack by site and band.</td>
+        </tr>
+        <tr>
+          <td>Journal</td>
+          <td>Debit/credit style lines by employment type / GL codes.</td>
+        </tr>
+        <tr>
+          <td>Summary</td>
+          <td>Aggregated pay/charge/margin for the current analysis filters.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Advanced analysis lets you switch views (Pay, Charge, Margin, Timesheet,
+      Journal, Charge pack) and group by Staff, Client, Day, Band, or Employment type.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>6. Xero Location tracking (your request)</h2>
+    <p>Aligned with Xero → Settings → Tracking categories → <strong>Location</strong> (NSW / QLD / VIC…).</p>
+    <ol>
+      <li>In Tanda: <span class="path">Settings → Clients</span> → set each client’s <strong>State</strong>.</li>
+      <li>
+        In Tanda:
+        <span class="path">Accounting → Setup → Pay and charge rules → Xero export settings → Location tracking category</span>
+      </li>
+      <li>Keep tracking enabled and category name exactly <strong>Location</strong> (must match Xero).</li>
+      <li>Export Xero sales / bills — CSVs include <em>TrackingName1</em> and <em>TrackingOption1</em>.</li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <h2>7. Client time bands (early morning)</h2>
+    <p>
+      Company bands live under Pay and charge rules. Per-client bands live under
+      <span class="path">Rate cards → Clients → Client time bands</span>.
+    </p>
+    <ul>
+      <li>Empty client bands → inherit company (default Early morning 00:00–06:00).</li>
+      <li>Set client bands when a warehouse needs 02:00–05:00 or 01:00–08:00 specifically.</li>
+      <li>Overnight wrap is supported (e.g. 22:00–06:00).</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>8. Worked example (illustrative)</h2>
+    <p>Alex, hourly rate <strong>$30</strong>, Monday 04:00–12:00 (8 hours), weekday pay matrix defaults:</p>
+    <table>
+      <thead>
+        <tr><th>Segment</th><th>Hours</th><th>Pay rate</th><th>Pay $</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Early morning 04:00–06:00</td><td>2</td><td>125% = $37.50</td><td>$75.00</td></tr>
+        <tr><td>Base 06:00–12:00</td><td>6</td><td>100% = $30.00</td><td>$180.00</td></tr>
+        <tr><td><strong>Total pay</strong></td><td>8</td><td></td><td><strong>$255.00</strong></td></tr>
+      </tbody>
+    </table>
+    <p>Charge uses the client/company charge matrix and may differ from pay.</p>
+  </section>
+
+  <section class="section">
+    <h2>9. Checklist before you rely on a week</h2>
+    <ul>
+      <li>Role has Accounting + rates + rules + export</li>
+      <li>Clients have State set (for Xero Location)</li>
+      <li>Company rules and default matrices reviewed</li>
+      <li>Staff hourly rate &gt; 0</li>
+      <li>Client charge card configured (or happy with company defaults)</li>
+      <li>Hours logged on a real employee</li>
+      <li>Overview shows non-zero totals</li>
+      <li>Week closed (optional but recommended for final exports)</li>
+      <li>Xero CSVs checked for tracking columns</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>10. Need historical validation?</h2>
+    <p>
+      If you send a sample week of past hours, the rates that applied, and the
+      expected pay/charge totals, we can compare the system output against your
+      records and tune matrices/bands until they match.
+    </p>
+  </section>
+
+  <p class="footer-note">
+    Continental Cargo · Accounting module user guide · Finance → Accounting ·
+    Confidential — for internal operations use
+  </p>
+</body>
+</html>
