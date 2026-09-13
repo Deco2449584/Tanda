@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import { normalizeAuLocationState } from '@/lib/locations/au-states';
 import type { Location, LocationFirestore } from '@/lib/types/location';
 import { mapSiteBilling } from '@/lib/payroll/map-pay-rules';
 
@@ -27,6 +28,9 @@ export function mapLocationDoc(
     id,
     name: record.name?.trim() ?? '',
     city: record.city?.trim() ?? '',
+    state: normalizeAuLocationState(
+      typeof record.state === 'string' ? record.state : undefined,
+    ),
     code,
     photoUrl:
       typeof record.photoUrl === 'string' && record.photoUrl.trim()

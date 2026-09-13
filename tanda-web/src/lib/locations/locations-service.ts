@@ -15,6 +15,7 @@ import {
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { generateScanPunchToken } from '@/lib/attendance/scan-punch-token';
+import { normalizeAuLocationState } from '@/lib/locations/au-states';
 import { mapLocationDoc } from '@/lib/locations/map-location';
 import {
   generatePortalPin,
@@ -94,6 +95,7 @@ export async function createLocation(
 
   const name = input.name.trim();
   const city = input.city.trim();
+  const state = normalizeAuLocationState(input.state);
   const code = input.code?.trim().toUpperCase();
   const pin = input.pin.trim();
 
@@ -111,6 +113,7 @@ export async function createLocation(
   const docRef = await addDoc(collection(db, COLLECTIONS.LOCATIONS), {
     name,
     city,
+    ...(state ? { state } : {}),
     ...(code ? { code } : {}),
     ...(photoUrl ? { photoUrl } : {}),
     pinHash: hashPortalPin(pin),
@@ -131,6 +134,12 @@ export async function updateLocation(
   const name = input.name.trim();
   const city = input.city.trim();
   const code = input.code?.trim().toUpperCase();
+  const state =
+    input.state === null
+      ? null
+      : input.state === undefined
+        ? undefined
+        : normalizeAuLocationState(input.state) ?? null;
 
   if (!name || !city) {
     throw new Error('Client name and city are required.');
@@ -140,6 +149,11 @@ export async function updateLocation(
     name,
     city,
     code: code ? code : deleteField(),
+    ...(state === undefined
+      ? {}
+      : state
+        ? { state }
+        : { state: deleteField() }),
     ...(input.photoUrl === null
       ? { photoUrl: deleteField() }
       : typeof input.photoUrl === 'string' && input.photoUrl.trim()

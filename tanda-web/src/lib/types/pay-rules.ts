@@ -103,6 +103,13 @@ export interface XeroExportSettings {
   /** Fallback expense AccountCode if an employment type has no code set. */
   billsFallbackAccountCode: string;
   dueDays: number;
+  /**
+   * When true, Sales/Bills CSV include TrackingName1 / TrackingOption1 from each
+   * client's Australian state (Settings → Clients). Match the category name in Xero.
+   */
+  locationTrackingEnabled: boolean;
+  /** Must match the tracking category name in Xero (Holly's category is "Location"). */
+  locationTrackingCategoryName: string;
 }
 
 export interface SiteBilling {

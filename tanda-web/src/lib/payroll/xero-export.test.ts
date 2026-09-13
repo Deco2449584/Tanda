@@ -30,7 +30,12 @@ function slice(overrides: Partial<AwardSlice> = {}): AwardSlice {
   };
 }
 
-test('Xero sales invoice is one aggregated line per site', () => {
+const locations = [
+  { id: 'loc1', state: 'NSW' },
+  { id: 'loc2', state: 'VIC' },
+];
+
+test('Xero sales invoice is one aggregated line per site with Location tracking', () => {
   const report: AwardReport = {
     slices: [
       slice({ chargeAmount: 100, payAmount: 50 }),
@@ -54,18 +59,22 @@ test('Xero sales invoice is one aggregated line per site', () => {
     periodLabel: '2–8 Mar 2026',
     periodStart: '2026-03-02',
     periodEnd: '2026-03-08',
+    locations,
   });
 
   assert.equal(lines.length, 3); // header + 2 sites
-  assert.match(lines[0]!, /\*ContactName/);
+  assert.match(lines[0]!, /TrackingName1/);
+  assert.match(lines[0]!, /TrackingOption1/);
   const body = lines.slice(1).join('\n');
   assert.match(body, /Sydney WH/);
   assert.match(body, /"1","150\.00"/);
   assert.match(body, /Melbourne WH/);
   assert.match(body, /"1","80\.00"/);
+  assert.match(body, /"Location","NSW"/);
+  assert.match(body, /"Location","VIC"/);
 });
 
-test('Xero bills are one aggregated line per staff member', () => {
+test('Xero bills split by staff and site when Location tracking is on', () => {
   const lines = buildXeroBillsCsv({
     slices: [
       slice({ payAmount: 100 }),
@@ -74,21 +83,26 @@ test('Xero bills are one aggregated line per staff member', () => {
         employeeId: 'E2',
         employeeName: 'Sam Contractor',
         employmentTypeId: 'contractor',
+        locationId: 'loc2',
+        locationName: 'Melbourne WH',
         payAmount: 200,
       }),
     ],
     rules: DEFAULT_PAY_RULES,
     periodLabel: '2–8 Mar 2026',
     periodEnd: '2026-03-08',
+    locations,
   });
 
-  assert.equal(lines.length, 3); // header + 2 staff
-  assert.match(lines[0]!, /\*ContactName/);
+  assert.equal(lines.length, 3); // header + 2 staff/site rows
+  assert.match(lines[0]!, /TrackingName1/);
   const body = lines.slice(1).join('\n');
   assert.match(body, /Alex Worker/);
   assert.match(body, /"1","150\.00","6100"/);
   assert.match(body, /Sam Contractor/);
   assert.match(body, /"1","200\.00","6200"/);
+  assert.match(body, /"Location","NSW"/);
+  assert.match(body, /"Location","VIC"/);
 });
 
 test('Xero exports read configurable settings from pay rules', () => {
@@ -106,6 +120,7 @@ test('Xero exports read configurable settings from pay rules', () => {
       billsContactMode: 'shared',
       billsSharedContactName: 'Wage Clearing',
       dueDays: 7,
+      locationTrackingEnabled: false,
     },
   };
 
@@ -121,7 +136,9 @@ test('Xero exports read configurable settings from pay rules', () => {
     periodLabel: 'Week A',
     periodStart: '2026-03-02',
     periodEnd: '2026-03-08',
+    locations,
   });
+  assert.doesNotMatch(sales[0]!, /TrackingName1/);
   assert.match(sales[1]!, /"400"/);
   assert.match(sales[1]!, /GST Free Income/);
   assert.match(sales[1]!, /INV-20260308/);
@@ -133,7 +150,9 @@ test('Xero exports read configurable settings from pay rules', () => {
     rules,
     periodLabel: 'Week A',
     periodEnd: '2026-03-08',
+    locations,
   });
+  assert.doesNotMatch(bills[0]!, /TrackingName1/);
   assert.match(bills[1]!, /Wage Clearing/);
   assert.match(bills[1]!, /BAS Excluded/);
   assert.match(bills[1]!, /PAY-20260308-E1/);

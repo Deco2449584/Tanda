@@ -1,9 +1,12 @@
 import type { Timestamp } from 'firebase/firestore';
+import type { AuLocationState } from '@/lib/locations/au-states';
 import type { SiteBilling } from '@/lib/types/pay-rules';
 
 export interface LocationFirestore {
   name: string;
   city: string;
+  /** Australian state for Xero Location tracking (NSW, QLD, VIC, …). */
+  state?: AuLocationState | string;
   code?: string;
   /** Client / site photo (Firebase Storage download URL). */
   photoUrl?: string;
@@ -24,6 +27,8 @@ export interface Location {
   id: string;
   name: string;
   city: string;
+  /** Australian state for Xero Location tracking (NSW, QLD, VIC, …). */
+  state?: AuLocationState;
   code?: string;
   photoUrl?: string;
   active: boolean;
@@ -40,6 +45,7 @@ export interface Location {
 export interface CreateLocationInput {
   name: string;
   city: string;
+  state?: AuLocationState | string;
   code?: string;
   photoUrl?: string;
   /** Required for new clients — 6–8 digit portal PIN. */
@@ -49,6 +55,7 @@ export interface CreateLocationInput {
 export interface UpdateLocationInput {
   name: string;
   city: string;
+  state?: AuLocationState | string | null;
   code?: string;
   /** Pass a URL to set/replace, or null to clear. Omit to leave unchanged. */
   photoUrl?: string | null;

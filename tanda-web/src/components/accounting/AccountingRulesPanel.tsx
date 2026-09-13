@@ -1170,6 +1170,54 @@ export function AccountingRulesPanel({
               Due date for bills uses the same “Due days after invoice date” as sales invoices.
             </p>
           </EditorCard>
+
+          <EditorCard title="Location tracking category">
+            <p className="mb-3 text-xs text-subtle">
+              Matches Xero Settings → Tracking categories → Location (options NSW, QLD, VIC, …).
+              Set each client&apos;s state under Settings → Clients. Sales and bill lines then
+              include TrackingName1 / TrackingOption1.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm text-foreground sm:col-span-2">
+                <input
+                  type="checkbox"
+                  disabled={!canEdit}
+                  checked={draft.xero?.locationTrackingEnabled !== false}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        locationTrackingEnabled: event.target.checked,
+                      },
+                    })
+                  }
+                  className="h-4 w-4 rounded border-border-strong text-primary focus:ring-primary"
+                />
+                Include Location tracking on Xero sales and bills CSV
+              </label>
+              <Field
+                label="Tracking category name"
+                hint="Must match the category name in Xero exactly (usually Location)"
+              >
+                <input
+                  disabled={!canEdit || draft.xero?.locationTrackingEnabled === false}
+                  value={draft.xero?.locationTrackingCategoryName ?? 'Location'}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      xero: {
+                        ...(draft.xero ?? DEFAULT_PAY_RULES.xero!),
+                        locationTrackingCategoryName: event.target.value,
+                      },
+                    })
+                  }
+                  className={inputClass}
+                  placeholder="Location"
+                />
+              </Field>
+            </div>
+          </EditorCard>
         </div>
       </section>
 

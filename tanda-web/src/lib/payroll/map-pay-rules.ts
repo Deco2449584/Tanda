@@ -214,6 +214,13 @@ function mapXeroExportSettings(
       asString(item.billsFallbackAccountCode) ?? defaults.billsFallbackAccountCode,
     dueDays:
       typeof dueDays === 'number' && dueDays >= 0 ? Math.round(dueDays) : defaults.dueDays,
+    locationTrackingEnabled:
+      typeof item.locationTrackingEnabled === 'boolean'
+        ? item.locationTrackingEnabled
+        : defaults.locationTrackingEnabled,
+    locationTrackingCategoryName:
+      asString(item.locationTrackingCategoryName)?.trim() ||
+      defaults.locationTrackingCategoryName,
   };
 }
 

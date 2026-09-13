@@ -239,6 +239,7 @@ export function AccountingReportsPanel({
                       periodLabel,
                       periodStart: dateRange.start,
                       periodEnd: dateRange.end,
+                      locations,
                     })
                 : undefined
             }
@@ -255,6 +256,7 @@ export function AccountingReportsPanel({
                       periodLabel,
                       periodStart: dateRange.start,
                       periodEnd: dateRange.end,
+                      locations,
                     })
                 : undefined
             }

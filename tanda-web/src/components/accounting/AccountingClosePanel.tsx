@@ -351,6 +351,7 @@ export function AccountingClosePanel({
                   periodLabel,
                   periodStart: dateRange.start,
                   periodEnd: dateRange.end,
+                  locations,
                 })
               }
               className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
@@ -366,6 +367,7 @@ export function AccountingClosePanel({
                   periodLabel,
                   periodStart: dateRange.start,
                   periodEnd: dateRange.end,
+                  locations,
                 })
               }
               className="rounded-lg border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"

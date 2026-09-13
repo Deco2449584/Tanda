@@ -119,5 +119,7 @@ export const DEFAULT_PAY_RULES: PayRules = {
     billsSharedContactName: 'Payroll',
     billsFallbackAccountCode: '6100',
     dueDays: 14,
+    locationTrackingEnabled: true,
+    locationTrackingCategoryName: 'Location',
   },
 };

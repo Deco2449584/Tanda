@@ -51,6 +51,9 @@ export function resolveXeroSettings(rules: PayRules): XeroExportSettings {
     billsFallbackAccountCode:
       raw.billsFallbackAccountCode.trim() || defaults.billsFallbackAccountCode,
     dueDays: Number.isFinite(raw.dueDays) && raw.dueDays >= 0 ? raw.dueDays : defaults.dueDays,
+    locationTrackingEnabled: raw.locationTrackingEnabled !== false,
+    locationTrackingCategoryName:
+      raw.locationTrackingCategoryName.trim() || defaults.locationTrackingCategoryName,
   };
 }
 
@@ -61,9 +64,37 @@ function employmentTypeFor(
   return rules.employmentTypes.find((type) => type.id === employmentTypeId);
 }
 
+export type XeroLocationStateLookup = ReadonlyMap<string, string | undefined>;
+
+function buildLocationStateLookup(
+  locations?: Array<{ id: string; state?: string }>,
+): XeroLocationStateLookup {
+  const map = new Map<string, string | undefined>();
+  for (const location of locations ?? []) {
+    map.set(location.id, location.state?.trim() || undefined);
+  }
+  return map;
+}
+
+function trackingCells(
+  xero: XeroExportSettings,
+  option: string | undefined,
+): string[] {
+  if (!xero.locationTrackingEnabled) return [];
+  return [
+    csvCell(xero.locationTrackingCategoryName),
+    csvCell(option ?? ''),
+  ];
+}
+
+function trackingHeaders(xero: XeroExportSettings): string[] {
+  if (!xero.locationTrackingEnabled) return [];
+  return [csvCell('TrackingName1'), csvCell('TrackingOption1')];
+}
+
 /**
  * Sales Invoice import: one line per site for the whole week's charge total.
- * Headers match Holly's SalesInvoiceTemplate.csv.
+ * Headers match Holly's SalesInvoiceTemplate.csv (+ optional Location tracking).
  * All business values come from rules.xero (Setup → Xero export).
  */
 export function buildXeroSalesInvoiceCsv(input: {
@@ -72,10 +103,12 @@ export function buildXeroSalesInvoiceCsv(input: {
   periodLabel: string;
   periodStart: string;
   periodEnd: string;
+  locations?: Array<{ id: string; state?: string }>;
 }): string[] {
   const xero = resolveXeroSettings(input.rules);
   const packs = buildSiteChargePacks({ report: input.report, rules: input.rules });
   const dueDate = addDaysIso(input.periodEnd, xero.dueDays);
+  const stateByLocation = buildLocationStateLookup(input.locations);
 
   const lines: string[] = [
     [
@@ -89,6 +122,7 @@ export function buildXeroSalesInvoiceCsv(input: {
       csvCell('*UnitAmount'),
       csvCell('*AccountCode'),
       csvCell('*TaxType'),
+      ...trackingHeaders(xero),
     ].join(','),
   ];
 
@@ -96,6 +130,10 @@ export function buildXeroSalesInvoiceCsv(input: {
     if (pack.amount <= 0) continue;
     const siteKey =
       pack.locationId === 'none' ? 'NOSITE' : pack.locationId.slice(0, 8).toUpperCase();
+    const trackingOption =
+      pack.locationId === 'none'
+        ? undefined
+        : stateByLocation.get(pack.locationId);
     lines.push(
       [
         csvCell(pack.locationName),
@@ -113,6 +151,7 @@ export function buildXeroSalesInvoiceCsv(input: {
         csvCell(money(pack.amount)),
         csvCell(xero.salesAccountCode),
         csvCell(xero.salesTaxType),
+        ...trackingCells(xero, trackingOption),
       ].join(','),
     );
   }
@@ -124,34 +163,41 @@ interface StaffPayBucket {
   employeeId: string;
   employeeName: string;
   employmentTypeId: string;
+  locationId: string;
   payAmount: number;
 }
 
 /**
  * Bill import: one line per staff member for the week's pay total.
- * Headers match Holly's BillTemplate.csv.
- * ContactName / tax / prefixes come from rules.xero.
+ * When Location tracking is enabled, lines are split by staff + site so each
+ * expense can carry NSW/QLD/VIC (etc.) in TrackingOption1.
  */
 export function buildXeroBillsCsv(input: {
   slices: AwardSlice[];
   rules: PayRules;
   periodLabel: string;
   periodEnd: string;
+  locations?: Array<{ id: string; state?: string }>;
 }): string[] {
   const xero = resolveXeroSettings(input.rules);
   const dueDate = addDaysIso(input.periodEnd, xero.dueDays);
+  const stateByLocation = buildLocationStateLookup(input.locations);
+  const splitBySite = xero.locationTrackingEnabled;
 
-  const byStaff = new Map<string, StaffPayBucket>();
+  const byKey = new Map<string, StaffPayBucket>();
   for (const slice of input.slices) {
     if (slice.payAmount <= 0) continue;
-    const current = byStaff.get(slice.employeeId) ?? {
+    const locationId = splitBySite ? slice.locationId || 'none' : 'all';
+    const key = `${slice.employeeId}::${locationId}`;
+    const current = byKey.get(key) ?? {
       employeeId: slice.employeeId,
       employeeName: slice.employeeName,
       employmentTypeId: slice.employmentTypeId,
+      locationId,
       payAmount: 0,
     };
     current.payAmount = Math.round((current.payAmount + slice.payAmount) * 100) / 100;
-    byStaff.set(slice.employeeId, current);
+    byKey.set(key, current);
   }
 
   const lines: string[] = [
@@ -165,10 +211,11 @@ export function buildXeroBillsCsv(input: {
       csvCell('*UnitAmount'),
       csvCell('*AccountCode'),
       csvCell('*TaxType'),
+      ...trackingHeaders(xero),
     ].join(','),
   ];
 
-  const rows = [...byStaff.values()].sort((a, b) =>
+  const rows = [...byKey.values()].sort((a, b) =>
     a.employeeName.localeCompare(b.employeeName),
   );
 
@@ -180,10 +227,17 @@ export function buildXeroBillsCsv(input: {
       xero.billsContactMode === 'shared'
         ? xero.billsSharedContactName
         : row.employeeName;
+    const invoiceSuffix = splitBySite
+      ? `${row.employeeId}-${row.locationId === 'none' ? 'NOSITE' : row.locationId.slice(0, 6).toUpperCase()}`
+      : row.employeeId;
+    const trackingOption =
+      splitBySite && row.locationId !== 'none' && row.locationId !== 'all'
+        ? stateByLocation.get(row.locationId)
+        : undefined;
     lines.push(
       [
         csvCell(contactName),
-        csvCell(weekInvoiceNumber(xero.billsInvoicePrefix, input.periodEnd, row.employeeId)),
+        csvCell(weekInvoiceNumber(xero.billsInvoicePrefix, input.periodEnd, invoiceSuffix)),
         csvCell(input.periodEnd),
         csvCell(dueDate),
         csvCell(
@@ -196,6 +250,7 @@ export function buildXeroBillsCsv(input: {
         csvCell(money(row.payAmount)),
         csvCell(accountCode),
         csvCell(xero.billsTaxType),
+        ...trackingCells(xero, trackingOption),
       ].join(','),
     );
   }
@@ -209,6 +264,7 @@ export function downloadXeroSalesInvoiceCsv(input: {
   periodLabel: string;
   periodStart: string;
   periodEnd: string;
+  locations?: Array<{ id: string; state?: string }>;
 }): void {
   downloadCsv(
     `xero-sales-invoice-${input.periodStart}_${input.periodEnd}.csv`,
@@ -222,6 +278,7 @@ export function downloadXeroBillsCsv(input: {
   periodLabel: string;
   periodStart: string;
   periodEnd: string;
+  locations?: Array<{ id: string; state?: string }>;
 }): void {
   downloadCsv(
     `xero-bills-${input.periodStart}_${input.periodEnd}.csv`,

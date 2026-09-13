@@ -24,6 +24,7 @@ import {
 } from '@/components/settings/ScanPunchQr';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { buildScanPunchUrl } from '@/lib/attendance/scan-punch-token';
+import { AU_LOCATION_STATES, type AuLocationState } from '@/lib/locations/au-states';
 import {
   createLocation,
   deleteLocation,
@@ -51,10 +52,11 @@ interface LocationsTabProps {
 interface EditFormState {
   name: string;
   city: string;
+  state: AuLocationState | '';
   code: string;
 }
 
-const emptyEditForm: EditFormState = { name: '', city: '', code: '' };
+const emptyEditForm: EditFormState = { name: '', city: '', state: '', code: '' };
 
 function PinCopyButton({
   pin,
@@ -88,6 +90,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const canOpenAccounting = canAccessModule('accounting');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
+  const [state, setState] = useState<AuLocationState | ''>('');
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -145,6 +148,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       const result = await createLocation({
         name,
         city,
+        state: state || undefined,
         code: code || undefined,
         pin,
       });
@@ -154,6 +158,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         await updateLocation(result.locationId, {
           name: name.trim(),
           city: city.trim(),
+          state: state || null,
           code: code || undefined,
           photoUrl,
         });
@@ -162,6 +167,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       setRevealedPin(result.pin);
       setName('');
       setCity('');
+      setState('');
       setCode('');
       setPin('');
       setPhotoFile(null);
@@ -181,6 +187,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
     setEditForm({
       name: location.name,
       city: location.city,
+      state: location.state ?? '',
       code: location.code ?? '',
     });
     setEditPhotoFile(null);
@@ -204,6 +211,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       await updateLocation(location.id, {
         name: editForm.name,
         city: editForm.city,
+        state: editForm.state || null,
         code: editForm.code || undefined,
         ...(photoUrl ? { photoUrl } : {}),
       });
@@ -390,7 +398,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
-          <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-3">
             <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-muted">
                 City
@@ -402,6 +410,25 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                 placeholder="Sydney"
                 className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
               />
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-muted">
+                State (Xero Location)
+              </label>
+              <select
+                value={state}
+                onChange={(e) =>
+                  setState((e.target.value as AuLocationState | '') || '')
+                }
+                className="w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              >
+                <option value="">Select state…</option>
+                {AU_LOCATION_STATES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-muted">
@@ -494,7 +521,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       }
                       className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
                     />
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-3">
                       <input
                         value={editForm.city}
                         onChange={(e) =>
@@ -506,6 +533,23 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                         placeholder="City"
                         className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
                       />
+                      <select
+                        value={editForm.state}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            state: (e.target.value as AuLocationState | '') || '',
+                          }))
+                        }
+                        className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
+                      >
+                        <option value="">State…</option>
+                        {AU_LOCATION_STATES.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         value={editForm.code}
                         onChange={(e) =>
@@ -561,6 +605,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                           </div>
                           <p className="text-xs text-subtle">
                             {location.city}
+                            {location.state ? ` · ${location.state}` : ''}
                             {location.code ? ` · ${location.code}` : ''}
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
