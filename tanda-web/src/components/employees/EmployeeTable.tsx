@@ -1,22 +1,19 @@
 ﻿'use client';
 
 import { useMemo, useState } from 'react';
-import { deleteDoc, doc } from 'firebase/firestore';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, UserRoundX, UserCheck } from 'lucide-react';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
-import { DeleteEmployeeConfirmModal } from '@/components/employees/DeleteEmployeeConfirmModal';
 import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
-import { COLLECTIONS } from '@/lib/constants';
 import { getEmployeeLocationLabel } from '@/lib/location-groups/format-location-group';
-import { canDeleteStaffAccount, canEditStaffAccount } from '@/lib/employees/is-protected-admin';
+import { canEditStaffAccount, isMasterEmployee } from '@/lib/employees/is-protected-admin';
 import { requestSyncEmployeeAuth } from '@/lib/employees/request-sync-employee-auth';
+import { requestUpdateEmployee } from '@/lib/employees/request-update-employee';
 import { recordEmployeeAuditEvent } from '@/lib/audit/audit-logs-client';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
-import { db } from '@/lib/firebase';
 import type { Employee } from '@/lib/types/employee';
 
 interface EmployeeTableProps {
@@ -24,7 +21,7 @@ interface EmployeeTableProps {
   loading: boolean;
   searchQuery: string;
   onEdit?: (employee: Employee) => void;
-  canDelete?: boolean;
+  canUpdate?: boolean;
 }
 
 function StatusBadge({
@@ -60,15 +57,13 @@ export function EmployeeTable({
   loading,
   searchQuery,
   onEdit,
-  canDelete = false,
+  canUpdate = false,
 }: EmployeeTableProps) {
   const { groups } = useLocationGroups();
   const { locations } = useLocations();
   const { refresh: refreshEmployees } = useEmployees();
   const { isMaster } = useAdminAccess();
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<Employee | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const filteredEmployees = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -87,51 +82,41 @@ export function EmployeeTable({
     });
   }, [employees, groups, locations, searchQuery]);
 
-  function requestDelete(employee: Employee) {
-    if (!canDeleteStaffAccount(isMaster, employee)) {
-      window.alert(
-        canDeleteStaffAccount(true, employee)
-          ? 'Only a Master can delete administrator accounts.'
-          : 'Master accounts cannot be deleted from staff management.',
-      );
+  async function handleToggleActive(employee: Employee) {
+    if (!canUpdate || !canEditStaffAccount(isMaster, employee)) return;
+    if (isMasterEmployee(employee)) {
+      window.alert('Master accounts cannot be deactivated.');
       return;
     }
 
-    setDeleteError(null);
-    setPendingDelete(employee);
-  }
+    const nextActive = !employee.active;
+    const confirmed = window.confirm(
+      nextActive
+        ? `Reactivate ${employee.name}? They will be able to sign in again (if they have an account).`
+        : `Deactivate ${employee.name}? They will be hidden from scheduling and kiosk PIN lookup, and sign-in will be disabled. You can permanently delete them from their edit form if needed.`,
+    );
+    if (!confirmed) return;
 
-  function cancelDelete() {
-    if (deletingId) return;
-    setPendingDelete(null);
-    setDeleteError(null);
-  }
-
-  async function handleConfirmDelete() {
-    const employee = pendingDelete;
-    if (!db || !employee) return;
-
-    setDeletingId(employee.id);
-    setDeleteError(null);
-
+    setBusyId(employee.id);
     try {
-      await requestSyncEmployeeAuth(employee.id, 'delete');
-      await deleteDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id));
+      await requestUpdateEmployee(employee.id, {
+        fields: { active: nextActive },
+      });
+      await requestSyncEmployeeAuth(employee.id, nextActive ? 'enable' : 'disable');
       void recordEmployeeAuditEvent({
-        action: 'employee.deleted',
+        action: 'employee.updated',
         employeeDocId: employee.id,
-        summary: `Deleted employee ${employee.name} (${employee.employeeId})`,
+        summary: `${nextActive ? 'Reactivated' : 'Deactivated'} employee ${employee.name} (${employee.employeeId})`,
       });
       await refreshEmployees();
-      setPendingDelete(null);
     } catch (error) {
-      setDeleteError(
+      window.alert(
         error instanceof Error
           ? error.message
-          : 'Could not delete the employee. Please try again.',
+          : 'Could not update employee status. Please try again.',
       );
     } finally {
-      setDeletingId(null);
+      setBusyId(null);
     }
   }
 
@@ -146,107 +131,118 @@ export function EmployeeTable({
   const emptyMessage = searchQuery
     ? 'No employees match that search.'
     : 'No employees registered. Create the first one.';
-  const showActions = Boolean(onEdit) || canDelete;
+  const showActions = Boolean(onEdit) || canUpdate;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface-raised backdrop-blur-sm">
-      <div className="hidden overflow-x-auto scrollbar-modern md:block">
-        <table className="w-full min-w-[860px] border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-primary/25 bg-primary/10">
-              <th className="px-4 py-3.5 font-semibold text-white">Photo</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Employee ID</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Full Name</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Email</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Area/Dept</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Location</th>
-              <th className="px-4 py-3.5 font-semibold text-white">Status</th>
-              {showActions ? (
-                <th className="px-4 py-3.5 font-semibold text-white">Actions</th>
-              ) : null}
+    <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="border-b border-border bg-surface-base/40 text-xs uppercase tracking-wide text-subtle">
+            <tr>
+              <th className="px-4 py-3 font-medium">Name</th>
+              <th className="px-4 py-3 font-medium">ID</th>
+              <th className="px-4 py-3 font-medium">Department</th>
+              <th className="px-4 py-3 font-medium">Location</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              {showActions ? <th className="px-4 py-3 font-medium">Actions</th> : null}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/80">
             {filteredEmployees.length === 0 ? (
               <tr>
-                <td colSpan={showActions ? 8 : 7} className="px-4 py-12 text-center text-subtle">
+                <td
+                  colSpan={showActions ? 6 : 5}
+                  className="px-4 py-10 text-center text-sm text-subtle"
+                >
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
               filteredEmployees.map((employee) => {
                 const canEditThis = Boolean(onEdit) && canEditStaffAccount(isMaster, employee);
-                const canDeleteThis =
-                  canDelete && canDeleteStaffAccount(isMaster, employee);
+                const canToggleThis =
+                  canUpdate &&
+                  canEditStaffAccount(isMaster, employee) &&
+                  !isMasterEmployee(employee);
 
                 return (
-                <tr
-                  key={employee.id}
-                  className="border-b border-border/80 transition-colors hover:bg-surface-hover/20"
-                >
-                  <td className="px-4 py-3.5">
-                    <EmployeeAvatar
-                      name={employee.name}
-                      photoUrl={employee.photoUrl}
-                    />
-                  </td>
-                  <td className="px-4 py-3.5 font-mono text-muted">
-                    {employee.employeeId || '—'}
-                  </td>
-                  <td className="px-4 py-3.5 font-medium text-white">
-                    {employee.name}
-                  </td>
-                  <td className="px-4 py-3.5 text-muted">{employee.email}</td>
-                  <td className="px-4 py-3.5 text-muted">
-                    {employee.department || '—'}
-                  </td>
-                  <td className="px-4 py-3.5 text-muted">
-                    {getEmployeeLocationLabel(employee, locations, groups)}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex flex-col items-start gap-1.5">
-                      <StatusBadge active={employee.active} />
-                      {employee.personalProfileStatus === 'Pending' ? (
-                        <PersonalProfileStatusBadge status="Pending" compact />
-                      ) : null}
-                    </div>
-                  </td>
-                  {showActions ? (
+                  <tr key={employee.id} className="align-middle">
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        {canEditThis ? (
-                          <button
-                            type="button"
-                            onClick={() => onEdit?.(employee)}
-                            className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
-                            aria-label={`Edit ${employee.name}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        ) : null}
-                        {canDelete ? (
-                          <button
-                            type="button"
-                            onClick={() => requestDelete(employee)}
-                            disabled={deletingId === employee.id || !canDeleteThis}
-                            title={
-                              !canDeleteThis
-                                ? canDeleteStaffAccount(true, employee)
-                                  ? 'Only a Master can delete administrator accounts'
-                                  : 'Master accounts cannot be deleted'
-                                : `Delete ${employee.name}`
-                            }
-                            className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Delete ${employee.name}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                      <div className="flex items-center gap-3">
+                        <EmployeeAvatar
+                          name={employee.name}
+                          photoUrl={employee.photoUrl}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">{employee.name}</p>
+                          <p className="truncate text-xs text-subtle">{employee.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 font-mono text-muted">
+                      {employee.employeeId || '—'}
+                    </td>
+                    <td className="px-4 py-3.5 text-muted">
+                      {employee.department || '—'}
+                    </td>
+                    <td className="px-4 py-3.5 text-muted">
+                      {getEmployeeLocationLabel(employee, locations, groups)}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex flex-col items-start gap-1.5">
+                        <StatusBadge active={employee.active} />
+                        {employee.personalProfileStatus === 'Pending' ? (
+                          <PersonalProfileStatusBadge status="Pending" compact />
                         ) : null}
                       </div>
                     </td>
-                  ) : null}
-                </tr>
-              );
+                    {showActions ? (
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          {canEditThis ? (
+                            <button
+                              type="button"
+                              onClick={() => onEdit?.(employee)}
+                              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-primary"
+                              aria-label={`Edit ${employee.name}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                          {canUpdate ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleToggleActive(employee)}
+                              disabled={busyId === employee.id || !canToggleThis}
+                              title={
+                                isMasterEmployee(employee)
+                                  ? 'Master accounts cannot be deactivated'
+                                  : !canToggleThis
+                                    ? 'You cannot change this account'
+                                    : employee.active
+                                      ? `Deactivate ${employee.name}`
+                                      : `Reactivate ${employee.name}`
+                              }
+                              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={
+                                employee.active
+                                  ? `Deactivate ${employee.name}`
+                                  : `Reactivate ${employee.name}`
+                              }
+                            >
+                              {employee.active ? (
+                                <UserRoundX className="h-4 w-4" />
+                              ) : (
+                                <UserCheck className="h-4 w-4" />
+                              )}
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                );
               })
             )}
           </tbody>
@@ -259,8 +255,10 @@ export function EmployeeTable({
         ) : (
           filteredEmployees.map((employee) => {
             const canEditThis = Boolean(onEdit) && canEditStaffAccount(isMaster, employee);
-            const canDeleteThis =
-              canDelete && canDeleteStaffAccount(isMaster, employee);
+            const canToggleThis =
+              canUpdate &&
+              canEditStaffAccount(isMaster, employee) &&
+              !isMasterEmployee(employee);
             const locationLabel = getEmployeeLocationLabel(employee, locations, groups);
             const metaParts = [
               employee.employeeId || null,
@@ -307,22 +305,28 @@ export function EmployeeTable({
                             <Pencil className="h-4 w-4" />
                           </button>
                         ) : null}
-                        {canDelete ? (
+                        {canUpdate ? (
                           <button
                             type="button"
-                            onClick={() => requestDelete(employee)}
-                            disabled={deletingId === employee.id || !canDeleteThis}
+                            onClick={() => void handleToggleActive(employee)}
+                            disabled={busyId === employee.id || !canToggleThis}
                             title={
-                              !canDeleteThis
-                                ? canDeleteStaffAccount(true, employee)
-                                  ? 'Only a Master can delete administrator accounts'
-                                  : 'Master accounts cannot be deleted'
-                                : `Delete ${employee.name}`
+                              employee.active
+                                ? `Deactivate ${employee.name}`
+                                : `Reactivate ${employee.name}`
                             }
-                            className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Delete ${employee.name}`}
+                            className="rounded-md p-2 text-subtle transition-colors hover:bg-surface-hover hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={
+                              employee.active
+                                ? `Deactivate ${employee.name}`
+                                : `Reactivate ${employee.name}`
+                            }
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {employee.active ? (
+                              <UserRoundX className="h-4 w-4" />
+                            ) : (
+                              <UserCheck className="h-4 w-4" />
+                            )}
                           </button>
                         ) : null}
                       </div>
@@ -334,14 +338,6 @@ export function EmployeeTable({
           })
         )}
       </ul>
-
-      <DeleteEmployeeConfirmModal
-        employee={pendingDelete}
-        loading={Boolean(deletingId)}
-        error={deleteError}
-        onConfirm={() => void handleConfirmDelete()}
-        onCancel={cancelDelete}
-      />
     </div>
   );
 }

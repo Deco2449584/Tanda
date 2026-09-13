@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { CascadeImpactItem, EmployeeCascadePreview } from '@/lib/types/cascade-delete';
-import type { Employee } from '@/lib/types/employee';
-import { fetchEmployeeCascadePreview } from '@/lib/admin/cascade-delete-api';
+import type { CascadeImpactItem, LocationCascadePreview } from '@/lib/types/cascade-delete';
+import type { Location } from '@/lib/types/location';
+import { fetchLocationCascadePreview } from '@/lib/admin/cascade-delete-api';
 
-export const DELETE_EMPLOYEE_CONFIRM_PHRASE = 'DELETE';
+export const DELETE_LOCATION_CONFIRM_PHRASE = 'DELETE';
 
-interface DeleteEmployeeConfirmModalProps {
-  employee: Employee | null;
+interface DeleteLocationConfirmModalProps {
+  location: Location | null;
   loading: boolean;
   error?: string | null;
   onConfirm: () => void;
@@ -23,8 +23,8 @@ function ImpactList({ items }: { items: CascadeImpactItem[] }) {
         <li key={item.key} className="flex items-start justify-between gap-3">
           <span className="text-muted">
             {item.label}
-            {item.action === 'keep' ? (
-              <span className="ml-1 text-amber-300/90">(kept)</span>
+            {item.action === 'clear' ? (
+              <span className="ml-1 text-amber-300/90">(cleared)</span>
             ) : null}
           </span>
           <span className="shrink-0 font-mono font-semibold text-foreground">
@@ -36,16 +36,16 @@ function ImpactList({ items }: { items: CascadeImpactItem[] }) {
   );
 }
 
-export function DeleteEmployeeConfirmModal({
-  employee,
+export function DeleteLocationConfirmModal({
+  location,
   loading,
   error = null,
   onConfirm,
   onCancel,
-}: DeleteEmployeeConfirmModalProps) {
+}: DeleteLocationConfirmModalProps) {
   const [confirmText, setConfirmText] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [preview, setPreview] = useState<EmployeeCascadePreview | null>(null);
+  const [preview, setPreview] = useState<LocationCascadePreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
@@ -54,7 +54,7 @@ export function DeleteEmployeeConfirmModal({
   }, []);
 
   useEffect(() => {
-    if (!employee) {
+    if (!location) {
       setConfirmText('');
       setPreview(null);
       setPreviewError(null);
@@ -67,7 +67,7 @@ export function DeleteEmployeeConfirmModal({
     setPreviewLoading(true);
 
     let cancelled = false;
-    void fetchEmployeeCascadePreview(employee.id)
+    void fetchLocationCascadePreview(location.id)
       .then((next) => {
         if (!cancelled) setPreview(next);
       })
@@ -85,21 +85,21 @@ export function DeleteEmployeeConfirmModal({
     return () => {
       cancelled = true;
     };
-  }, [employee]);
+  }, [location]);
 
   useEffect(() => {
-    if (!employee) return;
+    if (!location) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && !loading) onCancel();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [employee, loading, onCancel]);
+  }, [location, loading, onCancel]);
 
-  if (!employee || !mounted) return null;
+  if (!location || !mounted) return null;
 
   const canConfirm =
-    confirmText.trim() === DELETE_EMPLOYEE_CONFIRM_PHRASE &&
+    confirmText.trim() === DELETE_LOCATION_CONFIRM_PHRASE &&
     !loading &&
     !previewLoading &&
     !previewError;
@@ -109,7 +109,7 @@ export function DeleteEmployeeConfirmModal({
       className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto p-4 pt-16 sm:items-center sm:pt-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="delete-employee-title"
+      aria-labelledby="delete-location-title"
     >
       <button
         type="button"
@@ -121,22 +121,16 @@ export function DeleteEmployeeConfirmModal({
 
       <div className="relative z-10 w-full max-w-md rounded-xl border border-red-500/30 bg-surface-raised p-6 shadow-2xl">
         <h2
-          id="delete-employee-title"
+          id="delete-location-title"
           className="font-sans text-lg font-semibold text-foreground"
         >
-          Permanently delete employee
+          Permanently delete client
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           You are about to permanently delete{' '}
-          <span className="font-medium text-foreground">{employee.name}</span>
-          {employee.employeeId ? (
-            <>
-              {' '}
-              (<span className="font-mono text-foreground">{employee.employeeId}</span>)
-            </>
-          ) : null}
-          . Sign-in access and all associated staff data listed below will be removed. This
-          cannot be undone.
+          <span className="font-medium text-foreground">{location.name}</span>. Prefer
+          deactivating when you only need to hide it. Deleting removes site shifts and
+          attendance for this client. Staff profiles are kept but unassigned.
         </p>
 
         {previewLoading ? (
@@ -150,23 +144,20 @@ export function DeleteEmployeeConfirmModal({
         ) : null}
 
         <div className="mt-4 rounded-xl border border-border bg-surface-base/50 p-4">
-          <label
-            htmlFor="delete-employee-confirm"
-            className="block text-xs text-subtle"
-          >
+          <label htmlFor="delete-location-confirm" className="block text-xs text-subtle">
             Type{' '}
             <span className="font-mono font-semibold text-red-300">
-              {DELETE_EMPLOYEE_CONFIRM_PHRASE}
+              {DELETE_LOCATION_CONFIRM_PHRASE}
             </span>{' '}
             to confirm.
           </label>
           <input
-            id="delete-employee-confirm"
+            id="delete-location-confirm"
             type="text"
             value={confirmText}
             onChange={(event) => setConfirmText(event.target.value)}
             disabled={loading}
-            placeholder={DELETE_EMPLOYEE_CONFIRM_PHRASE}
+            placeholder={DELETE_LOCATION_CONFIRM_PHRASE}
             className="mt-2 w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-red-500/50 disabled:opacity-50"
             autoComplete="off"
             spellCheck={false}

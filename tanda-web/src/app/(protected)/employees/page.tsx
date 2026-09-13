@@ -26,7 +26,6 @@ export default function EmployeesPage() {
   const { canPerformAction } = useAdminAccess();
   const canCreateEmployees = canPerformAction('employees', 'create');
   const canUpdateEmployees = canPerformAction('employees', 'update');
-  const canDeleteEmployees = canPerformAction('employees', 'delete');
   const [searchQuery, setSearchQuery] = useState('');
   const [accessFilter, setAccessFilter] = useState<EmployeeAccessFilter>('all');
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -42,11 +41,16 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     const toastState = searchParams.get('toast');
-    if (toastState !== 'created' && toastState !== 'updated') return;
+    if (toastState !== 'created' && toastState !== 'updated' && toastState !== 'deleted') {
+      return;
+    }
 
     setToast({
       id: crypto.randomUUID(),
-      text: staffToastMessage(toastState, searchParams.get('kind')),
+      text:
+        toastState === 'deleted'
+          ? 'Employee and associated data deleted.'
+          : staffToastMessage(toastState, searchParams.get('kind')),
       variant: 'success',
     });
 
@@ -145,7 +149,7 @@ export default function EmployeesPage() {
         loading={loading}
         searchQuery={searchQuery}
         onEdit={canUpdateEmployees ? handleEdit : undefined}
-        canDelete={canDeleteEmployees}
+        canUpdate={canUpdateEmployees}
       />
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </PageContent>

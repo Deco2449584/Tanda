@@ -27,13 +27,14 @@ import { buildScanPunchUrl } from '@/lib/attendance/scan-punch-token';
 import { AU_LOCATION_STATES, type AuLocationState } from '@/lib/locations/au-states';
 import {
   createLocation,
-  deleteLocation,
   regenerateLocationPin,
   regenerateLocationScanPunchToken,
   setLocationActive,
   setLocationScanPunchEnabled,
   updateLocation,
 } from '@/lib/locations/locations-service';
+import { requestLocationCascadeDelete } from '@/lib/admin/cascade-delete-api';
+import { DeleteLocationConfirmModal } from '@/components/settings/DeleteLocationConfirmModal';
 import { uploadLocationPhoto } from '@/lib/locations/upload-location-photo';
 import {
   generateUniquePortalPinFromList,
@@ -102,6 +103,8 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Location | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [scanBusyId, setScanBusyId] = useState<string | null>(null);
 
   const takenPins = useMemo(
@@ -301,25 +304,22 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
     }
   }
 
-  async function handleDelete(location: Location) {
-    const confirmed = window.confirm(
-      `Delete "${location.name}" permanently?\n\nEmployees must be reassigned first. Inspections assigned to this client will lose portal access. This cannot be undone.`,
-    );
-    if (!confirmed) return;
+  async function handleConfirmDelete() {
+    const location = pendingDelete;
+    if (!location) return;
 
     setDeletingId(location.id);
+    setDeleteError(null);
 
     try {
-      const detachedCount = await deleteLocation(location.id);
+      await requestLocationCascadeDelete(location.id);
       void refresh();
-      onToast(
-        detachedCount > 0
-          ? `${location.name} deleted. Portal access removed from ${detachedCount} inspection(s).`
-          : `${location.name} deleted.`,
-      );
+      setPendingDelete(null);
+      onToast(`${location.name} and associated site data deleted.`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Could not delete client.';
+      setDeleteError(message);
       onToast(message, 'error');
     } finally {
       setDeletingId(null);
@@ -662,7 +662,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void handleDelete(location)}
+                          onClick={() => {
+                            setDeleteError(null);
+                            setPendingDelete(location);
+                          }}
                           disabled={deletingId === location.id}
                           className="inline-flex items-center gap-1 rounded-lg border border-red-900/60 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:border-red-700 hover:bg-red-950/40 disabled:opacity-50"
                         >
@@ -696,6 +699,18 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           </ul>
         )}
       </section>
+
+      <DeleteLocationConfirmModal
+        location={pendingDelete}
+        loading={Boolean(deletingId)}
+        error={deleteError}
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={() => {
+          if (deletingId) return;
+          setPendingDelete(null);
+          setDeleteError(null);
+        }}
+      />
     </div>
   );
 }

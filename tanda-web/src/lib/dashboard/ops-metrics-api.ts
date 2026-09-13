@@ -31,15 +31,6 @@ export interface DashboardOpsMetrics {
   inspections: DashboardInspectionsMetrics | null;
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const user = auth?.currentUser;
-  if (!user) throw new Error('You must be signed in.');
-  const token = await user.getIdToken();
-  return {
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 export async function fetchDashboardOpsMetrics(input: {
   start: string;
   end: string;
@@ -48,15 +39,39 @@ export async function fetchDashboardOpsMetrics(input: {
     start: input.start,
     end: input.end,
   });
+
+  const user = auth?.currentUser;
+  if (!user) {
+    return {
+      courses: null,
+      issues: null,
+      inspections: null,
+    };
+  }
+
+  const token = await user.getIdToken();
   const response = await fetch(`/api/dashboard/ops-metrics?${params}`, {
-    headers: await authHeaders(),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
-  const data = (await response.json().catch(() => null)) as
-    | (DashboardOpsMetrics & { error?: string })
-    | null;
+
+  const raw = await response.text();
+  let data: (DashboardOpsMetrics & { error?: string }) | null = null;
+  try {
+    data = JSON.parse(raw) as DashboardOpsMetrics & { error?: string };
+  } catch {
+    // Non-JSON (often a Next.js HTML error page when the server is stale).
+  }
 
   if (!response.ok) {
-    throw new Error(data?.error ?? 'Could not load ops metrics.');
+    const detail = data?.error ?? `HTTP ${response.status}`;
+    console.warn('fetchDashboardOpsMetrics failed:', detail);
+    return {
+      courses: null,
+      issues: null,
+      inspections: null,
+    };
   }
 
   return {

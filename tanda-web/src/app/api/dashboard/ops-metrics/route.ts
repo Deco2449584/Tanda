@@ -32,10 +32,23 @@ export async function GET(request: Request) {
     );
 
     const [coursesBlock, issuesBlock, inspectionsBlock] = await Promise.all([
-      access.courses ? buildCoursesMetrics() : Promise.resolve(null),
-      access.issueReports ? buildIssuesMetrics() : Promise.resolve(null),
+      access.courses
+        ? buildCoursesMetrics().catch((error) => {
+            console.error('ops-metrics courses', error);
+            return null;
+          })
+        : Promise.resolve(null),
+      access.issueReports
+        ? buildIssuesMetrics().catch((error) => {
+            console.error('ops-metrics issues', error);
+            return null;
+          })
+        : Promise.resolve(null),
       access.inspections && canReadInspections
-        ? buildInspectionsMetrics(start, end)
+        ? buildInspectionsMetrics(start, end).catch((error) => {
+            console.error('ops-metrics inspections', error);
+            return null;
+          })
         : Promise.resolve(null),
     ]);
 

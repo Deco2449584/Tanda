@@ -33,7 +33,10 @@ export function useDashboardOpsMetrics(dateRange: DateRange) {
       });
       setMetrics(next);
     } catch (error) {
-      console.error('useDashboardOpsMetrics', error);
+      console.warn(
+        'useDashboardOpsMetrics',
+        error instanceof Error ? error.message : error,
+      );
       setMetrics(EMPTY);
     } finally {
       setLoading(false);

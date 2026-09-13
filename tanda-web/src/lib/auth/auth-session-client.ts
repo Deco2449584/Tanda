@@ -11,23 +11,42 @@ async function getIdToken(): Promise<string | null> {
   return token ?? null;
 }
 
-export async function claimAuthSession(sessionId: string): Promise<void> {
+export async function claimAuthSession(sessionId: string): Promise<boolean> {
   const token = await getIdToken();
   if (!token) {
-    throw new Error('Not authenticated.');
+    return false;
   }
 
-  const response = await fetch('/api/auth/session', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ sessionId }),
-  });
+  try {
+    const response = await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionId }),
+    });
 
-  if (!response.ok) {
-    throw new Error('Could not claim auth session.');
+    if (!response.ok) {
+      const raw = await response.text();
+      let detail = `HTTP ${response.status}`;
+      try {
+        const data = JSON.parse(raw) as { error?: string };
+        if (data.error) detail = data.error;
+      } catch {
+        // ignore non-JSON
+      }
+      console.warn('claimAuthSession failed', detail);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn(
+      'claimAuthSession network error',
+      error instanceof Error ? error.message : error,
+    );
+    return false;
   }
 }
 

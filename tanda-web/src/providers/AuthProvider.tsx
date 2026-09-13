@@ -141,11 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionId = getStoredAuthSessionId();
       if (!sessionId) return;
 
-      try {
-        await claimAuthSession(sessionId);
-      } catch (error) {
-        console.error('AuthProvider claim session', error);
-      }
+      await claimAuthSession(sessionId);
     };
 
     unsubscribeSession = subscribeToAuthSession(user.uid, (remoteSessionId) => {

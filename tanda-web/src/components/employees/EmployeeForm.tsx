@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { addDoc, collection, deleteField, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 import {
   Briefcase,
@@ -28,6 +28,7 @@ import {
   type CustomFieldDraft,
 } from '@/components/employees/EmployeeCustomFieldsForm';
 import { EmployeePhotoUpload } from '@/components/employees/EmployeePhotoUpload';
+import { EmployeeDangerZone } from '@/components/employees/EmployeeDangerZone';
 import { PersonalProfileStatusBadge } from '@/components/employees/PersonalProfileStatusBadge';
 import {
   FormActions,
@@ -38,6 +39,7 @@ import {
   FormToggle,
   formInputClass,
 } from '@/components/employees/employee-form-ui';
+import { requestUpdateEmployee } from '@/lib/employees/request-update-employee';
 import { reviewEmployeeProfileRequest } from '@/lib/employees/employee-profile-api';
 import {
   fetchEmployeeCustomFieldValues,
@@ -495,10 +497,17 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           visa: isWorkforce ? visa : undefined,
         });
 
-        if (!normalizedForm.locationId?.trim()) payload.locationId = deleteField();
-        if (!normalizedForm.locationGroupId?.trim()) payload.locationGroupId = deleteField();
-        if (!normalizedForm.startDate?.trim()) payload.startDate = deleteField();
-        if (!normalizedForm.endDate?.trim()) payload.endDate = deleteField();
+        const deleteFields: string[] = [];
+
+        function markDelete(field: string) {
+          delete payload[field];
+          deleteFields.push(field);
+        }
+
+        if (!normalizedForm.locationId?.trim()) markDelete('locationId');
+        if (!normalizedForm.locationGroupId?.trim()) markDelete('locationGroupId');
+        if (!normalizedForm.startDate?.trim()) markDelete('startDate');
+        if (!normalizedForm.endDate?.trim()) markDelete('endDate');
 
         const optionalPersonalFields = [
           'phone',
@@ -517,30 +526,37 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
 
         for (const field of optionalPersonalFields) {
           if (!isWorkforce || !form[field]?.trim()) {
-            payload[field] = deleteField();
+            markDelete(field);
           }
         }
 
         if (!isWorkforce) {
-          payload.photoUrl = deleteField();
-          payload.passportUrl = deleteField();
-          payload.passportFileName = deleteField();
-          payload.visaUrl = deleteField();
-          payload.visaFileName = deleteField();
+          markDelete('photoUrl');
+          markDelete('passportUrl');
+          markDelete('passportFileName');
+          markDelete('visaUrl');
+          markDelete('visaFileName');
           payload.allowCheckInWithoutScheduledShift = false;
+          payload.webInspectionsEnabled = false;
+          payload.kioskEnabled = false;
+          payload.continentalInspectEnabled = false;
+          payload.continentalInspectAdmin = false;
         } else {
           if (!passport && !employee.passportUrl) {
-            payload.passportUrl = deleteField();
-            payload.passportFileName = deleteField();
+            markDelete('passportUrl');
+            markDelete('passportFileName');
           }
 
           if (!visa && !employee.visaUrl) {
-            payload.visaUrl = deleteField();
-            payload.visaFileName = deleteField();
+            markDelete('visaUrl');
+            markDelete('visaFileName');
           }
         }
 
-        await updateDoc(doc(db, COLLECTIONS.EMPLOYEES, employee.id), payload);
+        await requestUpdateEmployee(employee.id, {
+          fields: payload,
+          deleteFields,
+        });
 
         if (isMaster) {
           const initialAccessRole = deriveAccessRole(employee);
@@ -1210,6 +1226,8 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
 
       {error ? <FormAlert variant="error">{error}</FormAlert> : null}
       {!error && success ? <FormAlert variant="success">{success}</FormAlert> : null}
+
+      {isEditMode && employee ? <EmployeeDangerZone employee={employee} /> : null}
 
       <FormActions
         onCancel={onCancel}
