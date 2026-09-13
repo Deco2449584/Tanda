@@ -105,8 +105,9 @@ export const NOTIFICATION_CHANNEL_LABELS: Record<
       'Late arrivals, no-shows, missing check-ins, and justification requests.',
   },
   leaveRequests: {
-    title: 'Leave requests',
-    description: 'Pending leave requests and related admin alerts.',
+    title: 'Staff requests',
+    description:
+      'Pending leave, late, and no-show requests and related admin alerts.',
   },
   courses: {
     title: 'Courses & training',

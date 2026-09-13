@@ -23,7 +23,7 @@ const MODULE_LABELS: Record<AdminModuleKey, string> = {
   schedule: 'Schedule',
   employees: 'Employees',
   announcements: 'Announcements',
-  leaveRequests: 'Leave requests',
+  leaveRequests: 'Staff requests',
   inspections: 'Inspections',
   issueReports: 'Issue reports',
   helpTutorials: 'Help guides',

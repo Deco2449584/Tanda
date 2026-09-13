@@ -42,8 +42,8 @@ export const ADMIN_ACTION_LABELS: {
   },
   leaveRequests: {
     manage: 'Approve / reject requests',
-    update: 'Edit leave requests',
-    delete: 'Delete leave requests',
+    update: 'Edit staff requests',
+    delete: 'Delete staff requests',
   },
   announcements: {
     publish: 'Publish announcements',

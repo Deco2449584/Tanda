@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { createAttendanceRecordRequest, AttendanceRestrictionError } from '@/lib/attendance/attendance-records-api';
 import { formValuesToTimestamp } from '@/lib/attendance/format';
+import { isWorkforceEmployee } from '@/lib/employees/is-workforce-employee';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import type { AttendanceRecord, AttendanceType } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
@@ -32,7 +33,9 @@ export function AddManualRecordModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const activeEmployees = employees.filter((employee) => employee.active);
+  const activeEmployees = employees.filter((employee) =>
+    isWorkforceEmployee(employee),
+  );
   const activeLocations = locations.filter((location) => location.active);
 
   useEffect(() => {
