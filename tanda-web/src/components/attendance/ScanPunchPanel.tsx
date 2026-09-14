@@ -55,6 +55,7 @@ export function ScanPunchPanel({
   const [phase, setPhase] = useState<PunchPhase>('auth');
   const [error, setError] = useState('');
   const [geoBlocked, setGeoBlocked] = useState(false);
+  const [outsideGeofence, setOutsideGeofence] = useState(false);
   const [result, setResult] = useState<ScanPunchResponse | null>(null);
   const startedRef = useRef(false);
   const onCompletedRef = useRef(onCompleted);
@@ -66,6 +67,7 @@ export function ScanPunchPanel({
     setPhase('punching');
     setError('');
     setGeoBlocked(false);
+    setOutsideGeofence(false);
 
     const recent = recentPunchResults.get(lockKey);
     if (recent && Date.now() - recent.at < RECENT_PUNCH_MS) {
@@ -119,9 +121,10 @@ export function ScanPunchPanel({
       onCompletedRef.current?.();
     } catch (err) {
       startedRef.current = false;
-      setGeoBlocked(
-        err instanceof ScanPunchRequestError && Boolean(err.reason),
-      );
+      const reason =
+        err instanceof ScanPunchRequestError ? err.reason : undefined;
+      setOutsideGeofence(reason === 'outside_radius');
+      setGeoBlocked(Boolean(reason));
       setError(err instanceof Error ? err.message : 'Could not record punch.');
       setPhase('error');
     } finally {
@@ -222,9 +225,9 @@ export function ScanPunchPanel({
             </div>
             {geoBlocked ? (
               <p className="mx-auto max-w-sm rounded-lg border border-amber-500/40 bg-amber-950/25 px-3 py-2 text-left text-xs leading-relaxed text-amber-200">
-                Clock-in at this client only works on site. Allow location
-                access for this site in your browser settings, stay near the
-                entrance, and try again.
+                {outsideGeofence
+                  ? 'You are outside the allowed range for this client. Move closer to the warehouse entrance and try again.'
+                  : 'Clock-in at this client only works on site. Allow location access for this site in your browser settings, stay near the entrance, and try again.'}
               </p>
             ) : null}
             <div className="flex flex-wrap justify-center gap-2">

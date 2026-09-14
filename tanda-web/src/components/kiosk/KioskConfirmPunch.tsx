@@ -8,6 +8,7 @@ interface KioskConfirmPunchProps {
   employeeName: string;
   warehouseLabel: string;
   photoPreviewUrl: string;
+  submitting?: boolean;
   onAccept: () => void;
   onCancel: () => void;
 }
@@ -30,6 +31,7 @@ export function KioskConfirmPunch({
   employeeName,
   warehouseLabel,
   photoPreviewUrl,
+  submitting = false,
   onAccept,
   onCancel,
 }: KioskConfirmPunchProps) {
@@ -61,14 +63,16 @@ export function KioskConfirmPunch({
         <button
           type="button"
           onClick={onAccept}
-          className="flex min-h-14 w-full items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/20 text-lg font-semibold text-emerald-200 transition hover:brightness-110"
+          disabled={submitting}
+          className="flex min-h-14 w-full items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/20 text-lg font-semibold text-emerald-200 transition hover:brightness-110 disabled:opacity-50"
         >
-          Accept
+          {submitting ? 'Saving…' : 'Accept'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base font-medium text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+          disabled={submitting}
+          className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base font-medium text-zinc-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-50"
         >
           Cancel
         </button>

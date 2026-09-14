@@ -23,7 +23,7 @@ import { getKioskAuthHeaders } from '@/lib/kiosk/kiosk-auth-headers';
 import { recordLocalKioskPunch } from '@/lib/kiosk/local-punch-history';
 import type { AttendanceType } from '@/lib/types/attendance';
 
-type KioskStep = 'pin' | 'choose' | 'camera' | 'confirm' | 'success';
+type KioskStep = 'pin' | 'choose' | 'camera' | 'confirm' | 'saving' | 'success';
 
 interface PendingCapture {
   imageBlob: Blob;
@@ -195,87 +195,81 @@ export function KioskScreen({
     });
   };
 
-  const submitPunchInBackground = useCallback(
-    (params: {
+  const submitPunch = useCallback(
+    async (params: {
       imageBlob: Blob;
       employeeId: string;
       employeeName: string;
       employeePin: string;
       actionType: AttendanceType;
       geofenceRequired: boolean;
+      photoPreviewUrl: string;
     }) => {
-      void (async () => {
-        try {
-          const now = new Date();
-          const year = String(now.getFullYear());
-          const month = String(now.getMonth() + 1).padStart(2, '0');
-          const fileName = `${Date.now()}-${params.actionType}.webp`;
-          const photoPath = `attendance/${params.employeeId}/${year}/${month}/${fileName}`;
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const fileName = `${Date.now()}-${params.actionType}.webp`;
+      const photoPath = `attendance/${params.employeeId}/${year}/${month}/${fileName}`;
 
-          const pendingGeo =
-            geoFixRef.current ??
-            (params.geofenceRequired
-              ? captureGeofencePosition()
-              : captureCurrentPosition());
-          geoFixRef.current = null;
+      const pendingGeo =
+        geoFixRef.current ??
+        (params.geofenceRequired
+          ? captureGeofencePosition()
+          : captureCurrentPosition());
+      geoFixRef.current = null;
 
-          const geo = await pendingGeo;
-          if (params.geofenceRequired && !geo) {
-            showError(GEOFENCE_GPS_MISSING);
-            return;
-          }
+      const geo = await pendingGeo;
+      if (params.geofenceRequired && !geo) {
+        throw new Error(GEOFENCE_GPS_MISSING);
+      }
 
-          const photoUrl = await uploadImageToStorage(
-            photoPath,
-            params.imageBlob,
-          );
+      const photoUrl = await uploadImageToStorage(photoPath, params.imageBlob);
 
-          const response = await fetch('/api/kiosk/punch', {
-            method: 'POST',
-            headers: await getKioskAuthHeaders(),
-            body: JSON.stringify({
-              employeePin: params.employeePin,
-              locationId,
-              photoPath,
-              photoUrl,
-              actionType: params.actionType,
-              ...(geo
-                ? {
-                    latitude: geo.latitude,
-                    longitude: geo.longitude,
-                    geoAccuracy: geo.accuracy,
-                    geoCapturedAt: geo.geoCapturedAt,
-                  }
-                : {}),
-            }),
-          });
+      const response = await fetch('/api/kiosk/punch', {
+        method: 'POST',
+        headers: await getKioskAuthHeaders(),
+        body: JSON.stringify({
+          employeePin: params.employeePin,
+          locationId,
+          photoPath,
+          photoUrl,
+          actionType: params.actionType,
+          ...(geo
+            ? {
+                latitude: geo.latitude,
+                longitude: geo.longitude,
+                geoAccuracy: geo.accuracy,
+                geoCapturedAt: geo.geoCapturedAt,
+              }
+            : {}),
+        }),
+      });
 
-          if (!response.ok) {
-            const data = (await response.json().catch(() => null)) as
-              | { error?: string }
-              | null;
-            throw new Error(data?.error ?? 'Could not save attendance.');
-          }
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(data?.error ?? 'Could not save attendance.');
+      }
 
-          recordLocalKioskPunch({
-            employeeId: params.employeeId,
-            employeeName: params.employeeName,
-            actionType: params.actionType,
-            locationId,
-            locationName: warehouseLabel,
-            createdAt: now,
-          });
-        } catch (error) {
-          console.error('Kiosk background punch failed:', error);
-          showError(
-            error instanceof Error
-              ? error.message
-              : 'Could not save the record. Please try again.',
-          );
-        }
-      })();
+      recordLocalKioskPunch({
+        employeeId: params.employeeId,
+        employeeName: params.employeeName,
+        actionType: params.actionType,
+        locationId,
+        locationName: warehouseLabel,
+        createdAt: now,
+      });
+
+      return {
+        employeeName: params.employeeName,
+        actionType: params.actionType,
+        recordedAt: now,
+        photoPreviewUrl: params.photoPreviewUrl,
+        warehouseLabel,
+      } satisfies KioskSuccessData;
     },
-    [locationId, showError, warehouseLabel],
+    [locationId, warehouseLabel],
   );
 
   const handleCapture = (imageBlob: Blob, previewDataUrl: string) => {
@@ -301,33 +295,49 @@ export function KioskScreen({
     }
 
     const { imageBlob, previewUrl } = pendingCapture;
-    setPendingCapture(null);
+    const currentSession = session;
+    const currentPin = pin;
 
-    setSuccessData({
-      employeeName: session.employeeName,
-      actionType: session.actionType,
-      recordedAt: new Date(),
-      photoPreviewUrl: previewUrl,
-      warehouseLabel,
-    });
-    setStep('success');
+    setErrorMessage(null);
+    setProcessing(true);
+    setStep('saving');
 
-    submitPunchInBackground({
-      imageBlob,
-      employeeId: session.employeeId,
-      employeeName: session.employeeName,
-      employeePin: pin,
-      actionType: session.actionType,
-      geofenceRequired: session.geofenceRequired,
-    });
+    void (async () => {
+      try {
+        const data = await submitPunch({
+          imageBlob,
+          employeeId: currentSession.employeeId,
+          employeeName: currentSession.employeeName,
+          employeePin: currentPin,
+          actionType: currentSession.actionType,
+          geofenceRequired: currentSession.geofenceRequired,
+          photoPreviewUrl: previewUrl,
+        });
+        setPendingCapture(null);
+        setSuccessData(data);
+        setStep('success');
+      } catch (error) {
+        console.error('Kiosk punch failed:', error);
+        showError(
+          error instanceof Error
+            ? error.message
+            : 'Could not save the record. Please try again.',
+        );
+        // Stay on confirm so they can retry or cancel — never show success.
+        setStep('confirm');
+      } finally {
+        setProcessing(false);
+      }
+    })();
   };
 
   const handleConfirmCancel = () => {
+    if (processing) return;
     clearPendingCapture();
     setStep('camera');
   };
 
-  const showLogo = step !== 'success';
+  const showLogo = step !== 'success' && step !== 'saving';
 
   return (
     <div className="kiosk-ambient relative flex min-h-[100dvh] w-full flex-col text-white">
@@ -435,9 +445,22 @@ export function KioskScreen({
                 employeeName={session.employeeName}
                 warehouseLabel={warehouseLabel}
                 photoPreviewUrl={pendingCapture.previewUrl}
+                submitting={processing}
                 onAccept={handleConfirmAccept}
                 onCancel={handleConfirmCancel}
               />
+            )}
+
+            {step === 'saving' && session && (
+              <div className="flex w-full max-w-md flex-col items-center gap-4 px-2 text-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <p className="text-lg font-semibold text-white">
+                  Checking location and saving…
+                </p>
+                <p className="text-sm text-zinc-400">
+                  Stay at the site until this finishes. Do not leave the kiosk.
+                </p>
+              </div>
             )}
 
             {step === 'success' && successData && (

@@ -1,15 +1,31 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { Crosshair, Loader2, ShieldCheck } from 'lucide-react';
+import {
+  Crosshair,
+  ExternalLink,
+  Loader2,
+  MapPinned,
+  ShieldCheck,
+} from 'lucide-react';
 import { captureCurrentPosition } from '@/lib/geo/capture-position';
 import {
   DEFAULT_GEOFENCE_RADIUS_METERS,
   MAX_GEOFENCE_RADIUS_METERS,
   MIN_GEOFENCE_RADIUS_METERS,
 } from '@/lib/geo/geofence';
+import { buildGoogleMapsUrl } from '@/lib/geo/maps-url';
 import { isValidLatitude, isValidLongitude } from '@/lib/geo/reverse-geocode';
 import type { Location, LocationGeofenceInput } from '@/lib/types/location';
+
+const GeofenceMapPicker = dynamic(
+  () =>
+    import('@/components/settings/GeofenceMapPicker').then(
+      (mod) => mod.GeofenceMapPicker,
+    ),
+  { ssr: false },
+);
 
 export interface GeofenceFormValue {
   latitude: string;
@@ -79,8 +95,7 @@ export function parseGeofenceForm(
 ): LocationGeofenceInput {
   const latitude = value.latitude.trim() ? Number(value.latitude) : null;
   const longitude = value.longitude.trim() ? Number(value.longitude) : null;
-  const hasCoords =
-    isValidLatitude(latitude) && isValidLongitude(longitude);
+  const hasCoords = isValidLatitude(latitude) && isValidLongitude(longitude);
   const radius = value.radius.trim() ? Number(value.radius) : null;
 
   return {
@@ -108,6 +123,7 @@ export function ClientGeofenceFields({
   compact = false,
 }: ClientGeofenceFieldsProps) {
   const [locating, setLocating] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
 
   const inputClass =
     'w-full min-w-0 rounded-lg border border-border-strong bg-surface-base px-3 text-sm text-white outline-none focus:border-primary/50' +
@@ -133,7 +149,13 @@ export function ClientGeofenceFields({
     }
   }
 
-  const hasCoords = Boolean(value.latitude.trim() && value.longitude.trim());
+  const lat = Number(value.latitude);
+  const lng = Number(value.longitude);
+  const hasCoords =
+    Boolean(value.latitude.trim() && value.longitude.trim()) &&
+    isValidLatitude(lat) &&
+    isValidLongitude(lng);
+  const mapsUrl = hasCoords ? buildGoogleMapsUrl(lat, lng) : null;
 
   return (
     <div className="min-w-0 space-y-3 rounded-xl border border-border bg-surface-base/40 p-3 md:p-4">
@@ -144,23 +166,34 @@ export function ClientGeofenceFields({
             Site location (geofence)
           </p>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-subtle">
-            Used to verify QR, NFC, and kiosk punches happen on site. Stand at
-            the warehouse and press “Use my location”.
+            Used to verify QR, NFC, and kiosk punches happen on site. Pick on
+            the map, use your GPS, or type coordinates.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void handleUseMyLocation()}
-          disabled={disabled || locating}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
-        >
-          {locating ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <Crosshair className="h-3.5 w-3.5" aria-hidden />
-          )}
-          {locating ? 'Reading GPS…' : 'Use my location'}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setMapOpen(true)}
+            disabled={disabled}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
+          >
+            <MapPinned className="h-3.5 w-3.5" aria-hidden />
+            Pick on map
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleUseMyLocation()}
+            disabled={disabled || locating}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
+          >
+            {locating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <Crosshair className="h-3.5 w-3.5" aria-hidden />
+            )}
+            {locating ? 'Reading GPS…' : 'Use my location'}
+          </button>
+        </div>
       </div>
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-3">
@@ -211,6 +244,18 @@ export function ClientGeofenceFields({
         </div>
       </div>
 
+      {mapsUrl ? (
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+        >
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          Open in Google Maps
+        </a>
+      ) : null}
+
       <label className="flex items-start gap-2 text-xs text-muted">
         <input
           type="checkbox"
@@ -231,6 +276,23 @@ export function ClientGeofenceFields({
           )}
         </span>
       </label>
+
+      <GeofenceMapPicker
+        open={mapOpen}
+        latitude={value.latitude}
+        longitude={value.longitude}
+        radius={value.radius}
+        disabled={disabled}
+        onClose={() => setMapOpen(false)}
+        onApply={({ latitude: nextLat, longitude: nextLng }) => {
+          onChange({
+            ...value,
+            latitude: nextLat,
+            longitude: nextLng,
+          });
+          setMapOpen(false);
+        }}
+      />
     </div>
   );
 }
