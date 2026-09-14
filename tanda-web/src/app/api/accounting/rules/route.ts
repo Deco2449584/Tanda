@@ -50,7 +50,12 @@ export async function PUT(request: Request) {
       ? (beforeSnapshot.data() as Record<string, unknown>)
       : null;
 
-    await docRef.set({ payRules: rules }, { merge: true });
+    // Replace the whole payRules object so cleared default cells are removed.
+    if (beforeSnapshot.exists) {
+      await docRef.update({ payRules: rules });
+    } else {
+      await docRef.set({ payRules: rules }, { merge: true });
+    }
 
     await recordAuditFromRequest(request, auth.user, {
       action: 'settings.changed',

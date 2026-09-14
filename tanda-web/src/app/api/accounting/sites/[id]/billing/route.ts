@@ -19,7 +19,12 @@ export async function PUT(
 
     const { id } = await context.params;
     const body = (await request.json()) as { billing?: unknown; billingHistory?: unknown };
-    const billing = sanitizeForFirestore(mapSiteBilling(body.billing) ?? {});
+    const mappedBilling = mapSiteBilling(body.billing) ?? {};
+    const billing = sanitizeForFirestore({
+      ...mappedBilling,
+      // Always send cells so Default clears replace the previous map.
+      cells: mappedBilling.cells ?? {},
+    });
 
     const docRef = getAdminFirestore().collection(COLLECTIONS.LOCATIONS).doc(id);
     const snapshot = await docRef.get();
@@ -36,7 +41,7 @@ export async function PUT(
       );
     }
 
-    await docRef.set(payload, { merge: true });
+    await docRef.update(payload);
 
     await recordAuditFromRequest(request, auth.user, {
       action: 'settings.changed',

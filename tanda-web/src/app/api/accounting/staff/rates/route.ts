@@ -63,8 +63,14 @@ export async function POST(request: Request) {
         );
       const payload: Record<string, unknown> = { hourlyRate };
       if (employmentTypeId) payload.employmentTypeId = employmentTypeId;
-      if (payRates) payload.payRates = sanitizeForFirestore(payRates);
-      batch.set(docRef, payload, { merge: true });
+      if (payRates) {
+        payload.payRates = sanitizeForFirestore({
+          ...payRates,
+          cells: payRates.cells ?? {},
+        });
+      }
+      // update replaces the whole payRates map so Default clears stick.
+      batch.update(docRef, payload);
       updated += 1;
     }
 

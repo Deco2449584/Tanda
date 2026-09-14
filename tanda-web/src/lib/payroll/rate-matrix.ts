@@ -65,10 +65,18 @@ export function applyHourlyRateToCells(
   return writeRateCell(cells, 'weekday', BASE_BAND_ID, { rate: hourlyRate });
 }
 
+/**
+ * Keep the weekday/base matrix cell aligned with the top-level hourly rate.
+ * Only sync when an explicit rate is set — syncing `0` (UI "Default") was
+ * overwriting custom Base/$ matrix edits on save.
+ */
 export function withSyncedBaseRate(
   payRates: StaffPayRates | undefined,
   hourlyRate: number,
 ): StaffPayRates {
+  if (!(hourlyRate > 0)) {
+    return { ...(payRates ?? {}) };
+  }
   return {
     ...payRates,
     cells: applyHourlyRateToCells(payRates?.cells, hourlyRate),

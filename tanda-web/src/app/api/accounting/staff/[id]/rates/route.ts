@@ -60,7 +60,14 @@ export async function PUT(
       hourlyRate,
     };
     if (employmentTypeId) payload.employmentTypeId = employmentTypeId;
-    if (payRates) payload.payRates = sanitizeForFirestore(payRates);
+    if (payRates) {
+      // Write the full map so "Default" cells are actually removed. set+merge
+      // deep-merges nested maps and would keep stale weekday/saturday overrides.
+      payload.payRates = sanitizeForFirestore({
+        ...payRates,
+        cells: payRates.cells ?? {},
+      });
+    }
     if (Array.isArray(body.payRateHistory)) {
       payload.payRateHistory = sanitizeForFirestore(
         body.payRateHistory
@@ -69,7 +76,7 @@ export async function PUT(
       );
     }
 
-    await docRef.set(payload, { merge: true });
+    await docRef.update(payload);
 
     await recordAuditFromRequest(request, auth.user, {
       action: 'employee.updated',

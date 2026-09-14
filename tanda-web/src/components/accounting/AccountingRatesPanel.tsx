@@ -117,6 +117,8 @@ export function AccountingRatesPanel({
     employmentTypeId: string;
     payRates: StaffPayRates;
     hourlyRate: number;
+    /** Independent of hourlyRate so Edit works before a number is typed. */
+    baseRateMode: 'default' | 'custom';
   } | null>(null);
   const [siteDraft, setSiteDraft] = useState<SiteBilling | null>(null);
   const [companyPay, setCompanyPay] = useState<PayRateCells | null>(null);
@@ -136,6 +138,10 @@ export function AccountingRatesPanel({
                 selectedStaff.employmentTypeId || rules.employmentTypes[0]?.id || 'full_time',
             payRates: selectedStaff.payRates ?? {},
             hourlyRate: selectedStaff.hourlyRate || 0,
+            baseRateMode:
+              selectedStaff.hourlyRate > 0
+                ? ('custom' as const)
+                : ('default' as const),
           }
         : null;
 
@@ -203,6 +209,8 @@ export function AccountingRatesPanel({
     setStaffDraft({
       employmentTypeId: source.employmentTypeId || currentStaff.employmentTypeId,
       hourlyRate: source.hourlyRate || currentStaff.hourlyRate,
+      baseRateMode:
+        (source.hourlyRate || currentStaff.hourlyRate) > 0 ? 'custom' : 'default',
       payRates: { ...(source.payRates ?? {}) },
     });
     setMessage(`Copied matrix from ${source.name}. Save to keep it.`);
@@ -417,11 +425,12 @@ export function AccountingRatesPanel({
                           <span className="mb-1 block text-xs text-subtle">Base hourly rate ($)</span>
                           <OverrideValueField
                             disabled={!canEdit}
-                            mode={currentStaff.hourlyRate > 0 ? 'custom' : 'default'}
+                            mode={currentStaff.baseRateMode}
                             onModeChange={(mode) => {
                               if (mode === 'default') {
                                 setStaffDraft({
                                   ...currentStaff,
+                                  baseRateMode: 'default',
                                   hourlyRate: 0,
                                 });
                                 return;
@@ -430,19 +439,32 @@ export function AccountingRatesPanel({
                               const seed =
                                 currentStaff.hourlyRate > 0
                                   ? currentStaff.hourlyRate
-                                  : baseHourlyRateFromCells(currentStaff.payRates.cells, 0);
+                                  : baseHourlyRateFromCells(
+                                      currentStaff.payRates.cells,
+                                      baseHourlyRateFromCells(
+                                        rules.defaultPayCells,
+                                        0,
+                                      ),
+                                    );
 
                               setStaffDraft({
                                 ...currentStaff,
+                                baseRateMode: 'custom',
+                                // Keep Edit open even when seed is still empty (0).
                                 hourlyRate: seed,
                               });
                             }}
                             value={
-                              currentStaff.hourlyRate > 0 ? currentStaff.hourlyRate : ''
+                              currentStaff.baseRateMode === 'custom'
+                                ? currentStaff.hourlyRate > 0
+                                  ? currentStaff.hourlyRate
+                                  : ''
+                                : ''
                             }
                             onValueChange={(value) =>
                               setStaffDraft({
                                 ...currentStaff,
+                                baseRateMode: 'custom',
                                 hourlyRate: value === null ? 0 : value,
                               })
                             }
