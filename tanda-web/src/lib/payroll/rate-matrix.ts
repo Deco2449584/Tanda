@@ -58,6 +58,21 @@ export function baseHourlyRateFromCells(
   return fallback;
 }
 
+/**
+ * Staff override if set (> 0), otherwise the company default hourly rate.
+ * Used as the $ base that % cells multiply against.
+ */
+export function effectiveHourlyRate(
+  employeeHourlyRate: number | undefined,
+  rules: Pick<PayRules, 'defaultHourlyRate'> | undefined,
+): number {
+  if (typeof employeeHourlyRate === 'number' && employeeHourlyRate > 0) {
+    return employeeHourlyRate;
+  }
+  const company = rules?.defaultHourlyRate;
+  return typeof company === 'number' && company > 0 ? company : 0;
+}
+
 export function applyHourlyRateToCells(
   cells: PayRateCells | undefined,
   hourlyRate: number,

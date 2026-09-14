@@ -326,6 +326,8 @@ export function mapPayRules(
     overtimeRules,
     minPayHours: asNumber(data.minPayHours) ?? defaults.minPayHours,
     minChargeHours: asNumber(data.minChargeHours) ?? defaults.minChargeHours,
+    defaultHourlyRate:
+      asNumber(data.defaultHourlyRate) ?? defaults.defaultHourlyRate ?? 0,
     minHoursScope,
     publicHolidays,
     allowances,

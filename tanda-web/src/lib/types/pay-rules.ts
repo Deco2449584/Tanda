@@ -133,6 +133,11 @@ export interface PayRules {
   minPayHours: number;
   minChargeHours: number;
   minHoursScope: MinHoursScope;
+  /**
+   * Company-wide base $/h used when a staff member’s hourlyRate is Default (0).
+   * Pay/charge % cells multiply against this unless the staff card has its own rate.
+   */
+  defaultHourlyRate?: number;
   publicHolidays: PayPublicHoliday[];
   allowances: PayAllowance[];
   employmentTypes: PayEmploymentType[];

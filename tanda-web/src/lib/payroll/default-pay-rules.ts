@@ -63,6 +63,8 @@ export const DEFAULT_PAY_RULES: PayRules = {
   ],
   minPayHours: 4,
   minChargeHours: 4,
+  /** Starting base — Holly should set the real company hourly rate here. */
+  defaultHourlyRate: 0,
   minHoursScope: 'session',
   publicHolidays: [],
   allowances: [],

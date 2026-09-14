@@ -11,14 +11,17 @@ import {
   saveStaffRatesRequest,
 } from '@/lib/accounting/accounting-api';
 import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
-import { withSyncedBaseRate, baseHourlyRateFromCells } from '@/lib/payroll/rate-matrix';
+import {
+  withSyncedBaseRate,
+  baseHourlyRateFromCells,
+  effectiveHourlyRate,
+} from '@/lib/payroll/rate-matrix';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
 import type {
   PayRateCells,
   PayRules,
   PayTimeBand,
-  RateTemplate,
   SiteBilling,
   StaffPayRates,
 } from '@/lib/types/pay-rules';
@@ -26,36 +29,13 @@ import type {
 const inputClass =
   'w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary';
 
-type RateKind = 'none' | 'hourly' | 'template' | 'custom';
-type StaffFilter = 'all' | RateKind;
-
-function cellsKey(cells: PayRateCells | undefined): string {
-  if (!cells) return '';
-  return Object.keys(cells)
-    .sort()
-    .map((key) => `${key}:${cells[key]?.rate ?? ''}:${cells[key]?.percent ?? ''}`)
-    .join('|');
-}
-
-function staffRateKind(employee: Employee, templates: RateTemplate[]): RateKind {
-  const cells = employee.payRates?.cells;
-  const hasCells = Boolean(cells && Object.keys(cells).length > 0);
-  if (!hasCells) return employee.hourlyRate > 0 ? 'hourly' : 'none';
-  const key = cellsKey(cells);
-  if (templates.some((template) => cellsKey(template.cells) === key)) return 'template';
-  return 'custom';
-}
-
-function staffInheritanceLabel(employee: Employee, templates: RateTemplate[]): string {
-  const kind = staffRateKind(employee, templates);
-  if (kind === 'none') return 'Using company default pay matrix';
-  if (kind === 'hourly') return 'Using company defaults + base hourly rate';
-  if (kind === 'template') return 'Using a copied rate card';
-  return 'Using a custom pay card';
-}
-
-function siteUsesCompanyDefaults(billing: SiteBilling | undefined): boolean {
-  return !billing?.cells && !billing?.timeBands?.length && billing?.minChargeHours == null;
+function formatMoney(value: number): string {
+  return value.toLocaleString('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 }
 
 function newId(prefix: string): string {
@@ -86,31 +66,15 @@ export function AccountingRatesPanel({
   const [side, setSide] = useState<'staff' | 'sites' | 'company'>('staff');
   const [staffId, setStaffId] = useState('');
   const [siteId, setSiteId] = useState('');
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<StaffFilter>('all');
   const [copyFromId, setCopyFromId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const templates = rules.rateTemplates ?? [];
   const staff = useMemo(() => employees.filter(isPayrollEligibleEmployee), [employees]);
 
-  const filteredStaff = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return staff.filter((employee) => {
-      const kind = staffRateKind(employee, templates);
-      if (filter !== 'all' && kind !== filter) return false;
-      if (!q) return true;
-      return (
-        employee.name.toLowerCase().includes(q) ||
-        employee.employeeId.toLowerCase().includes(q)
-      );
-    });
-  }, [staff, search, filter, templates]);
-
-  const selectedStaff = staff.find((item) => item.id === staffId) ?? filteredStaff[0] ?? staff[0];
+  const selectedStaff = staff.find((item) => item.id === staffId) ?? staff[0];
   const selectedSite = locations.find((item) => item.id === siteId) ?? locations[0];
 
   const [staffDraft, setStaffDraft] = useState<{
@@ -123,6 +87,7 @@ export function AccountingRatesPanel({
   const [siteDraft, setSiteDraft] = useState<SiteBilling | null>(null);
   const [companyPay, setCompanyPay] = useState<PayRateCells | null>(null);
   const [companyCharge, setCompanyCharge] = useState<PayRateCells | null>(null);
+  const [companyHourlyRate, setCompanyHourlyRate] = useState<number | null>(null);
 
   const staffKey = selectedStaff?.id ?? '';
   const siteKey = selectedSite?.id ?? '';
@@ -229,10 +194,12 @@ export function AccountingRatesPanel({
     try {
       await savePayRulesRequest({
         ...rules,
+        defaultHourlyRate: companyHourlyRate ?? rules.defaultHourlyRate ?? 0,
         defaultPayCells: companyPay ?? rules.defaultPayCells,
         defaultChargeCells: companyCharge ?? rules.defaultChargeCells,
       });
       await onRulesSaved();
+      setCompanyHourlyRate(null);
       setMessage('Saved company default matrices.');
       setToast({
         id: `company-defaults-saved-${Date.now()}`,
@@ -245,14 +212,6 @@ export function AccountingRatesPanel({
       setSaving(false);
     }
   }
-
-  const counts = useMemo(() => {
-    const result = { none: 0, hourly: 0, template: 0, custom: 0 };
-    for (const employee of staff) {
-      result[staffRateKind(employee, templates)] += 1;
-    }
-    return result;
-  }, [staff, templates]);
 
   return (
     <div className="min-w-0 space-y-5">
@@ -284,297 +243,215 @@ export function AccountingRatesPanel({
         <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
           {staff.length === 0 ? (
             <p className="text-sm text-subtle">No payroll-eligible employees.</p>
-          ) : (
+          ) : currentStaff && selectedStaff ? (
             <>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ['all', `All (${staff.length})`],
-                    ['none', `No rate card (${counts.none})`],
-                    ['hourly', `Hourly rate only (${counts.hourly})`],
-                    ['template', `From template (${counts.template})`],
-                    ['custom', `Custom card (${counts.custom})`],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setFilter(id)}
-                    className={`rounded-xl border px-3 py-2 text-xs font-medium ${
-                      filter === id
-                        ? 'border-primary/50 bg-primary/15 text-primary shadow-[0_0_0_1px_rgba(236,72,153,0.15)]'
-                        : 'border-border bg-surface-base/40 text-muted'
-                    }`}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <label className="block">
+                  <span className="mb-1 block text-xs text-subtle">Employee</span>
+                  <select
+                    value={selectedStaff.id}
+                    onChange={(event) => {
+                      setStaffId(event.target.value);
+                      setStaffDraft(null);
+                    }}
+                    className={inputClass}
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <div className="space-y-2">
-                  <label className="block md:hidden">
-                    <span className="mb-1 block text-xs text-subtle">Employee</span>
-                    <select
-                      value={selectedStaff?.id ?? ''}
-                      onChange={(event) => {
-                        setStaffId(event.target.value);
-                        setStaffDraft(null);
-                      }}
-                      className={inputClass}
-                    >
-                      {filteredStaff.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="hidden items-center gap-2 rounded-lg border border-border/60 bg-surface-base/30 px-3 py-2 text-xs text-muted md:flex">
-                    <input
-                      type="checkbox"
-                      checked={filter === 'all'}
-                      onChange={(event) => {
-                        if (event.target.checked) {
-                          setFilter('all');
-                        }
-                      }}
-                    />
-                    All staff
-                  </label>
+                    {staff.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.name}
+                        {employee.employeeId ? ` (${employee.employeeId})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-subtle">Employment type</span>
+                  <select
+                    disabled={!canEdit}
+                    value={currentStaff.employmentTypeId}
+                    onChange={(event) =>
+                      setStaffDraft({
+                        ...currentStaff,
+                        employmentTypeId: event.target.value,
+                      })
+                    }
+                    className={inputClass}
+                  >
+                    {rules.employmentTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-subtle">Min pay hours</span>
                   <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search by name or ID"
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    disabled={!canEdit}
+                    placeholder={`${rules.minPayHours} (company default)`}
+                    value={currentStaff.payRates.minPayHours ?? ''}
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      setStaffDraft({
+                        ...currentStaff,
+                        payRates: {
+                          ...currentStaff.payRates,
+                          minPayHours: raw === '' ? null : Number(raw) || 0,
+                        },
+                      });
+                    }}
                     className={inputClass}
                   />
-                  <ul className="hidden max-h-80 space-y-2 overflow-y-auto rounded-xl border border-border/60 bg-surface-base/20 p-2 md:block">
-                    {filteredStaff.map((employee) => (
-                      <li key={employee.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStaffId(employee.id);
-                            setStaffDraft(null);
-                          }}
-                          className={`w-full rounded-xl border px-3 py-3 text-left transition ${
-                            selectedStaff?.id === employee.id
-                              ? 'border-primary/50 bg-primary/10 text-white'
-                              : 'border-border/60 bg-surface-base/30 text-muted hover:border-border hover:bg-surface-hover/40'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{employee.name}</p>
-                              <p className="mt-1 text-xs text-subtle">
-                                {employee.employeeId} · {staffInheritanceLabel(employee, templates)}
-                              </p>
-                            </div>
-                            {selectedStaff?.id === employee.id ? (
-                              <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                                Editing
-                              </span>
-                            ) : null}
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="min-w-0">
-                  {currentStaff && selectedStaff ? (
-                    <>
-                      <div className="mb-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
-                        <p className="text-sm font-medium text-white">Pay side</p>
-                        <p className="mt-1 text-xs text-subtle">
-                          This section controls what you pay <span className="text-foreground">{selectedStaff.name}</span>.
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
-                            {staffInheritanceLabel(selectedStaff, templates)}
-                          </span>
-                          {currentStaff.payRates.effectiveFrom ? (
-                            <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted">
-                              Effective from {currentStaff.payRates.effectiveFrom}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        <label className="block sm:col-span-1">
-                          <span className="mb-1 block text-xs text-subtle">Employment type</span>
-                          <select
-                            disabled={!canEdit}
-                            value={currentStaff.employmentTypeId}
-                            onChange={(event) =>
-                              setStaffDraft({
-                                ...currentStaff,
-                                employmentTypeId: event.target.value,
-                              })
-                            }
-                            className={inputClass}
-                          >
-                            {rules.employmentTypes.map((type) => (
-                              <option key={type.id} value={type.id}>
-                                {type.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1 block text-xs text-subtle">Base hourly rate ($)</span>
-                          <OverrideValueField
-                            disabled={!canEdit}
-                            mode={currentStaff.baseRateMode}
-                            onModeChange={(mode) => {
-                              if (mode === 'default') {
-                                setStaffDraft({
-                                  ...currentStaff,
-                                  baseRateMode: 'default',
-                                  hourlyRate: 0,
-                                });
-                                return;
-                              }
-
-                              const seed =
-                                currentStaff.hourlyRate > 0
-                                  ? currentStaff.hourlyRate
-                                  : baseHourlyRateFromCells(
-                                      currentStaff.payRates.cells,
-                                      baseHourlyRateFromCells(
-                                        rules.defaultPayCells,
-                                        0,
-                                      ),
-                                    );
-
-                              setStaffDraft({
-                                ...currentStaff,
-                                baseRateMode: 'custom',
-                                // Keep Edit open even when seed is still empty (0).
-                                hourlyRate: seed,
-                              });
-                            }}
-                            value={
-                              currentStaff.baseRateMode === 'custom'
-                                ? currentStaff.hourlyRate > 0
-                                  ? currentStaff.hourlyRate
-                                  : ''
-                                : ''
-                            }
-                            onValueChange={(value) =>
-                              setStaffDraft({
-                                ...currentStaff,
-                                baseRateMode: 'custom',
-                                hourlyRate: value === null ? 0 : value,
-                              })
-                            }
-                            placeholder="0.00"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1 block text-xs text-subtle">Min pay hours</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.25"
-                            disabled={!canEdit}
-                            placeholder="Inherits company default"
-                            value={currentStaff.payRates.minPayHours ?? ''}
-                            onChange={(event) => {
-                              const raw = event.target.value;
-                              setStaffDraft({
-                                ...currentStaff,
-                                payRates: {
-                                  ...currentStaff.payRates,
-                                  minPayHours: raw === '' ? null : Number(raw) || 0,
-                                },
-                              });
-                            }}
-                            className={inputClass}
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1 block text-xs text-subtle">Effective from</span>
-                          <input
-                            type="date"
-                            disabled={!canEdit}
-                            value={currentStaff.payRates.effectiveFrom ?? ''}
-                            onChange={(event) =>
-                              setStaffDraft({
-                                ...currentStaff,
-                                payRates: {
-                                  ...currentStaff.payRates,
-                                  effectiveFrom: event.target.value || undefined,
-                                },
-                              })
-                            }
-                            className={inputClass}
-                          />
-                        </label>
-                        <label className="block sm:col-span-3 lg:col-span-1">
-                          <span className="mb-1 block text-xs text-subtle">Copy from</span>
-                          <div className="flex flex-col gap-2 sm:flex-row">
-                            <select
-                              value={copyFromId}
-                              onChange={(event) => setCopyFromId(event.target.value)}
-                              className={inputClass}
-                            >
-                              <option value="">Select staff</option>
-                              {staff
-                                .filter((item) => item.id !== selectedStaff.id)
-                                .map((item) => (
-                                  <option key={item.id} value={item.id}>
-                                    {item.name}
-                                  </option>
-                                ))}
-                            </select>
-                            <button
-                              type="button"
-                              disabled={!copyFromId || !canEdit}
-                              onClick={() => void copyFrom()}
-                              className="rounded-lg border border-border px-3 py-2 text-xs text-muted disabled:opacity-50 sm:whitespace-nowrap"
-                            >
-                              Copy
-                            </button>
-                          </div>
-                        </label>
-                      </div>
-
-                      <div className="mt-5">
-                        <RateMatrixEditor
-                          rules={rules}
-                          cells={currentStaff.payRates.cells}
-                          disabled={!canEdit}
-                          baseRateHint={currentStaff.hourlyRate}
-                          emptyHint="Choose Default to inherit the company matrix, or Edit to set a custom value for this band."
-                          emptyCellLabel="Default"
-                          onChange={(cells) =>
-                            setStaffDraft({
-                              ...currentStaff,
-                              payRates: { ...currentStaff.payRates, cells },
-                            })
-                          }
-                        />
-                      </div>
-
-                      {canEdit ? (
-                        <div className="mt-4">
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() => void saveStaff()}
-                            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 sm:w-auto sm:px-6"
-                          >
-                            {saving ? 'Saving…' : `Save rates for ${selectedStaff.name}`}
-                          </button>
-                        </div>
-                      ) : null}
-                    </>
+                  {currentStaff.payRates.minPayHours == null ? (
+                    <p className="mt-1 text-[11px] text-subtle">
+                      Inherits {rules.minPayHours} h from company rules.
+                    </p>
                   ) : null}
-                </div>
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-xs text-subtle">
+                    Base hourly rate ($)
+                  </span>
+                  <OverrideValueField
+                    disabled={!canEdit}
+                    mode={currentStaff.baseRateMode}
+                    onModeChange={(mode) => {
+                      if (mode === 'default') {
+                        setStaffDraft({
+                          ...currentStaff,
+                          baseRateMode: 'default',
+                          hourlyRate: 0,
+                        });
+                        return;
+                      }
+
+                      const seed =
+                        currentStaff.hourlyRate > 0
+                          ? currentStaff.hourlyRate
+                          : effectiveHourlyRate(0, rules) ||
+                            baseHourlyRateFromCells(currentStaff.payRates.cells, 0);
+
+                      setStaffDraft({
+                        ...currentStaff,
+                        baseRateMode: 'custom',
+                        hourlyRate: seed,
+                      });
+                    }}
+                    value={
+                      currentStaff.baseRateMode === 'custom'
+                        ? currentStaff.hourlyRate > 0
+                          ? currentStaff.hourlyRate
+                          : ''
+                        : ''
+                    }
+                    onValueChange={(value) =>
+                      setStaffDraft({
+                        ...currentStaff,
+                        baseRateMode: 'custom',
+                        hourlyRate: value === null ? 0 : value,
+                      })
+                    }
+                    placeholder={
+                      (rules.defaultHourlyRate ?? 0) > 0
+                        ? String(rules.defaultHourlyRate)
+                        : '0.00'
+                    }
+                    defaultOptionLabel="Default"
+                  />
+                  {currentStaff.baseRateMode === 'default' ? (
+                    <p className="mt-1 text-[11px] text-subtle">
+                      {(rules.defaultHourlyRate ?? 0) > 0
+                        ? `Inherits ${formatMoney(rules.defaultHourlyRate ?? 0)}/h from company defaults — % loadings multiply against that base.`
+                        : 'Set a company default hourly rate under Defaults, or choose Edit for this employee.'}
+                    </p>
+                  ) : null}
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-subtle">Effective from</span>
+                  <input
+                    type="date"
+                    disabled={!canEdit}
+                    value={currentStaff.payRates.effectiveFrom ?? ''}
+                    onChange={(event) =>
+                      setStaffDraft({
+                        ...currentStaff,
+                        payRates: {
+                          ...currentStaff.payRates,
+                          effectiveFrom: event.target.value || undefined,
+                        },
+                      })
+                    }
+                    className={inputClass}
+                  />
+                </label>
+                <label className="block sm:col-span-3">
+                  <span className="mb-1 block text-xs text-subtle">Copy from</span>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                    <select
+                      value={copyFromId}
+                      onChange={(event) => setCopyFromId(event.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Select staff</option>
+                      {staff
+                        .filter((item) => item.id !== selectedStaff.id)
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!copyFromId || !canEdit}
+                      onClick={() => void copyFrom()}
+                      className="rounded-lg border border-border px-3 py-2 text-xs text-muted disabled:opacity-50 sm:whitespace-nowrap"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </label>
               </div>
+
+              <div className="mt-5">
+                <RateMatrixEditor
+                  rules={rules}
+                  cells={currentStaff.payRates.cells}
+                  disabled={!canEdit}
+                  baseRateHint={effectiveHourlyRate(
+                    currentStaff.baseRateMode === 'custom'
+                      ? currentStaff.hourlyRate
+                      : 0,
+                    rules,
+                  )}
+                  emptyHint="Choose Default to inherit the company matrix, or Edit to set a custom value for this band."
+                  emptyCellLabel="Default"
+                  onChange={(cells) =>
+                    setStaffDraft({
+                      ...currentStaff,
+                      payRates: { ...currentStaff.payRates, cells },
+                    })
+                  }
+                />
+              </div>
+
+              {canEdit ? (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void saveStaff()}
+                    className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 sm:w-auto sm:px-6"
+                  >
+                    {saving ? 'Saving…' : `Save rates for ${selectedStaff.name}`}
+                  </button>
+                </div>
+              ) : null}
             </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -584,25 +461,6 @@ export function AccountingRatesPanel({
             <p className="text-sm text-subtle">No locations yet.</p>
           ) : (
             <>
-              <div className="mb-4 rounded-xl border border-border/70 bg-surface-base/30 p-4">
-                <p className="text-sm font-medium text-white">Charge side</p>
-                <p className="mt-1 text-xs text-subtle">
-                  This section controls what the client pays you for worked hours at <span className="text-foreground">{selectedSite?.name}</span>.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
-                    {siteUsesCompanyDefaults(selectedSite?.billing)
-                      ? 'Using company default charge matrix'
-                      : 'Using a site-specific charge card'}
-                  </span>
-                  {currentSite.effectiveFrom ? (
-                    <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted">
-                      Effective from {currentSite.effectiveFrom}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
               <div className="grid gap-4 sm:grid-cols-3">
                 <label className="block">
                   <span className="mb-1 block text-xs text-subtle">Client</span>
@@ -628,7 +486,7 @@ export function AccountingRatesPanel({
                     min="0"
                     step="0.25"
                     disabled={!canEdit}
-                    placeholder="Inherits company default"
+                    placeholder={`${rules.minChargeHours} (company default)`}
                     value={currentSite.minChargeHours ?? ''}
                     onChange={(event) => {
                       const raw = event.target.value;
@@ -639,6 +497,11 @@ export function AccountingRatesPanel({
                     }}
                     className={inputClass}
                   />
+                  {currentSite.minChargeHours == null ? (
+                    <p className="mt-1 text-[11px] text-subtle">
+                      Inherits {rules.minChargeHours} h from company rules.
+                    </p>
+                  ) : null}
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs text-subtle">Effective from</span>
@@ -703,14 +566,41 @@ export function AccountingRatesPanel({
 
       {side === 'company' ? (
         <section className="min-w-0 space-y-6 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
+          <div className="rounded-xl border border-border/70 bg-surface-base/30 p-4">
+            <h2 className="text-sm font-semibold text-white">Default hourly rate</h2>
+            <p className="mt-1 text-xs text-subtle">
+              Base $/hour used when a staff member’s rate is set to Default. All company %
+              loadings multiply against this number.
+            </p>
+            <label className="mt-3 block max-w-xs">
+              <span className="mb-1 block text-xs text-subtle">Rate ($ / hour)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                disabled={!canEditRules}
+                value={companyHourlyRate ?? rules.defaultHourlyRate ?? ''}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  setCompanyHourlyRate(raw === '' ? 0 : Number(raw) || 0);
+                }}
+                placeholder="0.00"
+                className={inputClass}
+              />
+            </label>
+            <p className="mt-3 text-[11px] text-subtle">
+              Min pay hours ({rules.minPayHours} h) and min charge hours ({rules.minChargeHours}{' '}
+              h) are set under Accounting → Pay rules. Staff/clients leave those fields empty to
+              inherit them.
+            </p>
+          </div>
+
           <div>
             <h2 className="text-sm font-semibold text-white">Default pay matrix</h2>
             <p className="mt-1 text-xs text-subtle">
-              Starting loadings (% of each person’s hourly rate). Used when staff have no cell for
-              that day and band. Change the numbers to match your award.
-            </p>
-            <p className="mt-2 text-xs text-primary">
-              Applies to all staff who do not have their own pay card override.
+              Loadings (% of the default hourly rate, or a fixed $). Used when staff have no
+              cell override for that day and band.
             </p>
             <div className="mt-3">
               <RateMatrixEditor
@@ -725,11 +615,7 @@ export function AccountingRatesPanel({
           <div>
             <h2 className="text-sm font-semibold text-white">Default charge matrix</h2>
             <p className="mt-1 text-xs text-subtle">
-              Starting charge loadings (% of the staff hourly rate), a bit above pay so margin is
-              visible. Override per site when a customer has different rates.
-            </p>
-            <p className="mt-2 text-xs text-primary">
-              Applies to all sites that do not have their own charge card override.
+              Charge loadings for clients. Override per site when a customer has different rates.
             </p>
             <div className="mt-3">
               <RateMatrixEditor

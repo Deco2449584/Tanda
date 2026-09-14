@@ -4,6 +4,7 @@ import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
+import { effectiveHourlyRate } from '@/lib/payroll/rate-matrix';
 import {
   BASE_BAND_ID,
   OVERTIME_BAND_ID,
@@ -654,7 +655,10 @@ export function buildAwardReport(input: {
     const staffCell = lookupCell(meta.payRates?.cells, dayType.id, bandId);
     const companyCell = lookupCell(rules.defaultPayCells, dayType.id, bandId);
     const cell = staffCell ?? companyCell;
-    const rate = resolveRate(cell, meta.employee.hourlyRate || 0);
+    const rate = resolveRate(
+      cell,
+      effectiveHourlyRate(meta.employee.hourlyRate, rules),
+    );
     const amount = roundMoney(hours * rate);
     const row = ensureSlice(slice, meta, dayType.id, bandId);
     row.overtime = row.overtime || slice.overtime;
@@ -671,7 +675,7 @@ export function buildAwardReport(input: {
     const dayType = resolveDayType(rules, slice.date, slice.weekday, slice.locationId);
     const bandId = slice.overtime ? OVERTIME_BAND_ID : slice.bandId;
     const hours = roundHours(slice.hours, rules);
-    const basePay = meta.employee.hourlyRate || 0;
+    const basePay = effectiveHourlyRate(meta.employee.hourlyRate, rules);
     const siteCell = lookupCell(meta.billing?.cells, dayType.id, bandId);
     const companyCharge = lookupCell(rules.defaultChargeCells, dayType.id, bandId);
     const weekdayBase = resolveRate(
@@ -752,7 +756,10 @@ export function buildAwardReport(input: {
             lookupCell(payRates?.cells, dayType.id, BASE_BAND_ID) ??
             lookupCell(rules.defaultPayCells, dayType.id, BASE_BAND_ID);
           const hours = roundHours(hoursPerDay, rules);
-          const rate = resolveRate(cell, employee.hourlyRate || 0);
+          const rate = resolveRate(
+            cell,
+            effectiveHourlyRate(employee.hourlyRate, rules),
+          );
           const amount = roundMoney(hours * rate);
           const sessionKey = `leave-${leave.id}-${date}`;
           const location = locationById.get(locationId);
