@@ -102,6 +102,36 @@ export function AdminPermissionsEditor({
       }
     }
 
+    if (moduleKey === 'settings') {
+      const settingsActions = currentModule as Partial<
+        Record<
+          | 'viewLocations'
+          | 'createLocations'
+          | 'updateLocations'
+          | 'deleteLocations',
+          boolean
+        >
+      >;
+      const locationWrites = [
+        'createLocations',
+        'updateLocations',
+        'deleteLocations',
+      ] as const;
+
+      if (action === 'viewLocations' && !enabled) {
+        for (const write of locationWrites) {
+          settingsActions[write] = false;
+        }
+      } else if (
+        enabled &&
+        (action === 'createLocations' ||
+          action === 'updateLocations' ||
+          action === 'deleteLocations')
+      ) {
+        settingsActions.viewLocations = true;
+      }
+    }
+
     commit({
       modules: nextModules,
       edit: value.edit,

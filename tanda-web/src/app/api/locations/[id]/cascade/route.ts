@@ -10,7 +10,11 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, context: RouteContext) {
   try {
-    const admin = await verifyAdminActionRequest(request, 'settings', 'viewLocations');
+    const admin = await verifyAdminActionRequest(
+      request,
+      'settings',
+      'deleteLocations',
+    );
     if (!admin) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
@@ -28,9 +32,11 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function DELETE(request: Request, context: RouteContext) {
   try {
-    const actor =
-      (await verifyAdminActionRequest(request, 'settings', 'update')) ??
-      (await verifyAdminActionRequest(request, 'settings', 'viewLocations'));
+    const actor = await verifyAdminActionRequest(
+      request,
+      'settings',
+      'deleteLocations',
+    );
 
     if (!actor) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });

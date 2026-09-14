@@ -77,7 +77,10 @@ export const ADMIN_ACTION_LABELS: {
     viewLocalization: 'Localization tab',
     viewAttendance: 'Time & attendance tab',
     viewNotifications: 'Notifications tab',
-    viewLocations: 'Clients tab',
+    viewLocations: 'View clients',
+    createLocations: 'Create clients',
+    updateLocations: 'Edit clients',
+    deleteLocations: 'Delete clients',
     viewDepartments: 'Departments tab',
     viewLocationGroups: 'Location groups tab',
     viewEmployeeFields: 'Employee fields tab',
@@ -125,6 +128,21 @@ function applyLegacyActionFallback(
     for (const key of viewKeys) {
       if (rawModule[key] === undefined) {
         moduleActions[key] = true;
+      }
+    }
+  }
+
+  // Clients CRUD: historically anyone with the Clients tab could mutate.
+  // Keep create/edit/delete aligned with viewLocations until stored explicitly.
+  if (moduleKey === 'settings') {
+    const locationWrites = [
+      'createLocations',
+      'updateLocations',
+      'deleteLocations',
+    ] as const;
+    for (const key of locationWrites) {
+      if (rawModule[key] === undefined) {
+        moduleActions[key] = moduleActions.viewLocations === true;
       }
     }
   }

@@ -112,8 +112,11 @@ function PinCopyButton({
 
 export function LocationsTab({ onToast }: LocationsTabProps) {
   const { locations, loading, refresh } = useLocations();
-  const { canAccessModule } = useAdminAccess();
+  const { canAccessModule, canPerformAction } = useAdminAccess();
   const canOpenAccounting = canAccessModule('accounting');
+  const canCreateClients = canPerformAction('settings', 'createLocations');
+  const canUpdateClients = canPerformAction('settings', 'updateLocations');
+  const canDeleteClients = canPerformAction('settings', 'deleteLocations');
 
   const [view, setView] = useState<ViewMode>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -181,6 +184,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   function openCreate() {
+    if (!canCreateClients) {
+      onToast('You do not have permission to create clients.', 'error');
+      return;
+    }
     setView('create');
     setSelectedId(null);
     setForm(emptyClientForm());
@@ -215,6 +222,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
+    if (!canCreateClients) {
+      onToast('You do not have permission to create clients.', 'error');
+      return;
+    }
     setSaving(true);
     setRevealedPin(null);
 
@@ -288,6 +299,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   async function handleSaveEdit(event: React.FormEvent) {
     event.preventDefault();
     if (!selectedLocation) return;
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
 
     const geofenceError = validateGeofenceForm(form.geofence);
     if (geofenceError) {
@@ -324,6 +339,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   async function handleRegeneratePin(location: Location) {
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
     setRegeneratingId(location.id);
     setRevealedPin(null);
 
@@ -340,6 +359,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   async function handleToggleActive(location: Location) {
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
     try {
       await setLocationActive(location.id, !location.active);
       void refresh();
@@ -354,6 +377,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   async function handleToggleScanPunch(location: Location) {
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
     setScanBusyId(location.id);
     try {
       const enabled = !location.scanPunchEnabled;
@@ -380,6 +407,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   async function handleRegenerateScanToken(location: Location) {
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
     const confirmed = window.confirm(
       `Generate a new scan link for "${location.name}"?\n\nExisting QR codes and NFC tags will stop working until you update them.`,
     );
@@ -400,6 +431,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   async function handleConfirmDelete() {
     const location = pendingDelete;
     if (!location) return;
+    if (!canDeleteClients) {
+      onToast('You do not have permission to delete clients.', 'error');
+      return;
+    }
 
     setDeletingId(location.id);
     setDeleteError(null);
@@ -514,7 +549,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               currentPhotoUrl={location.photoUrl}
               selectedFile={photoFile}
               onFileChange={setPhotoFile}
-              disabled={saving}
+              disabled={saving || !canUpdateClients}
             />
 
             <div className="min-w-0">
@@ -527,6 +562,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                   setForm((prev) => ({ ...prev, name: e.target.value }))
                 }
                 required
+                disabled={!canUpdateClients}
                 placeholder="JAS"
                 className={inputClass}
               />
@@ -543,6 +579,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                     setForm((prev) => ({ ...prev, city: e.target.value }))
                   }
                   required
+                  disabled={!canUpdateClients}
                   placeholder="Sydney"
                   className={inputClass}
                 />
@@ -553,6 +590,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                 </label>
                 <select
                   value={form.state}
+                  disabled={!canUpdateClients}
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
@@ -575,6 +613,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                 </label>
                 <input
                   value={form.code}
+                  disabled={!canUpdateClients}
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
@@ -592,25 +631,31 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               onChange={(geofence) =>
                 setForm((prev) => ({ ...prev, geofence }))
               }
-              disabled={saving}
+              disabled={saving || !canUpdateClients}
               onError={(message) => onToast(message, 'error')}
             />
 
             <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
+              {canUpdateClients ? (
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Save changes'}
+                </button>
+              ) : (
+                <p className="self-center text-xs text-subtle">
+                  View only — you need Edit clients permission to save changes.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={openList}
                 disabled={saving}
                 className="rounded-lg border border-border-strong px-4 py-2.5 text-sm font-semibold text-muted hover:text-foreground disabled:opacity-50"
               >
-                Cancel
+                {canUpdateClients ? 'Cancel' : 'Back'}
               </button>
             </div>
           </form>
@@ -635,27 +680,31 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               </>
             ) : (
               <span className="text-xs text-subtle">
-                No PIN on file — generate one.
+                No PIN on file
+                {canUpdateClients ? ' — generate one.' : '.'}
               </span>
             )}
-            <button
-              type="button"
-              onClick={() => void handleRegeneratePin(location)}
-              disabled={regeneratingId === location.id}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${regeneratingId === location.id ? 'animate-spin' : ''}`}
-                aria-hidden
-              />
-              New PIN
-            </button>
+            {canUpdateClients ? (
+              <button
+                type="button"
+                onClick={() => void handleRegeneratePin(location)}
+                disabled={regeneratingId === location.id}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-semibold text-muted hover:border-zinc-500 disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${regeneratingId === location.id ? 'animate-spin' : ''}`}
+                  aria-hidden
+                />
+                New PIN
+              </button>
+            ) : null}
           </div>
         </section>
 
         <ScanPunchControls
           location={location}
           busy={scanBusyId === location.id}
+          canManage={canUpdateClients}
           onToggle={() => void handleToggleScanPunch(location)}
           onRegenerate={() => void handleRegenerateScanToken(location)}
           onCopied={() => onToast(`Scan link copied for ${location.name}.`)}
@@ -663,47 +712,73 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           onDownloadError={() => onToast('Could not download QR.', 'error')}
         />
 
-        <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
-          <h3 className="text-sm font-semibold text-white">Actions</h3>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void handleToggleActive(location)}
-              className="rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:border-zinc-500"
-            >
-              {location.active ? 'Deactivate' : 'Activate'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteError(null);
-                setPendingDelete(location);
-              }}
-              disabled={deletingId === location.id}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-900/60 px-3 py-2 text-xs font-semibold text-red-400 hover:border-red-700 hover:bg-red-950/40 disabled:opacity-50"
-            >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
-              {deletingId === location.id ? 'Deleting…' : 'Delete client'}
-            </button>
-          </div>
-        </section>
+        {canUpdateClients || canDeleteClients ? (
+          <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+            <h3 className="text-sm font-semibold text-white">Actions</h3>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {canUpdateClients ? (
+                <button
+                  type="button"
+                  onClick={() => void handleToggleActive(location)}
+                  className="rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:border-zinc-500"
+                >
+                  {location.active ? 'Deactivate' : 'Activate'}
+                </button>
+              ) : null}
+              {canDeleteClients ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setPendingDelete(location);
+                  }}
+                  disabled={deletingId === location.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-900/60 px-3 py-2 text-xs font-semibold text-red-400 hover:border-red-700 hover:bg-red-950/40 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                  {deletingId === location.id ? 'Deleting…' : 'Delete client'}
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
-        <DeleteLocationConfirmModal
-          location={pendingDelete}
-          loading={Boolean(deletingId)}
-          error={deleteError}
-          onConfirm={() => void handleConfirmDelete()}
-          onCancel={() => {
-            if (deletingId) return;
-            setPendingDelete(null);
-            setDeleteError(null);
-          }}
-        />
+        {canDeleteClients ? (
+          <DeleteLocationConfirmModal
+            location={pendingDelete}
+            loading={Boolean(deletingId)}
+            error={deleteError}
+            onConfirm={() => void handleConfirmDelete()}
+            onCancel={() => {
+              if (deletingId) return;
+              setPendingDelete(null);
+              setDeleteError(null);
+            }}
+          />
+        ) : null}
       </div>
     );
   }
 
   if (view === 'create') {
+    if (!canCreateClients) {
+      return (
+        <div className="min-w-0 space-y-5">
+          <button
+            type="button"
+            onClick={openList}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:border-primary/40 hover:text-primary"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            Back to clients
+          </button>
+          <p className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+            You do not have permission to create clients.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="min-w-0 space-y-5">
         <div className="flex flex-wrap items-center gap-3">
@@ -920,14 +995,16 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               ) : null}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary/40 bg-primary/15 px-4 text-sm font-semibold text-primary hover:bg-primary/25 sm:w-auto"
-          >
-            <Plus className="h-4 w-4 shrink-0" aria-hidden />
-            New client
-          </button>
+          {canCreateClients ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary/40 bg-primary/15 px-4 text-sm font-semibold text-primary hover:bg-primary/25 sm:w-auto"
+            >
+              <Plus className="h-4 w-4 shrink-0" aria-hidden />
+              New client
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -961,14 +1038,16 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           <div className="mt-8 rounded-xl border border-dashed border-border px-4 py-10 text-center">
             <Building2 className="mx-auto h-8 w-8 text-subtle" aria-hidden />
             <p className="mt-3 text-sm text-muted">No clients yet.</p>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-              Create the first client
-            </button>
+            {canCreateClients ? (
+              <button
+                type="button"
+                onClick={openCreate}
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Create the first client
+              </button>
+            ) : null}
           </div>
         ) : filteredLocations.length === 0 ? (
           <p className="mt-6 text-sm text-subtle">
@@ -1086,6 +1165,7 @@ function ListBadge({
 function ScanPunchControls({
   location,
   busy,
+  canManage = true,
   onToggle,
   onRegenerate,
   onCopied,
@@ -1094,6 +1174,7 @@ function ScanPunchControls({
 }: {
   location: Location;
   busy: boolean;
+  canManage?: boolean;
   onToggle: () => void;
   onRegenerate: () => void;
   onCopied: () => void;
@@ -1137,18 +1218,30 @@ function ScanPunchControls({
             link when programming tags so attendance shows the right source.
           </p>
         </div>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onToggle}
-          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
-            enabled
-              ? 'border border-emerald-800/50 bg-emerald-950/40 text-emerald-300'
-              : 'border border-border-strong text-muted hover:text-foreground'
-          }`}
-        >
-          {busy ? 'Saving…' : enabled ? 'Disable' : 'Enable'}
-        </button>
+        {canManage ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onToggle}
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+              enabled
+                ? 'border border-emerald-800/50 bg-emerald-950/40 text-emerald-300'
+                : 'border border-border-strong text-muted hover:text-foreground'
+            }`}
+          >
+            {busy ? 'Saving…' : enabled ? 'Disable' : 'Enable'}
+          </button>
+        ) : (
+          <span
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold ${
+              enabled
+                ? 'border border-emerald-800/50 bg-emerald-950/40 text-emerald-300'
+                : 'border border-border-strong text-muted'
+            }`}
+          >
+            {enabled ? 'Enabled' : 'Disabled'}
+          </span>
+        )}
       </div>
 
       {enabled && !location.geofenceRequired ? (
@@ -1226,15 +1319,17 @@ function ScanPunchControls({
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                 Open
               </a>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onRegenerate}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary disabled:opacity-50"
-              >
-                <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-                New link
-              </button>
+              {canManage ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={onRegenerate}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-primary disabled:opacity-50"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                  New link
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
