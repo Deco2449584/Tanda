@@ -198,53 +198,12 @@ export function AccountingRulesPanel({
       </section>
 
       <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
-        <h2 className="text-sm font-semibold text-white">Minimums and leave</h2>
+        <h2 className="text-sm font-semibold text-white">Leave</h2>
         <p className="mt-1 text-xs text-subtle">
-          Minimum hours ensure staff are paid/charged for at least a set amount per session or day. Leave settings control whether approved leave generates award lines.
+          Leave settings control whether approved leave generates award lines. Min pay / charge
+          hours are configured under Rate cards → Company defaults.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Min pay hours" hint="0 turns this off">
-            <input
-              type="number"
-              min="0"
-              step="0.25"
-              disabled={!canEdit}
-              value={draft.minPayHours}
-              onChange={(event) =>
-                setDraft({ ...draft, minPayHours: Number(event.target.value) || 0 })
-              }
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Min charge hours" hint="0 turns this off">
-            <input
-              type="number"
-              min="0"
-              step="0.25"
-              disabled={!canEdit}
-              value={draft.minChargeHours}
-              onChange={(event) =>
-                setDraft({ ...draft, minChargeHours: Number(event.target.value) || 0 })
-              }
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Minimum applies per">
-            <select
-              disabled={!canEdit}
-              value={draft.minHoursScope}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  minHoursScope: event.target.value === 'day' ? 'day' : 'session',
-                })
-              }
-              className={inputClass}
-            >
-              <option value="session">Session</option>
-              <option value="day">Day</option>
-            </select>
-          </Field>
           <label className="flex items-center gap-2 self-start rounded-lg border border-border/70 bg-surface-base/50 px-3 py-2.5 text-sm text-muted sm:self-end">
             <input
               type="checkbox"

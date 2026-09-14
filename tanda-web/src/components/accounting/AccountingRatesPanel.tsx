@@ -88,6 +88,11 @@ export function AccountingRatesPanel({
   const [companyPay, setCompanyPay] = useState<PayRateCells | null>(null);
   const [companyCharge, setCompanyCharge] = useState<PayRateCells | null>(null);
   const [companyHourlyRate, setCompanyHourlyRate] = useState<number | null>(null);
+  const [companyMinPayHours, setCompanyMinPayHours] = useState<number | null>(null);
+  const [companyMinChargeHours, setCompanyMinChargeHours] = useState<number | null>(null);
+  const [companyMinHoursScope, setCompanyMinHoursScope] = useState<
+    'session' | 'day' | null
+  >(null);
 
   const staffKey = selectedStaff?.id ?? '';
   const siteKey = selectedSite?.id ?? '';
@@ -195,15 +200,21 @@ export function AccountingRatesPanel({
       await savePayRulesRequest({
         ...rules,
         defaultHourlyRate: companyHourlyRate ?? rules.defaultHourlyRate ?? 0,
+        minPayHours: companyMinPayHours ?? rules.minPayHours,
+        minChargeHours: companyMinChargeHours ?? rules.minChargeHours,
+        minHoursScope: companyMinHoursScope ?? rules.minHoursScope,
         defaultPayCells: companyPay ?? rules.defaultPayCells,
         defaultChargeCells: companyCharge ?? rules.defaultChargeCells,
       });
       await onRulesSaved();
       setCompanyHourlyRate(null);
-      setMessage('Saved company default matrices.');
+      setCompanyMinPayHours(null);
+      setCompanyMinChargeHours(null);
+      setCompanyMinHoursScope(null);
+      setMessage('Saved company defaults.');
       setToast({
         id: `company-defaults-saved-${Date.now()}`,
-        text: 'Saved company default matrices.',
+        text: 'Saved company defaults.',
         variant: 'success',
       });
     } catch (saveError) {
@@ -307,7 +318,7 @@ export function AccountingRatesPanel({
                   />
                   {currentStaff.payRates.minPayHours == null ? (
                     <p className="mt-1 text-[11px] text-subtle">
-                      Inherits {rules.minPayHours} h from company rules.
+                      Inherits {rules.minPayHours} h from company defaults.
                     </p>
                   ) : null}
                 </label>
@@ -499,7 +510,7 @@ export function AccountingRatesPanel({
                   />
                   {currentSite.minChargeHours == null ? (
                     <p className="mt-1 text-[11px] text-subtle">
-                      Inherits {rules.minChargeHours} h from company rules.
+                      Inherits {rules.minChargeHours} h from company defaults.
                     </p>
                   ) : null}
                 </label>
@@ -567,33 +578,85 @@ export function AccountingRatesPanel({
       {side === 'company' ? (
         <section className="min-w-0 space-y-6 rounded-2xl border border-border bg-surface-raised p-4 md:p-6">
           <div className="rounded-xl border border-border/70 bg-surface-base/30 p-4">
-            <h2 className="text-sm font-semibold text-white">Default hourly rate</h2>
+            <h2 className="text-sm font-semibold text-white">Company defaults</h2>
             <p className="mt-1 text-xs text-subtle">
-              Base $/hour used when a staff member’s rate is set to Default. All company %
-              loadings multiply against this number.
+              Base rate and minimum hours for staff and clients that leave those fields on
+              Default. Nothing here is hidden — set the numbers you want applied company-wide.
             </p>
-            <label className="mt-3 block max-w-xs">
-              <span className="mb-1 block text-xs text-subtle">Rate ($ / hour)</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                disabled={!canEditRules}
-                value={companyHourlyRate ?? rules.defaultHourlyRate ?? ''}
-                onChange={(event) => {
-                  const raw = event.target.value;
-                  setCompanyHourlyRate(raw === '' ? 0 : Number(raw) || 0);
-                }}
-                placeholder="0.00"
-                className={inputClass}
-              />
-            </label>
-            <p className="mt-3 text-[11px] text-subtle">
-              Min pay hours ({rules.minPayHours} h) and min charge hours ({rules.minChargeHours}{' '}
-              h) are set under Accounting → Pay rules. Staff/clients leave those fields empty to
-              inherit them.
-            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="block">
+                <span className="mb-1 block text-xs text-subtle">
+                  Default hourly rate ($ / h)
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  disabled={!canEditRules}
+                  value={companyHourlyRate ?? rules.defaultHourlyRate ?? ''}
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    setCompanyHourlyRate(raw === '' ? 0 : Number(raw) || 0);
+                  }}
+                  placeholder="0.00"
+                  className={inputClass}
+                />
+                <p className="mt-1 text-[11px] text-subtle">
+                  % loadings multiply against this when staff rate is Default.
+                </p>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-subtle">Min pay hours</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  disabled={!canEditRules}
+                  value={companyMinPayHours ?? rules.minPayHours}
+                  onChange={(event) =>
+                    setCompanyMinPayHours(Number(event.target.value) || 0)
+                  }
+                  className={inputClass}
+                />
+                <p className="mt-1 text-[11px] text-subtle">
+                  Inherited by staff when Min pay hours is empty. 0 turns it off.
+                </p>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-subtle">Min charge hours</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  disabled={!canEditRules}
+                  value={companyMinChargeHours ?? rules.minChargeHours}
+                  onChange={(event) =>
+                    setCompanyMinChargeHours(Number(event.target.value) || 0)
+                  }
+                  className={inputClass}
+                />
+                <p className="mt-1 text-[11px] text-subtle">
+                  Inherited by clients when Min charge hours is empty. 0 turns it off.
+                </p>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-subtle">Minimum applies per</span>
+                <select
+                  disabled={!canEditRules}
+                  value={companyMinHoursScope ?? rules.minHoursScope}
+                  onChange={(event) =>
+                    setCompanyMinHoursScope(
+                      event.target.value === 'day' ? 'day' : 'session',
+                    )
+                  }
+                  className={inputClass}
+                >
+                  <option value="session">Session</option>
+                  <option value="day">Day</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div>
