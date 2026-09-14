@@ -14,7 +14,7 @@ import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
 import type { PayRules } from '@/lib/types/pay-rules';
 
-type Tab = 'overview' | 'setup' | 'weekly-close' | 'exports';
+type Tab = 'overview' | 'pay-rules' | 'rate-cards' | 'weekly-close' | 'exports';
 
 interface AccountingOverviewPanelProps {
   rules: PayRules;
@@ -119,8 +119,8 @@ export function AccountingOverviewPanel({
               : null,
           ]}
           emptyMessage="All configured. Staff and sites have rate cards."
-          cta={(!hasCompanyPay || !hasCompanyCharge || sitesWithoutCard > 0) ? 'Go to Setup' : undefined}
-          onAction={() => onNavigate('setup')}
+          cta={(!hasCompanyPay || !hasCompanyCharge || sitesWithoutCard > 0) ? 'Go to Rate cards' : undefined}
+          onAction={() => onNavigate('rate-cards')}
         />
         <ActionCard
           title="Next step"

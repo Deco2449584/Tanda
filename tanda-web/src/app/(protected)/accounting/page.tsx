@@ -15,11 +15,12 @@ import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocations } from '@/providers/LocationsProvider';
 import { Calculator } from 'lucide-react';
 
-type AccountingTab = 'overview' | 'setup' | 'weekly-close' | 'exports';
+type AccountingTab = 'overview' | 'pay-rules' | 'rate-cards' | 'weekly-close' | 'exports';
 
 const TABS: Array<{ id: AccountingTab; label: string; hint: string }> = [
   { id: 'overview', label: 'Overview', hint: 'Status and next steps' },
-  { id: 'setup', label: 'Setup', hint: 'Rules and rate cards' },
+  { id: 'pay-rules', label: 'Pay & charge rules', hint: 'Bands, OT, minimums' },
+  { id: 'rate-cards', label: 'Rate cards', hint: 'Staff, clients, defaults' },
   { id: 'weekly-close', label: 'Weekly close', hint: 'Review and freeze' },
   { id: 'exports', label: 'Exports', hint: 'Download files' },
 ];
@@ -74,36 +75,37 @@ export default function AccountingPage() {
         />
       ) : null}
 
-      {tab === 'setup' ? (
-        <div className="min-w-0 space-y-8">
-          <section>
-            <SectionHeader
-              title="Pay and charge rules"
-              description="Define time bands, day types, overtime thresholds, minimums, allowances, and employment types. These apply company-wide unless overridden per staff or site."
-            />
-            <AccountingRulesPanel
-              rules={rules}
-              locations={locations}
-              canEdit={canEditRules}
-              onSaved={() => refreshSettings()}
-            />
-          </section>
-          <section>
-            <SectionHeader
-              title="Rate cards"
-              description="Set company default loadings, then override per staff member (pay) or per site (charge). Staff without a card use the company defaults."
-            />
-            <AccountingRatesPanel
-              rules={rules}
-              employees={employees}
-              locations={locations}
-              canEdit={canEditRates}
-              canEditRules={canEditRules}
-              onStaffSaved={refreshEmployees}
-              onSiteSaved={refreshLocations}
-              onRulesSaved={refreshSettings}
-            />
-          </section>
+      {tab === 'pay-rules' ? (
+        <div className="min-w-0">
+          <SectionHeader
+            title="Pay and charge rules"
+            description="Define time bands, day types, overtime thresholds, minimums, allowances, and employment types. These apply company-wide unless overridden per staff or site."
+          />
+          <AccountingRulesPanel
+            rules={rules}
+            locations={locations}
+            canEdit={canEditRules}
+            onSaved={() => refreshSettings()}
+          />
+        </div>
+      ) : null}
+
+      {tab === 'rate-cards' ? (
+        <div className="min-w-0">
+          <SectionHeader
+            title="Rate cards"
+            description="Set company default loadings, then override per staff member (pay) or per site (charge). Staff without a card use the company defaults."
+          />
+          <AccountingRatesPanel
+            rules={rules}
+            employees={employees}
+            locations={locations}
+            canEdit={canEditRates}
+            canEditRules={canEditRules}
+            onStaffSaved={refreshEmployees}
+            onSiteSaved={refreshLocations}
+            onRulesSaved={refreshSettings}
+          />
         </div>
       ) : null}
 
