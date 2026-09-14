@@ -13,6 +13,8 @@ export interface InspectionsAccess {
   canCreate: boolean;
   /** Can edit, mark loaded, and manage portal access. */
   canUpdate: boolean;
+  /** Can permanently delete an inspection and its media. */
+  canDelete: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function useInspectionsAccess(): InspectionsAccess {
       canRead: canPerformAction('inspections', 'read'),
       canCreate: canPerformAction('inspections', 'create'),
       canUpdate: canPerformAction('inspections', 'update'),
+      canDelete: canPerformAction('inspections', 'delete'),
     };
   }
 
@@ -44,5 +47,7 @@ export function useInspectionsAccess(): InspectionsAccess {
     canRead: webEnabled,
     canCreate: webEnabled,
     canUpdate: webEnabled && inspectAdmin,
+    // Workforce roles cannot delete; only admin roles with Delete inspections.
+    canDelete: false,
   };
 }

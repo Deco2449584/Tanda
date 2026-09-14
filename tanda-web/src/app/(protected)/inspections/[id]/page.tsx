@@ -14,7 +14,7 @@ export default function InspectionDetailPage() {
   const params = useParams<{ id: string }>();
   const inspectionId = params?.id ?? '';
   const { user } = useAuthRole();
-  const { canUpdate } = useInspectionsAccess();
+  const { canUpdate, canDelete } = useInspectionsAccess();
   const { inspectionsById, loading, error, refresh } = useCargoInspections();
 
   const inspection = inspectionsById.get(inspectionId);
@@ -59,6 +59,7 @@ export default function InspectionDetailPage() {
       <InspectionDetailView
         inspection={inspection}
         canEdit={canUpdate}
+        canDelete={canDelete}
         editorEmail={user?.email ?? ''}
         onUpdated={() => void refresh()}
       />

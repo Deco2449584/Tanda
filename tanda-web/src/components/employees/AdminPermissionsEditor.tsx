@@ -60,7 +60,7 @@ export function AdminPermissionsEditor({
         read: enabled,
         ...(enabled
           ? {}
-          : { create: false, update: false }),
+          : { create: false, update: false, delete: false }),
       };
     }
 
@@ -85,7 +85,7 @@ export function AdminPermissionsEditor({
 
     if (moduleKey === 'inspections') {
       const inspectionsActions = currentModule as Partial<
-        Record<'read' | 'create' | 'update', boolean>
+        Record<'read' | 'create' | 'update' | 'delete', boolean>
       >;
 
       if (action === 'read') {
@@ -93,9 +93,10 @@ export function AdminPermissionsEditor({
         if (!enabled) {
           inspectionsActions.create = false;
           inspectionsActions.update = false;
+          inspectionsActions.delete = false;
         }
       } else if (enabled) {
-        // Create/edit imply view access.
+        // Create/edit/delete imply view access.
         inspectionsActions.read = true;
         nextModules = { ...value.modules, inspections: true };
       }

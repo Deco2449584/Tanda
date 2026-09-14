@@ -54,6 +54,7 @@ export const ADMIN_ACTION_LABELS: {
     read: 'View inspections',
     create: 'Create inspections',
     update: 'Edit inspections',
+    delete: 'Delete inspections',
   },
   issueReports: {
     manage: 'Update status and admin notes',
@@ -133,6 +134,11 @@ function applyLegacyActionFallback(
   if (moduleKey === 'inspections' && moduleEnabled && rawModule.read === undefined) {
     moduleActions.read = true;
   }
+
+  // New destructive action — only grant when explicitly stored (or set via Clear all / Save).
+  if (moduleKey === 'inspections' && rawModule.delete === undefined) {
+    moduleActions.delete = false;
+  }
 }
 
 function resolveModuleActions(
@@ -178,7 +184,7 @@ function deriveLegacyEdit(
       if (!modules[moduleKey]) return [moduleKey, false];
       const writeActions =
         moduleKey === 'inspections'
-          ? (['create', 'update'] as const)
+          ? (['create', 'update', 'delete'] as const)
           : ADMIN_MODULE_ACTIONS[moduleKey];
       const hasAny = writeActions.some(
         (action) =>

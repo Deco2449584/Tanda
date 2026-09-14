@@ -43,7 +43,7 @@ export const ADMIN_MODULE_ACTIONS = {
   schedule: ['create', 'update', 'delete'] as const,
   leaveRequests: ['manage', 'update', 'delete'] as const,
   announcements: ['publish', 'update', 'delete'] as const,
-  inspections: ['read', 'create', 'update'] as const,
+  inspections: ['read', 'create', 'update', 'delete'] as const,
   issueReports: ['manage', 'update', 'delete'] as const,
   helpTutorials: ['create', 'update', 'delete'] as const,
   courses: ['create', 'update', 'delete', 'manage'] as const,

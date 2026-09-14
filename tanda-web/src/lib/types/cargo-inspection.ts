@@ -1,3 +1,12 @@
+export interface DeleteCargoInspectionResult {
+  id: string;
+  uldId: string;
+  awbNumber: string;
+  photoCount: number;
+  videoCount: number;
+  storageFilesDeleted: number;
+}
+
 export type ConservationType = 'Frozen' | 'Refrigerated' | 'Ambient';
 
 export const CONSERVATION_TYPES: readonly ConservationType[] = [
