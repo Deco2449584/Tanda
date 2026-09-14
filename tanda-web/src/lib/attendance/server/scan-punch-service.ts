@@ -29,6 +29,12 @@ import {
   isValidLongitude,
   reverseGeocode,
 } from '@/lib/geo/reverse-geocode';
+import {
+  evaluateClientGeofence,
+  resolveGeofenceSite,
+  type GeofenceFailureReason,
+  type GeofenceSite,
+} from '@/lib/geo/geofence';
 import { canEmployeePunchAtKiosk } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
 import type { AttendanceType } from '@/lib/types/attendance';
@@ -72,6 +78,21 @@ export async function recordScanPunch(input: {
     input.employee,
     location.id,
   );
+
+  // Reject copied QR/NFC links used away from the site before touching attendance.
+  const geofence = evaluateClientGeofence({
+    site: location.geofence,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    accuracy: input.geoAccuracy,
+    exempt: employeeDoc.allowPunchOutsideGeofence,
+  });
+
+  if (!geofence.ok) {
+    throw new ScanPunchError(geofence.message ?? 'You must be on site to clock in.', 403, {
+      reason: geofence.reason,
+    });
+  }
 
   const employeeDocId = employeeDoc.id;
   const employeeCode = employeeDoc.employeeId;
@@ -162,6 +183,13 @@ export async function recordScanPunch(input: {
       }
       if (typeof input.geoCapturedAt === 'string' && input.geoCapturedAt.trim()) {
         geoFields.geoCapturedAt = input.geoCapturedAt.trim();
+      }
+      if (typeof geofence.distanceMeters === 'number') {
+        geoFields.geofenceDistanceMeters = Math.round(geofence.distanceMeters);
+        geoFields.geofenceRadiusMeters = geofence.radiusMeters;
+      }
+      if (geofence.bypassed) {
+        geoFields.geofenceBypassed = true;
       }
     }
 
@@ -275,6 +303,7 @@ async function requireScanLocation(token: string): Promise<{
   id: string;
   name: string;
   city: string;
+  geofence: GeofenceSite;
 }> {
   const snapshot = await getAdminFirestore()
     .collection(COLLECTIONS.LOCATIONS)
@@ -297,10 +326,13 @@ async function requireScanLocation(token: string): Promise<{
     throw new ScanPunchError('Scan clock-in is not enabled for this client.', 403);
   }
 
+  const name = typeof data.name === 'string' ? data.name : 'Client';
+
   return {
     id: doc.id,
-    name: typeof data.name === 'string' ? data.name : 'Client',
+    name,
     city: typeof data.city === 'string' ? data.city : '',
+    geofence: resolveGeofenceSite(data, name),
   };
 }
 
@@ -312,6 +344,7 @@ async function requireAuthorizedSessionEmployee(
   employeeId: string;
   name: string;
   email: string;
+  allowPunchOutsideGeofence: boolean;
 }> {
   const employeeSnapshot = await getAdminFirestore()
     .collection(COLLECTIONS.EMPLOYEES)
@@ -385,15 +418,23 @@ async function requireAuthorizedSessionEmployee(
         ? data.name.trim()
         : employee.name,
     email: employee.email,
+    allowPunchOutsideGeofence: data.allowPunchOutsideGeofence === true,
   };
 }
 
 export class ScanPunchError extends Error {
   status: number;
+  /** Set for geofence rejections so the client can retry with a better GPS fix. */
+  reason?: GeofenceFailureReason;
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    options?: { reason?: GeofenceFailureReason },
+  ) {
     super(message);
     this.status = status;
+    this.reason = options?.reason;
   }
 }
 

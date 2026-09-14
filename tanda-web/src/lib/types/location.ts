@@ -18,6 +18,13 @@ export interface LocationFirestore {
   scanPunchEnabled?: boolean;
   /** Opaque token embedded in /punch/s/{token} — rotate to invalidate stickers. */
   scanPunchToken?: string;
+  /** Site position used to validate QR/NFC/kiosk punches are made on site. */
+  latitude?: number;
+  longitude?: number;
+  /** Allowed distance from the site position, in meters. */
+  geofenceRadiusMeters?: number;
+  /** When true, scan/kiosk punches are rejected without an on-site GPS fix. */
+  geofenceRequired?: boolean;
   billing?: SiteBilling;
   billingHistory?: SiteBilling[];
   createdAt?: Timestamp;
@@ -37,12 +44,27 @@ export interface Location {
   hasPortalPin?: boolean;
   scanPunchEnabled?: boolean;
   scanPunchToken?: string;
+  /** Site position used to validate QR/NFC/kiosk punches are made on site. */
+  latitude?: number;
+  longitude?: number;
+  /** Allowed distance from the site position, in meters. */
+  geofenceRadiusMeters?: number;
+  /** True when scan/kiosk punches must happen inside the radius. */
+  geofenceRequired: boolean;
   billing?: SiteBilling;
   billingHistory?: SiteBilling[];
   createdAt?: string;
 }
 
-export interface CreateLocationInput {
+export interface LocationGeofenceInput {
+  /** Pass a number to set, or null to clear the site position. */
+  latitude?: number | null;
+  longitude?: number | null;
+  geofenceRadiusMeters?: number | null;
+  geofenceRequired?: boolean;
+}
+
+export interface CreateLocationInput extends LocationGeofenceInput {
   name: string;
   city: string;
   state?: AuLocationState | string;
@@ -52,7 +74,7 @@ export interface CreateLocationInput {
   pin: string;
 }
 
-export interface UpdateLocationInput {
+export interface UpdateLocationInput extends LocationGeofenceInput {
   name: string;
   city: string;
   state?: AuLocationState | string | null;

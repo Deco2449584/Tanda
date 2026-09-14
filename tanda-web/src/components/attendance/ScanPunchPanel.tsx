@@ -12,16 +12,21 @@ import {
 } from 'lucide-react';
 import { formatAttendanceType } from '@/lib/attendance/format';
 import {
+  isRetryableGeoError,
+  ScanPunchRequestError,
   submitScanPunchRequest,
   type ScanPunchResponse,
 } from '@/lib/attendance/scan-punch-api';
 import type { ScanPunchVia } from '@/lib/attendance/scan-punch-token';
-import { captureScanPunchPosition } from '@/lib/geo/capture-position';
+import {
+  captureGeofencePosition,
+  captureScanPunchPosition,
+} from '@/lib/geo/capture-position';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 
-type PunchPhase = 'auth' | 'punching' | 'success' | 'error';
+type PunchPhase = 'auth' | 'punching' | 'locating' | 'success' | 'error';
 
 const pendingPunches = new Map<string, Promise<ScanPunchResponse>>();
 const recentPunchResults = new Map<
@@ -33,24 +38,40 @@ const RECENT_PUNCH_MS = 8_000;
 interface ScanPunchPanelProps {
   token: string;
   via?: ScanPunchVia;
+  /** Where /login should return to. Defaults to the scan URL itself. */
+  loginReturnPath?: string;
+  /** Called once the punch is recorded — used to burn a one-time claim. */
+  onCompleted?: () => void;
 }
 
-export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
+export function ScanPunchPanel({
+  token,
+  via = 'qr',
+  loginReturnPath,
+  onCompleted,
+}: ScanPunchPanelProps) {
   const router = useRouter();
   const { user, role, loading: authLoading } = useAuthRole();
   const [phase, setPhase] = useState<PunchPhase>('auth');
   const [error, setError] = useState('');
+  const [geoBlocked, setGeoBlocked] = useState(false);
   const [result, setResult] = useState<ScanPunchResponse | null>(null);
   const startedRef = useRef(false);
+  const onCompletedRef = useRef(onCompleted);
+
+  const returnPath =
+    loginReturnPath ?? `/punch/s/${token}?via=${via === 'nfc' ? 'nfc' : 'qr'}`;
 
   const runPunch = useCallback(async (lockKey: string) => {
     setPhase('punching');
     setError('');
+    setGeoBlocked(false);
 
     const recent = recentPunchResults.get(lockKey);
     if (recent && Date.now() - recent.at < RECENT_PUNCH_MS) {
       setResult(recent.result);
       setPhase('success');
+      onCompletedRef.current?.();
       return;
     }
 
@@ -59,14 +80,33 @@ export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
       request = (async () => {
         // Fast geo (max ~1.5s) — do not block punch on high-accuracy GPS.
         const geo = await captureScanPunchPosition();
-        return submitScanPunchRequest({
-          token,
-          via,
-          latitude: geo?.latitude,
-          longitude: geo?.longitude,
-          geoAccuracy: geo?.accuracy,
-          geoCapturedAt: geo?.geoCapturedAt,
-        });
+
+        try {
+          return await submitScanPunchRequest({
+            token,
+            via,
+            latitude: geo?.latitude,
+            longitude: geo?.longitude,
+            geoAccuracy: geo?.accuracy,
+            geoCapturedAt: geo?.geoCapturedAt,
+          });
+        } catch (err) {
+          // This site requires proof of presence — wait for a real GPS fix.
+          if (!isRetryableGeoError(err)) throw err;
+
+          setPhase('locating');
+          const precise = await captureGeofencePosition();
+          if (!precise) throw err;
+
+          return await submitScanPunchRequest({
+            token,
+            via,
+            latitude: precise.latitude,
+            longitude: precise.longitude,
+            geoAccuracy: precise.accuracy,
+            geoCapturedAt: precise.geoCapturedAt,
+          });
+        }
       })();
       pendingPunches.set(lockKey, request);
     }
@@ -76,8 +116,12 @@ export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
       recentPunchResults.set(lockKey, { result: response, at: Date.now() });
       setResult(response);
       setPhase('success');
+      onCompletedRef.current?.();
     } catch (err) {
       startedRef.current = false;
+      setGeoBlocked(
+        err instanceof ScanPunchRequestError && Boolean(err.reason),
+      );
       setError(err instanceof Error ? err.message : 'Could not record punch.');
       setPhase('error');
     } finally {
@@ -86,23 +130,22 @@ export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
   }, [token, via]);
 
   useEffect(() => {
+    onCompletedRef.current = onCompleted;
+  }, [onCompleted]);
+
+  useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
       setPhase('auth');
-      const nextPath =
-        via === 'nfc'
-          ? `/punch/s/${token}?via=nfc`
-          : `/punch/s/${token}?via=qr`;
-      const next = encodeURIComponent(nextPath);
-      router.replace(`/login?next=${next}`);
+      router.replace(`/login?next=${encodeURIComponent(returnPath)}`);
       return;
     }
 
     if (startedRef.current) return;
     startedRef.current = true;
     void runPunch(`${user.uid}:${token}:${via}`);
-  }, [authLoading, router, runPunch, token, user, via]);
+  }, [authLoading, returnPath, router, runPunch, token, user, via]);
 
   const homeHref = role ? getHomeRouteForRole(role) : '/employee-dashboard';
 
@@ -130,6 +173,14 @@ export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
                 ? 'NFC tag detected — recording your clock action…'
                 : 'QR scan detected — recording your clock action…'
             }
+          />
+        ) : null}
+
+        {phase === 'locating' ? (
+          <StatusBlock
+            icon={<Loader2 className="h-8 w-8 animate-spin text-primary" />}
+            title="Confirming you are on site…"
+            body="This client requires location to clock in. Keep this screen open while we get a GPS fix."
           />
         ) : null}
 
@@ -169,6 +220,13 @@ export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
               <p className="text-lg font-semibold text-foreground">Punch failed</p>
               <p className="mt-2 text-sm text-muted">{error}</p>
             </div>
+            {geoBlocked ? (
+              <p className="mx-auto max-w-sm rounded-lg border border-amber-500/40 bg-amber-950/25 px-3 py-2 text-left text-xs leading-relaxed text-amber-200">
+                Clock-in at this client only works on site. Allow location
+                access for this site in your browser settings, stay near the
+                entrance, and try again.
+              </p>
+            ) : null}
             <div className="flex flex-wrap justify-center gap-2">
               <button
                 type="button"
@@ -184,7 +242,7 @@ export function ScanPunchPanel({ token, via = 'qr' }: ScanPunchPanelProps) {
                 Try again
               </button>
               <Link
-                href={`/login?next=${encodeURIComponent(`/punch/s/${token}?via=${via}`)}`}
+                href={`/login?next=${encodeURIComponent(returnPath)}`}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-muted hover:text-foreground"
               >
                 <LogIn className="h-4 w-4" />

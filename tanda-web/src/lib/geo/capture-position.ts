@@ -47,6 +47,18 @@ export function captureCurrentPosition(
   });
 }
 
+/**
+ * Slower, high-accuracy fix used when the site requires proof of presence.
+ * Worth the wait because the punch is rejected without it.
+ */
+export function captureGeofencePosition(): Promise<CapturedGeoPosition | null> {
+  return captureCurrentPosition({
+    timeoutMs: 15_000,
+    enableHighAccuracy: true,
+    maximumAgeMs: 0,
+  });
+}
+
 /** Fast geo for scan punches — never block longer than ~1.5s. */
 export function captureScanPunchPosition(): Promise<CapturedGeoPosition | null> {
   return captureCurrentPosition({

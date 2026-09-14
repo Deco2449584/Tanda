@@ -1,9 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LogOut, MapPin, Settings } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/images/storage-upload';
-import { captureCurrentPosition } from '@/lib/geo/capture-position';
+import {
+  captureCurrentPosition,
+  captureGeofencePosition,
+  type CapturedGeoPosition,
+} from '@/lib/geo/capture-position';
 import { KioskClock } from '@/components/kiosk/KioskClock';
 import { KioskCamera } from '@/components/kiosk/KioskCamera';
 import { KioskPinPad } from '@/components/kiosk/KioskPinPad';
@@ -34,7 +38,12 @@ interface KioskSession {
   employeeName: string;
   actionType: AttendanceType;
   allowedActions: AttendanceType[];
+  /** This client only accepts punches made inside its geofence. */
+  geofenceRequired: boolean;
 }
+
+const GEOFENCE_GPS_MISSING =
+  'Location is required to clock in at this client. Turn on location for this device and try again.';
 
 interface KioskScreenProps {
   locationId: string;
@@ -61,6 +70,8 @@ export function KioskScreen({
   );
   const [successData, setSuccessData] = useState<KioskSuccessData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Started right after the PIN so the fix is ready when the photo is confirmed.
+  const geoFixRef = useRef<Promise<CapturedGeoPosition | null> | null>(null);
 
   const warehouseLabel = locationLabel || 'Assigned client';
 
@@ -86,6 +97,7 @@ export function KioskScreen({
     setSession(null);
     setProcessing(false);
     setLoading(false);
+    geoFixRef.current = null;
   }, [clearPendingCapture]);
 
   useEffect(() => {
@@ -124,6 +136,7 @@ export function KioskScreen({
               employeeName: string;
               actionType: AttendanceType;
               allowedActions?: AttendanceType[];
+              geofenceRequired?: boolean;
               error?: string;
             }
           | null;
@@ -139,12 +152,18 @@ export function KioskScreen({
             ? data.allowedActions
             : [data.actionType];
 
+        const geofenceRequired = data.geofenceRequired === true;
         const nextSession: KioskSession = {
           employeeId: data.employeeId,
           employeeName: data.employeeName,
           actionType: data.actionType,
           allowedActions,
+          geofenceRequired,
         };
+
+        geoFixRef.current = geofenceRequired
+          ? captureGeofencePosition()
+          : captureCurrentPosition();
 
         setSession(nextSession);
 
@@ -183,6 +202,7 @@ export function KioskScreen({
       employeeName: string;
       employeePin: string;
       actionType: AttendanceType;
+      geofenceRequired: boolean;
     }) => {
       void (async () => {
         try {
@@ -192,10 +212,23 @@ export function KioskScreen({
           const fileName = `${Date.now()}-${params.actionType}.webp`;
           const photoPath = `attendance/${params.employeeId}/${year}/${month}/${fileName}`;
 
-          const [photoUrl, geo] = await Promise.all([
-            uploadImageToStorage(photoPath, params.imageBlob),
-            captureCurrentPosition(),
-          ]);
+          const pendingGeo =
+            geoFixRef.current ??
+            (params.geofenceRequired
+              ? captureGeofencePosition()
+              : captureCurrentPosition());
+          geoFixRef.current = null;
+
+          const geo = await pendingGeo;
+          if (params.geofenceRequired && !geo) {
+            showError(GEOFENCE_GPS_MISSING);
+            return;
+          }
+
+          const photoUrl = await uploadImageToStorage(
+            photoPath,
+            params.imageBlob,
+          );
 
           const response = await fetch('/api/kiosk/punch', {
             method: 'POST',
@@ -285,6 +318,7 @@ export function KioskScreen({
       employeeName: session.employeeName,
       employeePin: pin,
       actionType: session.actionType,
+      geofenceRequired: session.geofenceRequired,
     });
   };
 

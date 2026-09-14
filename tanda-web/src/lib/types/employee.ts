@@ -65,6 +65,8 @@ export interface EmployeeFirestore extends EmployeePersonalDetails {
   webInspectionsEnabled?: boolean;
   /** Allows kiosk check-in even if the employee has no scheduled shift that day. */
   allowCheckInWithoutScheduledShift?: boolean;
+  /** Skips the client geofence for scan/kiosk punches (site work with roaming locations). */
+  allowPunchOutsideGeofence?: boolean;
   lastAction: string;
   lastTimestampServer?: Timestamp;
   photoUrl?: string;
@@ -100,6 +102,7 @@ export interface CreateEmployeeInput {
   employmentTypeId?: string;
   payRates?: StaffPayRates;
   allowCheckInWithoutScheduledShift?: boolean;
+  allowPunchOutsideGeofence?: boolean;
 }
 
 export interface CreateEmployeeFormValues extends CreateEmployeeInput, EmployeePersonalDetails {

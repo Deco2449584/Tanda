@@ -21,6 +21,7 @@ service cloud.firestore {
           'department',
           'hourlyRate',
           'allowCheckInWithoutScheduledShift',
+          'allowPunchOutsideGeofence',
           'employeeId',
           'photoUrl',
           'locationId',
@@ -67,6 +68,10 @@ service cloud.firestore {
         (
           !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
           request.resource.data.allowCheckInWithoutScheduledShift is bool
+        ) &&
+        (
+          !('allowPunchOutsideGeofence' in request.resource.data) ||
+          request.resource.data.allowPunchOutsideGeofence is bool
         ) &&
         (
           !('locationId' in request.resource.data) ||
@@ -121,6 +126,10 @@ service cloud.firestore {
           !('allowCheckInWithoutScheduledShift' in request.resource.data) ||
           request.resource.data.allowCheckInWithoutScheduledShift is bool
         ) &&
+        (
+          !('allowPunchOutsideGeofence' in request.resource.data) ||
+          request.resource.data.allowPunchOutsideGeofence is bool
+        ) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'employeeId',
           'name',
@@ -133,6 +142,7 @@ service cloud.firestore {
           'continentalInspectAdmin',
           'webInspectionsEnabled',
           'allowCheckInWithoutScheduledShift',
+          'allowPunchOutsideGeofence',
           'locationId',
           'locationGroupId',
           'phone',

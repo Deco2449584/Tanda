@@ -25,6 +25,7 @@ export function employeeToFormValues(employee: Employee): CreateEmployeeFormValu
     employmentTypeId: employee.employmentTypeId ?? 'full_time',
     payRates: employee.payRates,
     allowCheckInWithoutScheduledShift: employee.allowCheckInWithoutScheduledShift === true,
+    allowPunchOutsideGeofence: employee.allowPunchOutsideGeofence === true,
     startDate: employee.startDate ?? '',
     endDate: employee.endDate ?? '',
     phone: employee.phone ?? '',

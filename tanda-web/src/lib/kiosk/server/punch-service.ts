@@ -27,6 +27,13 @@ import {
   isValidLongitude,
   reverseGeocode,
 } from '@/lib/geo/reverse-geocode';
+import {
+  evaluateClientGeofence,
+  isGeofenceEnforced,
+  resolveGeofenceSite,
+  type GeofenceFailureReason,
+  type GeofenceSite,
+} from '@/lib/geo/geofence';
 import { canEmployeePunchAtKiosk } from '@/lib/location-groups/can-punch-at-location';
 import { mapLocationGroupDoc } from '@/lib/location-groups/map-location-group';
 import {
@@ -46,6 +53,8 @@ export interface KioskLookupResult {
   actionType: AttendanceType;
   allowedActions: AttendanceType[];
   state: AttendanceWorkState;
+  /** True when this client rejects punches without an on-site GPS fix. */
+  geofenceRequired: boolean;
 }
 
 const PUNCH_MAX_ATTEMPTS = 3;
@@ -55,11 +64,25 @@ export async function lookupKioskEmployee(input: {
   locationId: string;
   employeePin: string;
 }): Promise<KioskLookupResult> {
-  const location = await requireOperatorLocation(input.operator, input.locationId);
+  const { location, geofence } = await requireOperatorLocation(
+    input.operator,
+    input.locationId,
+  );
   const employee = await requireAuthorizedEmployee(
     input.employeePin,
     location.id,
   );
+
+  const geofenceExempt = employee.data.allowPunchOutsideGeofence === true;
+
+  // Fail before the photo step when the site can never satisfy its geofence.
+  const geofenceStatus = evaluateClientGeofence({
+    site: geofence,
+    exempt: geofenceExempt,
+  });
+  if (geofenceStatus.reason === 'site_not_configured') {
+    throw new KioskPunchError(geofenceStatus.message!, 403);
+  }
 
   const employeeCode = employee.data.employeeId as string;
 
@@ -123,6 +146,7 @@ export async function lookupKioskEmployee(input: {
     actionType,
     allowedActions,
     state,
+    geofenceRequired: isGeofenceEnforced(geofence) && !geofenceExempt,
   };
 }
 
@@ -138,11 +162,33 @@ export async function recordKioskPunch(input: {
   geoAccuracy?: number;
   geoCapturedAt?: string;
 }): Promise<KioskLookupResult & { recordedAt: string }> {
-  const location = await requireOperatorLocation(input.operator, input.locationId);
+  const { location, geofence } = await requireOperatorLocation(
+    input.operator,
+    input.locationId,
+  );
   const employee = await requireAuthorizedEmployee(
     input.employeePin,
     location.id,
   );
+
+  const geofenceExempt = employee.data.allowPunchOutsideGeofence === true;
+
+  // A phone kiosk opened away from the site is rejected here.
+  const geofenceStatus = evaluateClientGeofence({
+    site: geofence,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    accuracy: input.geoAccuracy,
+    exempt: geofenceExempt,
+  });
+
+  if (!geofenceStatus.ok) {
+    throw new KioskPunchError(
+      geofenceStatus.message ?? 'You must be on site to clock in.',
+      403,
+      { reason: geofenceStatus.reason },
+    );
+  }
 
   const employeeDocId = employee.id;
   const employeeCode = employee.data.employeeId as string;
@@ -237,6 +283,16 @@ export async function recordKioskPunch(input: {
         geoFields.geoCapturedAt = input.geoCapturedAt.trim();
       }
 
+      if (typeof geofenceStatus.distanceMeters === 'number') {
+        geoFields.geofenceDistanceMeters = Math.round(
+          geofenceStatus.distanceMeters,
+        );
+        geoFields.geofenceRadiusMeters = geofenceStatus.radiusMeters;
+      }
+      if (geofenceStatus.bypassed) {
+        geoFields.geofenceBypassed = true;
+      }
+
       const address = await reverseGeocode(input.latitude, input.longitude);
       if (address) {
         geoFields.geoAddress = address;
@@ -326,6 +382,7 @@ export async function recordKioskPunch(input: {
     actionType,
     allowedActions,
     state,
+    geofenceRequired: isGeofenceEnforced(geofence) && !geofenceExempt,
     recordedAt,
   };
 }
@@ -333,15 +390,22 @@ export async function recordKioskPunch(input: {
 async function requireOperatorLocation(
   operator: KioskOperator,
   locationId: string,
-): Promise<KioskLocationOption> {
-  const { options } = await loadKioskAllowedLocations(operator);
+): Promise<{ location: KioskLocationOption; geofence: GeofenceSite }> {
+  const { options, locations } = await loadKioskAllowedLocations(operator);
   if (options.length === 0) {
     throw new KioskPunchError(
       'This kiosk has no assigned client. Ask an administrator to set one.',
       403,
     );
   }
-  return assertLocationAllowedForOperator(locationId, options);
+
+  const location = assertLocationAllowedForOperator(locationId, options);
+  const site = locations.find((item) => item.id === location.id);
+
+  return {
+    location,
+    geofence: resolveGeofenceSite(site ?? {}, location.name),
+  };
 }
 
 async function requireAuthorizedEmployee(employeePin: string, kioskLocationId: string) {
@@ -412,10 +476,17 @@ async function requireAuthorizedEmployee(employeePin: string, kioskLocationId: s
 
 export class KioskPunchError extends Error {
   status: number;
+  /** Set for geofence rejections so the kiosk can ask for a better GPS fix. */
+  reason?: GeofenceFailureReason;
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    options?: { reason?: GeofenceFailureReason },
+  ) {
     super(message);
     this.status = status;
+    this.reason = options?.reason;
   }
 }
 

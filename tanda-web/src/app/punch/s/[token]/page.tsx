@@ -1,4 +1,4 @@
-import { ScanPunchPanel } from '@/components/attendance/ScanPunchPanel';
+import { ScanPunchLauncher } from '@/components/attendance/ScanPunchLauncher';
 import { parseScanPunchVia } from '@/lib/attendance/scan-punch-token';
 
 interface PunchScanPageProps {
@@ -23,5 +23,5 @@ export default async function PunchScanPage({
     );
   }
 
-  return <ScanPunchPanel token={cleanToken} via={via} />;
+  return <ScanPunchLauncher token={cleanToken} via={via} />;
 }

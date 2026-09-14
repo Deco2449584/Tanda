@@ -36,6 +36,7 @@ function location(overrides: Partial<Location> = {}): Location {
     name: 'Sydney WH',
     city: 'Sydney',
     active: true,
+    geofenceRequired: false,
     ...overrides,
   };
 }

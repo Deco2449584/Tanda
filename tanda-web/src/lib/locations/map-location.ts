@@ -1,5 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { normalizeAuLocationState } from '@/lib/locations/au-states';
+import { normalizeGeofenceRadiusMeters } from '@/lib/geo/geofence';
+import { isValidLatitude, isValidLongitude } from '@/lib/geo/reverse-geocode';
 import type { Location, LocationFirestore } from '@/lib/types/location';
 import { mapSiteBilling } from '@/lib/payroll/map-pay-rules';
 
@@ -23,6 +25,12 @@ export function mapLocationDoc(
     typeof record.code === 'string' && record.code.trim()
       ? record.code.trim().toUpperCase()
       : undefined;
+
+  const latitude = isValidLatitude(record.latitude) ? record.latitude : undefined;
+  const longitude = isValidLongitude(record.longitude)
+    ? record.longitude
+    : undefined;
+  const hasCoords = latitude !== undefined && longitude !== undefined;
 
   return {
     id,
@@ -49,6 +57,16 @@ export function mapLocationDoc(
       typeof record.scanPunchToken === 'string' && record.scanPunchToken.trim()
         ? record.scanPunchToken.trim()
         : undefined,
+    latitude,
+    longitude,
+    geofenceRadiusMeters: normalizeGeofenceRadiusMeters(
+      record.geofenceRadiusMeters,
+    ),
+    // Sites with coordinates enforce on-site punches unless explicitly disabled.
+    geofenceRequired:
+      typeof record.geofenceRequired === 'boolean'
+        ? record.geofenceRequired
+        : hasCoords,
     billing: mapSiteBilling(record.billing),
     billingHistory: Array.isArray(record.billingHistory)
       ? record.billingHistory

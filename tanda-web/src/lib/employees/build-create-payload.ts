@@ -54,6 +54,10 @@ export function buildEmployeeCreatePayload(input: {
     payload.allowCheckInWithoutScheduledShift = true;
   }
 
+  if (form.allowPunchOutsideGeofence) {
+    payload.allowPunchOutsideGeofence = true;
+  }
+
   if (photoUrl) {
     payload.photoUrl = photoUrl;
   }
@@ -127,6 +131,8 @@ export function buildEmployeeUpdatePayload(input: {
   payload.webInspectionsEnabled = input.webInspectionsEnabled === true;
   payload.allowCheckInWithoutScheduledShift =
     input.form.allowCheckInWithoutScheduledShift === true;
+  payload.allowPunchOutsideGeofence =
+    input.form.allowPunchOutsideGeofence === true;
 
   return payload;
 }
@@ -141,6 +147,7 @@ export const initialCreateEmployeeForm: CreateEmployeeFormValues = {
   hourlyRate: 0,
   employmentTypeId: 'full_time',
   allowCheckInWithoutScheduledShift: false,
+  allowPunchOutsideGeofence: false,
   startDate: todayIsoDate(),
   endDate: '',
   phone: '',

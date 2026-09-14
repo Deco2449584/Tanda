@@ -59,6 +59,7 @@ export function mapEmployeeDoc(
     webInspectionsEnabled: employee.webInspectionsEnabled === true,
     allowCheckInWithoutScheduledShift:
       employee.allowCheckInWithoutScheduledShift === true,
+    allowPunchOutsideGeofence: employee.allowPunchOutsideGeofence === true,
     lastAction: employee.lastAction ?? 'none',
     lastTimestampServer: employee.lastTimestampServer,
     photoUrl: typeof employee.photoUrl === 'string' ? employee.photoUrl : '',

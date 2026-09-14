@@ -15,6 +15,8 @@ import {
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
 import { generateScanPunchToken } from '@/lib/attendance/scan-punch-token';
+import { normalizeGeofenceRadiusMeters } from '@/lib/geo/geofence';
+import { isValidLatitude, isValidLongitude } from '@/lib/geo/reverse-geocode';
 import { normalizeAuLocationState } from '@/lib/locations/au-states';
 import { mapLocationDoc } from '@/lib/locations/map-location';
 import {
@@ -26,8 +28,83 @@ import {
 import type {
   CreateLocationInput,
   Location,
+  LocationGeofenceInput,
   UpdateLocationInput,
 } from '@/lib/types/location';
+
+const GEOFENCE_COORDS_REQUIRED =
+  'Set the site latitude and longitude before requiring on-site clock-in.';
+
+function buildGeofenceCreateFields(
+  input: LocationGeofenceInput,
+): Record<string, unknown> {
+  const latitude = isValidLatitude(input.latitude) ? input.latitude : undefined;
+  const longitude = isValidLongitude(input.longitude)
+    ? input.longitude
+    : undefined;
+  const hasCoords = latitude !== undefined && longitude !== undefined;
+
+  if (input.geofenceRequired === true && !hasCoords) {
+    throw new Error(GEOFENCE_COORDS_REQUIRED);
+  }
+
+  const fields: Record<string, unknown> = {};
+
+  if (hasCoords) {
+    fields.latitude = latitude;
+    fields.longitude = longitude;
+    fields.geofenceRequired = input.geofenceRequired !== false;
+  }
+
+  if (typeof input.geofenceRadiusMeters === 'number') {
+    fields.geofenceRadiusMeters = normalizeGeofenceRadiusMeters(
+      input.geofenceRadiusMeters,
+    );
+  }
+
+  return fields;
+}
+
+function buildGeofenceUpdateFields(
+  input: LocationGeofenceInput,
+): Record<string, unknown> {
+  const clearCoords = input.latitude === null || input.longitude === null;
+  const latitude = isValidLatitude(input.latitude) ? input.latitude : undefined;
+  const longitude = isValidLongitude(input.longitude)
+    ? input.longitude
+    : undefined;
+  const hasCoords = latitude !== undefined && longitude !== undefined;
+
+  if (input.geofenceRequired === true && clearCoords) {
+    throw new Error(GEOFENCE_COORDS_REQUIRED);
+  }
+
+  const fields: Record<string, unknown> = {};
+
+  if (hasCoords) {
+    fields.latitude = latitude;
+    fields.longitude = longitude;
+  } else if (clearCoords) {
+    fields.latitude = deleteField();
+    fields.longitude = deleteField();
+    // No coordinates left to compare against — stop blocking punches.
+    fields.geofenceRequired = false;
+  }
+
+  if (input.geofenceRadiusMeters === null) {
+    fields.geofenceRadiusMeters = deleteField();
+  } else if (typeof input.geofenceRadiusMeters === 'number') {
+    fields.geofenceRadiusMeters = normalizeGeofenceRadiusMeters(
+      input.geofenceRadiusMeters,
+    );
+  }
+
+  if (typeof input.geofenceRequired === 'boolean' && !clearCoords) {
+    fields.geofenceRequired = input.geofenceRequired;
+  }
+
+  return fields;
+}
 
 export async function fetchLocations(): Promise<Location[]> {
   if (!db) {
@@ -109,6 +186,7 @@ export async function createLocation(
   await assertLocationPinAvailable(pin);
 
   const photoUrl = input.photoUrl?.trim();
+  const geofenceFields = buildGeofenceCreateFields(input);
 
   const docRef = await addDoc(collection(db, COLLECTIONS.LOCATIONS), {
     name,
@@ -116,6 +194,7 @@ export async function createLocation(
     ...(state ? { state } : {}),
     ...(code ? { code } : {}),
     ...(photoUrl ? { photoUrl } : {}),
+    ...geofenceFields,
     pinHash: hashPortalPin(pin),
     pin,
     active: true,
@@ -145,10 +224,13 @@ export async function updateLocation(
     throw new Error('Client name and city are required.');
   }
 
+  const geofenceFields = buildGeofenceUpdateFields(input);
+
   await updateDoc(doc(db, COLLECTIONS.LOCATIONS, locationId), {
     name,
     city,
     code: code ? code : deleteField(),
+    ...geofenceFields,
     ...(state === undefined
       ? {}
       : state

@@ -12,6 +12,7 @@ const ALLOWED_UPDATE_KEYS = new Set([
   'continentalInspectAdmin',
   'webInspectionsEnabled',
   'allowCheckInWithoutScheduledShift',
+  'allowPunchOutsideGeofence',
   'locationId',
   'locationGroupId',
   'phone',

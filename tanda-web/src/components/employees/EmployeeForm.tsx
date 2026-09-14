@@ -485,6 +485,9 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         allowCheckInWithoutScheduledShift: isWorkforce
           ? form.allowCheckInWithoutScheduledShift
           : false,
+        allowPunchOutsideGeofence: isWorkforce
+          ? form.allowPunchOutsideGeofence
+          : false,
       };
 
       if (isEditMode && employee) {
@@ -546,6 +549,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
           markDelete('visaUrl');
           markDelete('visaFileName');
           payload.allowCheckInWithoutScheduledShift = false;
+          payload.allowPunchOutsideGeofence = false;
           payload.webInspectionsEnabled = false;
           payload.kioskEnabled = false;
           payload.continentalInspectEnabled = false;
@@ -1155,6 +1159,17 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             checked={form.allowCheckInWithoutScheduledShift === true}
             onChange={(checked) =>
               patchForm({ allowCheckInWithoutScheduledShift: checked })
+            }
+            disabled={isBusy}
+          />
+        ) : null}
+        {isWorkforce ? (
+          <FormToggle
+            label="Allow clock-in outside the client geofence"
+            description="Turn on for staff working on rotating sites: QR, NFC, and kiosk punches skip the on-site location check. Location is still recorded on each punch."
+            checked={form.allowPunchOutsideGeofence === true}
+            onChange={(checked) =>
+              patchForm({ allowPunchOutsideGeofence: checked })
             }
             disabled={isBusy}
           />

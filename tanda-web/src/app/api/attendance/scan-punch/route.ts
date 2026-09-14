@@ -54,7 +54,13 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof ScanPunchError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json(
+        {
+          error: error.message,
+          ...(error.reason ? { reason: error.reason } : {}),
+        },
+        { status: error.status },
+      );
     }
 
     console.error('POST /api/attendance/scan-punch', error);

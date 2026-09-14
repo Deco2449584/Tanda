@@ -5,6 +5,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  AlertTriangle,
   Building2,
   Copy,
   Download,
@@ -14,16 +15,26 @@ import {
   Plus,
   QrCode,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
   Trash2,
 } from 'lucide-react';
 import { ClientPhotoUpload } from '@/components/settings/ClientPhotoUpload';
+import {
+  ClientGeofenceFields,
+  emptyGeofenceForm,
+  geofenceFormFromLocation,
+  parseGeofenceForm,
+  validateGeofenceForm,
+  type GeofenceFormValue,
+} from '@/components/settings/ClientGeofenceFields';
 import {
   downloadScanPunchQr,
   ScanPunchQr,
 } from '@/components/settings/ScanPunchQr';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { buildScanPunchUrl } from '@/lib/attendance/scan-punch-token';
+import { DEFAULT_GEOFENCE_RADIUS_METERS } from '@/lib/geo/geofence';
 import { AU_LOCATION_STATES, type AuLocationState } from '@/lib/locations/au-states';
 import {
   createLocation,
@@ -55,9 +66,16 @@ interface EditFormState {
   city: string;
   state: AuLocationState | '';
   code: string;
+  geofence: GeofenceFormValue;
 }
 
-const emptyEditForm: EditFormState = { name: '', city: '', state: '', code: '' };
+const emptyEditForm: EditFormState = {
+  name: '',
+  city: '',
+  state: '',
+  code: '',
+  geofence: emptyGeofenceForm,
+};
 
 function PinCopyButton({
   pin,
@@ -94,6 +112,10 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [state, setState] = useState<AuLocationState | ''>('');
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
+  const [geofence, setGeofence] = useState<GeofenceFormValue>({
+    ...emptyGeofenceForm,
+    required: false,
+  });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
@@ -147,6 +169,15 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       return;
     }
 
+    const geofenceError = validateGeofenceForm(geofence);
+    if (geofenceError) {
+      onToast(geofenceError, 'error');
+      setSaving(false);
+      return;
+    }
+
+    const geofenceInput = parseGeofenceForm(geofence);
+
     try {
       const result = await createLocation({
         name,
@@ -154,6 +185,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         state: state || undefined,
         code: code || undefined,
         pin,
+        ...geofenceInput,
       });
 
       if (photoFile) {
@@ -164,6 +196,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           state: state || null,
           code: code || undefined,
           photoUrl,
+          ...geofenceInput,
         });
       }
 
@@ -173,6 +206,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       setState('');
       setCode('');
       setPin('');
+      setGeofence({ ...emptyGeofenceForm, required: false });
       setPhotoFile(null);
       void refresh();
       onToast('Client created. Share the PIN for portal access.');
@@ -192,6 +226,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       city: location.city,
       state: location.state ?? '',
       code: location.code ?? '',
+      geofence: geofenceFormFromLocation(location),
     });
     setEditPhotoFile(null);
   }
@@ -203,6 +238,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   }
 
   async function handleSaveEdit(location: Location) {
+    const geofenceError = validateGeofenceForm(editForm.geofence);
+    if (geofenceError) {
+      onToast(geofenceError, 'error');
+      return;
+    }
+
     setSavingEditId(location.id);
 
     try {
@@ -217,6 +258,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         state: editForm.state || null,
         code: editForm.code || undefined,
         ...(photoUrl ? { photoUrl } : {}),
+        ...parseGeofenceForm(editForm.geofence),
       });
       cancelEdit();
       void refresh();
@@ -477,6 +519,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               </p>
             )}
           </div>
+          <ClientGeofenceFields
+            value={geofence}
+            onChange={setGeofence}
+            disabled={saving}
+            onError={(message) => onToast(message, 'error')}
+          />
           <ClientPhotoUpload
             selectedFile={photoFile}
             onFileChange={setPhotoFile}
@@ -562,6 +610,18 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                         className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2 text-sm text-white outline-none focus:border-primary/50"
                       />
                     </div>
+                    <ClientGeofenceFields
+                      value={editForm.geofence}
+                      onChange={(geofenceValue) =>
+                        setEditForm((prev) => ({
+                          ...prev,
+                          geofence: geofenceValue,
+                        }))
+                      }
+                      disabled={savingEditId === location.id}
+                      onError={(message) => onToast(message, 'error')}
+                      compact
+                    />
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -629,6 +689,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                               </span>
                             )}
                           </div>
+                          <GeofenceSummary location={location} />
                         </div>
                       </div>
 
@@ -715,6 +776,50 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   );
 }
 
+function GeofenceSummary({ location }: { location: Location }) {
+  const hasCoords =
+    typeof location.latitude === 'number' &&
+    typeof location.longitude === 'number';
+  const radius =
+    location.geofenceRadiusMeters ?? DEFAULT_GEOFENCE_RADIUS_METERS;
+
+  if (!hasCoords) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">
+          <AlertTriangle className="h-3 w-3" aria-hidden />
+          No site coordinates
+        </span>
+        <span className="text-xs text-subtle">
+          {location.scanPunchEnabled
+            ? 'Scan clock-in is open from anywhere — set coordinates to require on-site.'
+            : 'Edit the client to add coordinates for on-site validation.'}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+          location.geofenceRequired
+            ? 'bg-emerald-500/20 text-emerald-300'
+            : 'bg-zinc-700 text-muted'
+        }`}
+      >
+        <ShieldCheck className="h-3 w-3" aria-hidden />
+        {location.geofenceRequired
+          ? `On-site required · ${radius} m`
+          : 'Geofence off'}
+      </span>
+      <span className="font-mono text-[11px] text-subtle">
+        {location.latitude!.toFixed(5)}, {location.longitude!.toFixed(5)}
+      </span>
+    </div>
+  );
+}
+
 function ScanPunchControls({
   location,
   busy,
@@ -782,6 +887,15 @@ function ScanPunchControls({
           {busy ? 'Saving…' : enabled ? 'Disable' : 'Enable'}
         </button>
       </div>
+
+      {enabled && !location.geofenceRequired ? (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-950/25 px-3 py-2 text-xs text-amber-200">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          On-site validation is off for this client, so a copied link can be
+          used from anywhere. Edit the client, set its coordinates, and turn on
+          “Require on-site location”.
+        </p>
+      ) : null}
 
       {enabled && qrUrl && nfcUrl ? (
         <div className="grid gap-5 border-t border-border/80 pt-4 md:grid-cols-[auto_1fr] md:items-start">

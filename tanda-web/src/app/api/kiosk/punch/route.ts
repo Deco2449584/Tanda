@@ -47,7 +47,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof KioskAccessError || error instanceof KioskPunchError) {
+    if (error instanceof KioskPunchError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          ...(error.reason ? { reason: error.reason } : {}),
+        },
+        { status: error.status },
+      );
+    }
+    if (error instanceof KioskAccessError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error('POST /api/kiosk/punch', error);
