@@ -444,11 +444,16 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       let passport: { url: string; fileName: string } | undefined;
       let visa: { url: string; fileName: string } | undefined;
 
-      if (isWorkforce && (photoFile || passportFile || visaFile)) {
+      const canUploadPhoto = isWorkforce || isWebAdmin;
+
+      if (
+        (canUploadPhoto && photoFile) ||
+        (isWorkforce && (passportFile || visaFile))
+      ) {
         setIsUploading(true);
       }
 
-      if (isWorkforce && photoFile) {
+      if (canUploadPhoto && photoFile) {
         photoUrl = await uploadEmployeeAvatar(employeeCode, photoFile);
       }
 
@@ -492,7 +497,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
             ? continentalInspectEnabled && continentalInspectAdmin
             : false,
           webInspectionsEnabled: isWorkforce ? webInspectionsEnabled : false,
-          photoUrl: isWorkforce ? photoUrl || undefined : undefined,
+          photoUrl: canUploadPhoto ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
           visa: isWorkforce ? visa : undefined,
         });
@@ -531,7 +536,11 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         }
 
         if (!isWorkforce) {
-          markDelete('photoUrl');
+          if (!isWebAdmin) {
+            markDelete('photoUrl');
+          } else if (!photoUrl) {
+            markDelete('photoUrl');
+          }
           markDelete('passportUrl');
           markDelete('passportFileName');
           markDelete('visaUrl');
@@ -609,7 +618,7 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
       } else {
         const payload = buildEmployeeCreatePayload({
           form: normalizedForm,
-          photoUrl: isWorkforce ? photoUrl || undefined : undefined,
+          photoUrl: canUploadPhoto ? photoUrl || undefined : undefined,
           passport: isWorkforce ? passport : undefined,
           visa: isWorkforce ? visa : undefined,
           continentalInspectEnabled: isWorkforce
@@ -767,13 +776,17 @@ export function EmployeeForm({ employee = null, onCancel, onSuccess }: EmployeeF
         }
         icon={Briefcase}
       >
-        {isWorkforce ? (
+        {isWorkforce || isWebAdmin ? (
           <EmployeePhotoUpload
             currentPhotoUrl={employee?.photoUrl}
             selectedFile={photoFile}
             onFileChange={setPhotoFile}
             disabled={isBusy}
-            description="Optional here — employees upload their required photo from My profile."
+            description={
+              isWebAdmin
+                ? 'Optional profile photo shown in the staff list and admin UI.'
+                : 'Optional here — employees upload their required photo from My profile.'
+            }
           />
         ) : null}
 
