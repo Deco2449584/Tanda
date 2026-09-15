@@ -144,7 +144,7 @@ export function AccountingOverviewPanel({
         <ol className="mt-3 space-y-2 text-sm text-muted">
           <li className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">1</span>
-            <span><strong className="text-foreground">Setup</strong> — configure pay rules, time bands, and rate cards for staff and sites.</span>
+            <span><strong className="text-foreground">Settings</strong> — configure pay rules, time bands, and rate cards for staff and sites.</span>
           </li>
           <li className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">2</span>

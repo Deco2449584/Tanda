@@ -536,7 +536,7 @@ export function AccountingRatesPanel({
                   Client time bands
                 </h3>
                 <p className="mt-1 text-xs text-subtle">
-                  Leave empty to inherit company bands (Setup → Pay and charge rules → Time
+                  Leave empty to inherit company bands (Settings → Pay and charge rules → Time
                   bands). Set early morning here per client if needed (e.g. 02:00–05:00 or
                   01:00–08:00). Overnight bands can wrap (e.g. 22:00–06:00).
                 </p>
