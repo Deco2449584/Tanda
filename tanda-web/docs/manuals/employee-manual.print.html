@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Continental Cargo — Employee User Manual</title>
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --muted: #555;
+      --line: #ddd;
+      --accent: #c2185b;
+      --bg: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 28px 32px 48px;
+    }
+
+    .cover {
+      text-align: center;
+      padding: 48px 16px 36px;
+      border-bottom: 3px solid var(--accent);
+      margin-bottom: 28px;
+    }
+
+    .cover-logo {
+      display: block;
+      margin: 0 auto 20px;
+      max-width: 320px;
+      width: 70%;
+      height: auto;
+    }
+
+    .cover h1 {
+      margin: 0 0 8px;
+      font-size: 26pt;
+      letter-spacing: -0.02em;
+    }
+
+    .cover .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12pt;
+    }
+
+    .meta {
+      margin-top: 18px;
+      font-size: 10pt;
+      color: var(--muted);
+    }
+
+    h2 {
+      margin: 32px 0 10px;
+      padding-top: 8px;
+      font-size: 15pt;
+      color: var(--accent);
+      border-top: 1px solid var(--line);
+      page-break-after: avoid;
+    }
+
+    h2:first-of-type { border-top: none; }
+
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 12pt;
+      page-break-after: avoid;
+    }
+
+    p, li { orphans: 3; widows: 3; }
+
+    ol, ul { padding-left: 1.25em; margin: 8px 0 12px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px;
+      font-size: 10pt;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #f6f6f6; }
+
+    figure {
+      margin: 12px 0 20px;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    figure img {
+      max-width: 280px;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    figcaption {
+      margin-top: 8px;
+      font-size: 9pt;
+      color: var(--muted);
+    }
+
+    .tip {
+      background: #faf5f7;
+      border-left: 3px solid var(--accent);
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 10pt;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-size: 9pt;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media print {
+      body { font-size: 10.5pt; }
+      .page { max-width: none; padding: 0; }
+      .cover { padding-top: 24px; }
+      h2 { page-break-before: auto; }
+      figure img { max-width: 240px; box-shadow: none; }
+      a { color: inherit; text-decoration: none; }
+    }
+
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="cover">
+      <img
+        class="cover-logo"
+        src="images/logo-continental-cargo.png"
+        alt="Continental Cargo Logistics Company"
+      />
+      <h1>Employee User Manual</h1>
+      <p class="subtitle">Continental Cargo Workspace — mobile guide</p>
+      <p class="meta">
+        App: continentalcargo.online · Audience: workforce employees<br />
+        Open this file in Chrome → Print → Save as PDF
+      </p>
+    </header>
+
+    <h2>1. Sign in</h2>
+    <p>Entry to the workforce platform (attendance, scheduling, leave, compliance).</p>
+    <ol>
+      <li>Open <strong>https://www.continentalcargo.online</strong>.</li>
+      <li>Enter your company email and password (issued by your administrator).</li>
+      <li>Tap <strong>Sign in</strong>.</li>
+    </ol>
+    <p>If sign-in fails or you never received credentials, contact your system administrator. Do not share passwords.</p>
+    <figure>
+      <img src="images/employee/employee-01-login.png" alt="Sign in screen" />
+      <figcaption>Figure 1 — Sign in</figcaption>
+    </figure>
+
+    <h2>2. Home — My overview</h2>
+    <p>Daily hub after sign-in. On a phone, <strong>scroll down</strong> — several cards sit below the first screen.</p>
+    <ul>
+      <li><strong>Refresh</strong> — reloads hours, shifts, and schedule.</li>
+      <li><strong>Bell</strong> — notifications. <strong>Photo</strong> — account shortcuts.</li>
+    </ul>
+    <h3>Your employee ID</h3>
+    <p>Four-digit ID for the warehouse time clock / kiosk. Use this when you clock in or out — not your password.</p>
+    <h3>Hours &amp; earnings</h3>
+    <ul>
+      <li>Switch <strong>This week</strong>, <strong>Last week</strong>, or <strong>This month</strong>.</li>
+      <li>See billable hours and progress toward your goal (default <strong>Goal 40 hrs</strong>; tap the pencil to edit your personal target).</li>
+      <li>Earnings appear only after an administrator sets your hourly rate; hours still show without a rate.</li>
+    </ul>
+    <h3>My next shift</h3>
+    <p>Next rostered shift (date/time/site when published), or <strong>No upcoming shifts</strong>.</p>
+    <h3>My schedule (this week)</h3>
+    <ul>
+      <li>Week range, shift count, day cards (Scheduled / Completed / Absent / Day off).</li>
+      <li>Tap <strong>Full schedule</strong> for the full schedule page and confirmation.</li>
+    </ul>
+    <figure>
+      <img src="images/employee/employee-02-dashboard.png" alt="Employee dashboard" />
+      <figcaption>Figure 2 — My overview</figcaption>
+    </figure>
+
+    <h2>3. Mobile navigation</h2>
+    <ol>
+      <li>Tap the menu (three lines) top left.</li>
+      <li>Choose a destination; close with <strong>X</strong> when done.</li>
+    </ol>
+    <table>
+      <thead>
+        <tr><th>Group / item</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>My dashboard</td><td>Home: ID, hours, next shift, week preview</td></tr>
+        <tr><td>My records</td><td>Check-ins/outs, photo verification, worked blocks</td></tr>
+        <tr><td>My schedule</td><td>Roster + confirm attendance</td></tr>
+        <tr><td>My leave</td><td>Vacation / leave / permission requests</td></tr>
+        <tr><td>My courses</td><td>Training tracking, evidence, admin approval</td></tr>
+        <tr><td>My profile</td><td>Personal data — required; admin approval</td></tr>
+        <tr><td>Announcements</td><td>Company messages for your dept / location</td></tr>
+        <tr><td>Help / Report issue</td><td>Guides and support tickets</td></tr>
+        <tr><td>Inspections</td><td>ULD / AWB intake (if enabled)</td></tr>
+        <tr><td>Kiosk check-in</td><td>On-site time clock</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="images/employee/employee-03-nav-menu.png" alt="Navigation menu" />
+      <figcaption>Figure 3 — Side menu</figcaption>
+    </figure>
+
+    <h2>4. My schedule</h2>
+    <p>Managers <strong>assign your shifts</strong>. You typically receive an <strong>email</strong> when the roster is published — also open <strong>My schedule</strong> in the app to act on it.</p>
+    <p><strong>Important:</strong> You must <strong>confirm your attendance</strong> for assigned shifts. Do not ignore assignment emails.</p>
+    <ul>
+      <li>Weekly calendar with day status (Scheduled, Completed, Absent, Day off).</li>
+      <li>Upcoming shifts in chronological order.</li>
+      <li><strong>Refresh</strong> after roster changes.</li>
+    </ul>
+    <figure>
+      <img src="images/employee/employee-04-schedule.png" alt="My schedule" />
+      <figcaption>Figure 4 — My schedule</figcaption>
+    </figure>
+    <h3>Confirm attendance</h3>
+    <p>Accept the shifts assigned to you so planners can lock coverage. If you cannot work a shift, contact your manager immediately.</p>
+    <figure>
+      <img src="images/employee/employee-15-schedule-confirm.png" alt="Confirm schedule attendance" />
+      <figcaption>Figure 4b — Confirm attendance</figcaption>
+    </figure>
+
+    <h2>4b. Notifications</h2>
+    <p>Tap the <strong>bell</strong> for shift assignments, confirm reminders, announcements, training deadlines, and other alerts.</p>
+    <ul>
+      <li><strong>Allow notifications</strong> when the phone/browser asks so you do not miss roster changes.</li>
+      <li>You can still open the bell if push is off — enabling push is strongly recommended.</li>
+    </ul>
+    <figure>
+      <img src="images/employee/employee-16-notifications.png" alt="Notifications" />
+      <figcaption>Figure 4c — Notifications</figcaption>
+    </figure>
+
+    <h2>5. My attendance records</h2>
+    <p><strong>My records</strong> shows check-ins, check-outs, and photo verification for your punches.</p>
+    <ol>
+      <li>Open <strong>My records</strong>.</li>
+      <li>Filter All / Last 7 days / This month.</li>
+      <li>Open a record for punch detail when available.</li>
+      <li><strong>Refresh</strong> if a recent punch is missing.</li>
+    </ol>
+    <h3>Worked shifts</h3>
+    <p>Tap <strong>Worked shifts</strong> for complete work blocks (start, end, duration, related detail) — not only raw punch lines. Use this to review a full day’s worked time.</p>
+    <figure>
+      <img src="images/employee/employee-05-hours.png" alt="Attendance records" />
+      <figcaption>Figure 5 — Attendance records</figcaption>
+    </figure>
+    <h3>Late arrivals and absences — justification</h3>
+    <p>If you were <strong>late</strong> or <strong>absent</strong>, submit a <strong>justification</strong> for manager / admin review (reason, and evidence if requested).</p>
+    <figure>
+      <img src="images/employee/employee-17-late-absence-justification.png" alt="Late or absence justification" />
+      <figcaption>Figure 5b — Late / absence justification</figcaption>
+    </figure>
+
+    <h2>6. Announcements</h2>
+    <p>Company notice board filtered to your <strong>department and location</strong>. Check regularly for official operational updates. Empty list = nothing targeted to your profile yet.</p>
+    <figure>
+      <img src="images/employee/employee-06-announcements.png" alt="Announcements" />
+      <figcaption>Figure 6 — Announcements</figcaption>
+    </figure>
+
+    <h2>7. My leave (time off &amp; permissions)</h2>
+    <p><strong>My leave</strong> is where you <strong>request time off and permissions</strong> — vacation / annual leave, personal leave, sick leave (as configured), or other absence types your company defines. It is not the same as confirming a rostered shift.</p>
+    <h3>What you can do</h3>
+    <ul>
+      <li>Submit a new leave / permission request (type, dates, reason).</li>
+      <li>Track status under <strong>Request history</strong> (pending, approved, rejected).</li>
+      <li><strong>Refresh</strong> after submit or while waiting for a decision.</li>
+    </ul>
+    <h3>How to submit</h3>
+    <ol>
+      <li>Open <strong>My leave</strong>.</li>
+      <li>Choose <strong>Leave type</strong> (e.g. Vacation or the matching permission).</li>
+      <li>Set <strong>From</strong> / <strong>To</strong> dates.</li>
+      <li>Write a clear <strong>Justification</strong>.</li>
+      <li>Tap <strong>SUBMIT REQUEST</strong>.</li>
+    </ol>
+    <div class="tip">
+      Until the request is <strong>approved</strong>, do not assume the days are cleared on the roster. Check Request history and confirm with your manager if unsure.
+    </div>
+    <figure>
+      <img src="images/employee/employee-07-leave.png" alt="My leave" />
+      <figcaption>Figure 7 — Leave / permission request</figcaption>
+    </figure>
+
+    <h2>8. My courses (training tracking)</h2>
+    <p><strong>My courses</strong> is the training <strong>follow-up and compliance tracker</strong> — not the learning platform itself.</p>
+    <ol>
+      <li>Open the assigned course (deadline and status show here).</li>
+      <li>Use the <strong>access link</strong> to open the external training platform and complete the learning there.</li>
+      <li>Return here, <strong>upload evidence</strong>, and <strong>mark the course as completed</strong>.</li>
+      <li>An <strong>administrator must approve</strong> — status stays <strong>Awaiting review</strong> until then.</li>
+    </ol>
+    <table>
+      <thead>
+        <tr><th>Status</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Still to do</td><td>Assigned; not finished / not marked complete</td></tr>
+        <tr><td>Awaiting review</td><td>Evidence submitted; waiting for admin</td></tr>
+        <tr><td>Approved</td><td>Administrator accepted completion</td></tr>
+      </tbody>
+    </table>
+    <p>Finish before the deadline. Unapproved courses may affect role compliance.</p>
+    <figure>
+      <img src="images/employee/employee-08-courses.png" alt="My courses" />
+      <figcaption>Figure 8 — My courses</figcaption>
+    </figure>
+
+    <h2>9. My profile (required)</h2>
+    <p><strong>You must complete your personal profile</strong> and submit it for <strong>administrator approval</strong>.</p>
+    <ol>
+      <li>Profile photo (recommended).</li>
+      <li>Personal details: contact, address, requested documents.</li>
+      <li>Tap <strong>Submit for review</strong>.</li>
+      <li>Status <strong>Pending review</strong> until admin approves or rejects.</li>
+    </ol>
+    <p>If rejected, fix what was requested and submit again. Keep data up to date for contact and payroll.</p>
+    <figure>
+      <img src="images/employee/employee-09-profile.png" alt="My profile" />
+      <figcaption>Figure 9 — My profile</figcaption>
+    </figure>
+
+    <h2>10. Report an issue</h2>
+    <p>Support ticket for problems with the app, kiosk, schedule, or account.</p>
+    <ol>
+      <li>Select category.</li>
+      <li>Subject + description (steps to reproduce if a bug).</li>
+      <li>Optional screenshot.</li>
+      <li>Tap <strong>Submit report</strong> — admin reviews and updates status.</li>
+    </ol>
+    <figure>
+      <img src="images/employee/employee-10-report-issue.png" alt="Report an issue" />
+      <figcaption>Figure 10 — Report an issue</figcaption>
+    </figure>
+
+    <h2>11. Cargo inspections</h2>
+    <p>If enabled: register ULD / AWB warehouse intake (shared with Continental Inspect where applicable).</p>
+    <h3>List</h3>
+    <ul>
+      <li>Counters (New / Loaded / Attention), search, date filters, Export CSV, Refresh.</li>
+      <li>Tap <strong>+ Register new</strong> to start.</li>
+    </ul>
+    <figure>
+      <img src="images/employee/employee-11-inspections.png" alt="Inspections list" />
+      <figcaption>Figure 11 — Inspections list</figcaption>
+    </figure>
+    <h3>New inspection</h3>
+    <p>Scroll the full form. <strong>GPS is captured when you save.</strong></p>
+    <p><strong>Identification:</strong> ULD (optional), AWB, cargo category (LCL / Pallet / Loose / Breakbulk), Client.</p>
+    <p><strong>Cargo details:</strong> Conservation (Frozen / Refrigerated / Ambient), food type, weight, box count, optional temperature, Damage / Issues toggle.</p>
+    <p><strong>Outbound transport (optional):</strong> plate, driver, transport company.</p>
+    <p><strong>Evidence:</strong> photos (≤ 3 MB, optimized after save) and videos (original quality). Save — keep the tab open until the upload progress bar finishes.</p>
+    <figure>
+      <img src="images/employee/employee-12-inspection-new.png" alt="Register new inspection" />
+      <figcaption>Figure 12 — Register new inspection</figcaption>
+    </figure>
+
+    <h2>12. Kiosk check-in</h2>
+    <ol>
+      <li>Confirm location line (Clocking in at: …).</li>
+      <li>Enter 4-digit employee ID (same as My overview).</li>
+      <li>Continue and follow check-in / check-out prompts (photo/location as configured).</li>
+    </ol>
+    <h3>Location check (geofence)</h3>
+    <p>Punch is allowed within about <strong>200 metres</strong> of the work location for that site. Outside range → move closer and retry.</p>
+    <h3>NFC or QR (if enabled)</h3>
+    <p>Admin may enable <strong>NFC</strong> or <strong>QR</strong> punch instead of (or as well as) the keypad. Ask which options your site uses.</p>
+    <div class="tip">
+      Allow location when asked. Use employee ID, not password. Tap Exit to leave the kiosk.
+    </div>
+    <figure>
+      <img src="images/employee/employee-13-punch-or-kiosk-note.png" alt="Kiosk time clock" />
+      <figcaption>Figure 13 — Kiosk time clock</figcaption>
+    </figure>
+
+    <h2>13. Help &amp; guides</h2>
+    <p>Videos, PDFs, documents, and links matched to your role, department, and location. Ask admin to publish content if the list is empty.</p>
+    <figure>
+      <img src="images/employee/employee-14-help.png" alt="Help and guides" />
+      <figcaption>Figure 14 — Help &amp; guides</figcaption>
+    </figure>
+
+    <h2>14. Quick tips</h2>
+    <table>
+      <thead>
+        <tr><th>Topic</th><th>What to do</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Forgot password</td><td>Ask your administrator to reset it.</td></tr>
+        <tr><td>Wrong ID at kiosk</td><td>Check Your employee ID on My overview.</td></tr>
+        <tr><td>Punch failed / outside range</td><td>Stay within ~200 m; confirm location permission.</td></tr>
+        <tr><td>NFC / QR missing</td><td>Only if admin enabled for your site.</td></tr>
+        <tr><td>Missing shift / no email</td><td>Check spam; My schedule + Refresh; confirm attendance.</td></tr>
+        <tr><td>Vacation / time off</td><td>My leave — type, dates, justification; wait for approval.</td></tr>
+        <tr><td>Late or absent</td><td>Submit late / absence justification for review.</td></tr>
+        <tr><td>Profile Pending review</td><td>Complete data; wait for admin (or fix and resubmit).</td></tr>
+        <tr><td>Course awaiting review</td><td>External training + evidence + mark complete → admin.</td></tr>
+        <tr><td>Earnings blank</td><td>Wait until admin sets hourly rate.</td></tr>
+      </tbody>
+    </table>
+
+    <footer>
+      Continental Cargo Workspace — Employee guide (mobile).<br />
+      For payroll and accounting detail, see the separate Holly / Accounting guide.
+    </footer>
+  </div>
+</body>
+</html>
