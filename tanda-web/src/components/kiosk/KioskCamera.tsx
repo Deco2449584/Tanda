@@ -6,7 +6,7 @@ import Webcam from 'react-webcam';
 import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 import { formatKioskActionLabel } from '@/lib/kiosk/kiosk-action-labels';
 import {
-  permissionHelpText,
+  cameraErrorHelpText,
   requestCameraAccess,
 } from '@/lib/permissions/browser-permissions';
 import type { AttendanceType } from '@/lib/types/attendance';
@@ -20,10 +20,9 @@ interface KioskCameraProps {
   onError?: (message: string) => void;
 }
 
+/** Soft constraints — hard facingMode/resolution often fails on Android and never reaches the permission dialog. */
 const videoConstraints: MediaTrackConstraints = {
-  facingMode: 'user',
-  width: { ideal: 1280 },
-  height: { ideal: 720 },
+  facingMode: { ideal: 'user' },
 };
 
 function FaceGuideOverlay() {
@@ -54,21 +53,31 @@ export function KioskCamera({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraKey, setCameraKey] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  /** When true, use bare `video: true` after a soft constraint failed. */
+  const [useFallbackVideo, setUseFallbackVideo] = useState(false);
 
   const actionLabel = formatKioskActionLabel(actionType);
 
   const handleRetryCamera = useCallback(async () => {
+    // Keep the error panel mounted so Webcam is NOT racing another getUserMedia.
     setRetrying(true);
-    setCameraError(null);
     try {
       const state = await requestCameraAccess();
-      if (state === 'denied') {
-        const message = permissionHelpText('camera');
+      if (state === 'denied' || state === 'unsupported') {
+        const message = cameraErrorHelpText({ name: 'NotAllowedError' });
         setCameraError(message);
         onError?.(message);
         return;
       }
-      // Remount Webcam so getUserMedia runs again after Allow.
+      if (state === 'unavailable') {
+        const message = cameraErrorHelpText({ name: 'NotFoundError' });
+        setCameraError(message);
+        onError?.(message);
+        return;
+      }
+      // Permission granted (or prompt succeeded). Remount Webcam alone.
+      setUseFallbackVideo(false);
+      setCameraError(null);
       setCameraKey((key) => key + 1);
     } finally {
       setRetrying(false);
@@ -134,14 +143,35 @@ export function KioskCamera({
             ) : (
               <>
                 <Webcam
-                  key={cameraKey}
+                  key={`${cameraKey}-${useFallbackVideo ? 'fallback' : 'ideal'}`}
                   ref={webcamRef}
                   audio={false}
                   screenshotFormat="image/jpeg"
                   screenshotQuality={0.85}
-                  videoConstraints={videoConstraints}
-                  onUserMediaError={() => {
-                    const message = permissionHelpText('camera');
+                  videoConstraints={
+                    useFallbackVideo ? true : videoConstraints
+                  }
+                  onUserMediaError={(err) => {
+                    const name =
+                      typeof err === 'string'
+                        ? err
+                        : err && typeof err === 'object' && 'name' in err
+                          ? String((err as { name?: string }).name)
+                          : '';
+                    // Soft constraints failed → remount with bare video once.
+                    if (
+                      !useFallbackVideo &&
+                      (name === 'OverconstrainedError' ||
+                        name === 'NotFoundError' ||
+                        name === 'DevicesNotFoundError')
+                    ) {
+                      setUseFallbackVideo(true);
+                      setCameraKey((key) => key + 1);
+                      return;
+                    }
+                    const message = cameraErrorHelpText(
+                      typeof err === 'string' ? { name: err } : err,
+                    );
                     setCameraError(message);
                     onError?.(message);
                   }}

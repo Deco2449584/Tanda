@@ -27,7 +27,7 @@ export interface CapturePositionOptions {
 const DEFAULT_TIMEOUT_MS = 8000;
 
 export const LOCATION_PERMISSION_DENIED_MESSAGE =
-  'Location permission is blocked. Tap Try again to allow it. If the browser does not ask again, open the lock icon in the address bar → Site settings → Location → Allow, then reload.';
+  'Location permission is blocked. Tap Try again to allow it. If no dialog appears: Chrome menu → Site settings → Location → Allow. Android “App permissions” only lists Location after the system allow prompt has appeared once.';
 
 export function captureCurrentPositionResult(
   options: CapturePositionOptions = {},
