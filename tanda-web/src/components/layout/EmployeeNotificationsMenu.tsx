@@ -8,7 +8,6 @@ import { useEmployeeShiftNotifications } from '@/providers/EmployeeShiftNotifica
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
-import { EmployeePwaInstallTrayCard } from '@/components/pwa/EmployeePwaInstallTrayCard';
 import { employeeNeedsPersonalProfile } from '@/lib/employees/personal-profile-status';
 import { hasAttentionRequiredNotifications } from '@/lib/notifications/notification-attention';
 import { getEmployeeNotificationVisual } from '@/lib/notifications/notification-visuals';
@@ -156,8 +155,6 @@ export function EmployeeNotificationsMenu() {
               ) : null}
             </div>
           ) : null}
-
-          <EmployeePwaInstallTrayCard />
 
           {notifications.length === 0 && !needsProfile ? (
             <p className="px-4 py-6 text-center text-sm text-subtle">

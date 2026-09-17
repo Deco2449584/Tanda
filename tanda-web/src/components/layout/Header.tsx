@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { ChevronDown, LogOut, Menu } from 'lucide-react';
 import { AdminNotificationsMenu } from '@/components/layout/AdminNotificationsMenu';
 import { EmployeeNotificationsMenu } from '@/components/layout/EmployeeNotificationsMenu';
+import { EmployeePwaInstallButton } from '@/components/pwa/EmployeePwaInstallButton';
 import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useCurrentEmployee } from '@/hooks/useCurrentEmployee';
@@ -78,7 +79,12 @@ export function Header({ onMenuClick, role }: HeaderProps) {
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
         {isAdminAreaRole(role ?? 'empleado') ? <AdminNotificationsMenu enabled /> : null}
-        {role === 'empleado' ? <EmployeeNotificationsMenu /> : null}
+        {role === 'empleado' ? (
+          <>
+            <EmployeePwaInstallButton />
+            <EmployeeNotificationsMenu />
+          </>
+        ) : null}
 
         <div className="relative z-[100]" ref={menuRef}>
           <button
