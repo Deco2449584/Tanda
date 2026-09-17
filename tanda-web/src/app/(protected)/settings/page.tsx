@@ -49,7 +49,7 @@ const ADMIN_TABS: { id: SettingsTab; label: string; section?: SettingsSectionKey
   { id: 'locations', label: 'Clients', section: 'locations' },
   { id: 'departments', label: 'Departments', section: 'departments' },
   { id: 'locationGroups', label: 'Location groups', section: 'locationGroups' },
-  { id: 'data', label: 'Data cleanup' },
+  { id: 'data', label: 'Data control' },
 ];
 
 export default function SettingsPage() {
