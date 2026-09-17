@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import {
   createEmptyPurgeResult,
+  hasDateRangeFilter,
+  type DataPurgeDateRange,
   type DataPurgeOptions,
   type DataPurgeResult,
 } from '@/lib/admin/data-purge';
@@ -41,6 +43,10 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
   accountingPeriodLocks: false,
   authSessions: false,
   auditLogs: false,
+  courses: false,
+  courseEnrollments: false,
+  courseEvidenceStorage: false,
+  orphanedAuthUsers: false,
   resetEmployeePresence: true,
   clearEmployeeDocumentRefs: false,
   clearEmployeeLocationRefs: false,
@@ -48,12 +54,17 @@ const DEFAULT_OPTIONS: DataPurgeOptions = {
 
 export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
   const [options, setOptions] = useState<DataPurgeOptions>(DEFAULT_OPTIONS);
+  const [dateRange, setDateRange] = useState<DataPurgeDateRange>({
+    startDate: '',
+    endDate: '',
+  });
   const [confirmText, setConfirmText] = useState('');
   const [running, setRunning] = useState(false);
   const [progressLog, setProgressLog] = useState<string[]>([]);
   const [result, setResult] = useState<DataPurgeResult | null>(null);
 
   const canRun = confirmText.trim() === CONFIRM_PHRASE && !running;
+  const dateFilterOn = hasDateRangeFilter(dateRange);
 
   function toggleOption(key: keyof DataPurgeOptions) {
     setOptions((prev) => {
@@ -88,6 +99,13 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
       if (key === 'employeeCustomFields' && next.employeeCustomFields) {
         next.employeeCustomFieldValues = true;
       }
+      if (key === 'courses' && next.courses) {
+        next.courseEnrollments = true;
+        next.courseEvidenceStorage = true;
+      }
+      if (key === 'courseEnrollments' && next.courseEnrollments) {
+        next.courseEvidenceStorage = true;
+      }
       return next;
     });
   }
@@ -112,7 +130,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ options }),
+        body: JSON.stringify({ options, dateRange }),
       });
 
       const data = (await response.json()) as {
@@ -157,6 +175,50 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         </div>
       </div>
 
+      <div className="mt-5 rounded-xl border border-border bg-surface-base/50 p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">
+          Date filter (optional)
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-subtle">
+          Leave empty to delete all selected data. When set, operational records (attendance,
+          shifts, audit logs, notifications, etc.) and Storage files are limited to this
+          range. Master data (locations, courses catalog, field definitions) still deletes
+          fully if selected.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">From</span>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) =>
+                setDateRange((prev) => ({ ...prev, startDate: e.target.value }))
+              }
+              disabled={running}
+              className="w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-red-500/50 disabled:opacity-50"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-muted">To</span>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) =>
+                setDateRange((prev) => ({ ...prev, endDate: e.target.value }))
+              }
+              disabled={running}
+              className="w-full rounded-lg border border-border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-red-500/50 disabled:opacity-50"
+            />
+          </label>
+        </div>
+        {dateFilterOn ? (
+          <p className="mt-2 text-xs text-amber-400/90">
+            Filter active — presence reset and some employee field clears are skipped unless
+            you force the matching checkbox.
+          </p>
+        ) : null}
+      </div>
+
       <div className="mt-5 space-y-2">
         <OptionRow
           checked={options.attendanceStorage}
@@ -168,7 +230,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           checked={options.attendanceRecords}
           onChange={() => toggleOption('attendanceRecords')}
           label="Attendance records (Firestore)"
-          hint="All check-in / check-out history"
+          hint="Check-in / check-out history"
         />
         <OptionRow
           checked={options.attendanceJustifications}
@@ -179,21 +241,25 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
         <OptionRow
           checked={options.resetEmployeePresence}
           onChange={() => toggleOption('resetEmployeePresence')}
-          disabled={!options.attendanceRecords}
+          disabled={!options.attendanceRecords || dateFilterOn}
           label="Reset employee presence status"
-          hint="Sets lastAction to none so kiosk state matches empty attendance"
+          hint={
+            dateFilterOn
+              ? 'Disabled while a date filter is set (presence is global)'
+              : 'Sets lastAction to none so kiosk state matches empty attendance'
+          }
         />
         <OptionRow
           checked={options.shifts}
           onChange={() => toggleOption('shifts')}
           label="Scheduled shifts"
-          hint="Clears the roster / agenda"
+          hint="Roster / agenda entries"
         />
         <OptionRow
           checked={options.leaveRequests}
           onChange={() => toggleOption('leaveRequests')}
           label="Leave requests"
-          hint="All pending, approved, and rejected requests"
+          hint="Pending, approved, and rejected requests"
         />
         <OptionRow
           checked={options.notifications}
@@ -205,7 +271,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           checked={options.notificationPreferences}
           onChange={() => toggleOption('notificationPreferences')}
           label="Notification preferences (Firestore)"
-          hint="Per-user channel toggles and dismissed admin alerts"
+          hint="Per-user channel toggles — date filter ignored (master data)"
         />
         <OptionRow
           checked={options.announcements}
@@ -235,7 +301,25 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           checked={options.helpTutorials}
           onChange={() => toggleOption('helpTutorials')}
           label="Help guides (Firestore)"
-          hint="In-app help centre tutorial and guide records"
+          hint="In-app help centre records — date filter ignored"
+        />
+        <OptionRow
+          checked={options.courseEvidenceStorage}
+          onChange={() => toggleOption('courseEvidenceStorage')}
+          label="Course evidence (Storage)"
+          hint="Uploads under course_evidence/"
+        />
+        <OptionRow
+          checked={options.courseEnrollments}
+          onChange={() => toggleOption('courseEnrollments')}
+          label="Course enrollments (Firestore)"
+          hint="Employee course progress and completions"
+        />
+        <OptionRow
+          checked={options.courses}
+          onChange={() => toggleOption('courses')}
+          label="Courses catalog (Firestore)"
+          hint="Course definitions — also selects enrollments + evidence"
         />
         <OptionRow
           checked={options.employeeDocumentsStorage}
@@ -274,6 +358,12 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           hint="Server session markers — users may need to sign in again"
         />
         <OptionRow
+          checked={options.orphanedAuthUsers}
+          onChange={() => toggleOption('orphanedAuthUsers')}
+          label="Orphaned Firebase Auth users"
+          hint="Deletes Auth accounts whose email is not on any employee (never deletes your account)"
+        />
+        <OptionRow
           checked={options.kioskLoginLogs}
           onChange={() => toggleOption('kioskLoginLogs')}
           label="Kiosk login logs (Firestore)"
@@ -307,7 +397,7 @@ export function DataPurgeTab({ adminEmail }: DataPurgeTabProps) {
           checked={options.auditLogs}
           onChange={() => toggleOption('auditLogs')}
           label="Audit logs (Firestore)"
-          hint="Master-only change history — use only for test resets"
+          hint="Master-only change history — combine with date filter for periodic cleanup"
         />
         <OptionRow
           checked={options.portalClients}
@@ -392,12 +482,16 @@ function PurgeResultSummary({ result }: { result: DataPurgeResult }) {
     ['Issue reports removed', result.issueReportsDeleted],
     ['Help tutorial media removed', result.helpTutorialsStorageDeleted],
     ['Help tutorials removed', result.helpTutorialsDeleted],
+    ['Course evidence removed', result.courseEvidenceStorageDeleted],
+    ['Course enrollments removed', result.courseEnrollmentsDeleted],
+    ['Courses removed', result.coursesDeleted],
     ['Employee documents removed', result.employeeDocumentsStorageDeleted],
     ['Employee document refs cleared', result.employeeDocumentRefsCleared],
     ['Custom field values removed', result.employeeCustomFieldValuesDeleted],
     ['Custom field definitions removed', result.employeeCustomFieldsDeleted],
     ['Accounting period locks removed', result.accountingPeriodLocksDeleted],
     ['Auth sessions removed', result.authSessionsDeleted],
+    ['Orphaned Auth users removed', result.orphanedAuthUsersDeleted],
     ['Inspection media removed', result.cargoInspectionsStorageDeleted],
     ['Cargo inspections removed', result.cargoInspectionsDeleted],
     ['Legacy portal clients removed', result.portalClientsDeleted],

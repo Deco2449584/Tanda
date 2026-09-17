@@ -1,16 +1,61 @@
-import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import {
+  FieldValue,
+  Timestamp,
+  type Query,
+  type QueryDocumentSnapshot,
+} from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
+import { getAdminAuth, getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
 import {
   createEmptyPurgeResult,
+  hasDateRangeFilter,
   purgeOptionsHasWork,
   purgeResultHasSuccess,
+  type DataPurgeDateRange,
   type DataPurgeOptions,
   type DataPurgeResult,
   type PurgeProgressCallback,
 } from '@/lib/admin/data-purge';
 
 const BATCH_SIZE = 400;
+
+type DateFieldKind = 'timestamp' | 'dateString';
+
+function normalizeRange(range?: DataPurgeDateRange | null): {
+  startDate: string | null;
+  endDate: string | null;
+} {
+  const startDate = range?.startDate?.trim() || null;
+  const endDate = range?.endDate?.trim() || null;
+  return { startDate, endDate };
+}
+
+function toStartTimestamp(dateKey: string): Timestamp {
+  return Timestamp.fromDate(new Date(`${dateKey}T00:00:00.000Z`));
+}
+
+function toEndTimestamp(dateKey: string): Timestamp {
+  return Timestamp.fromDate(new Date(`${dateKey}T23:59:59.999Z`));
+}
+
+function fileTimeInRange(
+  timeCreated: string | undefined,
+  startDate: string | null,
+  endDate: string | null,
+): boolean {
+  if (!timeCreated) return !startDate && !endDate;
+  const ms = Date.parse(timeCreated);
+  if (!Number.isFinite(ms)) return false;
+  if (startDate) {
+    const startMs = Date.parse(`${startDate}T00:00:00.000Z`);
+    if (ms < startMs) return false;
+  }
+  if (endDate) {
+    const endMs = Date.parse(`${endDate}T23:59:59.999Z`);
+    if (ms > endMs) return false;
+  }
+  return true;
+}
 
 async function deleteCollectionDocuments(
   collectionName: string,
@@ -38,18 +83,96 @@ async function deleteCollectionDocuments(
   return totalDeleted;
 }
 
+/**
+ * Deletes docs in a date window. When no range is set, deletes the whole collection.
+ * `timestamp` fields use Firestore Timestamp; `dateString` uses YYYY-MM-DD string compare.
+ */
+async function deleteCollectionDocumentsInRange(
+  collectionName: string,
+  field: string,
+  kind: DateFieldKind,
+  range: DataPurgeDateRange | null | undefined,
+  onProgress?: PurgeProgressCallback,
+): Promise<number> {
+  if (!hasDateRangeFilter(range)) {
+    return deleteCollectionDocuments(collectionName, onProgress);
+  }
+
+  const { startDate, endDate } = normalizeRange(range);
+  const db = getAdminFirestore();
+  let totalDeleted = 0;
+
+  while (true) {
+    let query: Query = db.collection(collectionName);
+
+    if (kind === 'timestamp') {
+      if (startDate) query = query.where(field, '>=', toStartTimestamp(startDate));
+      if (endDate) query = query.where(field, '<=', toEndTimestamp(endDate));
+    } else {
+      if (startDate) query = query.where(field, '>=', startDate);
+      if (endDate) query = query.where(field, '<=', endDate);
+    }
+
+    const snapshot = await query.limit(BATCH_SIZE).get();
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    await batch.commit();
+
+    totalDeleted += snapshot.size;
+    onProgress?.(
+      `Deleted ${totalDeleted} document${totalDeleted === 1 ? '' : 's'} from ${collectionName} (date filter)…`,
+    );
+
+    if (snapshot.size < BATCH_SIZE) break;
+  }
+
+  return totalDeleted;
+}
+
+/**
+ * Master-data collections: date filter does not apply — wipe all when selected.
+ */
+async function deleteCollectionIgnoringDateFilter(
+  collectionName: string,
+  range: DataPurgeDateRange | null | undefined,
+  onProgress?: PurgeProgressCallback,
+): Promise<number> {
+  if (hasDateRangeFilter(range)) {
+    onProgress?.(
+      `Date filter ignored for ${collectionName} (master data) — deleting all selected docs…`,
+    );
+  }
+  return deleteCollectionDocuments(collectionName, onProgress);
+}
+
 async function deleteStoragePrefix(
   rootPath: string,
+  range: DataPurgeDateRange | null | undefined,
   onProgress?: PurgeProgressCallback,
 ): Promise<number> {
   const bucket = getAdminStorage().bucket();
   const prefix = rootPath.endsWith('/') ? rootPath : `${rootPath}/`;
   const [files] = await bucket.getFiles({ prefix });
+  const { startDate, endDate } = normalizeRange(range);
+  const filterActive = hasDateRangeFilter(range);
 
-  onProgress?.(`Scanning storage folder "${rootPath}"…`);
+  onProgress?.(
+    filterActive
+      ? `Scanning storage folder "${rootPath}" (date filter)…`
+      : `Scanning storage folder "${rootPath}"…`,
+  );
 
   let deleted = 0;
   for (const file of files) {
+    if (filterActive) {
+      const [metadata] = await file.getMetadata();
+      const timeCreated =
+        typeof metadata.timeCreated === 'string' ? metadata.timeCreated : undefined;
+      if (!fileTimeInRange(timeCreated, startDate, endDate)) continue;
+    }
+
     await file.delete();
     deleted += 1;
     if (deleted % 25 === 0) {
@@ -58,7 +181,7 @@ async function deleteStoragePrefix(
   }
 
   onProgress?.(
-    `Finished storage cleanup (${deleted} file${deleted === 1 ? '' : 's'}).`,
+    `Finished storage cleanup for "${rootPath}" (${deleted} file${deleted === 1 ? '' : 's'}).`,
   );
 
   return deleted;
@@ -204,6 +327,77 @@ async function clearEmployeeLocationRefs(
   return cleared;
 }
 
+/**
+ * Deletes Firebase Auth users whose email is not linked to an employee doc.
+ * Never deletes the acting master's Auth account.
+ */
+async function deleteOrphanedAuthUsers(
+  actorEmail: string | undefined,
+  range: DataPurgeDateRange | null | undefined,
+  onProgress?: PurgeProgressCallback,
+): Promise<number> {
+  const db = getAdminFirestore();
+  const auth = getAdminAuth();
+  const employeeEmails = new Set<string>();
+
+  let cursor: QueryDocumentSnapshot | undefined;
+  while (true) {
+    let query = db.collection(COLLECTIONS.EMPLOYEES).orderBy('__name__').limit(BATCH_SIZE);
+    if (cursor) query = query.startAfter(cursor);
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+
+    for (const doc of snapshot.docs) {
+      const email = doc.data()?.email;
+      if (typeof email === 'string' && email.trim()) {
+        employeeEmails.add(email.trim().toLowerCase());
+      }
+    }
+
+    cursor = snapshot.docs[snapshot.docs.length - 1];
+    if (snapshot.size < BATCH_SIZE) break;
+  }
+
+  const actor = actorEmail?.trim().toLowerCase() ?? '';
+  const { startDate, endDate } = normalizeRange(range);
+  const filterActive = hasDateRangeFilter(range);
+
+  let deleted = 0;
+  let pageToken: string | undefined;
+
+  onProgress?.('Scanning Firebase Auth for orphaned users…');
+
+  do {
+    const list = await auth.listUsers(1000, pageToken);
+    for (const user of list.users) {
+      const email = user.email?.trim().toLowerCase() ?? '';
+      if (!email) continue;
+      if (actor && email === actor) continue;
+      if (employeeEmails.has(email)) continue;
+
+      if (filterActive) {
+        const created = user.metadata.creationTime;
+        if (!fileTimeInRange(created, startDate, endDate)) continue;
+      }
+
+      await auth.deleteUser(user.uid);
+      deleted += 1;
+      if (deleted % 10 === 0) {
+        onProgress?.(
+          `Deleted ${deleted} orphaned Auth user${deleted === 1 ? '' : 's'}…`,
+        );
+      }
+    }
+    pageToken = list.pageToken;
+  } while (pageToken);
+
+  onProgress?.(
+    `Finished Auth orphan cleanup (${deleted} user${deleted === 1 ? '' : 's'}).`,
+  );
+
+  return deleted;
+}
+
 async function runStep(
   result: DataPurgeResult,
   label: string,
@@ -222,11 +416,24 @@ async function runStep(
 export async function purgeOperationalDataAdmin(
   options: DataPurgeOptions,
   onProgress?: PurgeProgressCallback,
+  dateRange?: DataPurgeDateRange | null,
+  actorEmail?: string,
 ): Promise<DataPurgeResult> {
   const result = createEmptyPurgeResult();
+  const range = dateRange ?? null;
 
   if (!purgeOptionsHasWork(options)) {
     throw new Error('Select at least one item to delete.');
+  }
+
+  if (hasDateRangeFilter(range)) {
+    const { startDate, endDate } = normalizeRange(range);
+    if (startDate && endDate && startDate > endDate) {
+      throw new Error('Date filter: "From" must be on or before "To".');
+    }
+    onProgress?.(
+      `Date filter active: ${startDate ?? '…'} → ${endDate ?? '…'} (operational data only).`,
+    );
   }
 
   // Storage first where media pairs with Firestore docs.
@@ -234,7 +441,7 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'attendance photos',
-      () => deleteStoragePrefix('attendance', onProgress),
+      () => deleteStoragePrefix('attendance', range, onProgress),
       (count) => {
         result.storageFilesDeleted += count;
       },
@@ -245,7 +452,7 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'employee documents',
-      () => deleteStoragePrefix('employee_documents', onProgress),
+      () => deleteStoragePrefix('employee_documents', range, onProgress),
       (count) => {
         result.employeeDocumentsStorageDeleted = count;
       },
@@ -256,7 +463,7 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'issue report attachments',
-      () => deleteStoragePrefix('issue_reports', onProgress),
+      () => deleteStoragePrefix('issue_reports', range, onProgress),
       (count) => {
         result.issueReportsStorageDeleted = count;
       },
@@ -267,7 +474,7 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'help tutorial media',
-      () => deleteStoragePrefix('help_tutorials', onProgress),
+      () => deleteStoragePrefix('help_tutorials', range, onProgress),
       (count) => {
         result.helpTutorialsStorageDeleted = count;
       },
@@ -278,19 +485,37 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'cargo inspection media',
-      () => deleteStoragePrefix('cargo_inspections', onProgress),
+      () => deleteStoragePrefix('cargo_inspections', range, onProgress),
       (count) => {
         result.cargoInspectionsStorageDeleted = count;
       },
     );
   }
 
-  // Operational Firestore collections.
+  if (options.courseEvidenceStorage) {
+    await runStep(
+      result,
+      'course evidence',
+      () => deleteStoragePrefix('course_evidence', range, onProgress),
+      (count) => {
+        result.courseEvidenceStorageDeleted = count;
+      },
+    );
+  }
+
+  // Operational Firestore collections (date-aware).
   if (options.attendanceRecords) {
     await runStep(
       result,
       'attendance records',
-      () => deleteCollectionDocuments(COLLECTIONS.ATTENDANCE_RECORDS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.ATTENDANCE_RECORDS,
+          'timestampServer',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.attendanceRecordsDeleted = count;
       },
@@ -301,7 +526,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'shifts',
-      () => deleteCollectionDocuments(COLLECTIONS.SHIFTS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.SHIFTS,
+          'date',
+          'dateString',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.shiftsDeleted = count;
       },
@@ -312,7 +544,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'leave requests',
-      () => deleteCollectionDocuments(COLLECTIONS.LEAVE_REQUESTS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.LEAVE_REQUESTS,
+          'startDate',
+          'dateString',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.leaveRequestsDeleted = count;
       },
@@ -324,7 +563,13 @@ export async function purgeOperationalDataAdmin(
       result,
       'attendance justifications',
       () =>
-        deleteCollectionDocuments(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS, onProgress),
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.ATTENDANCE_JUSTIFICATIONS,
+          'date',
+          'dateString',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.attendanceJustificationsDeleted = count;
       },
@@ -335,7 +580,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'notifications',
-      () => deleteCollectionDocuments(COLLECTIONS.NOTIFICATIONS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.NOTIFICATIONS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.notificationsDeleted = count;
       },
@@ -347,7 +599,11 @@ export async function purgeOperationalDataAdmin(
       result,
       'notification preferences',
       () =>
-        deleteCollectionDocuments(COLLECTIONS.NOTIFICATION_PREFERENCES, onProgress),
+        deleteCollectionIgnoringDateFilter(
+          COLLECTIONS.NOTIFICATION_PREFERENCES,
+          range,
+          onProgress,
+        ),
       (count) => {
         result.notificationPreferencesDeleted = count;
       },
@@ -358,7 +614,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'announcements',
-      () => deleteCollectionDocuments(COLLECTIONS.ANNOUNCEMENTS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.ANNOUNCEMENTS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.announcementsDeleted = count;
       },
@@ -369,7 +632,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'issue reports',
-      () => deleteCollectionDocuments(COLLECTIONS.ISSUE_REPORTS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.ISSUE_REPORTS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.issueReportsDeleted = count;
       },
@@ -380,7 +650,12 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'help tutorials',
-      () => deleteCollectionDocuments(COLLECTIONS.HELP_TUTORIALS, onProgress),
+      () =>
+        deleteCollectionIgnoringDateFilter(
+          COLLECTIONS.HELP_TUTORIALS,
+          range,
+          onProgress,
+        ),
       (count) => {
         result.helpTutorialsDeleted = count;
       },
@@ -392,7 +667,13 @@ export async function purgeOperationalDataAdmin(
       result,
       'accounting period locks',
       () =>
-        deleteCollectionDocuments(COLLECTIONS.ACCOUNTING_PERIOD_LOCKS, onProgress),
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.ACCOUNTING_PERIOD_LOCKS,
+          'start',
+          'dateString',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.accountingPeriodLocksDeleted = count;
       },
@@ -403,7 +684,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'auth sessions',
-      () => deleteCollectionDocuments(COLLECTIONS.AUTH_SESSIONS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.AUTH_SESSIONS,
+          'updatedAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.authSessionsDeleted = count;
       },
@@ -415,8 +703,9 @@ export async function purgeOperationalDataAdmin(
       result,
       'employee custom field values',
       () =>
-        deleteCollectionDocuments(
+        deleteCollectionIgnoringDateFilter(
           COLLECTIONS.EMPLOYEE_CUSTOM_FIELD_VALUES,
+          range,
           onProgress,
         ),
       (count) => {
@@ -430,9 +719,43 @@ export async function purgeOperationalDataAdmin(
       result,
       'employee custom fields',
       () =>
-        deleteCollectionDocuments(COLLECTIONS.EMPLOYEE_CUSTOM_FIELDS, onProgress),
+        deleteCollectionIgnoringDateFilter(
+          COLLECTIONS.EMPLOYEE_CUSTOM_FIELDS,
+          range,
+          onProgress,
+        ),
       (count) => {
         result.employeeCustomFieldsDeleted = count;
+      },
+    );
+  }
+
+  if (options.courseEnrollments) {
+    await runStep(
+      result,
+      'course enrollments',
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.COURSE_ENROLLMENTS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
+      (count) => {
+        result.courseEnrollmentsDeleted = count;
+      },
+    );
+  }
+
+  if (options.courses) {
+    await runStep(
+      result,
+      'courses',
+      () =>
+        deleteCollectionIgnoringDateFilter(COLLECTIONS.COURSES, range, onProgress),
+      (count) => {
+        result.coursesDeleted = count;
       },
     );
   }
@@ -441,7 +764,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'cargo inspections',
-      () => deleteCollectionDocuments(COLLECTIONS.CARGO_INSPECTIONS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.CARGO_INSPECTIONS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.cargoInspectionsDeleted = count;
       },
@@ -453,8 +783,9 @@ export async function purgeOperationalDataAdmin(
       if (!options.cargoInspections) {
         await clearInspectionPortalAccess(onProgress);
       }
-      result.portalClientsDeleted = await deleteCollectionDocuments(
+      result.portalClientsDeleted = await deleteCollectionIgnoringDateFilter(
         COLLECTIONS.PORTAL_CLIENTS,
+        range,
         onProgress,
       );
     } catch (error) {
@@ -468,7 +799,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'kiosk login logs',
-      () => deleteCollectionDocuments(COLLECTIONS.KIOSK_LOGIN_LOGS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.KIOSK_LOGIN_LOGS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.kioskLoginLogsDeleted = count;
       },
@@ -479,7 +817,12 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'kiosk devices',
-      () => deleteCollectionDocuments(COLLECTIONS.KIOSK_DEVICES, onProgress),
+      () =>
+        deleteCollectionIgnoringDateFilter(
+          COLLECTIONS.KIOSK_DEVICES,
+          range,
+          onProgress,
+        ),
       (count) => {
         result.kioskDevicesDeleted = count;
       },
@@ -487,21 +830,35 @@ export async function purgeOperationalDataAdmin(
   }
 
   if (options.clearEmployeeDocumentRefs || options.employeeDocumentsStorage) {
-    await runStep(
-      result,
-      'employee document refs',
-      () => clearEmployeeDocumentRefs(onProgress),
-      (count) => {
-        result.employeeDocumentRefsCleared = count;
-      },
-    );
+    if (hasDateRangeFilter(range) && !options.clearEmployeeDocumentRefs) {
+      onProgress?.(
+        'Skipped clearing employee document refs (date filter active — enable the checkbox to force).',
+      );
+    } else if (
+      options.clearEmployeeDocumentRefs ||
+      (options.employeeDocumentsStorage && !hasDateRangeFilter(range))
+    ) {
+      await runStep(
+        result,
+        'employee document refs',
+        () => clearEmployeeDocumentRefs(onProgress),
+        (count) => {
+          result.employeeDocumentRefsCleared = count;
+        },
+      );
+    }
   }
 
   if (options.locationGroups) {
     await runStep(
       result,
       'location groups',
-      () => deleteCollectionDocuments(COLLECTIONS.LOCATION_GROUPS, onProgress),
+      () =>
+        deleteCollectionIgnoringDateFilter(
+          COLLECTIONS.LOCATION_GROUPS,
+          range,
+          onProgress,
+        ),
       (count) => {
         result.locationGroupsDeleted = count;
       },
@@ -512,7 +869,7 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'location photos',
-      () => deleteStoragePrefix('location_photos', onProgress),
+      () => deleteStoragePrefix('location_photos', range, onProgress),
       (count) => {
         result.storageFilesDeleted += count;
       },
@@ -520,7 +877,8 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'locations',
-      () => deleteCollectionDocuments(COLLECTIONS.LOCATIONS, onProgress),
+      () =>
+        deleteCollectionIgnoringDateFilter(COLLECTIONS.LOCATIONS, range, onProgress),
       (count) => {
         result.locationsDeleted = count;
       },
@@ -529,8 +887,7 @@ export async function purgeOperationalDataAdmin(
 
   if (
     options.clearEmployeeLocationRefs ||
-    options.locations ||
-    options.locationGroups
+    ((options.locations || options.locationGroups) && !hasDateRangeFilter(range))
   ) {
     await runStep(
       result,
@@ -543,12 +900,29 @@ export async function purgeOperationalDataAdmin(
   }
 
   if (options.resetEmployeePresence) {
+    if (hasDateRangeFilter(range) && options.attendanceRecords) {
+      onProgress?.(
+        'Skipped full presence reset (date filter active — presence is global).',
+      );
+    } else {
+      await runStep(
+        result,
+        'employee presence reset',
+        () => resetAllEmployeePresence(onProgress),
+        (count) => {
+          result.employeesReset = count;
+        },
+      );
+    }
+  }
+
+  if (options.orphanedAuthUsers) {
     await runStep(
       result,
-      'employee presence reset',
-      () => resetAllEmployeePresence(onProgress),
+      'orphaned Auth users',
+      () => deleteOrphanedAuthUsers(actorEmail, range, onProgress),
       (count) => {
-        result.employeesReset = count;
+        result.orphanedAuthUsersDeleted = count;
       },
     );
   }
@@ -558,7 +932,14 @@ export async function purgeOperationalDataAdmin(
     await runStep(
       result,
       'audit logs',
-      () => deleteCollectionDocuments(COLLECTIONS.AUDIT_LOGS, onProgress),
+      () =>
+        deleteCollectionDocumentsInRange(
+          COLLECTIONS.AUDIT_LOGS,
+          'createdAt',
+          'timestamp',
+          range,
+          onProgress,
+        ),
       (count) => {
         result.auditLogsDeleted = count;
       },

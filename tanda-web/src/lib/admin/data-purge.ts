@@ -1,3 +1,10 @@
+export interface DataPurgeDateRange {
+  /** Inclusive YYYY-MM-DD. Empty = no lower bound. */
+  startDate: string;
+  /** Inclusive YYYY-MM-DD. Empty = no upper bound. */
+  endDate: string;
+}
+
 export interface DataPurgeOptions {
   attendanceRecords: boolean;
   attendanceStorage: boolean;
@@ -24,6 +31,11 @@ export interface DataPurgeOptions {
   accountingPeriodLocks: boolean;
   authSessions: boolean;
   auditLogs: boolean;
+  courses: boolean;
+  courseEnrollments: boolean;
+  courseEvidenceStorage: boolean;
+  /** Firebase Auth users with no matching employee email (and not the acting master). */
+  orphanedAuthUsers: boolean;
   resetEmployeePresence: boolean;
   /** Clear passport/visa URL fields when employee documents storage is purged. */
   clearEmployeeDocumentRefs: boolean;
@@ -57,6 +69,10 @@ export interface DataPurgeResult {
   accountingPeriodLocksDeleted: number;
   authSessionsDeleted: number;
   auditLogsDeleted: number;
+  coursesDeleted: number;
+  courseEnrollmentsDeleted: number;
+  courseEvidenceStorageDeleted: number;
+  orphanedAuthUsersDeleted: number;
   employeesReset: number;
   employeeDocumentRefsCleared: number;
   employeeLocationRefsCleared: number;
@@ -92,11 +108,20 @@ export function createEmptyPurgeResult(): DataPurgeResult {
     accountingPeriodLocksDeleted: 0,
     authSessionsDeleted: 0,
     auditLogsDeleted: 0,
+    coursesDeleted: 0,
+    courseEnrollmentsDeleted: 0,
+    courseEvidenceStorageDeleted: 0,
+    orphanedAuthUsersDeleted: 0,
     employeesReset: 0,
     employeeDocumentRefsCleared: 0,
     employeeLocationRefsCleared: 0,
     errors: [],
   };
+}
+
+export function hasDateRangeFilter(range?: DataPurgeDateRange | null): boolean {
+  if (!range) return false;
+  return Boolean(range.startDate?.trim() || range.endDate?.trim());
 }
 
 export function purgeOptionsHasWork(options: DataPurgeOptions): boolean {
