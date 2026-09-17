@@ -232,6 +232,282 @@ async function markShiftAbsent(shiftId: string): Promise<void> {
   });
 }
 
+/**
+ * Deletes no-show / late notifications and justifications tied to a shift.
+ * Call when the shift is removed so employees are not left with unsupported alerts.
+ */
+export async function cleanupAttendanceAlertsForShift(
+  shiftId: string,
+): Promise<{ notificationsDeleted: number; justificationsDeleted: number }> {
+  const id = shiftId.trim();
+  if (!id) {
+    return { notificationsDeleted: 0, justificationsDeleted: 0 };
+  }
+
+  const db = getAdminFirestore();
+  const [notificationSnap, justificationSnap] = await Promise.all([
+    db
+      .collection(COLLECTIONS.NOTIFICATIONS)
+      .where('metadata.shiftId', '==', id)
+      .get(),
+    db
+      .collection(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS)
+      .where('shiftId', '==', id)
+      .get(),
+  ]);
+
+  const batch = db.batch();
+  let notificationsDeleted = 0;
+  let justificationsDeleted = 0;
+
+  for (const doc of notificationSnap.docs) {
+    const type = doc.data()?.type;
+    if (type === 'no_show' || type === 'justification_required') {
+      batch.delete(doc.ref);
+      notificationsDeleted += 1;
+    }
+  }
+
+  for (const doc of justificationSnap.docs) {
+    batch.delete(doc.ref);
+    justificationsDeleted += 1;
+  }
+
+  if (notificationsDeleted + justificationsDeleted > 0) {
+    await batch.commit();
+  }
+
+  return { notificationsDeleted, justificationsDeleted };
+}
+
+/**
+ * Removes attendance alerts that no longer have a supporting shift
+ * (and late alerts with no check-in evidence).
+ */
+export async function pruneOrphanAttendanceAlerts(): Promise<{
+  notificationsDeleted: number;
+  justificationsDeleted: number;
+}> {
+  const db = getAdminFirestore();
+  const settings = await loadCompanySettings();
+  const notificationSnap = await db
+    .collection(COLLECTIONS.NOTIFICATIONS)
+    .where('type', 'in', ['no_show', 'justification_required'])
+    .get();
+
+  const shiftIds = new Set<string>();
+  for (const doc of notificationSnap.docs) {
+    const shiftId = doc.data()?.metadata?.shiftId;
+    if (typeof shiftId === 'string' && shiftId.trim()) shiftIds.add(shiftId.trim());
+  }
+
+  if (shiftIds.size === 0) {
+    return { notificationsDeleted: 0, justificationsDeleted: 0 };
+  }
+
+  const shiftCache = new Map<string, Record<string, unknown> | null>();
+  await Promise.all(
+    [...shiftIds].map(async (shiftId) => {
+      const snap = await db.collection(COLLECTIONS.SHIFTS).doc(shiftId).get();
+      shiftCache.set(shiftId, snap.exists ? (snap.data() ?? {}) : null);
+    }),
+  );
+
+  const missingShiftIds = new Set<string>();
+  const lateEvidenceCache = new Map<string, boolean>();
+
+  async function employeeHasCheckInOnDate(
+    employeeId: string,
+    dateKey: string,
+  ): Promise<boolean> {
+    const cacheKey = `${employeeId}::${dateKey}`;
+    const cached = lateEvidenceCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    const dayStart = new Date(`${dateKey}T00:00:00`);
+    const dayEnd = new Date(`${dateKey}T23:59:59.999`);
+    const attendanceSnap = await db
+      .collection(COLLECTIONS.ATTENDANCE_RECORDS)
+      .where('employeeId', '==', employeeId)
+      .where('timestampServer', '>=', dayStart)
+      .where('timestampServer', '<=', dayEnd)
+      .get();
+
+    const hasCheckIn = attendanceSnap.docs.some((doc) => doc.data()?.type === 'check_in');
+    lateEvidenceCache.set(cacheKey, hasCheckIn);
+    return hasCheckIn;
+  }
+
+  for (const [shiftId, data] of shiftCache) {
+    if (!data) {
+      missingShiftIds.add(shiftId);
+      continue;
+    }
+
+    // Late alerts require a check-in that day; otherwise they have no evidence.
+    const employeeId = typeof data.employeeId === 'string' ? data.employeeId : '';
+    const dateKey =
+      typeof data.date === 'string' && data.date.trim()
+        ? data.date.trim()
+        : toInputDateInTimeZone(settings.timeZone, new Date());
+    if (!employeeId) continue;
+
+    const hasCheckIn = await employeeHasCheckInOnDate(employeeId, dateKey);
+    if (!hasCheckIn) {
+      // Mark for late-only cleanup via shift id (handled below for justification_required).
+      missingShiftIds.add(`late-only:${shiftId}`);
+    }
+  }
+
+  const orphanShiftIds = new Set(
+    [...missingShiftIds].filter((id) => !id.startsWith('late-only:')),
+  );
+  const lateOnlyShiftIds = new Set(
+    [...missingShiftIds]
+      .filter((id) => id.startsWith('late-only:'))
+      .map((id) => id.slice('late-only:'.length)),
+  );
+
+  if (orphanShiftIds.size === 0 && lateOnlyShiftIds.size === 0) {
+    return { notificationsDeleted: 0, justificationsDeleted: 0 };
+  }
+
+  let notificationsDeleted = 0;
+  let justificationsDeleted = 0;
+  const batch = db.batch();
+
+  for (const doc of notificationSnap.docs) {
+    const data = doc.data();
+    const shiftId =
+      typeof data?.metadata?.shiftId === 'string' ? data.metadata.shiftId.trim() : '';
+    if (!shiftId) continue;
+
+    if (orphanShiftIds.has(shiftId)) {
+      batch.delete(doc.ref);
+      notificationsDeleted += 1;
+      continue;
+    }
+
+    // Without a check-in, only late (justification_required) alerts are unsupported.
+    if (lateOnlyShiftIds.has(shiftId) && data?.type === 'justification_required') {
+      batch.delete(doc.ref);
+      notificationsDeleted += 1;
+    }
+  }
+
+  await Promise.all(
+    [...orphanShiftIds].map(async (shiftId) => {
+      const justSnap = await db
+        .collection(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS)
+        .where('shiftId', '==', shiftId)
+        .get();
+      for (const doc of justSnap.docs) {
+        batch.delete(doc.ref);
+        justificationsDeleted += 1;
+      }
+    }),
+  );
+
+  await Promise.all(
+    [...lateOnlyShiftIds].map(async (shiftId) => {
+      const justSnap = await db
+        .collection(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS)
+        .where('shiftId', '==', shiftId)
+        .where('type', '==', 'late')
+        .get();
+      for (const doc of justSnap.docs) {
+        // Keep submitted/resolved justifications for audit; drop open ones without evidence.
+        const status = doc.data()?.status;
+        if (status === 'awaiting_employee' || status === 'pending' || !status) {
+          batch.delete(doc.ref);
+          justificationsDeleted += 1;
+        }
+      }
+    }),
+  );
+
+  if (notificationsDeleted + justificationsDeleted > 0) {
+    await batch.commit();
+  }
+
+  return { notificationsDeleted, justificationsDeleted };
+}
+
+/**
+ * After a check-in is deleted, drop late alerts for that employee/day if no
+ * remaining check-in evidence exists.
+ */
+export async function cleanupStaleLateAlertsForEmployeeDay(
+  employeeId: string,
+  dateKey: string,
+): Promise<{ notificationsDeleted: number; justificationsDeleted: number }> {
+  const id = employeeId.trim();
+  const date = dateKey.trim();
+  if (!id || !date) {
+    return { notificationsDeleted: 0, justificationsDeleted: 0 };
+  }
+
+  const db = getAdminFirestore();
+  const dayStart = new Date(`${date}T00:00:00`);
+  const dayEnd = new Date(`${date}T23:59:59.999`);
+
+  const [attendanceSnap, shiftsSnap, employee] = await Promise.all([
+    db
+      .collection(COLLECTIONS.ATTENDANCE_RECORDS)
+      .where('employeeId', '==', id)
+      .where('timestampServer', '>=', dayStart)
+      .where('timestampServer', '<=', dayEnd)
+      .get(),
+    db
+      .collection(COLLECTIONS.SHIFTS)
+      .where('employeeId', '==', id)
+      .where('date', '==', date)
+      .get(),
+    loadEmployeeByCode(id),
+  ]);
+
+  const hasCheckIn = attendanceSnap.docs.some((doc) => doc.data()?.type === 'check_in');
+  if (hasCheckIn || !employee?.email) {
+    return { notificationsDeleted: 0, justificationsDeleted: 0 };
+  }
+
+  let notificationsDeleted = 0;
+  let justificationsDeleted = 0;
+  const batch = db.batch();
+
+  for (const shiftDoc of shiftsSnap.docs) {
+    const lateJustificationId = buildJustificationDocId(id, shiftDoc.id, 'late');
+    const lateNotifId = buildAttendanceNotificationDocId(
+      employee.email,
+      'justification_required',
+      shiftDoc.id,
+    );
+
+    const [lateJust, lateNotif] = await Promise.all([
+      db.collection(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS).doc(lateJustificationId).get(),
+      db.collection(COLLECTIONS.NOTIFICATIONS).doc(lateNotifId).get(),
+    ]);
+
+    if (lateJust.exists) {
+      const status = lateJust.data()?.status;
+      if (status === 'awaiting_employee' || status === 'pending' || !status) {
+        batch.delete(lateJust.ref);
+        justificationsDeleted += 1;
+      }
+    }
+    if (lateNotif.exists) {
+      batch.delete(lateNotif.ref);
+      notificationsDeleted += 1;
+    }
+  }
+
+  if (notificationsDeleted + justificationsDeleted > 0) {
+    await batch.commit();
+  }
+
+  return { notificationsDeleted, justificationsDeleted };
+}
+
 export async function evaluateLateCheckIn(input: {
   employeeId: string;
   checkInAt: Date;
@@ -297,7 +573,10 @@ export async function evaluateLateCheckIn(input: {
 export async function evaluateDailyAttendanceAlerts(): Promise<{
   noShowsProcessed: number;
   lateWithoutJustification: number;
+  orphansPruned: number;
 }> {
+  const orphanCleanup = await pruneOrphanAttendanceAlerts();
+
   const settings = await loadCompanySettings();
   const now = new Date();
   const todayKey = toInputDateInTimeZone(settings.timeZone, now);
@@ -353,6 +632,23 @@ export async function evaluateDailyAttendanceAlerts(): Promise<{
 
     const employee = await loadEmployeeByCode(employeeId);
     if (!employee?.email) continue;
+
+    // Had a shift but already checked in — never create / keep a no-show for this shift.
+    if (hasCheckIn) {
+      // If a stale no_show alert exists for this shift, remove it.
+      const staleNoShowId = buildAttendanceNotificationDocId(
+        employee.email,
+        'no_show',
+        shift.id,
+      );
+      const staleRef = getAdminFirestore()
+        .collection(COLLECTIONS.NOTIFICATIONS)
+        .doc(staleNoShowId);
+      const staleSnap = await staleRef.get();
+      if (staleSnap.exists) {
+        await staleRef.delete();
+      }
+    }
 
     if (
       !hasCheckIn &&
@@ -416,10 +712,39 @@ export async function evaluateDailyAttendanceAlerts(): Promise<{
         });
         lateWithoutJustification += 1;
       }
+    } else if (!hasCheckIn) {
+      // No late check-in evidence → drop any late justification alert for this shift.
+      const lateJustificationId = buildJustificationDocId(employeeId, shift.id, 'late');
+      const lateNotifId = buildAttendanceNotificationDocId(
+        employee.email,
+        'justification_required',
+        shift.id,
+      );
+      const db = getAdminFirestore();
+      const [lateJust, lateNotif] = await Promise.all([
+        db.collection(COLLECTIONS.ATTENDANCE_JUSTIFICATIONS).doc(lateJustificationId).get(),
+        db.collection(COLLECTIONS.NOTIFICATIONS).doc(lateNotifId).get(),
+      ]);
+      const batch = db.batch();
+      let dirty = false;
+      if (lateJust.exists && lateJust.data()?.status === 'awaiting_employee') {
+        batch.delete(lateJust.ref);
+        dirty = true;
+      }
+      if (lateNotif.exists) {
+        batch.delete(lateNotif.ref);
+        dirty = true;
+      }
+      if (dirty) await batch.commit();
     }
   }
 
-  return { noShowsProcessed, lateWithoutJustification };
+  return {
+    noShowsProcessed,
+    lateWithoutJustification,
+    orphansPruned:
+      orphanCleanup.notificationsDeleted + orphanCleanup.justificationsDeleted,
+  };
 }
 
 export async function countPendingJustifications(): Promise<number> {

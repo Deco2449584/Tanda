@@ -10,7 +10,7 @@ import { ScheduleStatusLegend } from '@/components/schedule/ScheduleStatusLegend
 import { ShiftCard } from '@/components/schedule/ShiftCard';
 import { ShiftDeleteConfirmModal } from '@/components/schedule/ShiftDeleteConfirmModal';
 import { COLLECTIONS } from '@/lib/constants';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
 import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
@@ -89,6 +89,25 @@ export function ScheduleGrid({
       await deleteDoc(doc(db, COLLECTIONS.SHIFTS, shift.id));
 
       onShiftDeleted?.(shift.id);
+
+      // Drop no-show / late alerts that no longer have a supporting shift.
+      void (async () => {
+        try {
+          const user = auth?.currentUser;
+          if (!user) return;
+          const token = await user.getIdToken();
+          await fetch('/api/attendance/cleanup-shift-alerts', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ shiftId: shift.id }),
+          });
+        } catch (error) {
+          console.error('cleanup-shift-alerts', error);
+        }
+      })();
 
       void notifyShiftChange({
         type: 'cancelled',

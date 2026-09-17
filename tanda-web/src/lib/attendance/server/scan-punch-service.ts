@@ -10,6 +10,7 @@ import {
   validateCheckoutSameLocationAsCheckIn,
 } from '@/lib/attendance/server/open-attendance-session';
 import { evaluateLateCheckIn } from '@/lib/attendance/server/attendance-alerts-service';
+import { writeAuditLog } from '@/lib/audit/server/audit-log-service';
 import {
   logAttendanceRestrictionBlocked,
   loadCompanySettingsAdmin,
@@ -282,6 +283,32 @@ export async function recordScanPunch(input: {
 
   void reconcileEmployeePresence(employeeDocId, employeeCode).catch((error) => {
     console.error('scan-punch reconcileEmployeePresence', error);
+  });
+
+  void writeAuditLog({
+    actorEmail: employeeEmail || 'scan@system',
+    actorUid: input.employee.uid,
+    action:
+      actionType === 'check_in' ? 'attendance.check_in' : 'attendance.check_out',
+    entityType: 'attendance_record',
+    entityId: employeeCode,
+    summary: `${actionType === 'check_in' ? 'Check-in' : 'Check-out'} — ${employeeName} at ${location.name} (${scanSource})`,
+    after: {
+      employeeId: employeeCode,
+      employeeName,
+      type: actionType,
+      locationId: location.id,
+      locationName: location.name,
+      source: scanSource,
+      via: input.via ?? 'qr',
+      recordedAt,
+    },
+    metadata: {
+      channel: 'scan',
+      via: input.via ?? 'qr',
+    },
+  }).catch((error) => {
+    console.error('scan-punch audit log', error);
   });
 
   return {

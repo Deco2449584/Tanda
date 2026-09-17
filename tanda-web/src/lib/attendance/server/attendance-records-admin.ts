@@ -1,7 +1,11 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import type { AttendanceType } from '@/lib/types/attendance';
+import {
+  DEFAULT_COMPANY_SETTINGS,
+} from '@/lib/types/company-settings';
 
 export async function getAttendanceRecordSnapshot(recordId: string) {
   const snapshot = await getAdminFirestore()
@@ -118,8 +122,44 @@ export async function updateAttendanceRecordAdmin(
 }
 
 export async function deleteAttendanceRecordAdmin(recordId: string): Promise<void> {
-  await getAdminFirestore()
-    .collection(COLLECTIONS.ATTENDANCE_RECORDS)
-    .doc(recordId.trim())
-    .delete();
+  const db = getAdminFirestore();
+  const ref = db.collection(COLLECTIONS.ATTENDANCE_RECORDS).doc(recordId.trim());
+  const snap = await ref.get();
+  const data = snap.exists ? snap.data() : null;
+
+  await ref.delete();
+
+  if (
+    data &&
+    data.type === 'check_in' &&
+    typeof data.employeeId === 'string' &&
+    data.employeeId.trim()
+  ) {
+    try {
+      const settingsSnap = await db
+        .collection(COLLECTIONS.SETTINGS)
+        .doc('general')
+        .get();
+      const timeZone =
+        (settingsSnap.exists &&
+          typeof settingsSnap.data()?.timeZone === 'string' &&
+          settingsSnap.data()?.timeZone) ||
+        DEFAULT_COMPANY_SETTINGS.timeZone;
+
+      const ts = data.timestampServer;
+      const punchDate =
+        ts && typeof (ts as Timestamp).toDate === 'function'
+          ? (ts as Timestamp).toDate()
+          : null;
+      if (!punchDate) return;
+
+      const dateKey = toInputDateInTimeZone(timeZone, punchDate);
+      const { cleanupStaleLateAlertsForEmployeeDay } = await import(
+        '@/lib/attendance/server/attendance-alerts-service'
+      );
+      await cleanupStaleLateAlertsForEmployeeDay(data.employeeId, dateKey);
+    } catch (error) {
+      console.warn('deleteAttendanceRecordAdmin late-alert cleanup', error);
+    }
+  }
 }

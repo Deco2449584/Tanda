@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyAdminRequest } from '@/lib/auth/verify-admin-request';
+import { verifyFirebaseToken } from '@/lib/auth/verify-firebase-token';
 import {
   countPendingJustifications,
   evaluateDailyAttendanceAlerts,
@@ -7,8 +7,8 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const admin = await verifyAdminRequest(request);
-    if (!admin) {
+    const user = await verifyFirebaseToken(request.headers.get('authorization'));
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 

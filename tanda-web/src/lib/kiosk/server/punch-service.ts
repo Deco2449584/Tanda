@@ -10,6 +10,7 @@ import {
   validateCheckoutSameLocationAsCheckIn,
 } from '@/lib/attendance/server/open-attendance-session';
 import { evaluateLateCheckIn } from '@/lib/attendance/server/attendance-alerts-service';
+import { writeAuditLog } from '@/lib/audit/server/audit-log-service';
 import {
   logAttendanceRestrictionBlocked,
   loadCompanySettingsAdmin,
@@ -373,6 +374,31 @@ export async function recordKioskPunch(input: {
   }
 
   await reconcileEmployeePresence(employeeDocId, employeeCode);
+
+  void writeAuditLog({
+    actorEmail: employeeEmail || 'kiosk@system',
+    actorUid: undefined,
+    action:
+      actionType === 'check_in' ? 'attendance.check_in' : 'attendance.check_out',
+    entityType: 'attendance_record',
+    entityId: employeeCode,
+    summary: `${actionType === 'check_in' ? 'Check-in' : 'Check-out'} — ${employeeName} at ${location.name} (kiosk)`,
+    after: {
+      employeeId: employeeCode,
+      employeeName,
+      type: actionType,
+      locationId: location.id,
+      locationName: location.name,
+      source: 'web-kiosk',
+      recordedAt,
+    },
+    metadata: {
+      channel: 'kiosk',
+      kioskOperatorEmployeeId: input.operator.employeeDocId,
+    },
+  }).catch((error) => {
+    console.error('kiosk punch audit log', error);
+  });
 
   return {
     employeeDocId,

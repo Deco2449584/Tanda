@@ -16,6 +16,8 @@ import type { AuditEntityType, AuditLog } from '@/lib/types/audit-log';
 
 const ACTION_PREFIX_OPTIONS = [
   { value: '', label: 'All actions' },
+  { value: 'attendance.check_in', label: 'Check-ins (clock in)' },
+  { value: 'attendance.check_out', label: 'Check-outs (clock out)' },
   { value: 'attendance.time', label: 'Time changes' },
   { value: 'attendance.manual', label: 'Manual entries' },
   { value: 'attendance.restriction', label: 'Blocked check-ins' },
