@@ -29,13 +29,10 @@ async function getExistingServiceWorkerRegistration(): Promise<ServiceWorkerRegi
 }
 
 async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  const existing = await getExistingServiceWorkerRegistration();
-  if (existing) {
-    return existing;
-  }
-
-  await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-  return navigator.serviceWorker.ready;
+  const { registerWorkforceServiceWorker } = await import(
+    '@/lib/pwa/register-workforce-sw'
+  );
+  return registerWorkforceServiceWorker();
 }
 
 async function getAuthHeaders(): Promise<HeadersInit | null> {

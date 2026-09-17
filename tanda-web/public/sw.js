@@ -1,9 +1,19 @@
+/* Continental Cargo Workspace — service worker (installability + push). */
+
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
+});
+
+/**
+ * Required for Chrome Android to offer a real “Install app” (WebAPK)
+ * instead of only “Create shortcut”. Network-only passthrough — no offline cache.
+ */
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request));
 });
 
 self.addEventListener('push', (event) => {
