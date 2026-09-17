@@ -19,8 +19,9 @@ import {
 } from '@/lib/attendance/scan-punch-api';
 import type { ScanPunchVia } from '@/lib/attendance/scan-punch-token';
 import {
-  captureGeofencePosition,
-  captureScanPunchPosition,
+  captureGeofencePositionResult,
+  captureScanPunchPositionResult,
+  LOCATION_PERMISSION_DENIED_MESSAGE,
 } from '@/lib/geo/capture-position';
 import { useAuthRole } from '@/hooks/useAuthRole';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
@@ -81,7 +82,11 @@ export function ScanPunchPanel({
     if (!request) {
       request = (async () => {
         // Fast geo (max ~1.5s) — do not block punch on high-accuracy GPS.
-        const geo = await captureScanPunchPosition();
+        const fast = await captureScanPunchPositionResult();
+        if (!fast.ok && fast.reason === 'permission_denied') {
+          throw new Error(LOCATION_PERMISSION_DENIED_MESSAGE);
+        }
+        const geo = fast.ok ? fast.position : null;
 
         try {
           return await submitScanPunchRequest({
@@ -97,16 +102,21 @@ export function ScanPunchPanel({
           if (!isRetryableGeoError(err)) throw err;
 
           setPhase('locating');
-          const precise = await captureGeofencePosition();
-          if (!precise) throw err;
+          const precise = await captureGeofencePositionResult();
+          if (!precise.ok) {
+            if (precise.reason === 'permission_denied') {
+              throw new Error(LOCATION_PERMISSION_DENIED_MESSAGE);
+            }
+            throw err;
+          }
 
           return await submitScanPunchRequest({
             token,
             via,
-            latitude: precise.latitude,
-            longitude: precise.longitude,
-            geoAccuracy: precise.accuracy,
-            geoCapturedAt: precise.geoCapturedAt,
+            latitude: precise.position.latitude,
+            longitude: precise.position.longitude,
+            geoAccuracy: precise.position.accuracy,
+            geoCapturedAt: precise.position.geoCapturedAt,
           });
         }
       })();
@@ -227,7 +237,11 @@ export function ScanPunchPanel({
               <p className="mx-auto max-w-sm rounded-lg border border-amber-500/40 bg-amber-950/25 px-3 py-2 text-left text-xs leading-relaxed text-amber-200">
                 {outsideGeofence
                   ? 'You are outside the allowed range for this client. Move closer to the warehouse entrance and try again.'
-                  : 'Clock-in at this client only works on site. Allow location access for this site in your browser settings, stay near the entrance, and try again.'}
+                  : 'Clock-in at this client only works on site. Tap Try again to allow location. If the browser does not ask, use the lock icon → Site settings → Location → Allow, stay near the entrance, and try again.'}
+              </p>
+            ) : error.includes('Location permission') ? (
+              <p className="mx-auto max-w-sm rounded-lg border border-amber-500/40 bg-amber-950/25 px-3 py-2 text-left text-xs leading-relaxed text-amber-200">
+                {LOCATION_PERMISSION_DENIED_MESSAGE}
               </p>
             ) : null}
             <div className="flex flex-wrap justify-center gap-2">

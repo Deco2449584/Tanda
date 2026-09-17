@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { LogOut, MapPin, Settings } from 'lucide-react';
 import { uploadImageToStorage } from '@/lib/images/storage-upload';
 import {
-  captureCurrentPosition,
-  captureGeofencePosition,
+  captureCurrentPositionResult,
+  captureGeofencePositionResult,
+  LOCATION_PERMISSION_DENIED_MESSAGE,
   type CapturedGeoPosition,
 } from '@/lib/geo/capture-position';
 import { KioskClock } from '@/components/kiosk/KioskClock';
@@ -43,7 +44,7 @@ interface KioskSession {
 }
 
 const GEOFENCE_GPS_MISSING =
-  'Location is required to clock in at this client. Turn on location for this device and try again.';
+  'Location is required to clock in at this client. Tap Try again to allow location. If the browser does not ask, open the lock icon → Site settings → Location → Allow, then reload.';
 
 interface KioskScreenProps {
   locationId: string;
@@ -161,9 +162,10 @@ export function KioskScreen({
           geofenceRequired,
         };
 
-        geoFixRef.current = geofenceRequired
-          ? captureGeofencePosition()
-          : captureCurrentPosition();
+        geoFixRef.current = (geofenceRequired
+          ? captureGeofencePositionResult()
+          : captureCurrentPositionResult()
+        ).then((result) => (result.ok ? result.position : null));
 
         setSession(nextSession);
 
@@ -214,11 +216,39 @@ export function KioskScreen({
       const pendingGeo =
         geoFixRef.current ??
         (params.geofenceRequired
-          ? captureGeofencePosition()
-          : captureCurrentPosition());
+          ? captureGeofencePositionResult()
+          : captureCurrentPositionResult()
+        ).then((result) => {
+          if (!result.ok && result.reason === 'permission_denied') {
+            throw new Error(LOCATION_PERMISSION_DENIED_MESSAGE);
+          }
+          return result.ok ? result.position : null;
+        });
       geoFixRef.current = null;
 
-      const geo = await pendingGeo;
+      let geo: CapturedGeoPosition | null;
+      try {
+        geo = await pendingGeo;
+      } catch (geoError) {
+        if (
+          geoError instanceof Error &&
+          geoError.message === LOCATION_PERMISSION_DENIED_MESSAGE
+        ) {
+          throw geoError;
+        }
+        geo = null;
+      }
+
+      // If the early geo promise resolved to null, try once more so the browser
+      // can show the permission prompt again after the user taps Confirm.
+      if (params.geofenceRequired && !geo) {
+        const retry = await captureGeofencePositionResult();
+        if (!retry.ok && retry.reason === 'permission_denied') {
+          throw new Error(LOCATION_PERMISSION_DENIED_MESSAGE);
+        }
+        geo = retry.ok ? retry.position : null;
+      }
+
       if (params.geofenceRequired && !geo) {
         throw new Error(GEOFENCE_GPS_MISSING);
       }

@@ -1,10 +1,14 @@
 ﻿'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, RefreshCw } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 import { formatKioskActionLabel } from '@/lib/kiosk/kiosk-action-labels';
+import {
+  permissionHelpText,
+  requestCameraAccess,
+} from '@/lib/permissions/browser-permissions';
 import type { AttendanceType } from '@/lib/types/attendance';
 
 interface KioskCameraProps {
@@ -48,8 +52,28 @@ export function KioskCamera({
 }: KioskCameraProps) {
   const webcamRef = useRef<Webcam>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraKey, setCameraKey] = useState(0);
+  const [retrying, setRetrying] = useState(false);
 
   const actionLabel = formatKioskActionLabel(actionType);
+
+  const handleRetryCamera = useCallback(async () => {
+    setRetrying(true);
+    setCameraError(null);
+    try {
+      const state = await requestCameraAccess();
+      if (state === 'denied') {
+        const message = permissionHelpText('camera');
+        setCameraError(message);
+        onError?.(message);
+        return;
+      }
+      // Remount Webcam so getUserMedia runs again after Allow.
+      setCameraKey((key) => key + 1);
+    } finally {
+      setRetrying(false);
+    }
+  }, [onError]);
 
   const handleCapture = useCallback(async () => {
     if (processing) return;
@@ -97,19 +121,27 @@ export function KioskCamera({
             {cameraError ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 bg-red-950/40 p-4 text-center md:p-8">
                 <p className="text-sm font-semibold text-red-100 md:text-base">{cameraError}</p>
-                <p className="text-xs text-red-200/80">Check permissions and try again.</p>
+                <button
+                  type="button"
+                  disabled={processing || retrying}
+                  onClick={() => void handleRetryCamera()}
+                  className="inline-flex items-center gap-2 rounded-full border border-red-200/40 bg-red-900/50 px-4 py-2 text-sm font-semibold text-red-50 transition hover:bg-red-800/60 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
+                  {retrying ? 'Asking again…' : 'Try again / allow camera'}
+                </button>
               </div>
             ) : (
               <>
                 <Webcam
+                  key={cameraKey}
                   ref={webcamRef}
                   audio={false}
                   screenshotFormat="image/jpeg"
                   screenshotQuality={0.85}
                   videoConstraints={videoConstraints}
                   onUserMediaError={() => {
-                    const message =
-                      'Camera access denied. Allow the camera in your browser settings.';
+                    const message = permissionHelpText('camera');
                     setCameraError(message);
                     onError?.(message);
                   }}

@@ -16,10 +16,30 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const metadataBase = new URL(
+  process.env.APP_BASE_URL?.trim() ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL.trim()}`
+      : 'https://www.continentalcargo.online'),
+);
+
 export const metadata: Metadata = {
+  metadataBase,
   title: 'Continental Cargo Workspace',
   description: 'Continental Cargo workforce operations platform',
   applicationName: 'Continental Cargo Workspace',
+  openGraph: {
+    type: 'website',
+    siteName: 'Continental Cargo Workspace',
+    title: 'Continental Cargo Workspace',
+    description: 'Continental Cargo workforce operations platform',
+    url: metadataBase,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Continental Cargo Workspace',
+    description: 'Continental Cargo workforce operations platform',
+  },
   ...workforcePwaMetadata,
 };
 

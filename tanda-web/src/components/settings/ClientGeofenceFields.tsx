@@ -9,7 +9,10 @@ import {
   MapPinned,
   ShieldCheck,
 } from 'lucide-react';
-import { captureCurrentPosition } from '@/lib/geo/capture-position';
+import {
+  captureCurrentPositionResult,
+  LOCATION_PERMISSION_DENIED_MESSAGE,
+} from '@/lib/geo/capture-position';
 import {
   DEFAULT_GEOFENCE_RADIUS_METERS,
   MAX_GEOFENCE_RADIUS_METERS,
@@ -132,17 +135,19 @@ export function ClientGeofenceFields({
   async function handleUseMyLocation() {
     setLocating(true);
     try {
-      const position = await captureCurrentPosition({ timeoutMs: 12_000 });
-      if (!position) {
+      const result = await captureCurrentPositionResult({ timeoutMs: 12_000 });
+      if (!result.ok) {
         onError(
-          'Could not read your location. Allow location access in the browser and try again.',
+          result.reason === 'permission_denied'
+            ? LOCATION_PERMISSION_DENIED_MESSAGE
+            : 'Could not read your location. Allow location access in the browser and try again.',
         );
         return;
       }
       onChange({
         ...value,
-        latitude: position.latitude.toFixed(6),
-        longitude: position.longitude.toFixed(6),
+        latitude: result.position.latitude.toFixed(6),
+        longitude: result.position.longitude.toFixed(6),
       });
     } finally {
       setLocating(false);

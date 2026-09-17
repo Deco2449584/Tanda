@@ -5,6 +5,16 @@ export interface CapturedGeoPosition {
   geoCapturedAt: string;
 }
 
+export type CapturePositionFailure =
+  | 'permission_denied'
+  | 'unavailable'
+  | 'unsupported'
+  | 'timeout';
+
+export type CapturePositionResult =
+  | { ok: true; position: CapturedGeoPosition }
+  | { ok: false; reason: CapturePositionFailure };
+
 export interface CapturePositionOptions {
   /** Max wait for a fix. Default 8000. */
   timeoutMs?: number;
@@ -16,11 +26,14 @@ export interface CapturePositionOptions {
 
 const DEFAULT_TIMEOUT_MS = 8000;
 
-export function captureCurrentPosition(
+export const LOCATION_PERMISSION_DENIED_MESSAGE =
+  'Location permission is blocked. Tap Try again to allow it. If the browser does not ask again, open the lock icon in the address bar → Site settings → Location → Allow, then reload.';
+
+export function captureCurrentPositionResult(
   options: CapturePositionOptions = {},
-): Promise<CapturedGeoPosition | null> {
+): Promise<CapturePositionResult> {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
-    return Promise.resolve(null);
+    return Promise.resolve({ ok: false, reason: 'unsupported' });
   }
 
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -31,13 +44,26 @@ export function captureCurrentPosition(
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          geoCapturedAt: new Date().toISOString(),
+          ok: true,
+          position: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            geoCapturedAt: new Date().toISOString(),
+          },
         });
       },
-      () => resolve(null),
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          resolve({ ok: false, reason: 'permission_denied' });
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          resolve({ ok: false, reason: 'timeout' });
+          return;
+        }
+        resolve({ ok: false, reason: 'unavailable' });
+      },
       {
         enableHighAccuracy,
         timeout: timeoutMs,
@@ -47,23 +73,40 @@ export function captureCurrentPosition(
   });
 }
 
+export async function captureCurrentPosition(
+  options: CapturePositionOptions = {},
+): Promise<CapturedGeoPosition | null> {
+  const result = await captureCurrentPositionResult(options);
+  return result.ok ? result.position : null;
+}
+
 /**
  * Slower, high-accuracy fix used when the site requires proof of presence.
  * Worth the wait because the punch is rejected without it.
  */
-export function captureGeofencePosition(): Promise<CapturedGeoPosition | null> {
-  return captureCurrentPosition({
+export function captureGeofencePositionResult(): Promise<CapturePositionResult> {
+  return captureCurrentPositionResult({
     timeoutMs: 15_000,
     enableHighAccuracy: true,
     maximumAgeMs: 0,
   });
 }
 
+export async function captureGeofencePosition(): Promise<CapturedGeoPosition | null> {
+  const result = await captureGeofencePositionResult();
+  return result.ok ? result.position : null;
+}
+
 /** Fast geo for scan punches — never block longer than ~1.5s. */
-export function captureScanPunchPosition(): Promise<CapturedGeoPosition | null> {
-  return captureCurrentPosition({
+export function captureScanPunchPositionResult(): Promise<CapturePositionResult> {
+  return captureCurrentPositionResult({
     timeoutMs: 1500,
     enableHighAccuracy: false,
     maximumAgeMs: 60_000,
   });
+}
+
+export async function captureScanPunchPosition(): Promise<CapturedGeoPosition | null> {
+  const result = await captureScanPunchPositionResult();
+  return result.ok ? result.position : null;
 }

@@ -44,7 +44,7 @@ export async function captureRegistrationLocation(): Promise<RegistrationGeoSnap
           reject(
             new RegistrationLocationError(
               'permission_denied',
-              'Location permission is required to register cargo. Allow location access and try again.',
+              'Location permission is required to register cargo. Tap Save again to allow it. If the browser does not ask, open the lock icon in the address bar → Site settings → Location → Allow, then reload and save again.',
             ),
           );
           return;
