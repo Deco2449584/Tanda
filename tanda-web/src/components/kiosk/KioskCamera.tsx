@@ -1,12 +1,14 @@
 ﻿'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, RefreshCw } from 'lucide-react';
 import Webcam from 'react-webcam';
 import { optimizeImageForUpload } from '@/utils/imageOptimizer';
 import { formatKioskActionLabel } from '@/lib/kiosk/kiosk-action-labels';
 import {
   cameraErrorHelpText,
+  permissionUnblockSteps,
+  queryBrowserPermission,
   requestCameraAccess,
 } from '@/lib/permissions/browser-permissions';
 import type { AttendanceType } from '@/lib/types/attendance';
@@ -20,7 +22,6 @@ interface KioskCameraProps {
   onError?: (message: string) => void;
 }
 
-/** Soft constraints — hard facingMode/resolution often fails on Android and never reaches the permission dialog. */
 const videoConstraints: MediaTrackConstraints = {
   facingMode: { ideal: 'user' },
 };
@@ -51,38 +52,109 @@ export function KioskCamera({
 }: KioskCameraProps) {
   const webcamRef = useRef<Webcam>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [blockedPermanently, setBlockedPermanently] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
   const [retrying, setRetrying] = useState(false);
-  /** When true, use bare `video: true` after a soft constraint failed. */
   const [useFallbackVideo, setUseFallbackVideo] = useState(false);
 
   const actionLabel = formatKioskActionLabel(actionType);
 
+  const remountCamera = useCallback(() => {
+    setBlockedPermanently(false);
+    setUseFallbackVideo(false);
+    setCameraError(null);
+    setCameraKey((key) => key + 1);
+  }, []);
+
+  const markBlocked = useCallback(
+    (message: string, permanent: boolean) => {
+      setBlockedPermanently(permanent);
+      setCameraError(message);
+      onError?.(message);
+    },
+    [onError],
+  );
+
+  /** When the user returns from Android/Chrome settings, pick up the new grant. */
+  useEffect(() => {
+    if (!cameraError) return;
+
+    async function recheck() {
+      const state = await queryBrowserPermission('camera');
+      if (state === 'granted') {
+        remountCamera();
+      }
+    }
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        void recheck();
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+
+    let permissionStatus: PermissionStatus | null = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (!navigator.permissions?.query) return;
+        permissionStatus = await navigator.permissions.query({
+          name: 'camera' as PermissionName,
+        });
+        if (cancelled) return;
+        const onChange = () => {
+          if (permissionStatus?.state === 'granted') {
+            remountCamera();
+          } else if (permissionStatus?.state === 'denied') {
+            setBlockedPermanently(true);
+          }
+        };
+        permissionStatus.addEventListener('change', onChange);
+      } catch {
+        // ignore unsupported query
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [cameraError, remountCamera]);
+
   const handleRetryCamera = useCallback(async () => {
-    // Keep the error panel mounted so Webcam is NOT racing another getUserMedia.
     setRetrying(true);
     try {
+      const prior = await queryBrowserPermission('camera');
+
+      // Permanently blocked: browser will not show a dialog — don't pretend to ask.
+      if (prior === 'denied') {
+        markBlocked(cameraErrorHelpText({ name: 'NotAllowedError' }), true);
+        return;
+      }
+
+      if (prior === 'granted') {
+        remountCamera();
+        return;
+      }
+
+      // State is "prompt" — this click can still open the system dialog.
       const state = await requestCameraAccess();
-      if (state === 'denied' || state === 'unsupported') {
-        const message = cameraErrorHelpText({ name: 'NotAllowedError' });
-        setCameraError(message);
-        onError?.(message);
+      if (state === 'granted') {
+        remountCamera();
         return;
       }
       if (state === 'unavailable') {
-        const message = cameraErrorHelpText({ name: 'NotFoundError' });
-        setCameraError(message);
-        onError?.(message);
+        markBlocked(cameraErrorHelpText({ name: 'NotFoundError' }), false);
         return;
       }
-      // Permission granted (or prompt succeeded). Remount Webcam alone.
-      setUseFallbackVideo(false);
-      setCameraError(null);
-      setCameraKey((key) => key + 1);
+      markBlocked(cameraErrorHelpText({ name: 'NotAllowedError' }), true);
     } finally {
       setRetrying(false);
     }
-  }, [onError]);
+  }, [markBlocked, remountCamera]);
 
   const handleCapture = useCallback(async () => {
     if (processing) return;
@@ -93,22 +165,20 @@ export function KioskCamera({
     });
     if (!screenshot) {
       const message = 'Could not capture photo. Please try again.';
-      setCameraError(message);
-      onError?.(message);
+      markBlocked(message, false);
       return;
     }
 
     setCameraError(null);
+    setBlockedPermanently(false);
     try {
       const optimized = await optimizeImageForUpload(screenshot, 'attendance');
       const previewUrl = URL.createObjectURL(optimized);
       onCapture(optimized, previewUrl);
     } catch {
-      const message = 'Could not process photo. Please try again.';
-      setCameraError(message);
-      onError?.(message);
+      markBlocked('Could not process photo. Please try again.', false);
     }
-  }, [onCapture, onError, processing]);
+  }, [markBlocked, onCapture, processing]);
 
   return (
     <div className="flex w-full max-w-2xl shrink-0 flex-col items-center gap-2 px-2 md:gap-4 md:px-4">
@@ -119,26 +189,51 @@ export function KioskCamera({
         <h2 className="mt-0.5 text-lg font-bold text-white md:mt-2 md:text-3xl">
           {employeeName || 'Employee'}
         </h2>
-        <p className="text-xs text-zinc-400 md:text-sm">
-          {actionLabel}
-        </p>
+        <p className="text-xs text-zinc-400 md:text-sm">{actionLabel}</p>
       </div>
 
       <div className="flex w-full min-h-0 flex-1 flex-col items-center">
         <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-700/80 bg-black shadow-2xl ring-1 ring-primary/10">
-          <div className="relative mx-auto aspect-square max-h-[36vh] w-full md:max-h-[50vh]">
+          <div className="relative mx-auto aspect-square max-h-[42vh] w-full md:max-h-[50vh]">
             {cameraError ? (
-              <div className="flex h-full flex-col items-center justify-center gap-3 bg-red-950/40 p-4 text-center md:p-8">
-                <p className="text-sm font-semibold text-red-100 md:text-base">{cameraError}</p>
-                <button
-                  type="button"
-                  disabled={processing || retrying}
-                  onClick={() => void handleRetryCamera()}
-                  className="inline-flex items-center gap-2 rounded-full border border-red-200/40 bg-red-900/50 px-4 py-2 text-sm font-semibold text-red-50 transition hover:bg-red-800/60 disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
-                  {retrying ? 'Asking again…' : 'Try again / allow camera'}
-                </button>
+              <div className="flex h-full flex-col items-center justify-center gap-2.5 overflow-y-auto bg-red-950/40 p-4 text-center md:p-6">
+                <p className="text-sm font-semibold text-red-100">{cameraError}</p>
+
+                {blockedPermanently ? (
+                  <ol className="w-full list-decimal space-y-1.5 rounded-xl border border-red-200/20 bg-black/30 px-4 py-3 text-left text-[11px] leading-snug text-red-100/90">
+                    {permissionUnblockSteps('camera').map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                ) : null}
+
+                <div className="flex w-full flex-col gap-2">
+                  {!blockedPermanently ? (
+                    <button
+                      type="button"
+                      disabled={processing || retrying}
+                      onClick={() => void handleRetryCamera()}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-red-200/40 bg-red-900/50 px-4 py-2.5 text-sm font-semibold text-red-50 transition hover:bg-red-800/60 disabled:opacity-50"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`}
+                      />
+                      {retrying ? 'Asking…' : 'Allow camera'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={processing || retrying}
+                      onClick={() => void handleRetryCamera()}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-red-200/40 bg-red-900/50 px-4 py-2.5 text-sm font-semibold text-red-50 transition hover:bg-red-800/60 disabled:opacity-50"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`}
+                      />
+                      {retrying ? 'Checking…' : 'I’ve allowed it — Continue'}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <>
@@ -158,7 +253,6 @@ export function KioskCamera({
                         : err && typeof err === 'object' && 'name' in err
                           ? String((err as { name?: string }).name)
                           : '';
-                    // Soft constraints failed → remount with bare video once.
                     if (
                       !useFallbackVideo &&
                       (name === 'OverconstrainedError' ||
@@ -169,11 +263,15 @@ export function KioskCamera({
                       setCameraKey((key) => key + 1);
                       return;
                     }
-                    const message = cameraErrorHelpText(
-                      typeof err === 'string' ? { name: err } : err,
+                    const permanent =
+                      name === 'NotAllowedError' ||
+                      name === 'PermissionDeniedError';
+                    markBlocked(
+                      cameraErrorHelpText(
+                        typeof err === 'string' ? { name: err } : err,
+                      ),
+                      permanent,
                     );
-                    setCameraError(message);
-                    onError?.(message);
                   }}
                   className="h-full w-full object-cover"
                   mirrored
