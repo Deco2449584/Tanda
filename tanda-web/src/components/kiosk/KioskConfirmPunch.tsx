@@ -46,7 +46,7 @@ export function KioskConfirmPunch({
         </h2>
       </div>
 
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+      <div className="relative aspect-square w-full max-w-sm mx-auto overflow-hidden rounded-2xl border border-white/10 bg-black/40">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photoPreviewUrl}

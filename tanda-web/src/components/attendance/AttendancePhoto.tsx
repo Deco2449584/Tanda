@@ -46,14 +46,18 @@ export function AttendancePhoto({
   }
 
   return (
-    <FirebaseImage
-      src={photoUrl}
-      alt={`Audit photo of ${name}`}
-      width={pixels}
-      height={pixels}
-      className={`shrink-0 rounded-full object-cover ring-2 ring-zinc-700 ${boxClass}`}
-      sizes={`${pixels}px`}
-      quality={70}
-    />
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-full ring-2 ring-zinc-700 ${boxClass}`}
+    >
+      <FirebaseImage
+        src={photoUrl}
+        alt={`Audit photo of ${name}`}
+        width={pixels}
+        height={pixels}
+        className="h-full w-full object-cover"
+        sizes={`${pixels}px`}
+        quality={70}
+      />
+    </div>
   );
 }

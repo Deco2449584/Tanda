@@ -26,6 +26,36 @@ const videoConstraints: MediaTrackConstraints = {
   facingMode: { ideal: 'user' },
 };
 
+/** Center-crop square from the live video (same idea as CSS object-cover). */
+function captureMirroredSquareFromWebcam(
+  webcam: Webcam,
+  outputSize = 720,
+): string | null {
+  const video = webcam.video;
+  if (!video || video.videoWidth < 2 || video.videoHeight < 2) {
+    return null;
+  }
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const side = Math.min(vw, vh);
+  const sx = (vw - side) / 2;
+  const sy = (vh - side) / 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outputSize;
+  canvas.height = outputSize;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Match `mirrored` preview on the Webcam.
+  ctx.translate(outputSize, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, sx, sy, side, side, 0, 0, outputSize, outputSize);
+
+  return canvas.toDataURL('image/jpeg', 0.85);
+}
+
 function FaceGuideOverlay() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -159,10 +189,10 @@ export function KioskCamera({
   const handleCapture = useCallback(async () => {
     if (processing) return;
 
-    const screenshot = webcamRef.current?.getScreenshot({
-      width: 960,
-      height: 540,
-    });
+    const webcam = webcamRef.current;
+    const screenshot = webcam
+      ? captureMirroredSquareFromWebcam(webcam, 720)
+      : null;
     if (!screenshot) {
       const message = 'Could not capture photo. Please try again.';
       markBlocked(message, false);
