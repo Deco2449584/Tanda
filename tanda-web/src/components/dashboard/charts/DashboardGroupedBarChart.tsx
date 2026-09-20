@@ -6,7 +6,6 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -17,11 +16,11 @@ import {
   CHART_BAR_CURSOR,
   CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
-  COLOR_HORAS_EXTRA_FALLBACK,
   COLOR_SCHEDULED_FALLBACK,
   COLOR_ACTUAL_FALLBACK,
 } from '../chart-theme';
 import { ChartShell } from './ChartShell';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 interface DashboardGroupedBarChartProps {
   data: GroupedBarDatum[];
@@ -49,7 +48,7 @@ export function DashboardGroupedBarChart({
       emptyMessage={emptyMessage}
       heightClassName="h-[280px]"
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <SafeResponsiveContainer>
         <BarChart
           data={data}
           margin={{ top: 8, right: 8, left: 4, bottom: 0 }}
@@ -105,7 +104,7 @@ export function DashboardGroupedBarChart({
             maxBarSize={36}
           />
         </BarChart>
-      </ResponsiveContainer>
+      </SafeResponsiveContainer>
     </ChartShell>
   );
 }

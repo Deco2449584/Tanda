@@ -16,7 +16,6 @@ import { AttendanceFilterToolbar } from '@/components/attendance/AttendanceFilte
 import { AttendanceTable, filterRecordsByEmployeeName } from '@/components/attendance/AttendanceTable';
 import { AttendanceToolbarButton } from '@/components/attendance/AttendanceToolbarButton';
 import { AddManualCheckoutModal } from '@/components/attendance/AddManualCheckoutModal';
-import { AddManualRecordModal } from '@/components/attendance/AddManualRecordModal';
 import { EditAttendanceModal } from '@/components/attendance/EditAttendanceModal';
 import { exportAttendanceRecordsToCsv } from '@/lib/attendance/export-csv';
 import {
@@ -67,7 +66,6 @@ export default function AttendancePage() {
   );
   const [manualCheckoutRecord, setManualCheckoutRecord] =
     useState<AttendanceRecord | null>(null);
-  const [manualRecordOpen, setManualRecordOpen] = useState(false);
   const initialLoadDoneRef = useRef(false);
   const [forgottenOnly, setForgottenOnly] = useState(false);
 
@@ -252,14 +250,14 @@ export default function AttendancePage() {
               Worked shifts
             </Link>
             {canCreateAttendance ? (
-              <AttendanceToolbarButton
-                onClick={() => setManualRecordOpen(true)}
-                disabled={pageLoading}
+              <Link
+                href="/attendance/manual"
                 title="Add manual check-in or check-out"
                 aria-label="Add manual check-in or check-out"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-raised/80 text-muted transition-colors duration-150 hover:border-primary/40 hover:bg-surface-hover hover:text-foreground"
               >
                 <Plus className="h-4 w-4" strokeWidth={2} />
-              </AttendanceToolbarButton>
+              </Link>
             ) : null}
 
             <AttendanceToolbarButton
@@ -296,17 +294,10 @@ export default function AttendancePage() {
         onClose={() => setEditingRecord(null)}
       />
 
-      <AddManualRecordModal
-        open={manualRecordOpen}
-        employees={employeesForFilters}
-        locations={locations}
-        allRecords={locationFilteredRecords}
-        onClose={() => setManualRecordOpen(false)}
-      />
-
       <AddManualCheckoutModal
         checkInRecord={manualCheckoutRecord}
         employee={manualCheckoutEmployee}
+        locations={locations}
         allRecords={locationFilteredRecords}
         onClose={() => setManualCheckoutRecord(null)}
       />

@@ -48,7 +48,11 @@ export function ChartShell({
         )}
 
         {mounted && hasData ? (
-          children
+          fitContent ? (
+            children
+          ) : (
+            <div className="absolute inset-0 min-h-0 min-w-0">{children}</div>
+          )
         ) : mounted && !loading ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-subtle">
             {emptyMessage}

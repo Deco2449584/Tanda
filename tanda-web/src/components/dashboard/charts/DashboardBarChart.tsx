@@ -6,7 +6,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -21,6 +20,7 @@ import {
   CHART_TOOLTIP_STYLE,
 } from '../chart-theme';
 import { ChartShell } from './ChartShell';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 interface DashboardBarChartProps {
   data: NamedValueDatum[];
@@ -69,7 +69,7 @@ export function DashboardBarChart({
       emptyMessage={emptyMessage}
       heightClassName="h-[260px]"
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <SafeResponsiveContainer>
         <BarChart
           data={chartData}
           margin={{ top: 8, right: 8, left: 4, bottom: 0 }}
@@ -128,7 +128,7 @@ export function DashboardBarChart({
               : null}
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
+      </SafeResponsiveContainer>
     </ChartShell>
   );
 }

@@ -5,7 +5,6 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
 } from 'recharts';
 import { DASHBOARD_CHART_COLORS } from '@/lib/dashboard/chart-colors';
@@ -13,6 +12,7 @@ import { formatDashboardCurrency } from '@/lib/dashboard/format-currency';
 import type { NamedValueDatum } from '@/lib/dashboard/types';
 import { CHART_TOOLTIP_STYLE } from '../chart-theme';
 import { ChartShell } from './ChartShell';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 interface DashboardPieChartProps {
   data: NamedValueDatum[];
@@ -86,7 +86,7 @@ export function DashboardPieChart({
         }
       >
         <div className="h-[240px] sm:h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <SafeResponsiveContainer>
             <PieChart>
               <Pie
                 data={data}
@@ -118,7 +118,7 @@ export function DashboardPieChart({
                 ]}
               />
             </PieChart>
-          </ResponsiveContainer>
+          </SafeResponsiveContainer>
         </div>
 
         {showLegend ? (

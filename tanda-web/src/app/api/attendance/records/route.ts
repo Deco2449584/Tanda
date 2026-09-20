@@ -39,6 +39,8 @@ export async function POST(request: Request) {
       breakWaived?: boolean;
       syncEmployeePresence?: boolean;
       overrideRestrictions?: boolean;
+      photoPath?: string | null;
+      photoUrl?: string | null;
     };
 
     const employeeDocId = body.employeeDocId?.trim();
@@ -46,7 +48,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Employee is required.' }, { status: 400 });
     }
 
-    if (body.type !== 'check_in' && body.type !== 'check_out') {
+    const allowedTypes: AttendanceType[] = [
+      'check_in',
+      'check_out',
+      'break_start',
+      'break_end',
+    ];
+    if (!body.type || !allowedTypes.includes(body.type)) {
       return NextResponse.json({ error: 'Invalid record type.' }, { status: 400 });
     }
 
@@ -124,6 +132,8 @@ export async function POST(request: Request) {
       geoAccuracy: body.geoAccuracy,
       geoAddress: body.geoAddress,
       breakWaived: body.breakWaived,
+      photoPath: body.photoPath ?? undefined,
+      photoUrl: body.photoUrl ?? undefined,
     });
 
     if (body.syncEmployeePresence) {

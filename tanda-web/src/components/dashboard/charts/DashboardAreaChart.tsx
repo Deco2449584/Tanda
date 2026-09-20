@@ -5,7 +5,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -21,6 +20,7 @@ import {
   COLOR_HORAS_NORMAL_FALLBACK,
 } from '../chart-theme';
 import { ChartShell } from './ChartShell';
+import { SafeResponsiveContainer } from './SafeResponsiveContainer';
 
 interface DashboardAreaChartProps {
   data: Array<{ day: string; value: number }>;
@@ -51,7 +51,7 @@ export function DashboardAreaChart({
 
   return (
     <ChartShell loading={loading} hasData={data.length > 0} emptyMessage={emptyMessage}>
-      <ResponsiveContainer width="100%" height="100%">
+      <SafeResponsiveContainer>
         <AreaChart
           data={data}
           margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
@@ -101,7 +101,7 @@ export function DashboardAreaChart({
             }}
           />
         </AreaChart>
-      </ResponsiveContainer>
+      </SafeResponsiveContainer>
     </ChartShell>
   );
 }

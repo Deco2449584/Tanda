@@ -5,13 +5,13 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+import { SafeResponsiveContainer } from '@/components/dashboard/charts/SafeResponsiveContainer';
 import {
   CHART_ACTIVE_DOT,
   CHART_AREA_CURSOR,
@@ -71,7 +71,7 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
         )}
 
         {mounted && data.some((item) => item.horas > 0) ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <SafeResponsiveContainer>
             <AreaChart
               data={data}
               margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
@@ -123,7 +123,7 @@ export function WeeklyHoursChart({ data, loading = false }: WeeklyHoursChartProp
                 }}
               />
             </AreaChart>
-          </ResponsiveContainer>
+          </SafeResponsiveContainer>
         ) : mounted && !loading ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-subtle">
             No shifts in the current week.

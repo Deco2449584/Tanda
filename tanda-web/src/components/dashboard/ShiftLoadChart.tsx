@@ -5,13 +5,13 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
+import { SafeResponsiveContainer } from '@/components/dashboard/charts/SafeResponsiveContainer';
 import {
   CHART_AXIS_TICK,
   CHART_BAR_CURSOR,
@@ -64,7 +64,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
         )}
 
         {mounted && data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <SafeResponsiveContainer>
             <BarChart
               data={data}
               margin={{ top: 8, right: 8, left: 4, bottom: 0 }}
@@ -113,7 +113,7 @@ export function ShiftLoadChart({ data, loading = false }: ShiftLoadChartProps) {
                 maxBarSize={40}
               />
             </BarChart>
-          </ResponsiveContainer>
+          </SafeResponsiveContainer>
         ) : mounted && !loading ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-subtle">
             No shifts scheduled for today.

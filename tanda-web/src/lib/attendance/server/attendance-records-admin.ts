@@ -45,12 +45,16 @@ export interface CreateAttendanceRecordInput {
   geoAccuracy?: number;
   geoAddress?: string;
   breakWaived?: boolean;
+  photoPath?: string;
+  photoUrl?: string;
 }
 
 export async function createAttendanceRecordAdmin(
   input: CreateAttendanceRecordInput,
 ): Promise<string> {
   const timestampServer = Timestamp.fromMillis(input.timestampMs);
+  const photoPath = input.photoPath?.trim() ?? '';
+  const photoUrl = input.photoUrl?.trim() ?? '';
   const payload: Record<string, unknown> = {
     employeeId: input.employeeId,
     employeeNameSnapshot: input.employeeNameSnapshot,
@@ -58,9 +62,9 @@ export async function createAttendanceRecordAdmin(
     type: input.type,
     timestampServer,
     source: input.source,
-    photoCaptured: false,
-    photoPath: '',
-    photoUrl: '',
+    photoCaptured: Boolean(photoPath || photoUrl),
+    photoPath,
+    photoUrl,
     createdByEmail: input.createdByEmail,
     createdByUid: input.createdByUid,
     createdAt: FieldValue.serverTimestamp(),

@@ -11,10 +11,12 @@ import {
 } from '@/lib/attendance/format';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
+import type { Location } from '@/lib/types/location';
 
 interface AddManualCheckoutModalProps {
   checkInRecord: AttendanceRecord | null;
   employee: Employee | null;
+  locations: Location[];
   allRecords: AttendanceRecord[];
   onClose: () => void;
 }
@@ -30,19 +32,27 @@ function defaultCheckoutValues(checkIn: AttendanceRecord): { date: string; time:
 export function AddManualCheckoutModal({
   checkInRecord,
   employee,
+  locations,
   allRecords,
   onClose,
 }: AddManualCheckoutModalProps) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const activeLocations = useMemo(
+    () => locations.filter((location) => location.active),
+    [locations],
+  );
 
   useEffect(() => {
     if (!checkInRecord) return;
     const defaults = defaultCheckoutValues(checkInRecord);
     setDate(defaults.date);
     setTime(defaults.time);
+    setLocationId(checkInRecord.locationId?.trim() ?? '');
     setError('');
   }, [checkInRecord]);
 
@@ -50,6 +60,14 @@ export function AddManualCheckoutModal({
     () => checkInRecord?.timestampServer?.toMillis() ?? 0,
     [checkInRecord],
   );
+
+  const checkInLocationLabel = useMemo(() => {
+    if (!checkInRecord?.locationNameSnapshot?.trim()) return null;
+    const city = checkInRecord.locationCitySnapshot?.trim();
+    return city
+      ? `${checkInRecord.locationNameSnapshot} (${city})`
+      : checkInRecord.locationNameSnapshot;
+  }, [checkInRecord]);
 
   if (!checkInRecord) return null;
 
@@ -80,6 +98,23 @@ export function AddManualCheckoutModal({
       return;
     }
 
+    const selectedLocation = activeLocations.find((item) => item.id === locationId);
+    const locationIdValue =
+      selectedLocation?.id ??
+      (checkInRecord.locationId?.trim() && locationId === checkInRecord.locationId
+        ? checkInRecord.locationId
+        : null);
+    const locationName =
+      selectedLocation?.name ??
+      (locationIdValue && locationIdValue === checkInRecord.locationId
+        ? checkInRecord.locationNameSnapshot ?? null
+        : null);
+    const locationCity =
+      selectedLocation?.city ??
+      (locationIdValue && locationIdValue === checkInRecord.locationId
+        ? checkInRecord.locationCitySnapshot ?? null
+        : null);
+
     const employeeRecords = allRecords.filter(
       (item) => item.employeeId === checkInRecord.employeeId,
     );
@@ -96,6 +131,9 @@ export function AddManualCheckoutModal({
         type: 'check_out',
         timestampMs: checkoutMs,
         source: 'web-admin-manual-checkout',
+        locationId: locationIdValue,
+        locationNameSnapshot: locationName,
+        locationCitySnapshot: locationCity,
         breakWaived: false,
         syncEmployeePresence: employee != null && checkoutMs >= latestMs,
       });
@@ -152,6 +190,12 @@ export function AddManualCheckoutModal({
             {formatRecordDate(checkInRecord.timestampServer)}{' '}
             {formatRecordTime(checkInRecord.timestampServer)}
           </span>
+          {checkInLocationLabel ? (
+            <>
+              {' '}
+              at <span className="text-foreground">{checkInLocationLabel}</span>
+            </>
+          ) : null}
           .
         </p>
 
@@ -184,6 +228,34 @@ export function AddManualCheckoutModal({
                 className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="checkout-location" className="mb-1.5 block text-sm text-muted">
+              Warehouse
+            </label>
+            <select
+              id="checkout-location"
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+              className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              <option value="">No warehouse</option>
+              {checkInRecord.locationId &&
+              !activeLocations.some((item) => item.id === checkInRecord.locationId) ? (
+                <option value={checkInRecord.locationId}>
+                  {checkInLocationLabel ?? checkInRecord.locationId} (from check-in)
+                </option>
+              ) : null}
+              {activeLocations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.city ? `${location.name} (${location.city})` : location.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-subtle">
+              Pre-filled from the open check-in when available.
+            </p>
           </div>
 
           <p className="text-xs text-subtle">
