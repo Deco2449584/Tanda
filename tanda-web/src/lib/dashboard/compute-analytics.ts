@@ -34,6 +34,7 @@ import type {
   AttendancePolicySettings,
   PayrollAccountingSettings,
 } from '@/lib/types/company-settings';
+import { isWorkforceEmployee } from '@/lib/employees/is-workforce-employee';
 import type { Employee } from '@/lib/types/employee';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Location } from '@/lib/types/location';
@@ -367,6 +368,7 @@ function buildScheduledVsActualByLocation(
   attendance: AttendanceRecord[],
   dateRange: DateRange,
   locations: Location[],
+  groups: LocationGroup[],
   attendanceBreak: AttendanceBreakSettings,
 ): GroupedBarDatum[] {
   const scheduled = new Map<string, number>();
@@ -390,7 +392,7 @@ function buildScheduledVsActualByLocation(
     );
     if (hours <= 0) return;
 
-    const site = getSiteKeyForEmployee(employee, locations);
+    const site = getSiteKeyForEmployee(employee, locations, groups);
     actual.set(site, (actual.get(site) ?? 0) + hours);
   });
 
@@ -463,7 +465,7 @@ export function computeDashboardAnalytics(
     payrollReport.rows.map((row) => {
       const employee = employeeById.get(row.employeeId);
       const key = employee
-        ? getSiteKeyForEmployee(employee, input.locations)
+        ? getSiteKeyForEmployee(employee, input.locations, input.groups)
         : 'Unknown';
       return { key, value: row.grossPay };
     }),
@@ -505,7 +507,7 @@ export function computeDashboardAnalytics(
         input.attendanceBreak,
       );
       return {
-        key: getSiteKeyForEmployee(employee, input.locations),
+        key: getSiteKeyForEmployee(employee, input.locations, input.groups),
         value: hours,
       };
     }),
@@ -517,6 +519,7 @@ export function computeDashboardAnalytics(
     attendance,
     input.dateRange,
     input.locations,
+    input.groups,
     input.attendanceBreak,
   );
 
@@ -580,10 +583,13 @@ export function computeDashboardAnalytics(
   );
 
   const headcountByLocation = aggregateByKey(
-    filteredEmployees.map((employee) => ({
-      key: getSiteKeyForEmployee(employee, input.locations),
-      value: 1,
-    })),
+    filteredEmployees
+      .filter((employee) => isWorkforceEmployee(employee))
+      .map((employee) => ({
+        key: getSiteKeyForEmployee(employee, input.locations, input.groups),
+        value: 1,
+      }))
+      .filter((entry) => entry.key !== 'Unassigned'),
   );
 
   const leaveRequests = input.leaveRequests.filter((request) => {

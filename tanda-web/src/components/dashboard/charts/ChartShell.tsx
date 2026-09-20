@@ -46,7 +46,7 @@ export function ChartShell({
       }
     >
       <div
-        className={`relative w-full ${allowScroll ? 'min-w-[280px]' : ''} ${shellHeight}`}
+        className={`relative w-full min-w-0 ${allowScroll ? 'sm:min-w-[280px]' : ''} ${shellHeight}`}
         style={height && !fitContent ? { height } : undefined}
       >
         {loading && (

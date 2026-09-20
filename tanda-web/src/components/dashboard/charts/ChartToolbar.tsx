@@ -61,6 +61,8 @@ export function ChartToolbarGroup<T extends string | number>({
 
 export function ChartToolbar({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">{children}</div>
+    <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+      {children}
+    </div>
   );
 }

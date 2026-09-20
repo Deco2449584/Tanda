@@ -31,21 +31,20 @@ export function CollapsibleDashboardCard({
   className,
 }: CollapsibleDashboardCardProps) {
   return (
-    <Card padding="md" className={cn('backdrop-blur-sm', className)}>
+    <Card padding="sm" className={cn('backdrop-blur-sm md:p-6', className)}>
       <CardHeader className="mb-0 gap-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <CardTitle className="text-base">{title}</CardTitle>
-            {description && !collapsed ? (
-              <CardDescription className="mt-1">{description}</CardDescription>
-            ) : null}
-            {collapsed && summary && !insights ? (
-              <p className="mt-1 truncate text-sm text-muted">{summary}</p>
-            ) : null}
-          </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base">{title}</CardTitle>
+              {description && !collapsed ? (
+                <CardDescription className="mt-1">{description}</CardDescription>
+              ) : null}
+              {collapsed && summary && !insights ? (
+                <p className="mt-1 truncate text-sm text-muted">{summary}</p>
+              ) : null}
+            </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            {!collapsed && toolbar ? toolbar : null}
             <button
               type="button"
               onClick={onToggle}
@@ -56,16 +55,20 @@ export function CollapsibleDashboardCard({
               {collapsed ? (
                 <>
                   <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                  Expand
+                  <span className="hidden sm:inline">Expand</span>
                 </>
               ) : (
                 <>
                   <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-                  Collapse
+                  <span className="hidden sm:inline">Collapse</span>
                 </>
               )}
             </button>
           </div>
+
+          {!collapsed && toolbar ? (
+            <div className="min-w-0 sm:ml-auto sm:max-w-[min(100%,28rem)]">{toolbar}</div>
+          ) : null}
         </div>
       </CardHeader>
 

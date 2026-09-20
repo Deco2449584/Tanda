@@ -82,7 +82,7 @@ export function InteractiveChartLegend({
 
               <span
                 className={cn(
-                  'min-w-0 flex-1 truncate text-xs',
+                  'min-w-0 flex-1 break-words text-xs',
                   isHidden ? 'text-subtle line-through' : 'text-foreground',
                 )}
               >
@@ -104,7 +104,7 @@ export function InteractiveChartLegend({
               <button
                 type="button"
                 onClick={() => isolate(entry.key)}
-                className="shrink-0 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-subtle opacity-0 transition hover:text-foreground focus:opacity-100 group-hover:opacity-100"
+                className="shrink-0 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-subtle opacity-100 transition hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                 title={`Show only ${entry.label}`}
               >
                 Only

@@ -1,4 +1,7 @@
-import { employeeMatchesLocationFilter } from '@/lib/location-groups/format-location-group';
+import {
+  employeeMatchesLocationFilter,
+  getLocationGroupLabel,
+} from '@/lib/location-groups/format-location-group';
 import { getLocationLabel } from '@/lib/locations/format-location';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
@@ -47,12 +50,21 @@ export function filterShiftsForDashboard(
   });
 }
 
+/**
+ * Home client for an employee. A single site wins; otherwise the client group.
+ */
 export function getSiteKeyForEmployee(
   employee: Employee,
   locations: readonly Location[],
+  groups: readonly LocationGroup[] = [],
 ): string {
-  const label = getLocationLabel(employee.locationId, locations);
-  return label === '—' ? 'Unassigned' : label;
+  const site = getLocationLabel(employee.locationId, locations);
+  if (site !== '—') return site;
+
+  const group = getLocationGroupLabel(employee.locationGroupId, groups);
+  if (group !== '—') return group;
+
+  return 'Unassigned';
 }
 
 export function getSiteKeyForShift(

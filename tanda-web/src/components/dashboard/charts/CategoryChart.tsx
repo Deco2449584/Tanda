@@ -187,8 +187,8 @@ export function CategoryChart({
         emptyMessage={emptyMessage}
         fitContent
       >
-        <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(210px,300px)]">
-          <div className="relative h-[250px] sm:h-[290px]">
+        <div className="grid min-w-0 items-center gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(210px,300px)]">
+          <div className="relative h-[210px] min-w-0 sm:h-[250px] lg:h-[290px]">
             <SafeResponsiveContainer>
               <PieChart>
                 {chartDefs()}
@@ -280,7 +280,7 @@ export function CategoryChart({
                   axisLine={false}
                   tickLine={false}
                   tick={CHART_AXIS_TICK}
-                  width={150}
+                  width={112}
                   interval={0}
                 />
               </>

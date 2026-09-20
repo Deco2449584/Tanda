@@ -23,11 +23,11 @@ export function WidgetInsightChips({
   if (insights.length === 0) return null;
 
   return (
-    <div className={cn('flex flex-wrap gap-2', className)}>
+    <div className={cn('grid grid-cols-2 gap-2 sm:flex sm:flex-wrap', className)}>
       {insights.map((insight) => (
         <div
           key={insight.label}
-          className="min-w-[8rem] flex-1 rounded-xl border border-border/70 bg-surface-base/50 px-3 py-2 sm:flex-none"
+          className="min-w-0 rounded-xl border border-border/70 bg-surface-base/50 px-3 py-2 sm:min-w-[8rem] sm:flex-none"
         >
           <p className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
             {insight.label}

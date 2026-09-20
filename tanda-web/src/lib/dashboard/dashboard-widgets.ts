@@ -174,7 +174,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
   {
     id: 'headcount-by-location',
     title: 'Active staff by site',
-    description: 'Headcount of active employees per location',
+    description: 'Active employees by assigned client or client group',
     category: 'overview',
     chartType: 'pie',
     defaultVisible: false,

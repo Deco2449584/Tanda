@@ -558,7 +558,7 @@ export function DynamicDashboard({
         return {
           data: analytics.headcountByLocation,
           loading: employeesLoading,
-          emptyMessage: 'No active employees for the selected filters.',
+          emptyMessage: 'No employees with an assigned client for the selected filters.',
           valueLabel: 'Staff',
           valueFormatter: (value) => `${value} staff`,
           defaultChartType: 'donut',
