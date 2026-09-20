@@ -8,6 +8,8 @@ interface ChartShellProps {
   hasData: boolean;
   emptyMessage: string;
   heightClassName?: string;
+  /** Explicit pixel height; wins over `heightClassName` (dynamic row charts). */
+  height?: number;
   /** When true, the shell grows with its content instead of clipping at a fixed height. */
   fitContent?: boolean;
   /** Horizontal scroll for wide charts (bar/area). Off when `fitContent` is true. */
@@ -20,13 +22,18 @@ export function ChartShell({
   hasData,
   emptyMessage,
   heightClassName = 'h-[280px]',
+  height,
   fitContent = false,
   scrollable,
   children,
 }: ChartShellProps) {
   const [mounted, setMounted] = useState(false);
   const allowScroll = scrollable ?? !fitContent;
-  const shellHeight = fitContent ? 'min-h-[280px] h-auto' : heightClassName;
+  const shellHeight = fitContent
+    ? 'min-h-[280px] h-auto'
+    : height
+      ? ''
+      : heightClassName;
 
   useEffect(() => {
     setMounted(true);
@@ -40,6 +47,7 @@ export function ChartShell({
     >
       <div
         className={`relative w-full ${allowScroll ? 'min-w-[280px]' : ''} ${shellHeight}`}
+        style={height && !fitContent ? { height } : undefined}
       >
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-surface-raised/40">

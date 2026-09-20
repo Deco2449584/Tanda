@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { AdminModuleKey } from '@/lib/types/admin-permissions';
+import type { DeltaInfo, DeltaSentiment } from './delta';
 
 export type KpiAccent =
   | 'blue'
@@ -20,6 +21,11 @@ export interface KpiMetric {
   accent: KpiAccent;
   icon: LucideIcon;
   sparkline?: number[];
+  /** Caption for the sparkline (e.g. "Daily payroll"). */
+  sparklineLabel?: string;
+  /** Change vs the previous period; only set while Compare is on. */
+  delta?: DeltaInfo;
+  deltaSentiment?: DeltaSentiment;
   /** Module required to show this KPI. Omit = always (when dashboard is open). */
   requiresModule?: AdminModuleKey;
 }

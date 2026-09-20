@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp, LayoutDashboard, MapPin, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronUp, GitCompareArrows, LayoutDashboard, MapPin, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { DateRangePicker } from '@/components/attendance/DateRangePicker';
 import { Button } from '@/components/ui/Button';
 import { RefreshButton } from '@/components/ui/RefreshButton';
@@ -14,6 +14,7 @@ import {
   getLast7DaysRange,
   getTodayRange,
 } from '@/lib/attendance/date-range';
+import { getPreviousRange } from '@/lib/dashboard/previous-range';
 import { buildWeekRange, shiftWeek } from '@/lib/schedule/week';
 
 const FILTERS_COLLAPSED_KEY = 'tanda-dashboard-filters-collapsed';
@@ -43,6 +44,9 @@ interface DashboardFiltersBarProps {
   onResetLayout: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  compareEnabled?: boolean;
+  onCompareToggle?: (enabled: boolean) => void;
+  compareLoading?: boolean;
 }
 
 const PRESET_OPTIONS: Array<{ id: DashboardPeriodPreset; label: string }> = [
@@ -89,6 +93,9 @@ export function DashboardFiltersBar({
   onResetLayout,
   onRefresh,
   refreshing = false,
+  compareEnabled = false,
+  onCompareToggle,
+  compareLoading = false,
 }: DashboardFiltersBarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -198,6 +205,31 @@ export function DashboardFiltersBar({
               </button>
             ))}
           </div>
+
+          {onCompareToggle ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onCompareToggle(!compareEnabled)}
+                aria-pressed={compareEnabled}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  compareEnabled
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border bg-surface text-muted hover:text-foreground'
+                }`}
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" aria-hidden />
+                Compare previous period
+              </button>
+              {compareEnabled ? (
+                <span className="text-xs text-subtle">
+                  {compareLoading
+                    ? 'Loading comparison…'
+                    : `vs ${formatDateRangeLabel(getPreviousRange(dateRange))}`}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             {periodPreset === 'custom' ? (

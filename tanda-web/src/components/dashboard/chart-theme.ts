@@ -26,9 +26,34 @@ export const CHART_ACTIVE_DOT = {
   strokeWidth: 2,
 } as const;
 
-export const CHART_AXIS_TICK = { fill: '#cbcbcb', fontSize: 11 } as const;
+export const CHART_AXIS_TICK = { fill: '#d4d4d8', fontSize: 11 } as const;
 
-export const CHART_GRID_STROKE = 'rgba(203, 203, 203, 0.12)';
+/** Smaller tick style for dense axes (per-day trends, horizontal bars). */
+export const CHART_AXIS_TICK_SUBTLE = {
+  fill: '#a1a1aa',
+  fontSize: 10,
+} as const;
+
+export const CHART_GRID_STROKE = 'rgba(203, 203, 203, 0.1)';
+
+/** Average / target guides drawn over the plot area. */
+export const CHART_REFERENCE_LINE = {
+  stroke: 'rgba(212, 212, 216, 0.45)',
+  strokeDasharray: '5 4',
+  strokeWidth: 1,
+} as const;
+
+export const CHART_VALUE_LABEL = {
+  fill: '#e4e4e7',
+  fontSize: 11,
+  fontWeight: 600,
+} as const;
+
+/** Semantic colors for deltas, variance and alert highlighting. */
+export const COLOR_POSITIVE = '#22c55e';
+export const COLOR_NEGATIVE = '#fb7185';
+export const COLOR_NEUTRAL = '#a1a1aa';
+export const COLOR_ALERT = '#f97316';
 
 export const COLOR_HORAS_NORMAL_FALLBACK = DASHBOARD_CHART_COLORS[0];
 export const COLOR_HORAS_EXTRA_FALLBACK = DASHBOARD_CHART_COLORS[1];
