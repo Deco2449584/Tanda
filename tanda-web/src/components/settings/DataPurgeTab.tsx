@@ -82,7 +82,7 @@ const OPTION_META: Record<
   },
   attendanceRecords: {
     label: 'Attendance records (Firestore)',
-    hint: 'Check-in / check-out history',
+    hint: 'Check-in / check-out history — also deletes each punch photo in Storage',
   },
   attendanceJustifications: {
     label: 'Attendance justifications (Firestore)',

@@ -1,7 +1,8 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { toInputDateInTimeZone } from '@/lib/dates/timezone';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
+import { extractStoragePathFromUrl } from '@/lib/portal/storage-path';
 import type { AttendanceType } from '@/lib/types/attendance';
 import {
   DEFAULT_COMPANY_SETTINGS,
@@ -121,11 +122,48 @@ export async function updateAttendanceRecordAdmin(
     });
 }
 
+/** Resolve Storage object path for an attendance punch photo (path or URL). */
+export function resolveAttendancePhotoPath(
+  data: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!data) return null;
+
+  const direct =
+    typeof data.photoPath === 'string' ? data.photoPath.trim() : '';
+  if (direct.startsWith('attendance/')) return direct;
+
+  const url = typeof data.photoUrl === 'string' ? data.photoUrl.trim() : '';
+  if (!url) return null;
+
+  const fromUrl = extractStoragePathFromUrl(url);
+  if (fromUrl?.startsWith('attendance/')) return fromUrl;
+
+  return null;
+}
+
+export async function deleteAttendancePhotoFromRecordData(
+  data: Record<string, unknown> | null | undefined,
+): Promise<boolean> {
+  const path = resolveAttendancePhotoPath(data);
+  if (!path) return false;
+
+  try {
+    await getAdminStorage().bucket().file(path).delete({ ignoreNotFound: true });
+    return true;
+  } catch (error) {
+    console.warn('deleteAttendancePhotoFromRecordData', path, error);
+    return false;
+  }
+}
+
 export async function deleteAttendanceRecordAdmin(recordId: string): Promise<void> {
   const db = getAdminFirestore();
   const ref = db.collection(COLLECTIONS.ATTENDANCE_RECORDS).doc(recordId.trim());
   const snap = await ref.get();
-  const data = snap.exists ? snap.data() : null;
+  const data = snap.exists ? (snap.data() as Record<string, unknown>) : null;
+
+  // Delete Storage photo before the Firestore doc so a failed delete can be retried.
+  await deleteAttendancePhotoFromRecordData(data);
 
   await ref.delete();
 

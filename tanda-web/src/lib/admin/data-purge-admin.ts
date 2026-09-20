@@ -16,6 +16,9 @@ import {
   type DataPurgeResult,
   type PurgeProgressCallback,
 } from '@/lib/admin/data-purge';
+import {
+  deleteAttendancePhotoFromRecordData,
+} from '@/lib/attendance/server/attendance-records-admin';
 
 const BATCH_SIZE = 400;
 
@@ -129,6 +132,56 @@ async function deleteCollectionDocumentsInRange(
   }
 
   return totalDeleted;
+}
+
+/**
+ * Deletes attendance_records and each punch's Storage photo (photoPath / photoUrl).
+ */
+async function deleteAttendanceRecordsWithPhotos(
+  range: DataPurgeDateRange | null | undefined,
+  onProgress?: PurgeProgressCallback,
+): Promise<{ docsDeleted: number; photosDeleted: number }> {
+  const db = getAdminFirestore();
+  const { startDate, endDate } = normalizeRange(range);
+  const filterActive = hasDateRangeFilter(range);
+  let docsDeleted = 0;
+  let photosDeleted = 0;
+
+  while (true) {
+    let query: Query = db.collection(COLLECTIONS.ATTENDANCE_RECORDS);
+
+    if (filterActive) {
+      if (startDate) {
+        query = query.where('timestampServer', '>=', toStartTimestamp(startDate));
+      }
+      if (endDate) {
+        query = query.where('timestampServer', '<=', toEndTimestamp(endDate));
+      }
+    }
+
+    const snapshot = await query.limit(BATCH_SIZE).get();
+    if (snapshot.empty) break;
+
+    for (const document of snapshot.docs) {
+      const removed = await deleteAttendancePhotoFromRecordData(
+        document.data() as Record<string, unknown>,
+      );
+      if (removed) photosDeleted += 1;
+    }
+
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    await batch.commit();
+
+    docsDeleted += snapshot.size;
+    onProgress?.(
+      `Deleted ${docsDeleted} attendance record${docsDeleted === 1 ? '' : 's'} (${photosDeleted} photo${photosDeleted === 1 ? '' : 's'})…`,
+    );
+
+    if (snapshot.size < BATCH_SIZE) break;
+  }
+
+  return { docsDeleted, photosDeleted };
 }
 
 /**
@@ -505,21 +558,18 @@ export async function purgeOperationalDataAdmin(
 
   // Operational Firestore collections (date-aware).
   if (options.attendanceRecords) {
-    await runStep(
-      result,
-      'attendance records',
-      () =>
-        deleteCollectionDocumentsInRange(
-          COLLECTIONS.ATTENDANCE_RECORDS,
-          'timestampServer',
-          'timestamp',
-          range,
-          onProgress,
-        ),
-      (count) => {
-        result.attendanceRecordsDeleted = count;
-      },
-    );
+    try {
+      const { docsDeleted, photosDeleted } = await deleteAttendanceRecordsWithPhotos(
+        range,
+        onProgress,
+      );
+      result.attendanceRecordsDeleted = docsDeleted;
+      result.storageFilesDeleted += photosDeleted;
+    } catch (error) {
+      result.errors.push(
+        error instanceof Error ? error.message : 'Could not complete: attendance records',
+      );
+    }
   }
 
   if (options.shifts) {
