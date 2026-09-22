@@ -5,14 +5,17 @@ import { useTheme } from '@/context/ThemeContext';
 import { brand } from '@/theme/brand';
 import { fonts } from '@/theme/typography';
 
-const logoLight = require('../../assets/brand/logo-light.webp');
+/** Official web horizontal wordmark (transparent bg). */
+const logoHorizontal = require('../../assets/brand/logo-horizontal.png');
+
+const HORIZONTAL_ASPECT = 1585 / 443;
 
 type ContinentalInspectLogoProps = {
   width?: number;
   style?: ViewStyle;
-  /** onDark = logo on dark backgrounds; onLight = tinted for light backgrounds */
+  /** Controls wordmark text color when `showWordmark` is set */
   variant?: 'onDark' | 'onLight';
-  /** Show app name text under the mark */
+  /** Show app name text under the logo */
   showWordmark?: boolean;
 };
 
@@ -24,27 +27,27 @@ export function ContinentalInspectLogo({
 }: ContinentalInspectLogoProps) {
   const { isDark, colors } = useTheme();
   const resolved = variant ?? (isDark ? 'onDark' : 'onLight');
-  const height = width * (303 / 400);
-  const textColor = resolved === 'onLight' ? colors.text.primary : '#FFFFFF';
+  const height = width / HORIZONTAL_ASPECT;
 
   return (
     <View style={[styles.wrap, style]} accessibilityRole="image" accessibilityLabel={brand.appName}>
-      <Image
-        source={logoLight}
-        style={{
-          width,
-          height,
-          tintColor: resolved === 'onLight' ? '#000000' : '#FFFFFF',
-        }}
-        contentFit="contain"
-      />
+      <Image source={logoHorizontal} style={{ width, height }} contentFit="contain" />
       {showWordmark ? (
         <View style={styles.wordmark}>
-          <Text style={[styles.appName, { color: textColor }]}>{brand.appName}</Text>
+          <Text
+            style={[
+              styles.appName,
+              { color: resolved === 'onLight' ? colors.text.primary : '#FFFFFF' },
+            ]}>
+            {brand.appName}
+          </Text>
           <Text
             style={[
               styles.tagline,
-              { color: resolved === 'onLight' ? colors.text.onSurfaceMuted : 'rgba(255,255,255,0.75)' },
+              {
+                color:
+                  resolved === 'onLight' ? colors.text.onSurfaceMuted : 'rgba(255,255,255,0.75)',
+              },
             ]}>
             {brand.tagline}
           </Text>
