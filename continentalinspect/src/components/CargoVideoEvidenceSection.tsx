@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { InfoModal } from '@/components/InfoModal';
+import { InteractiveVideoPreview } from '@/components/InteractiveVideoPreview';
 import { useVideoThumbnail } from '@/hooks/useVideoThumbnail';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -208,43 +209,6 @@ function VideoClipThumbnail({
   );
 }
 
-type VideoPreviewProps = {
-  videoUrl: string;
-};
-
-function VideoPreview({ videoUrl }: VideoPreviewProps) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(createStyles);
-  const { thumbnailUri, isLoadingThumbnail } = useVideoThumbnail(videoUrl);
-
-  return (
-    <View style={styles.previewShell}>
-      {isLoadingThumbnail ? (
-        <View style={styles.previewPlaceholder}>
-          <ActivityIndicator size="large" color={colors.text.onSurfaceMuted} />
-        </View>
-      ) : thumbnailUri ? (
-        <Image
-          source={{ uri: thumbnailUri }}
-          style={styles.previewImage}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          recyclingKey={thumbnailUri}
-        />
-      ) : (
-        <View style={styles.previewPlaceholder}>
-          <Ionicons name="videocam-outline" size={40} color={colors.text.onSurfaceMuted} />
-          <Text style={styles.previewPlaceholderText}>Preview unavailable</Text>
-        </View>
-      )}
-      <View style={styles.previewHint}>
-        <Ionicons name="download-outline" size={14} color="#FFFFFF" />
-        <Text style={styles.previewHintText}>Download to view in your gallery</Text>
-      </View>
-    </View>
-  );
-}
-
 export function CargoVideoEvidenceSection({ videoUrls }: CargoVideoEvidenceSectionProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -301,7 +265,7 @@ export function CargoVideoEvidenceSection({ videoUrls }: CargoVideoEvidenceSecti
         onConfirm={() => setShowSuccessModal(false)}
       />
 
-      <VideoPreview key={selectedVideoUrl} videoUrl={selectedVideoUrl} />
+      <InteractiveVideoPreview uri={selectedVideoUrl} width={PREVIEW_WIDTH} height={PREVIEW_HEIGHT} />
 
       <Text style={styles.indexLabel}>
         Clip {safeIndex + 1} / {total}

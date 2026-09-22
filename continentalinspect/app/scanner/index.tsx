@@ -95,6 +95,7 @@ export default function CargoInspectionFormScreen() {
     inspections,
     isLoading: inspectionsLoading,
     addInspection,
+    saveInspectionDraft,
     updateInspectionById,
     lookupInspectionByUldId,
     isOnline,
@@ -404,6 +405,7 @@ export default function CargoInspectionFormScreen() {
       videoEvidence: form.videoEvidence,
       clientLocationId,
       clientLocationName,
+      clientPhotoUrl: form.clientPhotoUrl?.trim() || undefined,
       portalClientId: clientLocationId,
       ...(typeof temperatureCelsius === 'number' ? { temperatureCelsius } : {}),
       ...(exitVehiclePlate ? { exitVehiclePlate } : { exitVehiclePlate: '' }),
@@ -412,7 +414,7 @@ export default function CargoInspectionFormScreen() {
     };
   };
 
-  const saveInspection = async () => {
+  const saveInspection = async (mode: 'upload' | 'draft' = 'upload') => {
     const payload = buildPayload();
     if (!payload || isSaving) return;
 
@@ -442,7 +444,12 @@ export default function CargoInspectionFormScreen() {
         return;
       }
 
-      await addInspection(geoPayload);
+      if (mode === 'draft') {
+        await saveInspectionDraft(geoPayload);
+        Alert.alert('Draft saved', 'The record stays on this device until you upload it.');
+      } else {
+        await addInspection(geoPayload);
+      }
       router.replace('/(tabs)' as Href);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
@@ -724,6 +731,7 @@ export default function CargoInspectionFormScreen() {
                   patchForm({
                     clientLocationId,
                     clientLocationName: match?.name ?? '',
+                    clientPhotoUrl: match?.photoUrl ?? '',
                     portalClientId: clientLocationId,
                   });
                 }}
@@ -953,21 +961,33 @@ export default function CargoInspectionFormScreen() {
           </FormSectionCard>
 
           <View style={styles.footerCard}>
+            {!isEditMode ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                  isSaving && styles.primaryButtonDisabled,
+                ]}
+                onPress={() => void saveInspection('draft')}
+                disabled={isSaving}>
+                <Text style={styles.secondaryButtonText}>Save locally</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
                 (pressed || isSaving) && styles.primaryButtonPressed,
                 isSaving && styles.primaryButtonDisabled,
               ]}
-              onPress={() => void saveInspection()}
+              onPress={() => void saveInspection(isEditMode ? 'upload' : 'upload')}
               disabled={isSaving}>
               {isSaving ? (
                 <ActivityIndicator color={colors.text.onAccent} />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color={colors.text.onAccent} />
+                  <Ionicons name="cloud-upload-outline" size={20} color={colors.text.onAccent} />
                   <Text style={styles.primaryButtonText}>
-                    {isEditMode ? 'Update inspection' : 'Save inspection'}
+                    {isEditMode ? 'Update inspection' : 'Upload'}
                   </Text>
                 </>
               )}
@@ -1268,14 +1288,19 @@ function createFormStyles(colors: AppColors) {
       color: colors.text.onSurface,
     },
     scanButton: {
-      minWidth: 76,
-      borderRadius: 12,
+      minWidth: 88,
+      borderRadius: 14,
       backgroundColor: colors.accent.primary,
-      paddingHorizontal: 10,
-      paddingVertical: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
       justifyContent: 'center',
       alignItems: 'center',
       gap: 4,
+      shadowColor: colors.accent.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.28,
+      shadowRadius: 10,
+      elevation: 4,
     },
     scanButtonPressed: {
       backgroundColor: colors.accent.primaryPressed,
@@ -1287,17 +1312,17 @@ function createFormStyles(colors: AppColors) {
       textAlign: 'center',
     },
     ocrButton: {
-      minWidth: 76,
-      borderRadius: 12,
-      borderWidth: 1,
+      minWidth: 88,
+      borderRadius: 14,
+      borderWidth: 1.5,
       borderColor: colors.accent.primary,
-      backgroundColor: colors.surface.card,
-      paddingHorizontal: 10,
-      paddingVertical: 10,
+      backgroundColor: 'rgba(2, 101, 220, 0.08)',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
       justifyContent: 'center',
       alignItems: 'center',
       gap: 4,
-      minHeight: 52,
+      minHeight: 56,
     },
     ocrButtonPressed: {
       backgroundColor: 'rgba(2, 101, 220, 0.08)',

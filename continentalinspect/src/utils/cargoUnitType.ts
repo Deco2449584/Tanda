@@ -80,6 +80,35 @@ export function getUnitTypeLabel(unitType: CargoUnitType): string {
   return UNIT_TYPE_LABELS[unitType];
 }
 
+const UNIT_TYPE_ICONS = {
+  uld: 'airplane-outline',
+  pallet_skid: 'layers-outline',
+  lcl: 'file-tray-stacked-outline',
+  loose_cargo: 'cube-outline',
+  breakbulk: 'construct-outline',
+} as const;
+
+export function getUnitTypeIcon(unitType: CargoUnitType) {
+  return UNIT_TYPE_ICONS[unitType];
+}
+
+export function getCargoTypeIcon(foodType: string): 'fish-outline' | 'nutrition-outline' | 'leaf-outline' | 'fast-food-outline' | 'pricetag-outline' {
+  const value = foodType.toLowerCase();
+  if (value.includes('fish') || value.includes('seafood') || value.includes('prawn')) {
+    return 'fish-outline';
+  }
+  if (value.includes('meat') || value.includes('beef') || value.includes('chicken')) {
+    return 'nutrition-outline';
+  }
+  if (value.includes('fruit') || value.includes('veg') || value.includes('produce')) {
+    return 'leaf-outline';
+  }
+  if (value.includes('food') || value.includes('dairy')) {
+    return 'fast-food-outline';
+  }
+  return 'pricetag-outline';
+}
+
 export function getUnitTypeHint(unitType: CargoUnitType): string {
   return UNIT_TYPE_HINTS[unitType];
 }

@@ -7,7 +7,7 @@ export const radius = {
 
 export const motion = {
   pressScale: 0.98,
-  enterDuration: 280,
+  enterDuration: 360,
   pressIn: 110,
   pressOut: 170,
   staggerMs: 42,

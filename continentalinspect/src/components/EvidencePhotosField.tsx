@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useMemo, useRef } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import {
@@ -110,6 +110,20 @@ function createStyles(colors: AppColors) {
       fontWeight: '700',
       lineHeight: 18,
     },
+    preview: {
+      width: '100%',
+      height: 180,
+      borderRadius: 12,
+      backgroundColor: colors.surface.muted,
+    },
+    viewer: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.88)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 16,
+    },
+    viewerImage: { width: '100%', height: '70%' },
     empty: { fontSize: 13, color: colors.text.onSurfaceMuted, fontStyle: 'italic' },
     countHint: { fontSize: 12, color: colors.text.onSurfaceMuted },
   });
@@ -122,6 +136,7 @@ export function EvidencePhotosField({
   lockedPhotoUris = [],
 }: EvidencePhotosFieldProps) {
   const styles = useThemedStyles(createStyles);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const lockedSet = useMemo(() => new Set(lockedPhotoUris), [lockedPhotoUris]);
   const photosRef = useRef(photos);
 
@@ -163,17 +178,8 @@ export function EvidencePhotosField({
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      try {
-        const durable = await Promise.all(
-          result.assets
-            .map((asset) => asset.uri)
-            .filter(Boolean)
-            .map((uri) => persistEvidenceCaptureUri(uri, 'photo')),
-        );
-        appendPhotos(durable);
-      } catch {
-        Alert.alert('Could not save photos', 'Try selecting the photos again.');
-      }
+      const uris = result.assets.map((asset) => asset.uri).filter(Boolean);
+      appendPhotos(uris);
     }
   };
 
@@ -214,6 +220,20 @@ export function EvidencePhotosField({
         </Pressable>
       </View>
 
+      {photos[0] ? (
+        <Pressable onPress={() => setPreviewUri(photos[0])}>
+          <Image source={{ uri: photos[0] }} style={styles.preview} contentFit="cover" />
+        </Pressable>
+      ) : null}
+
+      <Modal visible={previewUri != null} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
+        <Pressable style={styles.viewer} onPress={() => setPreviewUri(null)}>
+          {previewUri ? (
+            <Image source={{ uri: previewUri }} style={styles.viewerImage} contentFit="contain" />
+          ) : null}
+        </Pressable>
+      </Modal>
+
       {photos.length > 0 ? (
         <ScrollView
           horizontal
@@ -221,13 +241,15 @@ export function EvidencePhotosField({
           contentContainerStyle={styles.thumbnails}>
           {photos.map((uri) => (
             <View key={uri} style={styles.thumbnailWrap}>
-              <Image
-                source={{ uri }}
-                style={styles.thumbnail}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                recyclingKey={uri}
-              />
+              <Pressable onPress={() => setPreviewUri(uri)}>
+                <Image
+                  source={{ uri }}
+                  style={styles.thumbnail}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  recyclingKey={uri}
+                />
+              </Pressable>
               {canRemovePhoto(uri) ? (
                 <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)}>
                   <Text style={styles.removeBtnText}>×</Text>

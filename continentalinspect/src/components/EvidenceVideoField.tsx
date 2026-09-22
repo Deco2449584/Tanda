@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 
+import { InteractiveVideoPreview } from '@/components/InteractiveVideoPreview';
+import { RecordTipsModal } from '@/components/RecordTipsModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import {
@@ -19,7 +21,11 @@ import {
 } from '@/services/inspectionPendingMedia';
 import type { AppColors } from '@/theme/palettes';
 import {
-  assessCapturedVideo,
+  VIDEO_BAND_COLORS,
+  VIDEO_BAND_LABELS,
+  classifyVideoWeight,
+  formatDurationMinutes,
+  formatFileSizeBytes,
   formatMaxVideoSizeMb,
   resolveAssetFileSizeBytes,
   videoDurationSeconds,
@@ -110,14 +116,38 @@ function createStyles(colors: AppColors) {
     removeBtn: { padding: 4 },
     empty: { fontSize: 13, color: colors.text.onSurfaceMuted, fontStyle: 'italic' },
     countHint: { fontSize: 12, color: colors.text.onSurfaceMuted },
+    previewCard: {
+      gap: 8,
+      padding: 10,
+      borderRadius: 12,
+      backgroundColor: colors.surface.muted,
+    },
+    metrics: { gap: 4 },
+    metricsText: { fontSize: 12, color: colors.text.onSurface },
+    bandTrack: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.border.onSurface,
+      overflow: 'hidden',
+    },
+    bandFill: { height: 6, borderRadius: 3 },
+    sourceHint: { fontSize: 11, color: colors.text.onSurfaceMuted },
   });
 }
+
+type VideoMeta = {
+  durationSec: number | null;
+  sizeBytes: number | null;
+  source: 'record' | 'gallery';
+};
 
 export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const videosRef = useRef(videos);
   const [isSavingCapture, setIsSavingCapture] = useState(false);
+  const [showRecordTips, setShowRecordTips] = useState(false);
+  const [metaByUri, setMetaByUri] = useState<Record<string, VideoMeta>>({});
 
   useEffect(() => {
     videosRef.current = videos;
@@ -129,7 +159,20 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
     onChange(next);
   };
 
-  const ingestVideoAsset = async (asset: ImagePickerAsset) => {
+  const rememberMeta = async (
+    uri: string,
+    asset: ImagePicker.ImagePickerAsset,
+    source: VideoMeta['source'],
+  ) => {
+    const durationSec = videoDurationSeconds(asset.duration);
+    const sizeBytes = await resolveAssetFileSizeBytes(uri, asset.fileSize);
+    setMetaByUri((current) => ({
+      ...current,
+      [uri]: { durationSec, sizeBytes, source },
+    }));
+  };
+
+  const ingestRecordedVideo = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!asset.uri) {
       return;
     }
@@ -137,12 +180,8 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
     setIsSavingCapture(true);
     try {
       const durableUri = await persistEvidenceCaptureUri(asset.uri, 'video');
-      const durationSec = videoDurationSeconds(asset.duration);
-      const sizeBytes = await resolveAssetFileSizeBytes(durableUri, asset.fileSize);
-      const assessment = assessCapturedVideo({ durationSec, sizeBytes });
-
+      await rememberMeta(durableUri, asset, 'record');
       appendVideo(durableUri);
-      Alert.alert(assessment.title, assessment.message);
     } catch {
       Alert.alert(
         'Could not save video',
@@ -153,29 +192,28 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
     }
   };
 
+  const ingestLibraryVideo = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!asset.uri) {
+      return;
+    }
+
+    await rememberMeta(asset.uri, asset, 'gallery');
+    appendVideo(asset.uri);
+  };
+
   const openCameraRecorder = async () => {
     const allowed = await ensureCameraPermission();
     if (!allowed) return;
 
     const result = await ImagePicker.launchCameraAsync(CAMERA_PICKER_OPTIONS);
     if (!result.canceled && result.assets[0]) {
-      await ingestVideoAsset(result.assets[0]);
+      await ingestRecordedVideo(result.assets[0]);
     }
   };
 
   const handleRecordVideo = () => {
     if (isSavingCapture) return;
-
-    Alert.alert(
-      'Record in HD',
-      'Before recording:\n\n• Set the camera resolution to HD / 720p (not 4K)\n• Keep clips around 10 minutes or less\n• Stay on this screen until the video appears in the list — it is saved on the device before upload\n\nAfter Save, videos are optimized (≤' +
-        formatMaxVideoSizeMb() +
-        ' MB).',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open camera', onPress: () => void openCameraRecorder() },
-      ],
-    );
+    setShowRecordTips(true);
   };
 
   const handlePickFromLibrary = async () => {
@@ -186,7 +224,7 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
 
     const result = await ImagePicker.launchImageLibraryAsync(LIBRARY_PICKER_OPTIONS);
     if (!result.canceled && result.assets[0]) {
-      await ingestVideoAsset(result.assets[0]);
+      await ingestLibraryVideo(result.assets[0]);
     }
   };
 
@@ -197,6 +235,14 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
 
   return (
     <View style={styles.container}>
+      <RecordTipsModal
+        visible={showRecordTips}
+        onCancel={() => setShowRecordTips(false)}
+        onContinue={() => {
+          setShowRecordTips(false);
+          void openCameraRecorder();
+        }}
+      />
       <Text style={styles.label}>Video evidence</Text>
       <Text style={styles.hint}>
         Prefer HD (720p), up to ~10 min. Videos are saved on this device first, then uploaded when
@@ -234,17 +280,35 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
 
       {videos.length > 0 ? (
         <ScrollView contentContainerStyle={styles.list}>
-          {videos.map((uri, index) => (
-            <View key={`${uri}-${index}`} style={styles.row}>
-              <Ionicons name="videocam" size={20} color={colors.text.onSurface} />
-              <Text style={styles.rowLabel} numberOfLines={1}>
-                Video {index + 1} · saved on device
-              </Text>
-              <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)}>
-                <Ionicons name="close-circle" size={22} color="#c62828" />
-              </Pressable>
-            </View>
-          ))}
+          {videos.map((uri, index) => {
+            const meta = metaByUri[uri];
+            const band = classifyVideoWeight(meta?.durationSec ?? null, meta?.sizeBytes ?? null);
+            const bandColor = VIDEO_BAND_COLORS[band];
+            const sizeLabel =
+              meta?.sizeBytes != null ? formatFileSizeBytes(meta.sizeBytes) : 'Size pending';
+            return (
+              <View key={`${uri}-${index}`} style={styles.previewCard}>
+                <InteractiveVideoPreview uri={uri} width={280} height={158} />
+                <View style={styles.metrics}>
+                  <Text style={styles.metricsText}>
+                    {formatDurationMinutes(meta?.durationSec ?? null)} · {sizeLabel} ·{' '}
+                    {VIDEO_BAND_LABELS[band]}
+                  </Text>
+                  <View style={styles.bandTrack}>
+                    <View style={[styles.bandFill, { width: '100%', backgroundColor: bandColor }]} />
+                  </View>
+                  <Text style={styles.sourceHint}>
+                    {meta?.source === 'gallery'
+                      ? 'Gallery reference — not copied locally'
+                      : 'Recorded — saved on this device'}
+                  </Text>
+                </View>
+                <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)}>
+                  <Ionicons name="close-circle" size={22} color="#c62828" />
+                </Pressable>
+              </View>
+            );
+          })}
         </ScrollView>
       ) : (
         <Text style={styles.empty}>No videos yet</Text>

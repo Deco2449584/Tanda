@@ -53,6 +53,7 @@ export type CargoInspectionDocument = {
   photoEvidence: string[];
   videoEvidence: string[];
   createdBy: string;
+  updatedBy?: string;
   registeredAt: Timestamp | string;
   registeredAtIso?: string;
   updatedAt?: Timestamp | string;
@@ -61,6 +62,7 @@ export type CargoInspectionDocument = {
   dispatchedAtIso?: string;
   clientLocationId?: string;
   clientLocationName?: string;
+  clientPhotoUrl?: string;
   portalClientId?: string;
   registeredLatitude?: number;
   registeredLongitude?: number;
@@ -133,6 +135,8 @@ function mapDocumentToCargoInspection(
     updatedAt: timestampToIso(data.updatedAt) ?? data.updatedAtIso,
     dispatchedAt: dispatchedAtIso,
     createdBy: data.createdBy ?? '',
+    updatedBy: data.updatedBy?.trim() || undefined,
+    clientPhotoUrl: data.clientPhotoUrl?.trim() || undefined,
     clientLocationId: data.clientLocationId?.trim() || undefined,
     clientLocationName: data.clientLocationName?.trim() || undefined,
     portalClientId: data.portalClientId?.trim() || undefined,
@@ -203,6 +207,7 @@ function buildFirestorePayload(
     photoEvidence,
     videoEvidence,
     createdBy,
+    ...(input.clientPhotoUrl?.trim() ? { clientPhotoUrl: input.clientPhotoUrl.trim() } : {}),
     ...(issueReportedAt ? { issueReportedAt } : {}),
     ...(typeof input.temperatureCelsius === 'number' &&
     Number.isFinite(input.temperatureCelsius)
@@ -254,7 +259,7 @@ function toInspectionFromCreatePayload(
     foodType: payload.foodType,
     weightKg: payload.weightKg,
     boxCount: payload.boxCount,
-    status: payload.status,
+    status: normalizeInspectionStatus(payload.status),
     hasIssues: payload.hasIssues,
     issueDescription: payload.issueDescription || undefined,
     notes: payload.notes || undefined,
@@ -263,6 +268,7 @@ function toInspectionFromCreatePayload(
     videoEvidence,
     registeredAt: registeredAtIso,
     createdBy: createdByEmail,
+    clientPhotoUrl: input.clientPhotoUrl?.trim() || undefined,
     clientLocationId: payload.clientLocationId,
     clientLocationName: payload.clientLocationName,
     portalClientId: payload.portalClientId,
@@ -530,6 +536,7 @@ export async function updateCargoInspection(
   input: UpdateCargoInspectionInput,
   createdByEmail: string,
   existingStatus: CargoInspectionStatus,
+  updatedByEmail?: string,
 ): Promise<{ photoEvidence: string[]; videoEvidence: string[]; updatedAtIso: string }> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -557,6 +564,8 @@ export async function updateCargoInspection(
 
   await updateDoc(doc(db, CARGO_INSPECTIONS_COLLECTION, inspectionId), {
     ...payload,
+    createdBy: createdByEmail,
+    ...(updatedByEmail?.trim() ? { updatedBy: updatedByEmail.trim() } : {}),
     updatedAt: serverTimestamp(),
     updatedAtIso,
   });
@@ -566,6 +575,7 @@ export async function updateCargoInspection(
 
 export async function markCargoInspectionAsProcessed(
   inspectionId: string,
+  updatedBy?: string,
 ): Promise<{ updatedAtIso: string }> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -576,6 +586,7 @@ export async function markCargoInspectionAsProcessed(
     status: 'processed',
     updatedAt: serverTimestamp(),
     updatedAtIso,
+    ...(updatedBy?.trim() ? { updatedBy: updatedBy.trim() } : {}),
   });
 
   return { updatedAtIso };
@@ -583,6 +594,7 @@ export async function markCargoInspectionAsProcessed(
 
 export async function markCargoInspectionAsLoaded(
   inspectionId: string,
+  updatedBy?: string,
 ): Promise<{ updatedAtIso: string; dispatchedAtIso: string }> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -595,6 +607,7 @@ export async function markCargoInspectionAsLoaded(
     updatedAtIso: dispatchedAtIso,
     dispatchedAt: serverTimestamp(),
     dispatchedAtIso,
+    ...(updatedBy?.trim() ? { updatedBy: updatedBy.trim() } : {}),
   });
 
   return { updatedAtIso: dispatchedAtIso, dispatchedAtIso };

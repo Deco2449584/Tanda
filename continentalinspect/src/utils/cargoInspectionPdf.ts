@@ -232,7 +232,8 @@ function buildInspectionHtml(
             ? tableRow('Cargo notes', inspection.notes.trim())
             : ''
         }
-        ${tableRow('Inspector Email', inspection.createdBy)}
+        ${tableRow('Created by', inspection.createdBy || '—')}
+        ${tableRow('Last edited by', inspection.updatedBy || '—')}
         ${tableRow('Registered at', formatInspectionDate(inspection.registeredAt))}
         ${tableRow('Registered location', locationValue)}
         ${
@@ -262,6 +263,7 @@ function buildInspectionHtml(
   <meta charset="utf-8" />
   <title>${escapeHtml(brand.name)} — Inspection ${escapeHtml(inspection.uldId || 'record')}</title>
   <style>
+    @page { size: A4; margin: 16mm 14mm 18mm; }
     body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #0F172A; font-size: 13px; line-height: 1.5; margin: 0; background: #fff; }
     .header { background: ${PDF_PORTAL_NAVY}; color: #fff; padding: 28px 36px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .header-brand { display: flex; align-items: center; gap: 20px; min-width: 0; }
@@ -283,9 +285,10 @@ function buildInspectionHtml(
     .status-processed { background: #CCFBF1; color: #0F766E; }
     .section { padding: 22px 36px; page-break-inside: avoid; }
     .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; margin: 0 0 14px; color: ${PDF_PORTAL_NAVY}; }
-    .data-table { width: 100%; border-collapse: collapse; border: 1px solid ${BORDER}; border-radius: 10px; overflow: hidden; }
-    .data-table th { width: 36%; text-align: left; padding: 11px 16px; background: ${SURFACE}; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: ${MUTED}; border-bottom: 1px solid ${BORDER}; vertical-align: top; }
-    .data-table td { padding: 11px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid ${BORDER}; color: #0F172A; }
+    .data-table { width: 100%; border-collapse: collapse; border: 1px solid ${BORDER}; }
+    .data-table tr { page-break-inside: avoid; }
+    .data-table th { width: 34%; text-align: left; padding: 10px 14px; background: ${SURFACE}; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: ${MUTED}; border-bottom: 1px solid ${BORDER}; vertical-align: top; }
+    .data-table td { padding: 10px 14px; font-size: 13px; font-weight: 600; border-bottom: 1px solid ${BORDER}; color: #0F172A; }
     .data-table tr:last-child th, .data-table tr:last-child td { border-bottom: none; }
     .issue-alert { margin-top: 18px; padding: 16px 18px; border-radius: 12px; border: 1px solid #FECACA; background: ${ALERT_RED_BG}; }
     .issue-alert-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: ${ALERT_RED}; letter-spacing: 0.08em; margin-bottom: 8px; }
@@ -309,7 +312,11 @@ function buildInspectionHtml(
     .access-index { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: ${PDF_PORTAL_NAVY}; color: #fff; font-size: 12px; font-weight: 800; flex-shrink: 0; }
     .access-text { font-size: 13px; font-weight: 700; }
     .empty-evidence { color: ${MUTED}; font-size: 13px; font-style: italic; margin: 0; padding: 8px 0; }
-    .footer { padding: 22px 36px 28px; font-size: 11px; color: ${MUTED}; border-top: 1px solid ${BORDER}; background: ${SURFACE}; }
+    .signatures { display: flex; gap: 28px; margin-top: 8px; page-break-inside: avoid; }
+    .sign-box { flex: 1; min-height: 72px; border-top: 1px solid #94A3B8; padding-top: 8px; }
+    .sign-role { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: ${MUTED}; }
+    .sign-name { margin-top: 28px; font-size: 12px; color: ${PDF_PORTAL_NAVY}; }
+    .footer { padding: 22px 36px 28px; font-size: 11px; color: ${MUTED}; border-top: 1px solid ${BORDER}; background: ${SURFACE}; page-break-inside: avoid; }
     .footer-brand { font-size: 12px; font-weight: 700; color: ${PDF_PORTAL_NAVY}; margin-bottom: 4px; }
     .footer-note { margin-top: 10px; font-size: 10px; line-height: 1.5; color: #94A3B8; }
     @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
@@ -366,6 +373,19 @@ function buildInspectionHtml(
       <div class="access-group">
         <h3 class="access-subtitle">Photos (full resolution)</h3>
         ${photoLinksHtml}
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <h2 class="section-title">Signatures</h2>
+    <div class="signatures">
+      <div class="sign-box">
+        <div class="sign-role">Inspector</div>
+        <div class="sign-name">${escapeHtml(inspection.createdBy || '')}</div>
+      </div>
+      <div class="sign-box">
+        <div class="sign-role">Receiver</div>
+        <div class="sign-name">Name / date</div>
       </div>
     </div>
   </div>

@@ -9,6 +9,7 @@ export type InspectClientLocation = {
   id: string;
   name: string;
   active: boolean;
+  photoUrl?: string;
 };
 
 function mapLocation(
@@ -17,10 +18,12 @@ function mapLocation(
 ): InspectClientLocation | null {
   const name = typeof data.name === 'string' ? data.name.trim() : '';
   if (!name) return null;
+  const photoUrl = typeof data.photoUrl === 'string' ? data.photoUrl.trim() : '';
   return {
     id,
     name,
     active: data.active !== false,
+    photoUrl: photoUrl || undefined,
   };
 }
 
@@ -33,6 +36,7 @@ export async function fetchAllowedClientLocations(input: {
   locationGroupId?: string;
 }): Promise<InspectClientLocation[]> {
   if (!db) return [];
+  const firestore = db;
 
   const ids = new Set<string>();
   if (input.locationId?.trim()) {
@@ -41,7 +45,7 @@ export async function fetchAllowedClientLocations(input: {
 
   const groupId = input.locationGroupId?.trim();
   if (groupId) {
-    const groupSnap = await getDoc(doc(db, LOCATION_GROUPS_COLLECTION, groupId));
+    const groupSnap = await getDoc(doc(firestore, LOCATION_GROUPS_COLLECTION, groupId));
     if (groupSnap.exists()) {
       const data = groupSnap.data() as Record<string, unknown>;
       const locationIds = Array.isArray(data.locationIds) ? data.locationIds : [];
@@ -61,7 +65,7 @@ export async function fetchAllowedClientLocations(input: {
   const results: InspectClientLocation[] = [];
   await Promise.all(
     [...ids].map(async (id) => {
-      const snap = await getDoc(doc(db, LOCATIONS_COLLECTION, id));
+      const snap = await getDoc(doc(firestore, LOCATIONS_COLLECTION, id));
       if (!snap.exists()) return;
       const mapped = mapLocation(snap.id, snap.data() as Record<string, unknown>);
       if (mapped?.active) {

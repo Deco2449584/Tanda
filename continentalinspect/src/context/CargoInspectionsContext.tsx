@@ -62,6 +62,7 @@ type CargoInspectionsContextValue = {
   lookupInspectionByUldId: (uldId: string) => Promise<CargoInspection | null>;
   refreshRecords: () => Promise<void>;
   addInspection: (input: NewCargoInspectionInput) => Promise<CargoInspection>;
+  saveInspectionDraft: (input: NewCargoInspectionInput) => Promise<CargoInspection>;
   updateInspectionById: (
     inspectionId: string,
     input: UpdateCargoInspectionInput,
@@ -334,6 +335,50 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     [user, inspections, pendingQueue, isOnline, reloadPendingQueue, enqueueInspectionUploads],
   );
 
+  const saveInspectionDraft = useCallback(
+    async (input: NewCargoInspectionInput): Promise<CargoInspection> => {
+      if (!user) {
+        throw new Error('You must be signed in to save a record.');
+      }
+
+      const duplicate = findCargoInspectionByUldId(inspections, input.uldId);
+      if (duplicate) {
+        throw new Error('DUPLICATE_ULD');
+      }
+
+      const pendingDuplicate = findPendingCreateByUldId(pendingQueue, input.uldId);
+      if (pendingDuplicate) {
+        throw new Error('DUPLICATE_ULD');
+      }
+
+      const localId = createLocalInspectionId();
+      const registeredAt = new Date().toISOString();
+      const { photoEvidence, videoEvidence } = await persistPendingInspectionMedia(
+        localId,
+        input.photoEvidence,
+        input.videoEvidence,
+      );
+      const operation = await enqueuePendingCreate(user.uid, {
+        localId,
+        userId: user.uid,
+        createdBy: user.email ?? '',
+        input: {
+          ...input,
+          photoEvidence,
+          videoEvidence,
+          issueReportedAt: input.hasIssues
+            ? input.issueReportedAt ?? registeredAt
+            : input.issueReportedAt,
+        },
+        status: 'identification',
+        registeredAt,
+      });
+      await reloadPendingQueue(user.uid);
+      return pendingCreateToInspection(operation);
+    },
+    [user, inspections, pendingQueue, reloadPendingQueue],
+  );
+
   const updateInspectionById = useCallback(
     async (
       inspectionId: string,
@@ -352,12 +397,14 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         throw new Error('OFFLINE_UPDATE_UNSUPPORTED');
       }
 
+      const editor = user.email ?? existing.createdBy;
       const { photoEvidence, videoEvidence, updatedAtIso } = await updateCargoInspection(
         user.uid,
         inspectionId,
         input,
-        user.email ?? existing.createdBy,
+        existing.createdBy,
         resolveInspectionStatus(existing),
+        editor,
       );
 
       const updated: CargoInspection = {
@@ -379,9 +426,11 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         photoEvidence,
         videoEvidence,
         updatedAt: updatedAtIso,
+        updatedBy: editor,
         syncStatus: 'synced',
         clientLocationId: input.clientLocationId?.trim() || undefined,
         clientLocationName: input.clientLocationName?.trim() || undefined,
+        clientPhotoUrl: input.clientPhotoUrl?.trim() || undefined,
         portalClientId: input.clientLocationId?.trim() || undefined,
         registeredLatitude: input.registeredLatitude,
         registeredLongitude: input.registeredLongitude,
@@ -437,6 +486,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
           status: 'processed',
           syncStatus: 'pending',
           updatedAt: processedAt,
+          updatedBy: user.email ?? existing.updatedBy,
         };
       }
 
@@ -448,14 +498,16 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
           status: 'processed',
           syncStatus: 'pending',
           updatedAt: processedAt,
+          updatedBy: user.email ?? existing.updatedBy,
         };
       }
 
-      const { updatedAtIso } = await markCargoInspectionAsProcessed(inspectionId);
+      const { updatedAtIso } = await markCargoInspectionAsProcessed(inspectionId, user.email ?? '');
       const updated: CargoInspection = {
         ...existing,
         status: 'processed',
         updatedAt: updatedAtIso,
+        updatedBy: user.email ?? existing.updatedBy,
         syncStatus: 'synced',
       };
 
@@ -509,12 +561,16 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         };
       }
 
-      const { updatedAtIso, dispatchedAtIso } = await markCargoInspectionAsLoaded(inspectionId);
+      const { updatedAtIso, dispatchedAtIso } = await markCargoInspectionAsLoaded(
+        inspectionId,
+        user.email ?? '',
+      );
 
       const updated: CargoInspection = {
         ...existing,
         status: 'loaded',
         updatedAt: updatedAtIso,
+        updatedBy: user.email ?? existing.updatedBy,
         dispatchedAt: dispatchedAtIso,
         syncStatus: 'synced',
       };
@@ -576,6 +632,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       lookupInspectionByUldId,
       refreshRecords,
       addInspection,
+      saveInspectionDraft,
       updateInspectionById,
       markInspectionAsProcessed,
       markInspectionAsLoaded,
@@ -592,6 +649,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       lookupInspectionByUldId,
       refreshRecords,
       addInspection,
+      saveInspectionDraft,
       updateInspectionById,
       markInspectionAsProcessed,
       markInspectionAsLoaded,

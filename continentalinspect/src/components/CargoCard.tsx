@@ -13,10 +13,12 @@ import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
 import { METRIC_ATTENTION } from '@/components/TodayOperationsDonut';
-import { getConservationLabel } from '@/utils/cargoLabels';
+import { CONSERVATION_COLORS, CONSERVATION_ICONS, getConservationLabel } from '@/utils/cargoLabels';
 import { getInspectionDisplayBadge, getSyncBadge } from '@/utils/cargoInspectionStatus';
 import {
+  getCargoTypeIcon,
   getInspectionDisplayTitle,
+  getUnitTypeIcon,
   getUnitTypeLabel,
   isManualUnitType,
   resolveUnitType,
@@ -106,6 +108,33 @@ function createStyles(colors: AppColors) {
       fontFamily: fonts.body,
       fontSize: 11,
       color: colors.text.onSurfaceMuted,
+    },
+    metricRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+    },
+    metricChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    metricChipText: {
+      fontFamily: fonts.bodyMedium,
+      fontSize: 12,
+      color: colors.text.onSurface,
+    },
+    authorLine: {
+      fontFamily: fonts.body,
+      fontSize: 11,
+      color: colors.text.onSurfaceMuted,
+    },
+    clientThumb: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.surface.muted,
     },
     footerRow: {
       flexDirection: 'row',
@@ -235,9 +264,14 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
   const unitTypeLabel = getUnitTypeLabel(unitType);
   const statusColor = displayBadge.color;
   const statusBg = `${statusColor}22`;
+  const conservation = CONSERVATION_COLORS[inspection.conservationType];
+  const clientInitial = (inspection.clientLocationName?.trim() || 'C').slice(0, 1).toUpperCase();
 
   return (
-    <PressableScale style={styles.card} onPress={onPress} disabled={!onPress}>
+    <PressableScale
+      style={[styles.card, { backgroundColor: statusBg, borderColor: `${statusColor}55` }]}
+      onPress={onPress}
+      disabled={!onPress}>
       <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
 
       <View style={styles.body}>
@@ -283,9 +317,61 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
                 ? ` · ${unitTypeLabel}`
                 : ''}
             </Text>
-            <Text style={styles.conservation} numberOfLines={1}>
-              {getConservationLabel(inspection.conservationType)} · {inspection.weightKg} kg ·{' '}
-              {inspection.boxCount} boxes
+            <View style={styles.metricRow}>
+              <View style={styles.metricChip}>
+                <Ionicons name={getUnitTypeIcon(unitType)} size={14} color={statusColor} />
+                <Text style={styles.metricChipText}>{unitTypeLabel}</Text>
+              </View>
+              <View style={styles.metricChip}>
+                <Ionicons
+                  name={getCargoTypeIcon(inspection.foodType)}
+                  size={14}
+                  color={statusColor}
+                />
+                <Text style={styles.metricChipText} numberOfLines={1}>
+                  {inspection.foodType}
+                </Text>
+              </View>
+              <View style={styles.metricChip}>
+                <Ionicons
+                  name={CONSERVATION_ICONS[inspection.conservationType]}
+                  size={14}
+                  color={conservation.text}
+                />
+                <Text style={[styles.metricChipText, { color: conservation.text }]}>
+                  {getConservationLabel(inspection.conservationType)}
+                </Text>
+              </View>
+              <View style={styles.metricChip}>
+                <Ionicons name="barbell-outline" size={14} color={colors.text.onSurfaceMuted} />
+                <Text style={styles.metricChipText}>{inspection.weightKg} kg</Text>
+              </View>
+              <View style={styles.metricChip}>
+                <Ionicons name="cube-outline" size={14} color={colors.text.onSurfaceMuted} />
+                <Text style={styles.metricChipText}>{inspection.boxCount} boxes</Text>
+              </View>
+              {inspection.clientLocationName?.trim() ? (
+                <View style={styles.metricChip}>
+                  {inspection.clientPhotoUrl ? (
+                    <Image
+                      source={{ uri: inspection.clientPhotoUrl }}
+                      style={styles.clientThumb}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[styles.clientThumb, { alignItems: 'center', justifyContent: 'center' }]}>
+                      <Text style={styles.metricChipText}>{clientInitial}</Text>
+                    </View>
+                  )}
+                  <Text style={styles.metricChipText} numberOfLines={1}>
+                    {inspection.clientLocationName.trim()}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.authorLine} numberOfLines={2}>
+              Created by {inspection.createdBy || 'Unknown'}
+              {inspection.updatedBy ? ` · Edited by ${inspection.updatedBy}` : ''}
             </Text>
           </View>
         </View>
@@ -368,6 +454,8 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
     previous.inspection.unitType === next.inspection.unitType &&
     previous.inspection.syncStatus === next.inspection.syncStatus &&
     previous.inspection.hasIssues === next.inspection.hasIssues &&
+    previous.inspection.status === next.inspection.status &&
+    previous.inspection.updatedBy === next.inspection.updatedBy &&
     previous.onPress === next.onPress
   );
 });

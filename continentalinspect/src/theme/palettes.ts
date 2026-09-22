@@ -41,8 +41,8 @@ export const darkPalette = {
 
 export const lightPalette = {
   background: {
-    primary: '#F4F4F5',
-    secondary: '#FFFFFF',
+    primary: '#EEF3F8',
+    secondary: '#F7FAFC',
   },
   surface: {
     default: '#FFFFFF',

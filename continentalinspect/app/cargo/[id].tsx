@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CargoVideoEvidenceSection } from '@/components/CargoVideoEvidenceSection';
+import { LifecycleStepper } from '@/components/LifecycleStepper';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
@@ -492,6 +493,7 @@ export default function CargoDetailScreen() {
             { paddingBottom: Math.max(insets.bottom, 20) },
           ]}
           showsVerticalScrollIndicator={false}>
+          <LifecycleStepper inspection={inspection} />
           <View style={styles.heroCard}>
             <View style={styles.heroAccent} />
             <View style={styles.heroInner}>

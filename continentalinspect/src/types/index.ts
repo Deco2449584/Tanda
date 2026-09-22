@@ -65,10 +65,13 @@ export interface CargoInspection {
   /** When the cargo was marked on the transport truck. */
   dispatchedAt?: Date | string;
   createdBy: string;
+  /** Last person who edited the record (email). */
+  updatedBy?: string;
   syncStatus?: InspectionSyncStatus;
   /** Assigned client/site (Firestore `locations` id). */
   clientLocationId?: string;
   clientLocationName?: string;
+  clientPhotoUrl?: string;
   /** Same as clientLocationId for TimeTracker portal linking. */
   portalClientId?: string;
   registeredLatitude?: number;

@@ -1,4 +1,6 @@
 import { ContinentalInspectLogo } from '@/components/ContinentalInspectLogo';
+import { InspectionInsights } from '@/components/InspectionInsights';
+import { UserAvatar } from '@/components/UserAvatar';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { CargoCard } from '@/components/CargoCard';
 import { FadeInItem } from '@/components/FadeInItem';
@@ -51,12 +53,13 @@ function createIndexStyles(colors: AppColors) {
       paddingBottom: 24,
     },
     headerBlock: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
       marginBottom: 14,
-      gap: 10,
-      minHeight: 44,
+      gap: 12,
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     headerText: {
       flex: 1,
@@ -88,6 +91,7 @@ function createIndexStyles(colors: AppColors) {
     },
     statsRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 10,
       marginBottom: 14,
     },
@@ -161,12 +165,27 @@ export default function RecordsScreen() {
   } = useCargoInspections();
   const todayLabel = useMemo(() => formatFilterDate(getTodayRange().from), []);
 
+  const scopedInspections = useMemo(() => {
+    if (isAdmin) {
+      return inspections;
+    }
+    const email = user?.email?.trim().toLowerCase();
+    return inspections.filter((item) => {
+      const author = item.createdBy?.trim().toLowerCase();
+      if (!author) return true;
+      return author === email || author === user?.uid;
+    });
+  }, [inspections, isAdmin, user?.email, user?.uid]);
+
   const dailyInspections = useMemo(
-    () => filterInspectionsToday(inspections),
-    [inspections],
+    () => filterInspectionsToday(scopedInspections),
+    [scopedInspections],
   );
 
-  const counts = useMemo(() => countTodayDashboardMetrics(inspections), [inspections]);
+  const counts = useMemo(
+    () => countTodayDashboardMetrics(scopedInspections),
+    [scopedInspections],
+  );
 
   const isLoading = authLoading || inspectionsLoading;
   const greetingName = user?.email?.split('@')[0] ?? 'Operator';
@@ -211,20 +230,18 @@ export default function RecordsScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.headerBlock}>
+              <View style={styles.brandRow}>
+                <ContinentalInspectLogo width={132} style={styles.headerLogo} />
+                <UserAvatar size={42} />
+              </View>
               <View style={styles.headerText}>
                 <Text style={styles.greeting} numberOfLines={1}>
                   Hi, {greetingName}
                 </Text>
                 <Text style={styles.headerSubtitle} numberOfLines={1}>
-                  {brand.panelTitle}
+                  {isAdmin ? `${getRoleLabel(role)} · organization` : 'Your records'}
                 </Text>
-                {isAdmin ? (
-                  <Text style={styles.adminBadge} numberOfLines={1}>
-                    {getRoleLabel(role)} · team view
-                  </Text>
-                ) : null}
               </View>
-              <ContinentalInspectLogo width={100} style={styles.headerLogo} />
             </View>
 
             <OfflineBanner isOnline={isOnline} pendingCount={pendingSyncCount} />
@@ -261,6 +278,8 @@ export default function RecordsScreen() {
               processed={counts.processed}
               loaded={counts.loaded}
             />
+
+            <InspectionInsights inspections={scopedInspections} />
 
             {inspectionsError ? (
               <Text style={styles.errorBanner}>
