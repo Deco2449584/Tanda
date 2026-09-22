@@ -1,13 +1,23 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
 const PENDING_MEDIA_ROOT = `${FileSystem.documentDirectory ?? ''}pending_inspections/`;
+const EVIDENCE_DRAFTS_ROOT = `${FileSystem.documentDirectory ?? ''}evidence_drafts/`;
 
 function isRemoteUrl(uri: string): boolean {
   return uri.startsWith('http://') || uri.startsWith('https://');
 }
 
 function isPendingMediaUri(uri: string): boolean {
-  return uri.startsWith(PENDING_MEDIA_ROOT);
+  return Boolean(FileSystem.documentDirectory) && uri.startsWith(PENDING_MEDIA_ROOT);
+}
+
+function isEvidenceDraftUri(uri: string): boolean {
+  return Boolean(FileSystem.documentDirectory) && uri.startsWith(EVIDENCE_DRAFTS_ROOT);
+}
+
+/** True when the URI already lives under app document storage (survives OS temp cleanup). */
+export function isDurableLocalMediaUri(uri: string): boolean {
+  return isPendingMediaUri(uri) || isEvidenceDraftUri(uri);
 }
 
 function extensionFromUri(uri: string, kind: 'photo' | 'video'): string {
@@ -34,6 +44,46 @@ async function copyUriToDir(
   const destinationUri = `${destinationDir}${index}.${extension}`;
   await FileSystem.copyAsync({ from: sourceUri, to: destinationUri });
   return destinationUri;
+}
+
+/**
+ * Copies a freshly captured / picked media file into durable app storage
+ * so it is not lost if the ImagePicker temp URI is cleaned up or upload fails.
+ */
+export async function persistEvidenceCaptureUri(
+  sourceUri: string,
+  kind: 'photo' | 'video',
+): Promise<string> {
+  if (!FileSystem.documentDirectory) {
+    throw new Error('Local storage is not available on this device.');
+  }
+
+  if (isRemoteUrl(sourceUri) || isDurableLocalMediaUri(sourceUri)) {
+    return sourceUri;
+  }
+
+  await FileSystem.makeDirectoryAsync(EVIDENCE_DRAFTS_ROOT, { intermediates: true });
+
+  const extension = extensionFromUri(sourceUri, kind);
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const destinationUri = `${EVIDENCE_DRAFTS_ROOT}${kind}-${stamp}.${extension}`;
+  await FileSystem.copyAsync({ from: sourceUri, to: destinationUri });
+  return destinationUri;
+}
+
+export async function deleteLocalEvidenceFileIfOwned(uri: string): Promise<void> {
+  if (!isEvidenceDraftUri(uri) && !isPendingMediaUri(uri)) {
+    return;
+  }
+
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists) {
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+    }
+  } catch {
+    // Best-effort cleanup.
+  }
 }
 
 export async function persistPendingInspectionMedia(

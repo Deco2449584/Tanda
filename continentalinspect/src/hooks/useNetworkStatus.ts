@@ -1,20 +1,7 @@
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useState } from 'react';
 
-function resolveIsOnline(
-  isConnected: boolean | null,
-  isInternetReachable: boolean | null,
-): boolean {
-  if (isConnected === false) {
-    return false;
-  }
-
-  if (isInternetReachable === false) {
-    return false;
-  }
-
-  return true;
-}
+import { resolveIsOnline } from '@/utils/networkStatus';
 
 export function useNetworkStatus(): boolean {
   const [isOnline, setIsOnline] = useState(true);

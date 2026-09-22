@@ -4,6 +4,10 @@ import { getInfoAsync } from 'expo-file-system/legacy';
 
 export const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 export const MAX_COMPRESSED_VIDEO_BYTES = 100 * 1024 * 1024;
+/** Soft guidance: ~10 minutes at HD before the file gets hard to upload. */
+export const RECOMMENDED_MAX_VIDEO_DURATION_SEC = 10 * 60;
+/** Raw capture size above this is treated as heavy before compression. */
+export const HEAVY_RAW_VIDEO_BYTES = 250 * 1024 * 1024;
 
 const REMOTE_URI_PATTERN = /^https?:\/\//i;
 
@@ -22,6 +26,80 @@ export function videoDurationSeconds(duration: number | null | undefined): numbe
   }
 
   return duration;
+}
+
+export function formatFileSizeBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return 'Unknown size';
+  }
+
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+  if (mb >= 100) {
+    return `${Math.round(mb)} MB`;
+  }
+  return `${mb.toFixed(1)} MB`;
+}
+
+export function formatDurationSeconds(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  if (mins <= 0) {
+    return `${secs}s`;
+  }
+  return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+}
+
+export type CapturedVideoAssessment = {
+  severity: 'ok' | 'warn' | 'heavy';
+  title: string;
+  message: string;
+};
+
+export function assessCapturedVideo(params: {
+  durationSec: number | null;
+  sizeBytes: number | null;
+}): CapturedVideoAssessment {
+  const { durationSec, sizeBytes } = params;
+  const durationLabel =
+    durationSec != null ? formatDurationSeconds(durationSec) : 'Unknown duration';
+  const sizeLabel = sizeBytes != null ? formatFileSizeBytes(sizeBytes) : 'Unknown size';
+  const overDuration =
+    durationSec != null && durationSec > RECOMMENDED_MAX_VIDEO_DURATION_SEC;
+  const heavySize = sizeBytes != null && sizeBytes > HEAVY_RAW_VIDEO_BYTES;
+
+  if (overDuration && heavySize) {
+    return {
+      severity: 'heavy',
+      title: 'Video saved locally',
+      message: `Length ${durationLabel} · ${sizeLabel}.\n\nThis clip is longer than the recommended 10 min HD and quite large. Prefer shorter clips or HD (720p) so upload is more reliable if the connection drops.`,
+    };
+  }
+
+  if (overDuration) {
+    return {
+      severity: 'warn',
+      title: 'Video saved locally',
+      message: `Length ${durationLabel} · ${sizeLabel}.\n\nRecommended maximum is about 10 minutes in HD. Longer videos may fail to upload on a weak connection — the file is kept on this device until upload succeeds.`,
+    };
+  }
+
+  if (heavySize) {
+    return {
+      severity: 'warn',
+      title: 'Video saved locally',
+      message: `Length ${durationLabel} · ${sizeLabel}.\n\nFile is heavy. Use HD (720p) rather than 4K when possible. It stays on this device until upload finishes.`,
+    };
+  }
+
+  return {
+    severity: 'ok',
+    title: 'Video saved locally',
+    message: `Length ${durationLabel} · ${sizeLabel}.\n\nWithin the recommended range (up to ~10 min HD). Kept on this device until upload succeeds.`,
+  };
 }
 
 export async function resolveAssetFileSizeBytes(

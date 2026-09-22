@@ -290,13 +290,27 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       const { inspection, pendingPhotoUris, pendingVideoUris } =
         await createCargoInspectionRecord(user.uid, input, user.email ?? '');
 
-      if (pendingPhotoUris.length > 0 || pendingVideoUris.length > 0) {
+      let photoUris = pendingPhotoUris;
+      let videoUris = pendingVideoUris;
+      try {
+        const durable = await persistPendingInspectionMedia(
+          inspection.id,
+          pendingPhotoUris,
+          pendingVideoUris,
+        );
+        photoUris = durable.photoEvidence;
+        videoUris = durable.videoEvidence;
+      } catch {
+        // Fall back to capture URIs if copy fails — drafts may already be durable.
+      }
+
+      if (photoUris.length > 0 || videoUris.length > 0) {
         enqueueInspectionUploads({
           inspectionId: inspection.id,
           userId: user.uid,
           awbLabel: input.awbNumber.trim() || inspection.uldId,
-          photoUris: pendingPhotoUris,
-          videoUris: pendingVideoUris,
+          photoUris,
+          videoUris,
         });
       }
 

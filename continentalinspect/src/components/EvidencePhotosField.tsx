@@ -5,6 +5,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import {
+  deleteLocalEvidenceFileIfOwned,
+  persistEvidenceCaptureUri,
+} from '@/services/inspectionPendingMedia';
 import type { AppColors } from '@/theme/palettes';
 import {
   formatMaxPhotoSizeMb,
@@ -140,7 +144,12 @@ export function EvidencePhotosField({
 
     const result = await ImagePicker.launchCameraAsync(IMAGE_PICKER_OPTIONS);
     if (!result.canceled && result.assets[0]?.uri) {
-      appendPhotos([result.assets[0].uri]);
+      try {
+        const durableUri = await persistEvidenceCaptureUri(result.assets[0].uri, 'photo');
+        appendPhotos([durableUri]);
+      } catch {
+        Alert.alert('Could not save photo', 'Try taking the photo again.');
+      }
     }
   };
 
@@ -154,7 +163,17 @@ export function EvidencePhotosField({
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      appendPhotos(result.assets.map((asset) => asset.uri).filter(Boolean));
+      try {
+        const durable = await Promise.all(
+          result.assets
+            .map((asset) => asset.uri)
+            .filter(Boolean)
+            .map((uri) => persistEvidenceCaptureUri(uri, 'photo')),
+        );
+        appendPhotos(durable);
+      } catch {
+        Alert.alert('Could not save photos', 'Try selecting the photos again.');
+      }
     }
   };
 
@@ -167,6 +186,7 @@ export function EvidencePhotosField({
       return;
     }
     onChange(photos.filter((item) => item !== uri));
+    void deleteLocalEvidenceFileIfOwned(uri);
   };
 
   return (

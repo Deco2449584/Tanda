@@ -216,7 +216,8 @@ function createStyles(colors: AppColors) {
 export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoCardProps) {
   const styles = useThemedStyles(createStyles);
   const { colors } = useTheme();
-  const { getInspectionMediaUploadSummary } = useEvidenceMediaPipeline();
+  const { getInspectionMediaUploadSummary, retryFailedJobsForInspection } =
+    useEvidenceMediaPipeline();
 
   const mediaUploadSummary = getInspectionMediaUploadSummary(inspection.id);
 
@@ -334,9 +335,15 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
               </View>
             ) : null}
             {mediaUploadSummary?.status === 'error' ? (
-              <View style={styles.errorBadge}>
+              <Pressable
+                style={styles.errorBadge}
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  retryFailedJobsForInspection(inspection.id);
+                }}
+                hitSlop={8}>
                 <Text style={styles.errorBadgeText}>{mediaUploadSummary.label}</Text>
-              </View>
+              </Pressable>
             ) : null}
           </View>
 
