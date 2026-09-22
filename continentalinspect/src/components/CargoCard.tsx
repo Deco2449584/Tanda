@@ -12,9 +12,9 @@ import { radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
-import { METRIC_ATTENTION, METRIC_LOADED, METRIC_NEW_CARGO } from '@/components/TodayOperationsDonut';
+import { METRIC_ATTENTION } from '@/components/TodayOperationsDonut';
 import { getConservationLabel } from '@/utils/cargoLabels';
-import { getInspectionDisplayBadge } from '@/utils/cargoInspectionStatus';
+import { getInspectionDisplayBadge, getSyncBadge } from '@/utils/cargoInspectionStatus';
 import {
   getInspectionDisplayTitle,
   getUnitTypeLabel,
@@ -229,26 +229,16 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
     : formatInspectionDate(inspection.registeredAt);
 
   const displayBadge = getInspectionDisplayBadge(inspection);
+  const syncBadge = getSyncBadge(inspection.syncStatus);
   const title = getInspectionDisplayTitle(inspection);
   const unitType = resolveUnitType(inspection.unitType, inspection.uldId);
   const unitTypeLabel = getUnitTypeLabel(unitType);
-  const statusBg =
-    displayBadge.kind === 'attention'
-      ? `${METRIC_ATTENTION}22`
-      : displayBadge.kind === 'warehouse'
-        ? `${METRIC_NEW_CARGO}22`
-        : `${METRIC_LOADED}22`;
-  const statusColor =
-    displayBadge.kind === 'attention'
-      ? METRIC_ATTENTION
-      : displayBadge.kind === 'warehouse'
-        ? METRIC_NEW_CARGO
-        : METRIC_LOADED;
-  const statusLabel = displayBadge.label;
+  const statusColor = displayBadge.color;
+  const statusBg = `${statusColor}22`;
 
   return (
     <PressableScale style={styles.card} onPress={onPress} disabled={!onPress}>
-      <View style={styles.accentBar} />
+      <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
 
       <View style={styles.body}>
         <View style={styles.topRow}>
@@ -303,13 +293,28 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
         <View style={styles.footerRow}>
           <View style={styles.badgeRow}>
             <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-              <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+              <Text style={[styles.statusText, { color: statusColor }]}>{displayBadge.label}</Text>
             </View>
-            {inspection.syncStatus === 'pending' ? (
-              <View style={styles.pendingBadge}>
-                <Text style={styles.pendingBadgeText}>PENDING SYNC</Text>
+            {inspection.hasIssues ? (
+              <View style={[styles.statusBadge, { backgroundColor: `${METRIC_ATTENTION}22` }]}>
+                <Text style={[styles.statusText, { color: METRIC_ATTENTION }]}>Issues</Text>
               </View>
             ) : null}
+            <View
+              style={[
+                styles.pendingBadge,
+                syncBadge.kind === 'synced' && styles.uploadedBadge,
+                syncBadge.kind === 'error' && styles.errorBadge,
+              ]}>
+              <Text
+                style={[
+                  styles.pendingBadgeText,
+                  syncBadge.kind === 'synced' && styles.uploadedBadgeText,
+                  syncBadge.kind === 'error' && styles.errorBadgeText,
+                ]}>
+                {syncBadge.label}
+              </Text>
+            </View>
             {mediaUploadSummary?.status === 'pending' ? (
               <View style={styles.mediaProgressWrap}>
                 <Text style={styles.mediaProgressLabel}>

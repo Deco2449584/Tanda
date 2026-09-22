@@ -87,12 +87,12 @@ function buildMediaAccessLinks(urls: readonly string[], label: string): string {
   return `<ul class="access-list">${items}</ul>`;
 }
 
-function statusClassForBadge(kind: 'attention' | 'warehouse' | 'truck'): string {
-  if (kind === 'attention') {
-    return 'status-warn';
-  }
-  if (kind === 'warehouse') {
+function statusClassForBadge(kind: 'identification' | 'processed' | 'truck'): string {
+  if (kind === 'identification') {
     return 'status-warehouse';
+  }
+  if (kind === 'processed') {
+    return 'status-processed';
   }
   return 'status-ok';
 }
@@ -280,6 +280,7 @@ function buildInspectionHtml(
     .status-ok { background: #DCFCE7; color: #166534; }
     .status-warn { background: #FEF3C7; color: #B45309; }
     .status-warehouse { background: #DBEAFE; color: #1D4ED8; }
+    .status-processed { background: #CCFBF1; color: #0F766E; }
     .section { padding: 22px 36px; page-break-inside: avoid; }
     .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; margin: 0 0 14px; color: ${PDF_PORTAL_NAVY}; }
     .data-table { width: 100%; border-collapse: collapse; border: 1px solid ${BORDER}; border-radius: 10px; overflow: hidden; }

@@ -53,6 +53,53 @@ export function formatDurationSeconds(seconds: number): string {
   return `${mins}m ${secs.toString().padStart(2, '0')}s`;
 }
 
+export type VideoWeightBand = 'optimal' | 'attention' | 'limit' | 'unknown';
+
+export const VIDEO_BAND_COLORS: Record<VideoWeightBand, string> = {
+  optimal: '#16A34A',
+  attention: '#D97706',
+  limit: '#DC2626',
+  unknown: '#64748B',
+};
+
+export const VIDEO_BAND_LABELS: Record<VideoWeightBand, string> = {
+  optimal: 'Optimal',
+  attention: 'Attention',
+  limit: 'Limit',
+  unknown: 'Unknown',
+};
+
+/** Green 2–5 min, yellow under 2 or 5–10, red over 10 min or excessive file size. */
+export function classifyVideoWeight(
+  durationSec: number | null,
+  sizeBytes: number | null,
+): VideoWeightBand {
+  const heavy = sizeBytes != null && sizeBytes > HEAVY_RAW_VIDEO_BYTES;
+  const minutes = durationSec != null ? durationSec / 60 : null;
+
+  if (heavy || (minutes != null && minutes > 10)) {
+    return 'limit';
+  }
+  if (minutes == null) {
+    return 'unknown';
+  }
+  if (minutes >= 2 && minutes <= 5) {
+    return 'optimal';
+  }
+  return 'attention';
+}
+
+export function formatDurationMinutes(seconds: number | null): string {
+  if (seconds == null || !Number.isFinite(seconds)) {
+    return '— min';
+  }
+  const minutes = seconds / 60;
+  if (minutes < 1) {
+    return `${minutes.toFixed(1)} min`;
+  }
+  return `${minutes.toFixed(1)} min`;
+}
+
 export type CapturedVideoAssessment = {
   severity: 'ok' | 'warn' | 'heavy';
   title: string;

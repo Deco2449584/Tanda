@@ -24,10 +24,14 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { brand } from '@/theme/brand';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
-import { METRIC_LOADED, METRIC_NEW_CARGO } from '@/components/TodayOperationsDonut';
+import { METRIC_ATTENTION, METRIC_LOADED } from '@/components/TodayOperationsDonut';
 import { shareCargoInspectionPdf } from '@/utils/cargoInspectionPdf';
 import { CONSERVATION_COLORS, getConservationLabel } from '@/utils/cargoLabels';
-import { getInspectionDisplayBadge, resolveInspectionStatus } from '@/utils/cargoInspectionStatus';
+import {
+  getInspectionDisplayBadge,
+  getSyncBadge,
+  resolveInspectionStatus,
+} from '@/utils/cargoInspectionStatus';
 import {
   getInspectionDisplayTitle,
   getUnitTypeLabel,
@@ -332,8 +336,10 @@ export default function CargoDetailScreen() {
   const styles = useThemedStyles(createDetailStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAdmin } = useAuth();
-  const { inspections, isLoading, markInspectionAsLoaded, isOnline } = useCargoInspections();
+  const { inspections, isLoading, markInspectionAsLoaded, markInspectionAsProcessed, isOnline } =
+    useCargoInspections();
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isMarkingProcessed, setIsMarkingProcessed] = useState(false);
   const [isMarkingLoaded, setIsMarkingLoaded] = useState(false);
 
   const inspection = useMemo(
@@ -349,6 +355,26 @@ export default function CargoDetailScreen() {
     } as Href);
   };
 
+  const performMarkAsProcessed = async () => {
+    if (!inspection) return;
+
+    const title = getInspectionDisplayTitle(inspection);
+    setIsMarkingProcessed(true);
+    try {
+      await markInspectionAsProcessed(inspection.id);
+      Alert.alert(
+        isOnline ? 'Processed' : 'Saved on device',
+        isOnline
+          ? `${title} is marked as processed by Continental.`
+          : `${title} is marked processed on this device and will sync when you are back online.`,
+      );
+    } catch {
+      Alert.alert('Update failed', 'Could not mark this cargo as processed. Please try again.');
+    } finally {
+      setIsMarkingProcessed(false);
+    }
+  };
+
   const performMarkAsLoaded = async () => {
     if (!inspection) return;
 
@@ -357,13 +383,13 @@ export default function CargoDetailScreen() {
     try {
       await markInspectionAsLoaded(inspection.id);
       Alert.alert(
-        isOnline ? 'Processing finished' : 'Saved on device',
+        isOnline ? 'On truck' : 'Saved on device',
         isOnline
-          ? `${title} has been marked as cargo processing finished.`
-          : `${title} is marked finished on this device and will sync when you are back online.`,
+          ? `${title} is marked on truck.`
+          : `${title} is marked on truck on this device and will sync when you are back online.`,
       );
     } catch {
-      Alert.alert('Update failed', 'Could not mark this cargo as finished. Please try again.');
+      Alert.alert('Update failed', 'Could not mark this cargo as on truck. Please try again.');
     } finally {
       setIsMarkingLoaded(false);
     }
@@ -432,21 +458,12 @@ export default function CargoDetailScreen() {
   }
 
   const operationalStatus = resolveInspectionStatus(inspection);
-  const isInWarehouse = operationalStatus === 'new';
-  const isOnTruck = operationalStatus === 'loaded' && !inspection.hasIssues;
+  const isIdentification = operationalStatus === 'identification';
+  const isProcessed = operationalStatus === 'processed';
   const displayBadge = getInspectionDisplayBadge(inspection);
-
-  let statusBg = `${METRIC_NEW_CARGO}22`;
-  let statusColor = METRIC_NEW_CARGO;
-  let statusLabel = displayBadge.label;
-  let showLifecycleBadge = isInWarehouse || inspection.hasIssues;
-
-  if (displayBadge.kind === 'attention') {
-    statusBg = 'rgba(245, 158, 11, 0.22)';
-    statusColor = colors.semantic.warning;
-  } else if (displayBadge.kind === 'truck') {
-    showLifecycleBadge = false;
-  }
+  const syncBadge = getSyncBadge(inspection.syncStatus);
+  const statusBg = `${displayBadge.color}22`;
+  const statusColor = displayBadge.color;
 
   const conservationColors = CONSERVATION_COLORS[inspection.conservationType];
 
@@ -488,24 +505,19 @@ export default function CargoDetailScreen() {
               </Text>
 
               <View style={styles.chipRow}>
-                {showLifecycleBadge ? (
-                  <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-                    <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                  <Text style={[styles.statusText, { color: statusColor }]}>{displayBadge.label}</Text>
+                </View>
+                {inspection.hasIssues ? (
+                  <View style={[styles.statusBadge, { backgroundColor: `${METRIC_ATTENTION}22` }]}>
+                    <Text style={[styles.statusText, { color: METRIC_ATTENTION }]}>Issues</Text>
                   </View>
                 ) : null}
-                {isOnTruck ? (
-                  <View style={styles.fullyLoadedBadge}>
-                    <Ionicons name="checkmark-circle" size={14} color={METRIC_LOADED} />
-                    <Text style={styles.fullyLoadedText}>On truck</Text>
-                  </View>
-                ) : null}
-                {inspection.syncStatus === 'pending' ? (
-                  <View style={[styles.statusBadge, { backgroundColor: 'rgba(2, 101, 220, 0.12)' }]}>
-                    <Text style={[styles.statusText, { color: colors.accent.primary }]}>
-                      PENDING SYNC
-                    </Text>
-                  </View>
-                ) : null}
+                <View style={[styles.statusBadge, { backgroundColor: 'rgba(2, 101, 220, 0.12)' }]}>
+                  <Text style={[styles.statusText, { color: colors.accent.primary }]}>
+                    {syncBadge.label}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.metricsRow}>
@@ -547,7 +559,7 @@ export default function CargoDetailScreen() {
             </View>
           </View>
 
-          {isInWarehouse && inspection.hasIssues ? (
+          {isProcessed && inspection.hasIssues ? (
             <View style={styles.dispatchWarning}>
               <Text style={styles.dispatchWarningText}>
                 This record has open issues. Marking on truck will ask for confirmation.
@@ -556,7 +568,26 @@ export default function CargoDetailScreen() {
           ) : null}
 
           <View style={styles.actionsCard}>
-            {isInWarehouse ? (
+            {isIdentification ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dispatchBtn,
+                  pressed && !isMarkingProcessed && styles.dispatchBtnPressed,
+                  isMarkingProcessed && styles.dispatchBtnDisabled,
+                ]}
+                onPress={() => void performMarkAsProcessed()}
+                disabled={isMarkingProcessed}>
+                {isMarkingProcessed ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-done-outline" size={20} color="#FFFFFF" />
+                    <Text style={styles.dispatchBtnText}>Mark processed</Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+            {isProcessed ? (
               <Pressable
                 style={({ pressed }) => [
                   styles.dispatchBtn,
@@ -570,7 +601,7 @@ export default function CargoDetailScreen() {
                 ) : (
                   <>
                     <Ionicons name="bus-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.dispatchBtnText}>Cargo processing finished</Text>
+                    <Text style={styles.dispatchBtnText}>Mark on truck</Text>
                   </>
                 )}
               </Pressable>

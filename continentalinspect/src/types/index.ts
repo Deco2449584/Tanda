@@ -22,7 +22,8 @@ export function normalizeConservationType(value: string | undefined): Conservati
   return LEGACY_CONSERVATION_MAP[trimmed] ?? 'Ambient';
 }
 
-export type CargoInspectionStatus = 'new' | 'loaded';
+/** Lifecycle stages. Issues and cloud sync are separate flags, not statuses. */
+export type CargoInspectionStatus = 'identification' | 'processed' | 'loaded';
 
 /**
  * Warehouse cargo categories:

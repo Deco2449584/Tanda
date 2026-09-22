@@ -18,6 +18,7 @@ import {
   fetchCargoInspectionByUldId,
   findCargoInspectionByUldId,
   markCargoInspectionAsLoaded,
+  markCargoInspectionAsProcessed,
   subscribeToAllCargoInspections,
   subscribeToUserCargoInspections,
   updateCargoInspection,
@@ -28,6 +29,7 @@ import {
   createLocalInspectionId,
   enqueuePendingCreate,
   enqueuePendingMarkLoaded,
+  enqueuePendingMarkProcessed,
   findPendingCreateByUldId,
   loadSyncQueue,
   pendingCreateToInspection,
@@ -64,6 +66,7 @@ type CargoInspectionsContextValue = {
     inspectionId: string,
     input: UpdateCargoInspectionInput,
   ) => Promise<CargoInspection>;
+  markInspectionAsProcessed: (inspectionId: string) => Promise<CargoInspection>;
   markInspectionAsLoaded: (inspectionId: string) => Promise<CargoInspection>;
   deleteInspectionById: (inspectionId: string) => Promise<void>;
 };
@@ -280,7 +283,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
               ? input.issueReportedAt ?? registeredAt
               : input.issueReportedAt,
           },
-          status: 'new',
+          status: 'identification',
           registeredAt,
         });
         await reloadPendingQueue(user.uid);
@@ -409,6 +412,62 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     [user, inspections, isOnline],
   );
 
+  const markInspectionAsProcessed = useCallback(
+    async (inspectionId: string): Promise<CargoInspection> => {
+      if (!user) {
+        throw new Error('You must be signed in to update a record.');
+      }
+
+      const existing = inspections.find((item) => item.id === inspectionId);
+      if (!existing) {
+        throw new Error('Cargo inspection not found.');
+      }
+
+      if (resolveInspectionStatus(existing) !== 'identification') {
+        throw new Error('MUST_BE_IDENTIFICATION');
+      }
+
+      const processedAt = new Date().toISOString();
+
+      if (existing.syncStatus === 'pending') {
+        await updatePendingCreateStatus(user.uid, existing.id, 'processed');
+        await reloadPendingQueue(user.uid);
+        return {
+          ...existing,
+          status: 'processed',
+          syncStatus: 'pending',
+          updatedAt: processedAt,
+        };
+      }
+
+      if (!isOnline) {
+        await enqueuePendingMarkProcessed(user.uid, inspectionId);
+        await reloadPendingQueue(user.uid);
+        return {
+          ...existing,
+          status: 'processed',
+          syncStatus: 'pending',
+          updatedAt: processedAt,
+        };
+      }
+
+      const { updatedAtIso } = await markCargoInspectionAsProcessed(inspectionId);
+      const updated: CargoInspection = {
+        ...existing,
+        status: 'processed',
+        updatedAt: updatedAtIso,
+        syncStatus: 'synced',
+      };
+
+      setRemoteInspections((prev) =>
+        prev.map((item) => (item.id === inspectionId ? updated : item)),
+      );
+
+      return updated;
+    },
+    [user, inspections, isOnline, reloadPendingQueue],
+  );
+
   const markInspectionAsLoaded = useCallback(
     async (inspectionId: string): Promise<CargoInspection> => {
       if (!user) {
@@ -418,6 +477,10 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       const existing = inspections.find((item) => item.id === inspectionId);
       if (!existing) {
         throw new Error('Cargo inspection not found.');
+      }
+
+      if (resolveInspectionStatus(existing) !== 'processed') {
+        throw new Error('MUST_BE_PROCESSED');
       }
 
       const dispatchedAt = new Date().toISOString();
@@ -514,6 +577,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       refreshRecords,
       addInspection,
       updateInspectionById,
+      markInspectionAsProcessed,
       markInspectionAsLoaded,
       deleteInspectionById,
     }),
@@ -529,6 +593,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       refreshRecords,
       addInspection,
       updateInspectionById,
+      markInspectionAsProcessed,
       markInspectionAsLoaded,
       deleteInspectionById,
     ],

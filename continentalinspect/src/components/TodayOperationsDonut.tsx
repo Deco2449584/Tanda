@@ -8,6 +8,7 @@ import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
 export const METRIC_NEW_CARGO = '#0288D1';
+export const METRIC_PROCESSED = '#00897B';
 export const METRIC_LOADED = '#4CAF50';
 export const METRIC_ATTENTION = '#F59E0B';
 
@@ -18,7 +19,8 @@ type DonutSegment = {
 };
 
 type TodayOperationsDonutProps = {
-  newCargo: number;
+  identification: number;
+  processed: number;
   loaded: number;
 };
 
@@ -108,18 +110,23 @@ function createStyles(colors: AppColors) {
   });
 }
 
-export function TodayOperationsDonut({ newCargo, loaded }: TodayOperationsDonutProps) {
+export function TodayOperationsDonut({
+  identification,
+  processed,
+  loaded,
+}: TodayOperationsDonutProps) {
   const styles = useThemedStyles(createStyles);
 
   const segments = useMemo<DonutSegment[]>(
     () => [
-      { label: 'In warehouse', value: newCargo, color: METRIC_NEW_CARGO },
+      { label: 'Identification', value: identification, color: METRIC_NEW_CARGO },
+      { label: 'Processed', value: processed, color: METRIC_PROCESSED },
       { label: 'On truck', value: loaded, color: METRIC_LOADED },
     ],
-    [loaded, newCargo],
+    [identification, loaded, processed],
   );
 
-  const total = newCargo + loaded;
+  const total = identification + processed + loaded;
   const isEmpty = total === 0;
 
   const arcs = useMemo(() => {

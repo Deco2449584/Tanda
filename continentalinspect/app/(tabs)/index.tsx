@@ -7,6 +7,7 @@ import {
   METRIC_ATTENTION,
   METRIC_LOADED,
   METRIC_NEW_CARGO,
+  METRIC_PROCESSED,
   TodayOperationsDonut,
 } from '@/components/TodayOperationsDonut';
 import { Ionicons } from '@expo/vector-icons';
@@ -230,26 +231,36 @@ export default function RecordsScreen() {
 
             <View style={styles.statsRow}>
               <StatCard
-                title="In warehouse"
-                value={counts.newCargo}
+                title="Identification"
+                value={counts.identification}
                 accentColor={METRIC_NEW_CARGO}
-                icon="cube-outline"
+                icon="scan-outline"
+              />
+              <StatCard
+                title="Processed"
+                value={counts.processed}
+                accentColor={METRIC_PROCESSED}
+                icon="checkmark-done-outline"
               />
               <StatCard
                 title="On truck"
                 value={counts.loaded}
                 accentColor={METRIC_LOADED}
-                icon="checkmark-circle-outline"
+                icon="bus-outline"
               />
               <StatCard
-                title="Requires attention"
+                title="Issues"
                 value={counts.requiresAttention}
                 accentColor={METRIC_ATTENTION}
                 icon="alert-circle-outline"
               />
             </View>
 
-            <TodayOperationsDonut newCargo={counts.newCargo} loaded={counts.loaded} />
+            <TodayOperationsDonut
+              identification={counts.identification}
+              processed={counts.processed}
+              loaded={counts.loaded}
+            />
 
             {inspectionsError ? (
               <Text style={styles.errorBanner}>

@@ -30,15 +30,34 @@ export function mergeInspectionsWithPending(
     }
 
     const existing = merged.get(operation.inspectionId);
-    if (existing) {
+    if (!existing) {
+      continue;
+    }
+
+    if (operation.kind === 'markProcessed') {
+      if (existing.status === 'loaded') {
+        merged.set(operation.inspectionId, {
+          ...existing,
+          syncStatus: 'pending',
+        });
+        continue;
+      }
       merged.set(operation.inspectionId, {
         ...existing,
-        status: 'loaded',
+        status: 'processed',
         syncStatus: 'pending',
-        updatedAt: operation.dispatchedAt,
-        dispatchedAt: operation.dispatchedAt,
+        updatedAt: operation.processedAt,
       });
+      continue;
     }
+
+    merged.set(operation.inspectionId, {
+      ...existing,
+      status: 'loaded',
+      syncStatus: 'pending',
+      updatedAt: operation.dispatchedAt,
+      dispatchedAt: operation.dispatchedAt,
+    });
   }
 
   return sortByNewest([...merged.values()]);

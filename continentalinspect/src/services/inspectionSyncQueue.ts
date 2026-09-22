@@ -24,6 +24,15 @@ export type PendingCreateOperation = {
   lastError?: string;
 };
 
+export type PendingMarkProcessedOperation = {
+  kind: 'markProcessed';
+  inspectionId: string;
+  processedAt: string;
+  enqueuedAt: string;
+  retryCount: number;
+  lastError?: string;
+};
+
 export type PendingMarkLoadedOperation = {
   kind: 'markLoaded';
   inspectionId: string;
@@ -33,7 +42,10 @@ export type PendingMarkLoadedOperation = {
   lastError?: string;
 };
 
-export type PendingInspectionOperation = PendingCreateOperation | PendingMarkLoadedOperation;
+export type PendingInspectionOperation =
+  | PendingCreateOperation
+  | PendingMarkProcessedOperation
+  | PendingMarkLoadedOperation;
 
 function queueKey(userId: string): string {
   return `${QUEUE_PREFIX}${userId}`;
@@ -75,6 +87,26 @@ export async function enqueuePendingCreate(
     retryCount: 0,
   };
   await saveSyncQueue(userId, [...queue, entry]);
+  return entry;
+}
+
+export async function enqueuePendingMarkProcessed(
+  userId: string,
+  inspectionId: string,
+): Promise<PendingMarkProcessedOperation> {
+  const queue = await loadSyncQueue(userId);
+  const withoutDuplicate = queue.filter(
+    (item) => !(item.kind === 'markProcessed' && item.inspectionId === inspectionId),
+  );
+  const processedAt = new Date().toISOString();
+  const entry: PendingMarkProcessedOperation = {
+    kind: 'markProcessed',
+    inspectionId,
+    processedAt,
+    enqueuedAt: processedAt,
+    retryCount: 0,
+  };
+  await saveSyncQueue(userId, [...withoutDuplicate, entry]);
   return entry;
 }
 

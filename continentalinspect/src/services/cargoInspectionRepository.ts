@@ -254,7 +254,7 @@ function toInspectionFromCreatePayload(
     foodType: payload.foodType,
     weightKg: payload.weightKg,
     boxCount: payload.boxCount,
-    status: 'new',
+    status: payload.status,
     hasIssues: payload.hasIssues,
     issueDescription: payload.issueDescription || undefined,
     notes: payload.notes || undefined,
@@ -441,7 +441,7 @@ export async function createCargoInspectionRecord(
     photoSplit.remote,
     videoSplit.remote,
     createdByEmail,
-    'new',
+    'identification',
   );
 
   await setDoc(inspectionRef, {
@@ -472,6 +472,8 @@ export async function createCargoInspection(
   userId: string,
   input: NewCargoInspectionInput,
   createdByEmail: string,
+  status: CargoInspectionStatus = 'identification',
+  dispatchedAtIso?: string,
 ): Promise<CargoInspection> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -493,7 +495,7 @@ export async function createCargoInspection(
     photoEvidence,
     videoEvidence,
     createdByEmail,
-    'new',
+    status,
   );
 
   await setDoc(inspectionRef, {
@@ -501,6 +503,14 @@ export async function createCargoInspection(
     ...payload,
     registeredAt: serverTimestamp(),
     registeredAtIso,
+    ...(status === 'loaded' && dispatchedAtIso
+      ? {
+          updatedAt: serverTimestamp(),
+          updatedAtIso: dispatchedAtIso,
+          dispatchedAt: serverTimestamp(),
+          dispatchedAtIso,
+        }
+      : {}),
   });
 
   return toInspectionFromCreatePayload(
@@ -552,6 +562,23 @@ export async function updateCargoInspection(
   });
 
   return { photoEvidence, videoEvidence, updatedAtIso };
+}
+
+export async function markCargoInspectionAsProcessed(
+  inspectionId: string,
+): Promise<{ updatedAtIso: string }> {
+  if (!db) {
+    throw new Error('Firestore is not configured.');
+  }
+
+  const updatedAtIso = new Date().toISOString();
+  await updateDoc(doc(db, CARGO_INSPECTIONS_COLLECTION, inspectionId), {
+    status: 'processed',
+    updatedAt: serverTimestamp(),
+    updatedAtIso,
+  });
+
+  return { updatedAtIso };
 }
 
 export async function markCargoInspectionAsLoaded(

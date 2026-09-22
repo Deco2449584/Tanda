@@ -1,6 +1,7 @@
 import {
   createCargoInspection,
   markCargoInspectionAsLoaded,
+  markCargoInspectionAsProcessed,
 } from '@/services/cargoInspectionRepository';
 import { deletePendingInspectionMedia } from '@/services/inspectionPendingMedia';
 import {
@@ -21,16 +22,27 @@ async function processQueueItem(
   operation: PendingInspectionOperation,
 ): Promise<void> {
   if (operation.kind === 'create') {
-    const inspection = await createCargoInspection(userId, operation.input, createdByEmail);
-
-    if (operation.status === 'loaded') {
-      await markCargoInspectionAsLoaded(inspection.id);
-    }
+    await createCargoInspection(
+      userId,
+      operation.input,
+      createdByEmail,
+      operation.status,
+      operation.dispatchedAt,
+    );
 
     await deletePendingInspectionMedia(operation.localId);
     await removeSyncQueueItem(
       userId,
       (item) => item.kind === 'create' && item.localId === operation.localId,
+    );
+    return;
+  }
+
+  if (operation.kind === 'markProcessed') {
+    await markCargoInspectionAsProcessed(operation.inspectionId);
+    await removeSyncQueueItem(
+      userId,
+      (item) => item.kind === 'markProcessed' && item.inspectionId === operation.inspectionId,
     );
     return;
   }
