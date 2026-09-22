@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
@@ -31,20 +32,21 @@ function createStyles(colors: AppColors) {
   return StyleSheet.create({
     wrap: {
       alignItems: 'center',
-      marginBottom: 22,
-      paddingVertical: 16,
-      paddingHorizontal: 12,
-      borderRadius: 16,
+      marginBottom: 24,
+      paddingVertical: 18,
+      paddingHorizontal: 16,
+      borderRadius: radius.card,
       backgroundColor: colors.surface.card,
       borderWidth: 1,
       borderColor: colors.border.onSurface,
     },
     title: {
       fontFamily: fonts.headingSemiBold,
-      fontSize: 15,
+      fontSize: 16,
       color: colors.text.onSurface,
-      marginBottom: 14,
+      marginBottom: 16,
       alignSelf: 'flex-start',
+      letterSpacing: -0.2,
     },
     chartRow: {
       alignItems: 'center',
@@ -59,8 +61,9 @@ function createStyles(colors: AppColors) {
     },
     centerValue: {
       fontFamily: fonts.heading,
-      fontSize: 28,
+      fontSize: 32,
       color: colors.text.onSurface,
+      letterSpacing: -0.8,
     },
     centerLabel: {
       fontFamily: fonts.body,

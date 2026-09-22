@@ -3,20 +3,20 @@
  */
 export const darkPalette = {
   background: {
-    primary: '#000000',
-    secondary: '#141414',
+    primary: '#0B0B0D',
+    secondary: '#161618',
   },
   surface: {
-    default: '#141414',
-    elevated: '#1C1C1E',
-    card: '#1C1C1E',
-    muted: '#2C2C2E',
+    default: '#161618',
+    elevated: '#1E1E22',
+    card: '#1A1A1E',
+    muted: '#26262A',
   },
   text: {
     primary: '#FFFFFF',
     secondary: '#B8B8B8',
     mutedOnDark: '#A0A0A0',
-    onSurface: '#F0F0F0',
+    onSurface: '#F4F4F5',
     onSurfaceMuted: '#9CA3AF',
     onAccent: '#FFFFFF',
   },
@@ -27,8 +27,8 @@ export const darkPalette = {
     secondaryPressed: '#2A2A2A',
   },
   border: {
-    default: '#333333',
-    onSurface: '#3A3A3C',
+    default: '#2A2A2E',
+    onSurface: '#2E2E34',
     brand: '#000000',
   },
   semantic: {

@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import type { ComponentProps } from 'react';
 
+import { PressableScale } from '@/components/PressableScale';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
+import { radius } from '@/theme/motion';
 import { fonts } from '@/theme/typography';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -20,38 +22,34 @@ function createStyles(colors: AppColors) {
     card: {
       flex: 1,
       backgroundColor: colors.surface.card,
-      borderRadius: 14,
-      paddingVertical: 14,
-      paddingHorizontal: 10,
+      borderRadius: radius.card,
+      paddingVertical: 16,
+      paddingHorizontal: 8,
       alignItems: 'center',
-      gap: 6,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
-      elevation: 3,
+      gap: 4,
       borderWidth: 1,
       borderColor: colors.border.onSurface,
     },
     iconWrap: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 2,
+      marginBottom: 6,
     },
     value: {
       fontFamily: fonts.heading,
-      fontSize: 26,
+      fontSize: 30,
       color: colors.text.onSurface,
+      letterSpacing: -0.6,
     },
     title: {
-      fontFamily: fonts.bodySemiBold,
-      fontSize: 11,
+      fontFamily: fonts.bodyMedium,
+      fontSize: 10,
       color: colors.text.onSurfaceMuted,
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      letterSpacing: 0.9,
       textAlign: 'center',
     },
   });
@@ -61,13 +59,12 @@ export function StatCard({ title, value, accentColor, icon }: StatCardProps) {
   const styles = useThemedStyles(createStyles);
 
   return (
-    <View style={styles.card}>
-      <View style={[styles.iconWrap, { backgroundColor: `${accentColor}18` }]}>
-        <Ionicons name={icon} size={22} color={accentColor} />
+    <PressableScale fill style={styles.card}>
+      <View style={[styles.iconWrap, { backgroundColor: `${accentColor}22` }]}>
+        <Ionicons name={icon} size={18} color={accentColor} />
       </View>
       <Text style={styles.value}>{value}</Text>
       <Text style={styles.title}>{title}</Text>
-    </View>
+    </PressableScale>
   );
 }
-

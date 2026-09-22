@@ -1,6 +1,7 @@
 import { ContinentalInspectLogo } from '@/components/ContinentalInspectLogo';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { CargoCard } from '@/components/CargoCard';
+import { FadeInItem } from '@/components/FadeInItem';
 import { StatCard } from '@/components/StatCard';
 import {
   METRIC_ATTENTION,
@@ -67,9 +68,10 @@ function createIndexStyles(colors: AppColors) {
     },
     greeting: {
       fontFamily: fonts.heading,
-      fontSize: 20,
+      fontSize: 22,
       color: colors.text.primary,
-      lineHeight: 24,
+      lineHeight: 28,
+      letterSpacing: -0.4,
     },
     headerSubtitle: {
       fontFamily: fonts.body,
@@ -85,8 +87,8 @@ function createIndexStyles(colors: AppColors) {
     },
     statsRow: {
       flexDirection: 'row',
-      gap: 8,
-      marginBottom: 16,
+      gap: 10,
+      marginBottom: 14,
     },
     errorBanner: {
       fontFamily: fonts.body,
@@ -100,9 +102,10 @@ function createIndexStyles(colors: AppColors) {
     },
     sectionTitle: {
       fontFamily: fonts.headingSemiBold,
-      fontSize: 18,
+      fontSize: 20,
       color: colors.text.primary,
       marginBottom: 4,
+      letterSpacing: -0.3,
     },
     sectionHint: {
       fontFamily: fonts.body,
@@ -180,13 +183,15 @@ export default function RecordsScreen() {
       <FlatList
         data={dailyInspections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <CargoCard
-            inspection={item}
-            onPress={() =>
-              router.push(`/cargo/${encodeURIComponent(item.id)}` as Href)
-            }
-          />
+        renderItem={({ item, index }) => (
+          <FadeInItem index={index}>
+            <CargoCard
+              inspection={item}
+              onPress={() =>
+                router.push(`/cargo/${encodeURIComponent(item.id)}` as Href)
+              }
+            />
+          </FadeInItem>
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

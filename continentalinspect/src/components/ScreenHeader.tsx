@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
@@ -28,16 +29,17 @@ function createStyles(colors: AppColors, variant: 'default' | 'overlay') {
 
   return StyleSheet.create({
     wrap: {
-      borderBottomWidth: 1,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: borderColor,
       backgroundColor: isOverlay ? 'transparent' : colors.background.primary,
     },
     inner: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingBottom: 12,
-      gap: 8,
+      paddingHorizontal: 16,
+      paddingBottom: 14,
+      paddingTop: 4,
+      gap: 10,
     },
     backBtn: {
       flexDirection: 'row',
@@ -45,8 +47,8 @@ function createStyles(colors: AppColors, variant: 'default' | 'overlay') {
       gap: 2,
       paddingVertical: 8,
       paddingRight: 10,
-      paddingLeft: 4,
-      borderRadius: 10,
+      paddingLeft: 6,
+      borderRadius: radius.control,
       backgroundColor: backBg,
       borderWidth: isOverlay ? 0 : 1,
       borderColor: colors.border.onSurface,
@@ -69,6 +71,7 @@ function createStyles(colors: AppColors, variant: 'default' | 'overlay') {
       fontFamily: fonts.headingSemiBold,
       fontSize: 18,
       color: titleColor,
+      letterSpacing: -0.3,
     },
     subtitle: {
       fontFamily: fonts.body,

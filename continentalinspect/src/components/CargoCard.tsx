@@ -3,10 +3,12 @@ import { Image } from 'expo-image';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/PressableScale';
 import { useEvidenceMediaPipeline } from '@/context/EvidenceMediaPipelineContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { ACCENT, ACCENT_DIM } from '@/theme/accent';
+import { radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
@@ -26,21 +28,18 @@ type CargoCardProps = {
   onPress?: () => void;
 };
 
-const THUMB = 48;
+const THUMB = 52;
 
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
     card: {
       backgroundColor: colors.surface.card,
-      borderRadius: 12,
-      marginBottom: 8,
+      borderRadius: radius.card,
+      marginBottom: 10,
       overflow: 'hidden',
       flexDirection: 'row',
       borderWidth: 1,
       borderColor: colors.border.onSurface,
-    },
-    cardPressed: {
-      opacity: 0.85,
     },
     accentBar: {
       width: 3,
@@ -48,9 +47,9 @@ function createStyles(colors: AppColors) {
     },
     body: {
       flex: 1,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      gap: 8,
+      paddingVertical: 14,
+      paddingHorizontal: 14,
+      gap: 12,
     },
     topRow: {
       flexDirection: 'row',
@@ -60,13 +59,13 @@ function createStyles(colors: AppColors) {
     thumb: {
       width: THUMB,
       height: THUMB,
-      borderRadius: 8,
+      borderRadius: radius.thumb,
       backgroundColor: colors.surface.muted,
     },
     iconWrap: {
       width: THUMB,
       height: THUMB,
-      borderRadius: 8,
+      borderRadius: radius.thumb,
       backgroundColor: ACCENT_DIM,
       alignItems: 'center',
       justifyContent: 'center',
@@ -89,7 +88,7 @@ function createStyles(colors: AppColors) {
       fontFamily: fonts.headingSemiBold,
       fontSize: 17,
       color: colors.text.onSurface,
-      letterSpacing: 0.2,
+      letterSpacing: -0.2,
     },
     awb: {
       fontFamily: fonts.bodyMedium,
@@ -122,9 +121,9 @@ function createStyles(colors: AppColors) {
       flexShrink: 1,
     },
     statusBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
     },
     statusText: {
       fontFamily: fonts.bodySemiBold,
@@ -133,9 +132,9 @@ function createStyles(colors: AppColors) {
       textTransform: 'uppercase',
     },
     pendingBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
       backgroundColor: 'rgba(2, 101, 220, 0.12)',
     },
     pendingBadgeText: {
@@ -170,9 +169,9 @@ function createStyles(colors: AppColors) {
       backgroundColor: ACCENT,
     },
     uploadedBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
       backgroundColor: 'rgba(34, 197, 94, 0.14)',
     },
     uploadedBadgeText: {
@@ -183,9 +182,9 @@ function createStyles(colors: AppColors) {
       textTransform: 'uppercase',
     },
     errorBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
       backgroundColor: 'rgba(198, 40, 40, 0.12)',
     },
     errorBadgeText: {
@@ -248,10 +247,7 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
   const statusLabel = displayBadge.label;
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-      onPress={onPress}
-      disabled={!onPress}>
+    <PressableScale style={styles.card} onPress={onPress} disabled={!onPress}>
       <View style={styles.accentBar} />
 
       <View style={styles.body}>
@@ -358,7 +354,7 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
           </View>
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }, (previous, next) => {
   return (

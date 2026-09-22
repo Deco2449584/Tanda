@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { ACCENT } from '@/theme/accent';
+import { radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
@@ -17,7 +19,7 @@ function createStyles(colors: AppColors) {
   return StyleSheet.create({
     section: {
       backgroundColor: colors.surface.card,
-      borderRadius: 18,
+      borderRadius: radius.card + 2,
       borderWidth: 1,
       borderColor: colors.border.onSurface,
       overflow: 'hidden',
@@ -28,16 +30,13 @@ function createStyles(colors: AppColors) {
       gap: 12,
       paddingHorizontal: 16,
       paddingTop: 16,
-      paddingBottom: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border.onSurface,
-      backgroundColor: colors.surface.muted,
+      paddingBottom: 14,
     },
     iconWrap: {
       width: 36,
       height: 36,
-      borderRadius: 10,
-      backgroundColor: 'rgba(2, 101, 220, 0.12)',
+      borderRadius: radius.thumb,
+      backgroundColor: 'rgba(2, 101, 220, 0.14)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -47,9 +46,9 @@ function createStyles(colors: AppColors) {
     },
     title: {
       fontFamily: fonts.headingSemiBold,
-      fontSize: 15,
+      fontSize: 16,
       color: colors.text.onSurface,
-      letterSpacing: 0.2,
+      letterSpacing: -0.2,
     },
     subtitle: {
       fontFamily: fonts.body,
@@ -58,7 +57,8 @@ function createStyles(colors: AppColors) {
       lineHeight: 16,
     },
     body: {
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingBottom: 16,
       gap: 16,
     },
   });
@@ -71,7 +71,7 @@ export function FormSectionCard({ icon, title, subtitle, children }: FormSection
     <View style={styles.section}>
       <View style={styles.header}>
         <View style={styles.iconWrap}>
-          <Ionicons name={icon} size={18} color="#0265DC" />
+          <Ionicons name={icon} size={18} color={ACCENT} />
         </View>
         <View style={styles.headerText}>
           <Text style={styles.title}>{title}</Text>

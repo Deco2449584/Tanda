@@ -1,12 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { ACCENT_DIM_TAB } from '@/theme/accent';
+import { motion, radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
@@ -24,23 +31,21 @@ function createTabBarStyles(colors: AppColors) {
   return StyleSheet.create({
     wrapper: {
       backgroundColor: colors.background.primary,
-      borderTopWidth: 1,
-      borderTopColor: colors.border.default,
-      paddingTop: 8,
-      paddingHorizontal: 12,
+      paddingTop: 6,
+      paddingHorizontal: 16,
     },
     bar: {
       flexDirection: 'row',
       backgroundColor: colors.surface.elevated,
-      borderRadius: 20,
-      paddingVertical: 8,
+      borderRadius: radius.card + 6,
+      paddingVertical: 6,
       paddingHorizontal: 6,
-      gap: 4,
+      gap: 2,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
-      elevation: 12,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.28,
+      shadowRadius: 16,
+      elevation: 16,
       borderWidth: 1,
       borderColor: colors.border.onSurface,
     },
@@ -48,47 +53,97 @@ function createTabBarStyles(colors: AppColors) {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 6,
-      borderRadius: 14,
-      gap: 4,
-    },
-    tabFocused: {
-      backgroundColor: ACCENT_DIM_TAB,
-    },
-    tabPressed: {
-      opacity: 0.85,
+      paddingVertical: 8,
+      borderRadius: radius.control,
+      gap: 3,
+      overflow: 'hidden',
     },
     iconWrap: {
       width: 36,
-      height: 28,
+      height: 26,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 10,
     },
-    iconWrapFocused: {},
     label: {
-      fontFamily: fonts.body,
-      fontSize: 11,
-      fontWeight: '500',
+      fontFamily: fonts.bodyMedium,
+      fontSize: 10,
       color: colors.text.secondary,
+      letterSpacing: 0.2,
     },
     labelFocused: {
-      fontFamily: fonts.bodyMedium,
-      fontWeight: '600',
+      fontFamily: fonts.bodySemiBold,
       color: colors.accent.primary,
     },
   });
 }
 
+function AnimatedTab({
+  focused,
+  label,
+  icon,
+  iconFocused,
+  onPress,
+  accessibilityLabel,
+}: {
+  focused: boolean;
+  label: string;
+  icon: TabIconName;
+  iconFocused: TabIconName;
+  onPress: () => void;
+  accessibilityLabel?: string;
+}) {
+  const styles = useThemedStyles(createTabBarStyles);
+  const { colors } = useTheme();
+  const focus = useSharedValue(focused ? 1 : 0);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    focus.value = withTiming(focused ? 1 : 0, { duration: motion.pressOut });
+  }, [focus, focused]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      focus.value,
+      [0, 1],
+      ['rgba(2, 101, 220, 0)', 'rgba(2, 101, 220, 0.14)'],
+    ),
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={focused ? { selected: true } : {}}
+      accessibilityLabel={accessibilityLabel ?? label}
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withTiming(motion.pressScale, { duration: motion.pressIn });
+      }}
+      onPressOut={() => {
+        scale.value = withTiming(1, { duration: motion.pressOut });
+      }}
+      style={styles.tab}>
+      <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: radius.control }, animatedStyle]} />
+      <View style={styles.iconWrap}>
+        <Ionicons
+          name={focused ? iconFocused : icon}
+          size={22}
+          color={focused ? colors.accent.primary : colors.text.secondary}
+        />
+      </View>
+      <Text style={[styles.label, focused && styles.labelFocused]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const styles = useThemedStyles(createTabBarStyles);
-  const { colors } = useTheme();
   const { role } = useAuth();
   const isAdmin = role === 'admin';
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 12) }]}>
       <View style={styles.bar}>
         {state.routes.map((route, index) => {
           if (route.name === 'admin' && !isAdmin) {
@@ -96,7 +151,6 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
           }
 
           const { options } = descriptors[route.key];
-
           const focused = state.index === index;
           const meta = TAB_META[route.name] ?? {
             label: route.name,
@@ -117,30 +171,18 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
           };
 
           return (
-            <Pressable
+            <AnimatedTab
               key={route.key}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? meta.label}
+              focused={focused}
+              label={meta.label}
+              icon={meta.icon}
+              iconFocused={meta.iconFocused}
               onPress={onPress}
-              style={({ pressed }) => [
-                styles.tab,
-                focused && styles.tabFocused,
-                pressed && styles.tabPressed,
-              ]}>
-              <View style={[styles.iconWrap, focused && styles.iconWrapFocused]}>
-                <Ionicons
-                  name={focused ? meta.iconFocused : meta.icon}
-                  size={22}
-                  color={focused ? colors.accent.primary : colors.text.secondary}
-                />
-              </View>
-              <Text style={[styles.label, focused && styles.labelFocused]}>{meta.label}</Text>
-            </Pressable>
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+            />
           );
         })}
       </View>
     </View>
   );
 }
-

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CargoCard } from '@/components/CargoCard';
 import { DateRangeFilters } from '@/components/DateRangeFilters';
+import { FadeInItem } from '@/components/FadeInItem';
 import { RecordsSearchBar } from '@/components/RecordsSearchBar';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
@@ -51,8 +52,9 @@ function createSearchStyles(colors: AppColors) {
     },
     title: {
       fontFamily: fonts.heading,
-      fontSize: 24,
+      fontSize: 26,
       color: colors.text.primary,
+      letterSpacing: -0.4,
     },
     subtitle: {
       fontFamily: fonts.body,
@@ -67,10 +69,11 @@ function createSearchStyles(colors: AppColors) {
     },
     resultsTitle: {
       fontFamily: fonts.headingSemiBold,
-      fontSize: 17,
+      fontSize: 18,
       color: colors.text.primary,
-      marginTop: 4,
+      marginTop: 8,
       marginBottom: 4,
+      letterSpacing: -0.2,
     },
     resultsHint: {
       fontFamily: fonts.body,
@@ -164,13 +167,15 @@ export default function SearchScreen() {
       <FlatList
         data={filteredInspections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <CargoCard
-            inspection={item}
-            onPress={() =>
-              router.push(`/cargo/${encodeURIComponent(item.id)}` as Href)
-            }
-          />
+        renderItem={({ item, index }) => (
+          <FadeInItem index={index}>
+            <CargoCard
+              inspection={item}
+              onPress={() =>
+                router.push(`/cargo/${encodeURIComponent(item.id)}` as Href)
+              }
+            />
+          </FadeInItem>
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
