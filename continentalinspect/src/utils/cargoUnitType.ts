@@ -9,10 +9,11 @@ export const CARGO_UNIT_TYPES: readonly CargoUnitType[] = [
   'breakbulk',
 ] as const;
 
-/** Manual choices when there is no recognized ULD code. */
+/** Choices when the ULD prefix is unknown or there is no ULD — never blocks save. */
 export const MANUAL_UNIT_TYPES: readonly CargoUnitType[] = [
-  'lcl',
+  'uld',
   'pallet_skid',
+  'lcl',
   'loose_cargo',
   'breakbulk',
 ] as const;
@@ -24,6 +25,11 @@ const CONTAINER_PREFIXES = new Set([
   'AKC',
   'AAF',
   'ALF',
+  'AMA',
+  'AMP',
+  'AAP',
+  'AGA',
+  'AVY',
   'DPE',
   'DQP',
   'DLE',
@@ -32,7 +38,13 @@ const CONTAINER_PREFIXES = new Set([
   'ALP',
 ]);
 
-const PALLET_PREFIXES = new Set(['PMC', 'PAG', 'PLA', 'PGA', 'FLA', 'P1P', 'PLB']);
+const PALLET_PREFIXES = new Set(['PMC', 'PAG', 'PLA', 'PGA', 'FLA', 'P1P', 'PLB', 'P6P', 'PEB']);
+
+/** Known IATA ULD type codes used for OCR ranking and auto unit-type inference. */
+export const KNOWN_ULD_PREFIXES: ReadonlySet<string> = new Set([
+  ...CONTAINER_PREFIXES,
+  ...PALLET_PREFIXES,
+]);
 
 const UNIT_TYPE_LABELS: Record<CargoUnitType, string> = {
   uld: 'ULD',
@@ -122,14 +134,10 @@ export function resolveUnitType(
     return inferred;
   }
 
+  // Prefix unknown or no ULD — keep whatever the operator picked (including ULD).
   const normalized = normalizeCargoUnitType(unitType);
-  if (normalized && normalized !== 'uld') {
+  if (normalized) {
     return normalized;
-  }
-
-  // Stored as uld but no recognizable code anymore — fall back to pallet/skid.
-  if (normalized === 'uld') {
-    return 'pallet_skid';
   }
 
   return 'pallet_skid';

@@ -1,6 +1,5 @@
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -24,6 +23,7 @@ import { EvidencePhotosField } from '@/components/EvidencePhotosField';
 import { EvidenceVideoField } from '@/components/EvidenceVideoField';
 import { OptionGroup } from '@/components/OptionGroup';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { UldLabelOcrCamera } from '@/components/UldLabelOcrCamera';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -61,7 +61,7 @@ import {
   extractCargoLabelFromImage,
   isCargoLabelOcrSupported,
 } from '@/utils/extractCargoLabelFromImage';
-import type { ParsedCargoLabel } from '@/utils/parseCargoLabelOcr';
+import { parseCargoLabelOcr, type ParsedCargoLabel } from '@/utils/parseCargoLabelOcr';
 
 type FormState = NewCargoInspectionInput;
 
@@ -110,6 +110,7 @@ export default function CargoInspectionFormScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showOcrCamera, setShowOcrCamera] = useState(false);
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrParsedResult, setOcrParsedResult] = useState<ParsedCargoLabel | null>(null);
   const [showOcrConfirm, setShowOcrConfirm] = useState(false);
@@ -262,7 +263,7 @@ export default function CargoInspectionFormScreen() {
     [closeOcrConfirm],
   );
 
-  const captureLabelWithOcr = useCallback(async () => {
+  const openOcrCamera = useCallback(() => {
     if (isEditMode || isOcrProcessing) {
       return;
     }
@@ -275,35 +276,22 @@ export default function CargoInspectionFormScreen() {
       return;
     }
 
-    const currentPermission = await ImagePicker.getCameraPermissionsAsync();
-    if (!currentPermission.granted) {
-      const requested = await ImagePicker.requestCameraPermissionsAsync();
-      if (!requested.granted) {
-        Alert.alert(
-          'Camera permission',
-          'Camera access is required to photograph container labels.',
-        );
-        return;
-      }
-    }
+    setShowOcrCamera(true);
+  }, [isEditMode, isOcrProcessing]);
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.85,
-    });
+  const closeOcrCamera = useCallback(() => {
+    setShowOcrCamera(false);
+  }, []);
 
-    if (result.canceled || !result.assets[0]?.uri) {
-      return;
-    }
-
+  const processOcrFromUri = useCallback(async (uri: string) => {
+    setShowOcrCamera(false);
     setIsOcrProcessing(true);
     try {
-      const parsed = await extractCargoLabelFromImage(result.assets[0].uri);
+      const parsed = await extractCargoLabelFromImage(uri);
       if (parsed.uldCandidates.length === 0 && parsed.awbCandidates.length === 0) {
         Alert.alert(
           'No codes found',
-          'Could not detect a ULD or AWB on this label. Try again with better lighting or enter the codes manually.',
+          'Could not detect a ULD or AWB in the frame. Fit the big ID (e.g. AKE 41382 EK) inside the box and try again.',
         );
         return;
       }
@@ -320,13 +308,15 @@ export default function CargoInspectionFormScreen() {
     } finally {
       setIsOcrProcessing(false);
     }
-  }, [isEditMode, isOcrProcessing]);
+  }, []);
 
   const handleBarcodeScanned = useCallback(
     ({ data }: BarcodeScanningResult) => {
       if (!showScanner || !data?.trim()) return;
 
-      const normalized = normalizeUldId(data);
+      // Prefer a structured ULD if the barcode payload is noisy / longer than the code.
+      const fromPayload = parseCargoLabelOcr([data]).uldCandidates[0];
+      const normalized = normalizeUldId(fromPayload || data);
       if (!normalized || scanHandledRef.current === normalized) return;
 
       scanHandledRef.current = normalized;
@@ -470,6 +460,12 @@ export default function CargoInspectionFormScreen() {
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.accent.primary} />
       </View>
+    );
+  }
+
+  if (showOcrCamera) {
+    return (
+      <UldLabelOcrCamera onCancel={closeOcrCamera} onCaptured={processOcrFromUri} />
     );
   }
 
@@ -635,7 +631,7 @@ export default function CargoInspectionFormScreen() {
                         pressed && styles.ocrButtonPressed,
                         isOcrProcessing && styles.ocrButtonDisabled,
                       ]}
-                      onPress={captureLabelWithOcr}
+                      onPress={openOcrCamera}
                       disabled={isOcrProcessing}>
                       {isOcrProcessing ? (
                         <ActivityIndicator size="small" color={colors.accent.primary} />
@@ -664,21 +660,15 @@ export default function CargoInspectionFormScreen() {
               </View>
             ) : (
               <View style={styles.detectedTypeBlock}>
-                {normalizeUldId(form.uldId) ? (
-                  <Text style={styles.unknownUldNote}>
-                    ULD prefix not recognized — choose the cargo category below.
-                  </Text>
-                ) : (
-                  <Text style={styles.unknownUldNote}>
-                    No ULD code — select LCL, Pallet/Skid, Loose cargo, or Breakbulk.
-                  </Text>
-                )}
+                <Text style={styles.unknownUldNote}>
+                  {normalizeUldId(form.uldId)
+                    ? 'ULD type not auto-detected — pick a cargo category below (optional override).'
+                    : 'No ULD code — select LCL, Pallet/Skid, Loose cargo, Breakbulk, or ULD.'}
+                </Text>
                 <OptionGroup
                   label="Cargo category"
                   options={MANUAL_UNIT_TYPES}
-                  value={
-                    isManualUnitType(form.unitType) ? form.unitType : 'pallet_skid'
-                  }
+                  value={form.unitType}
                   onChange={(unitType) => patchForm({ unitType })}
                   getLabel={getUnitTypeLabel}
                 />
