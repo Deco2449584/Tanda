@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { ACCENT } from '@/theme/accent';
-import { radius } from '@/theme/motion';
+import { radius, widgetShadow } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
@@ -19,10 +19,10 @@ function createStyles(colors: AppColors) {
   return StyleSheet.create({
     section: {
       backgroundColor: colors.surface.card,
-      borderRadius: radius.card + 2,
-      borderWidth: 1,
+      borderRadius: radius.card,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border.onSurface,
-      overflow: 'hidden',
+      ...widgetShadow,
     },
     header: {
       flexDirection: 'row',

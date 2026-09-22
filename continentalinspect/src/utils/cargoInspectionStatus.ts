@@ -59,6 +59,9 @@ export type SyncBadge = {
 };
 
 export function getSyncBadge(syncStatus: InspectionSyncStatus | undefined): SyncBadge {
+  if (syncStatus === 'local') {
+    return { label: 'Saved locally', kind: 'local' };
+  }
   if (syncStatus === 'pending') {
     return { label: 'Pending sync', kind: 'pending' };
   }

@@ -1,0 +1,80 @@
+import { useRef } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { useThemedStyles } from '@/hooks/useThemedStyles';
+import type { AppColors } from '@/theme/palettes';
+import { fonts } from '@/theme/typography';
+
+type MetricSliderProps = {
+  label: string;
+  value: number;
+  max: number;
+  unit: string;
+  onChange: (value: number) => void;
+};
+
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    wrap: { gap: 8 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    label: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text.onSurfaceMuted },
+    value: { fontFamily: fonts.headingSemiBold, fontSize: 16, color: colors.text.onSurface },
+    track: {
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.surface.muted,
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+    },
+    fill: {
+      position: 'absolute',
+      left: 3,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.accent.primary,
+    },
+    knob: {
+      position: 'absolute',
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 2,
+      borderColor: colors.accent.primary,
+    },
+  });
+}
+
+export function MetricSlider({ label, value, max, unit, onChange }: MetricSliderProps) {
+  const styles = useThemedStyles(createStyles);
+  const widthRef = useRef(1);
+  const ratio = Math.max(0, Math.min(1, max === 0 ? 0 : value / max));
+
+  const updateFromX = (locationX: number) => {
+    const next = Math.round((locationX / widthRef.current) * max);
+    onChange(Math.max(0, Math.min(max, next)));
+  };
+
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.header}>
+        <Text style={styles.label}>{label}</Text>
+        <Text style={styles.value}>
+          {value} {unit}
+        </Text>
+      </View>
+      <View
+        style={styles.track}
+        onLayout={(event) => {
+          widthRef.current = Math.max(1, event.nativeEvent.layout.width);
+        }}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={(event) => updateFromX(event.nativeEvent.locationX)}
+        onResponderMove={(event) => updateFromX(event.nativeEvent.locationX)}>
+        <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
+        <View style={[styles.knob, { left: `${ratio * 100}%`, marginLeft: -11 }]} />
+      </View>
+    </View>
+  );
+}

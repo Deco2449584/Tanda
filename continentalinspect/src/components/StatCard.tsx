@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { ComponentProps } from 'react';
 
 import { PressableScale } from '@/components/PressableScale';
+import { WidgetCard } from '@/components/WidgetCard';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
 import { radius } from '@/theme/motion';
@@ -20,15 +21,9 @@ type StatCardProps = {
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
     card: {
-      flex: 1,
-      backgroundColor: colors.surface.card,
-      borderRadius: radius.card,
-      paddingVertical: 16,
-      paddingHorizontal: 8,
       alignItems: 'center',
       gap: 4,
-      borderWidth: 1,
-      borderColor: colors.border.onSurface,
+      paddingVertical: 8,
     },
     iconWrap: {
       width: 36,
@@ -59,6 +54,7 @@ export function StatCard({ title, value, accentColor, icon }: StatCardProps) {
   const styles = useThemedStyles(createStyles);
 
   return (
+    <WidgetCard style={{ width: '48%' }}>
     <PressableScale fill style={styles.card}>
       <View style={[styles.iconWrap, { backgroundColor: `${accentColor}22` }]}>
         <Ionicons name={icon} size={18} color={accentColor} />
@@ -66,5 +62,6 @@ export function StatCard({ title, value, accentColor, icon }: StatCardProps) {
       <Text style={styles.value}>{value}</Text>
       <Text style={styles.title}>{title}</Text>
     </PressableScale>
+    </WidgetCard>
   );
 }

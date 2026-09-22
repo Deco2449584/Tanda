@@ -92,7 +92,8 @@ function createIndexStyles(colors: AppColors) {
     statsRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 10,
+      justifyContent: 'space-between',
+      rowGap: 12,
       marginBottom: 14,
     },
     errorBanner: {

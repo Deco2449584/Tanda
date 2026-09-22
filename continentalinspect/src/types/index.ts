@@ -40,7 +40,7 @@ export type CargoUnitType =
   | 'loose_cargo'
   | 'breakbulk';
 
-export type InspectionSyncStatus = 'synced' | 'pending' | 'error';
+export type InspectionSyncStatus = 'synced' | 'pending' | 'error' | 'local';
 
 export interface CargoInspection {
   id: string;

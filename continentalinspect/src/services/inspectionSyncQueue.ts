@@ -22,6 +22,8 @@ export type PendingCreateOperation = {
   enqueuedAt: string;
   retryCount: number;
   lastError?: string;
+  /** Local draft. Auto-sync skips it until the user taps Sync cloud. */
+  holdUntilSync?: boolean;
 };
 
 export type PendingMarkProcessedOperation = {
@@ -152,6 +154,21 @@ export async function updatePendingCreateStatus(
   await saveSyncQueue(userId, next);
 }
 
+export async function releaseDraftHold(userId: string, localId: string): Promise<void> {
+  const queue = await loadSyncQueue(userId);
+  const next = queue.map((item) => {
+    if (item.kind !== 'create' || item.localId !== localId) {
+      return item;
+    }
+    return { ...item, holdUntilSync: false };
+  });
+  await saveSyncQueue(userId, next);
+}
+
+export function countRetryableOperations(queue: readonly PendingInspectionOperation[]): number {
+  return queue.filter((item) => !(item.kind === 'create' && item.holdUntilSync)).length;
+}
+
 export async function removeSyncQueueItem(
   userId: string,
   predicate: (item: PendingInspectionOperation) => boolean,
@@ -201,9 +218,10 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     updatedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     dispatchedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     createdBy: operation.createdBy,
-    syncStatus: 'pending',
+    syncStatus: operation.holdUntilSync ? 'local' : 'pending',
     clientLocationId: operation.input.clientLocationId,
     clientLocationName: operation.input.clientLocationName,
+    clientPhotoUrl: operation.input.clientPhotoUrl,
     portalClientId: operation.input.portalClientId ?? operation.input.clientLocationId,
     registeredLatitude: operation.input.registeredLatitude,
     registeredLongitude: operation.input.registeredLongitude,

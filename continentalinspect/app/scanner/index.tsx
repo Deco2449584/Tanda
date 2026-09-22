@@ -19,9 +19,14 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { FormSectionCard } from '@/components/FormSectionCard';
 import { CargoLabelOcrConfirmSheet } from '@/components/CargoLabelOcrConfirmSheet';
+import { CargoTypeStrip } from '@/components/CargoTypeStrip';
+import { ClientChipRow } from '@/components/ClientChipRow';
+import { ConservationPills } from '@/components/ConservationPills';
 import { EvidencePhotosField } from '@/components/EvidencePhotosField';
 import { EvidenceVideoField } from '@/components/EvidenceVideoField';
-import { OptionGroup } from '@/components/OptionGroup';
+import { FormSectionRail } from '@/components/FormSectionRail';
+import { InfoModal } from '@/components/InfoModal';
+import { MetricSlider } from '@/components/MetricSlider';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { UldLabelOcrCamera } from '@/components/UldLabelOcrCamera';
 import { useAuth } from '@/context/AuthContext';
@@ -37,12 +42,10 @@ import { brand } from '@/theme/brand';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import {
-  CONSERVATION_TYPES,
   EMPTY_CARGO_INSPECTION_INPUT,
   type NewCargoInspectionInput,
 } from '@/types';
 import {
-  MANUAL_UNIT_TYPES,
   getUldKindLabel,
   getUldPrefix,
   getUnitTypeHint,
@@ -118,6 +121,9 @@ export default function CargoInspectionFormScreen() {
   const [showOcrConfirm, setShowOcrConfirm] = useState(false);
   const [allowedClients, setAllowedClients] = useState<InspectClientLocation[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [sectionIndex, setSectionIndex] = useState(0);
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const sectionOffsets = useRef({ cargo: 0, summary: 0 });
 
   const isEditMode = Boolean(editingId);
 
@@ -356,32 +362,32 @@ export default function CargoInspectionFormScreen() {
     const clientLocationId = form.clientLocationId?.trim() ?? '';
     const clientLocationName = form.clientLocationName?.trim() ?? '';
 
-    if (requiresUldId(unitType) && !uldId) {
-      Alert.alert('ULD required', 'Enter or scan the ULD ID (e.g. AKE 12345 CX).');
+    const missing = (title: string, message: string) => {
+      setNotice({ title, message });
       return null;
+    };
+
+    if (requiresUldId(unitType) && !uldId) {
+      return missing('ULD required', 'Enter or scan the ULD ID (e.g. AKE 12345 CX).');
     }
     if (!clientLocationId) {
-      Alert.alert(
+      return missing(
         'Client required',
         allowedClients.length === 0
           ? 'No client is assigned to your account. Ask an administrator in TimeTracker to assign a location or location group.'
           : 'Select the client you are registering this cargo for.',
       );
-      return null;
     }
     if (!foodType) {
-      Alert.alert('Cargo type required', 'Enter the type of cargo or product.');
-      return null;
+      return missing('Cargo type required', 'Choose a cargo type or enter the product name.');
     }
     if (form.hasIssues && !form.issueDescription?.trim()) {
-      Alert.alert('Issue description', 'Describe the issue when damage or problems are reported.');
-      return null;
+      return missing('Issue description', 'Describe the issue when damage or problems are reported.');
     }
 
     const temperatureCelsius = parseOptionalTemperature(temperatureText);
     if (temperatureCelsius === null) {
-      Alert.alert('Temperature', 'Enter a valid temperature in °C, or leave the field empty.');
-      return null;
+      return missing('Temperature', 'Enter a valid temperature in °C, or leave the field empty.');
     }
 
     const exitVehiclePlate = showDriverFields ? form.exitVehiclePlate?.trim() ?? '' : '';
@@ -446,7 +452,7 @@ export default function CargoInspectionFormScreen() {
 
       if (mode === 'draft') {
         await saveInspectionDraft(geoPayload);
-        Alert.alert('Draft saved', 'The record stays on this device until you upload it.');
+        Alert.alert('Saved locally', 'This draft stays on the device until you tap Sync cloud.');
       } else {
         await addInspection(geoPayload);
       }
@@ -569,7 +575,26 @@ export default function CargoInspectionFormScreen() {
         <ScrollView
           contentContainerStyle={[styles.formContent, { paddingBottom: formBottomPadding }]}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            const y = event.nativeEvent.contentOffset.y + 24;
+            if (y >= sectionOffsets.current.summary) {
+              setSectionIndex(2);
+            } else if (y >= sectionOffsets.current.cargo) {
+              setSectionIndex(1);
+            } else {
+              setSectionIndex(0);
+            }
+          }}>
+          <FormSectionRail activeIndex={sectionIndex} />
+          <InfoModal
+            visible={notice != null}
+            icon="alert-circle-outline"
+            title={notice?.title ?? ''}
+            message={notice?.message ?? ''}
+            onConfirm={() => setNotice(null)}
+          />
           {!isEditMode ? (
             <View style={styles.formHero}>
               <View style={styles.formHeroTop}>
@@ -680,13 +705,6 @@ export default function CargoInspectionFormScreen() {
                     ? 'ULD type not auto-detected — pick a cargo category below (optional override).'
                     : 'No ULD code — select LCL, Pallet/Skid, Loose cargo, Breakbulk, or ULD.'}
                 </Text>
-                <OptionGroup
-                  label="Cargo category"
-                  options={MANUAL_UNIT_TYPES}
-                  value={form.unitType}
-                  onChange={(unitType) => patchForm({ unitType })}
-                  getLabel={getUnitTypeLabel}
-                />
                 <Text style={styles.unitTypeHint}>{getUnitTypeHint(form.unitType)}</Text>
               </View>
             )}
@@ -715,87 +733,77 @@ export default function CargoInspectionFormScreen() {
                   No client assigned — contact admin in TimeTracker.
                 </Text>
               </View>
-            ) : allowedClients.length === 1 ? (
-              <FormField label="Client">
-                <View style={styles.clientReadonly}>
-                  <Text style={styles.clientReadonlyText}>{allowedClients[0].name}</Text>
-                </View>
-              </FormField>
             ) : (
-              <OptionGroup
-                label="Client"
-                options={allowedClients.map((client) => client.id)}
-                value={form.clientLocationId ?? ''}
-                onChange={(clientLocationId) => {
-                  const match = allowedClients.find((client) => client.id === clientLocationId);
-                  patchForm({
-                    clientLocationId,
-                    clientLocationName: match?.name ?? '',
-                    clientPhotoUrl: match?.photoUrl ?? '',
-                    portalClientId: clientLocationId,
-                  });
-                }}
-                getLabel={(id) =>
-                  allowedClients.find((client) => client.id === id)?.name ?? id
-                }
-              />
+              <FormField label="Client">
+                <ClientChipRow
+                  clients={allowedClients}
+                  selectedId={form.clientLocationId ?? ''}
+                  onChange={(client) =>
+                    patchForm({
+                      clientLocationId: client?.id ?? '',
+                      clientLocationName: client?.name ?? '',
+                      clientPhotoUrl: client?.photoUrl ?? '',
+                      portalClientId: client?.id ?? '',
+                    })
+                  }
+                />
+              </FormField>
             )}
           </FormSectionCard>
 
+          <View
+            onLayout={(event) => {
+              sectionOffsets.current.cargo = event.nativeEvent.layout.y;
+            }}>
           <FormSectionCard
             icon="nutrition-outline"
             title="Cargo details"
             subtitle="Product, conservation, weight, and condition">
-            <OptionGroup
-              label="Conservation type"
-              options={CONSERVATION_TYPES}
+            <FormField label="Cargo type">
+              <CargoTypeStrip
+                value={form.unitType}
+                onChange={(unitType) => {
+                  const previousLabel = getUnitTypeLabel(form.unitType);
+                  const custom =
+                    form.foodType.trim().length > 0 && form.foodType.trim() !== previousLabel;
+                  patchForm({
+                    unitType,
+                    foodType: custom ? form.foodType : getUnitTypeLabel(unitType),
+                  });
+                }}
+              />
+            </FormField>
+
+            <ConservationPills
               value={form.conservationType}
-              onChange={(value) => patchForm({ conservationType: value })}
+              onChange={(conservationType) => patchForm({ conservationType })}
             />
 
-            <FormField label="Cargo type">
+            <FormField label="Product name">
               <TextInput
                 style={styles.input}
                 value={form.foodType}
                 onChangeText={(text) => patchForm({ foodType: text })}
-                placeholder="e.g. FRESH SALMON"
+                placeholder="e.g. Fresh salmon"
                 placeholderTextColor={colors.text.onSurfaceMuted}
                 autoCorrect={false}
               />
             </FormField>
 
-            <View style={styles.rowTwo}>
-              <View style={styles.halfField}>
-                <FormField label="Weight (kg)">
-                  <TextInput
-                    style={styles.input}
-                    value={weightText}
-                    onChangeText={setWeightText}
-                    onFocus={() => {
-                      if (weightText === '0') setWeightText('');
-                    }}
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                    placeholderTextColor={colors.text.onSurfaceMuted}
-                  />
-                </FormField>
-              </View>
-              <View style={styles.halfField}>
-                <FormField label="Box count">
-                  <TextInput
-                    style={styles.input}
-                    value={boxCountText}
-                    onChangeText={setBoxCountText}
-                    onFocus={() => {
-                      if (boxCountText === '0') setBoxCountText('');
-                    }}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                    placeholderTextColor={colors.text.onSurfaceMuted}
-                  />
-                </FormField>
-              </View>
-            </View>
+            <MetricSlider
+              label="Weight (kg)"
+              value={Number.parseFloat(weightText) || 0}
+              max={5000}
+              unit="kg"
+              onChange={(value) => setWeightText(String(value))}
+            />
+            <MetricSlider
+              label="Box count"
+              value={Number.parseInt(boxCountText, 10) || 0}
+              max={200}
+              unit="boxes"
+              onChange={(value) => setBoxCountText(String(value))}
+            />
 
             <FormField label="Temperature (°C) — optional">
               <View style={styles.tempRow}>
@@ -864,10 +872,11 @@ export default function CargoInspectionFormScreen() {
               </FormField>
             ) : null}
           </FormSectionCard>
+          </View>
 
           <FormSectionCard
             icon="bus-outline"
-            title="Outbound transport"
+            title="Other options"
             subtitle="Optional — truck, driver, and carrier">
             <View style={styles.switchCard}>
               <View style={styles.switchRow}>
@@ -942,9 +951,13 @@ export default function CargoInspectionFormScreen() {
             />
           </FormSectionCard>
 
+          <View
+            onLayout={(event) => {
+              sectionOffsets.current.summary = event.nativeEvent.layout.y;
+            }}>
           <FormSectionCard
             icon="document-text-outline"
-            title="Cargo notes"
+            title="Summary"
             subtitle="Optional remarks about this load">
             <FormField label="Notes">
               <TextInput
@@ -959,6 +972,7 @@ export default function CargoInspectionFormScreen() {
               />
             </FormField>
           </FormSectionCard>
+          </View>
 
           <View style={styles.footerCard}>
             {!isEditMode ? (
@@ -987,7 +1001,7 @@ export default function CargoInspectionFormScreen() {
                 <>
                   <Ionicons name="cloud-upload-outline" size={20} color={colors.text.onAccent} />
                   <Text style={styles.primaryButtonText}>
-                    {isEditMode ? 'Update inspection' : 'Upload'}
+                    {isEditMode ? 'Update inspection' : 'Sync cloud'}
                   </Text>
                 </>
               )}

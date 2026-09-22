@@ -27,7 +27,9 @@ import { loadInspectionCache, saveInspectionCache } from '@/services/inspectionL
 import { persistPendingInspectionMedia, deletePendingInspectionMedia } from '@/services/inspectionPendingMedia';
 import {
   createLocalInspectionId,
+  countRetryableOperations,
   enqueuePendingCreate,
+  releaseDraftHold,
   enqueuePendingMarkLoaded,
   enqueuePendingMarkProcessed,
   findPendingCreateByUldId,
@@ -63,6 +65,7 @@ type CargoInspectionsContextValue = {
   refreshRecords: () => Promise<void>;
   addInspection: (input: NewCargoInspectionInput) => Promise<CargoInspection>;
   saveInspectionDraft: (input: NewCargoInspectionInput) => Promise<CargoInspection>;
+  syncLocalDraft: (inspectionId: string) => Promise<void>;
   updateInspectionById: (
     inspectionId: string,
     input: UpdateCargoInspectionInput,
@@ -92,7 +95,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     [remoteInspections, pendingQueue],
   );
 
-  const pendingSyncCount = pendingQueue.length;
+  const pendingSyncCount = countRetryableOperations(pendingQueue);
 
   const reloadPendingQueue = useCallback(async (userId: string) => {
     const queue = await loadSyncQueue(userId);
@@ -286,6 +289,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
           },
           status: 'identification',
           registeredAt,
+          holdUntilSync: false,
         });
         await reloadPendingQueue(user.uid);
         return pendingCreateToInspection(operation);
@@ -372,11 +376,26 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         },
         status: 'identification',
         registeredAt,
+        holdUntilSync: true,
       });
       await reloadPendingQueue(user.uid);
       return pendingCreateToInspection(operation);
     },
     [user, inspections, pendingQueue, reloadPendingQueue],
+  );
+
+  const syncLocalDraft = useCallback(
+    async (inspectionId: string): Promise<void> => {
+      if (!user) {
+        throw new Error('You must be signed in to sync a record.');
+      }
+      await releaseDraftHold(user.uid, inspectionId);
+      if (isOnline) {
+        await syncPendingInspections(user.uid, user.email ?? '');
+      }
+      await reloadPendingQueue(user.uid);
+    },
+    [user, isOnline, reloadPendingQueue],
   );
 
   const updateInspectionById = useCallback(
@@ -633,6 +652,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       refreshRecords,
       addInspection,
       saveInspectionDraft,
+      syncLocalDraft,
       updateInspectionById,
       markInspectionAsProcessed,
       markInspectionAsLoaded,
@@ -650,6 +670,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       refreshRecords,
       addInspection,
       saveInspectionDraft,
+      syncLocalDraft,
       updateInspectionById,
       markInspectionAsProcessed,
       markInspectionAsLoaded,

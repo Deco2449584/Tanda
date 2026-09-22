@@ -61,7 +61,7 @@ function createStyles(colors: AppColors) {
     card: {
       width: '100%',
       backgroundColor: colors.surface.card,
-      borderRadius: 14,
+      borderRadius: 22,
       padding: 16,
       gap: 12,
       borderWidth: 1,
@@ -193,8 +193,8 @@ export default function AccountScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}>
         <View style={styles.centerBlock}>
-          <UserAvatar size={72} />
-          <ContinentalInspectLogo width={160} />
+          <ContinentalInspectLogo width={220} />
+          <UserAvatar size={84} />
           <Text style={styles.title}>My Account</Text>
           <Text style={styles.subtitle}>
             {brand.panelTitle} · {brand.location}

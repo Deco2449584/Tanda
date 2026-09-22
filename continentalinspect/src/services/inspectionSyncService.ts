@@ -64,6 +64,9 @@ export async function syncPendingInspections(
   const errors: string[] = [];
 
   for (const operation of queue) {
+    if (operation.kind === 'create' && operation.holdUntilSync) {
+      continue;
+    }
     try {
       await processQueueItem(userId, createdByEmail, operation);
       synced += 1;

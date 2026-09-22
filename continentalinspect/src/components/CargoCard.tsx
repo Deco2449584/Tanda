@@ -8,7 +8,7 @@ import { useEvidenceMediaPipeline } from '@/context/EvidenceMediaPipelineContext
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { ACCENT, ACCENT_DIM } from '@/theme/accent';
-import { radius } from '@/theme/motion';
+import { radius, widgetShadow } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
@@ -37,11 +37,12 @@ function createStyles(colors: AppColors) {
     card: {
       backgroundColor: colors.surface.card,
       borderRadius: radius.card,
-      marginBottom: 10,
+      marginBottom: 12,
       overflow: 'hidden',
       flexDirection: 'row',
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border.onSurface,
+      ...widgetShadow,
     },
     accentBar: {
       width: 3,

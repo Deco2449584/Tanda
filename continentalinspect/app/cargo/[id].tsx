@@ -277,9 +277,9 @@ function createDetailStyles(colors: AppColors) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 10,
-      paddingVertical: 15,
-      paddingHorizontal: 16,
-      borderRadius: 14,
+      paddingVertical: 18,
+      paddingHorizontal: 18,
+      borderRadius: 22,
       backgroundColor: METRIC_LOADED,
       shadowColor: METRIC_LOADED,
       shadowOffset: { width: 0, height: 4 },
@@ -337,11 +337,18 @@ export default function CargoDetailScreen() {
   const styles = useThemedStyles(createDetailStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAdmin } = useAuth();
-  const { inspections, isLoading, markInspectionAsLoaded, markInspectionAsProcessed, isOnline } =
-    useCargoInspections();
+  const {
+    inspections,
+    isLoading,
+    markInspectionAsLoaded,
+    markInspectionAsProcessed,
+    syncLocalDraft,
+    isOnline,
+  } = useCargoInspections();
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [isMarkingProcessed, setIsMarkingProcessed] = useState(false);
   const [isMarkingLoaded, setIsMarkingLoaded] = useState(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
 
   const inspection = useMemo(
     () => inspections.find((item) => item.id === id),
@@ -424,6 +431,27 @@ export default function CargoDetailScreen() {
     );
   };
 
+  const handleSyncCloud = async () => {
+    if (!inspection || isSyncingCloud) return;
+    setIsSyncingCloud(true);
+    try {
+      await syncLocalDraft(inspection.id);
+      if (isOnline) {
+        router.back();
+      }
+      Alert.alert(
+        isOnline ? 'Synced' : 'Waiting for connection',
+        isOnline
+          ? 'The record was uploaded.'
+          : 'It will upload automatically when you are back online.',
+      );
+    } catch {
+      Alert.alert('Sync failed', 'Could not upload this draft. Please try again.');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
   const handleExportPdf = async () => {
     if (!inspection) return;
     setIsPdfLoading(true);
@@ -478,11 +506,16 @@ export default function CargoDetailScreen() {
           onBack={() => router.back()}
           backLabel="Records"
           rightElement={
-            isAdmin ? (
-              <Pressable onPress={handleEdit} hitSlop={12} style={styles.headerIconBtn}>
-                <Ionicons name="create-outline" size={24} color={colors.accent.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Pressable onPress={() => void handleExportPdf()} hitSlop={12} style={styles.headerIconBtn}>
+                <Ionicons name="document-text-outline" size={22} color={colors.accent.primary} />
               </Pressable>
-            ) : null
+              {isAdmin ? (
+                <Pressable onPress={handleEdit} hitSlop={12} style={styles.headerIconBtn}>
+                  <Ionicons name="create-outline" size={22} color={colors.accent.primary} />
+                </Pressable>
+              ) : null}
+            </View>
           }
         />
 
@@ -570,6 +603,25 @@ export default function CargoDetailScreen() {
           ) : null}
 
           <View style={styles.actionsCard}>
+            {inspection.syncStatus === 'local' ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dispatchBtn,
+                  pressed && !isSyncingCloud && styles.dispatchBtnPressed,
+                  isSyncingCloud && styles.dispatchBtnDisabled,
+                ]}
+                onPress={() => void handleSyncCloud()}
+                disabled={isSyncingCloud}>
+                {isSyncingCloud ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
+                    <Text style={styles.dispatchBtnText}>Sync cloud</Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
             {isIdentification ? (
               <Pressable
                 style={({ pressed }) => [
@@ -608,22 +660,6 @@ export default function CargoDetailScreen() {
                 )}
               </Pressable>
             ) : null}
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.pdfBar,
-                pressed && !isPdfLoading && styles.pdfBarPressed,
-                isPdfLoading && styles.pdfBarDisabled,
-              ]}
-              onPress={handleExportPdf}
-              disabled={isPdfLoading}>
-              {isPdfLoading ? (
-                <ActivityIndicator color={colors.accent.primary} />
-              ) : (
-                <Ionicons name="document-text-outline" size={20} color={colors.accent.primary} />
-              )}
-              <Text style={styles.pdfBarText}>Export inspection PDF</Text>
-            </Pressable>
           </View>
 
           <View style={styles.card}>
@@ -685,25 +721,6 @@ export default function CargoDetailScreen() {
                 <DetailRow
                   label="Cargo notes"
                   value={inspection.notes.trim()}
-                  styles={styles}
-                />
-              ) : null}
-              {typeof inspection.registeredLatitude === 'number' &&
-              typeof inspection.registeredLongitude === 'number' ? (
-                <DetailRow
-                  label="Registered GPS"
-                  value={`${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
-                    typeof inspection.registeredAccuracyMeters === 'number'
-                      ? ` (±${inspection.registeredAccuracyMeters} m)`
-                      : ''
-                  }`}
-                  styles={styles}
-                />
-              ) : null}
-              {inspection.registeredLocationAt ? (
-                <DetailRow
-                  label="GPS captured at"
-                  value={formatInspectionDate(inspection.registeredLocationAt)}
                   styles={styles}
                 />
               ) : null}
