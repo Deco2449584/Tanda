@@ -357,13 +357,13 @@ export default function CargoDetailScreen() {
     try {
       await markInspectionAsLoaded(inspection.id);
       Alert.alert(
-        isOnline ? 'On truck' : 'Saved on device',
+        isOnline ? 'Processing finished' : 'Saved on device',
         isOnline
-          ? `${title} has been marked as on the transport truck.`
-          : `${title} is marked on truck on this device and will sync when you are back online.`,
+          ? `${title} has been marked as cargo processing finished.`
+          : `${title} is marked finished on this device and will sync when you are back online.`,
       );
     } catch {
-      Alert.alert('Update failed', 'Could not mark this cargo as on truck. Please try again.');
+      Alert.alert('Update failed', 'Could not mark this cargo as finished. Please try again.');
     } finally {
       setIsMarkingLoaded(false);
     }
@@ -570,7 +570,7 @@ export default function CargoDetailScreen() {
                 ) : (
                   <>
                     <Ionicons name="bus-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.dispatchBtnText}>Mark on truck</Text>
+                    <Text style={styles.dispatchBtnText}>Cargo processing finished</Text>
                   </>
                 )}
               </Pressable>
@@ -619,7 +619,7 @@ export default function CargoDetailScreen() {
                 <DetailRow label="ULD ID" value={inspection.uldId} styles={styles} />
               ) : null}
               <DetailRow label="AWB" value={inspection.awbNumber} styles={styles} />
-              <DetailRow label="Food type" value={inspection.foodType} styles={styles} />
+              <DetailRow label="Cargo type" value={inspection.foodType} styles={styles} />
               {typeof inspection.temperatureCelsius === 'number' ? (
                 <DetailRow
                   label="Temperature"
@@ -645,6 +645,13 @@ export default function CargoDetailScreen() {
                 <DetailRow
                   label="Transport company"
                   value={inspection.transportCompany.trim()}
+                  styles={styles}
+                />
+              ) : null}
+              {inspection.notes?.trim() ? (
+                <DetailRow
+                  label="Cargo notes"
+                  value={inspection.notes.trim()}
                   styles={styles}
                 />
               ) : null}

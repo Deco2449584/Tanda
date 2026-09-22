@@ -48,6 +48,7 @@ export type CargoInspectionDocument = {
   hasIssues: boolean;
   status?: CargoInspectionStatus | string;
   issueDescription: string;
+  notes?: string;
   issueReportedAt?: string;
   photoEvidence: string[];
   videoEvidence: string[];
@@ -124,6 +125,7 @@ function mapDocumentToCargoInspection(
     hasIssues: Boolean(data.hasIssues),
     status,
     issueDescription: issueDescription || undefined,
+    notes: data.notes?.trim() || undefined,
     issueReportedAt: data.issueReportedAt?.trim() || undefined,
     photoEvidence: data.photoEvidence ?? [],
     videoEvidence: data.videoEvidence ?? [],
@@ -171,6 +173,7 @@ function buildFirestorePayload(
   status: CargoInspectionStatus,
 ): Omit<CargoInspectionDocument, 'registeredAt' | 'registeredAtIso' | 'updatedAt' | 'updatedAtIso' | 'userId'> {
   const issueDescription = input.hasIssues ? (input.issueDescription ?? '').trim() : '';
+  const notes = (input.notes ?? '').trim();
   const uldId = normalizeUldId(input.uldId);
   const clientLocationId = input.clientLocationId?.trim() ?? '';
   const clientLocationName = input.clientLocationName?.trim() ?? '';
@@ -196,6 +199,7 @@ function buildFirestorePayload(
     hasIssues: input.hasIssues,
     status,
     issueDescription,
+    notes,
     photoEvidence,
     videoEvidence,
     createdBy,
@@ -253,6 +257,7 @@ function toInspectionFromCreatePayload(
     status: 'new',
     hasIssues: payload.hasIssues,
     issueDescription: payload.issueDescription || undefined,
+    notes: payload.notes || undefined,
     issueReportedAt: payload.issueReportedAt,
     photoEvidence,
     videoEvidence,

@@ -162,6 +162,7 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     status: operation.status,
     hasIssues: operation.input.hasIssues,
     issueDescription: issueDescription || undefined,
+    notes: operation.input.notes?.trim() || undefined,
     photoEvidence: operation.input.photoEvidence,
     videoEvidence: operation.input.videoEvidence,
     registeredAt: operation.registeredAt,

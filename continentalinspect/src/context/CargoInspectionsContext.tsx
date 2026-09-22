@@ -358,6 +358,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         issueReportedAt: input.hasIssues
           ? existing.issueReportedAt ?? updatedAtIso
           : existing.issueReportedAt,
+        notes: input.notes?.trim() || undefined,
         photoEvidence,
         videoEvidence,
         updatedAt: updatedAtIso,

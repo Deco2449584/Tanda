@@ -340,7 +340,7 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
         return { status: 'error', progress: 0, label: 'Error' };
       }
 
-      return { status: 'uploaded', progress: 100, label: 'Subido' };
+      return { status: 'uploaded', progress: 100, label: 'Update' };
     },
     [jobs],
   );

@@ -53,6 +53,8 @@ export interface CargoInspection {
   status: CargoInspectionStatus;
   hasIssues: boolean;
   issueDescription?: string;
+  /** Free-form cargo notes (not the same as issue description). */
+  notes?: string;
   /** Auto-set when an issue is first reported (exact date/time). */
   issueReportedAt?: Date | string;
   photoEvidence: string[];
@@ -101,6 +103,7 @@ export const EMPTY_CARGO_INSPECTION_INPUT: NewCargoInspectionInput = {
   boxCount: 0,
   hasIssues: false,
   issueDescription: '',
+  notes: '',
   photoEvidence: [],
   videoEvidence: [],
   clientLocationId: '',

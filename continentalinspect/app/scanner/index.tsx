@@ -104,9 +104,10 @@ export default function CargoInspectionFormScreen() {
   const scanHandledRef = useRef<string | null>(null);
 
   const [form, setForm] = useState<FormState>({ ...EMPTY_CARGO_INSPECTION_INPUT });
-  const [weightText, setWeightText] = useState('0');
-  const [boxCountText, setBoxCountText] = useState('0');
+  const [weightText, setWeightText] = useState('');
+  const [boxCountText, setBoxCountText] = useState('');
   const [temperatureText, setTemperatureText] = useState('');
+  const [showDriverFields, setShowDriverFields] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -125,9 +126,10 @@ export default function CargoInspectionFormScreen() {
 
   const resetForm = useCallback(() => {
     setForm({ ...EMPTY_CARGO_INSPECTION_INPUT });
-    setWeightText('0');
-    setBoxCountText('0');
+    setWeightText('');
+    setBoxCountText('');
     setTemperatureText('');
+    setShowDriverFields(false);
     setEditingId(null);
   }, []);
 
@@ -189,6 +191,7 @@ export default function CargoInspectionFormScreen() {
       boxCount: existing.boxCount,
       hasIssues: existing.hasIssues,
       issueDescription: existing.issueDescription ?? '',
+      notes: existing.notes ?? '',
       issueReportedAt: existing.issueReportedAt,
       photoEvidence: [...existing.photoEvidence],
       videoEvidence: [...existing.videoEvidence],
@@ -205,12 +208,19 @@ export default function CargoInspectionFormScreen() {
       driverName: existing.driverName ?? '',
       transportCompany: existing.transportCompany ?? '',
     });
-    setWeightText(String(existing.weightKg));
-    setBoxCountText(String(existing.boxCount));
+    setWeightText(existing.weightKg > 0 ? String(existing.weightKg) : '');
+    setBoxCountText(existing.boxCount > 0 ? String(existing.boxCount) : '');
     setTemperatureText(
       typeof existing.temperatureCelsius === 'number'
         ? String(existing.temperatureCelsius)
         : '',
+    );
+    setShowDriverFields(
+      Boolean(
+        existing.exitVehiclePlate?.trim() ||
+          existing.driverName?.trim() ||
+          existing.transportCompany?.trim(),
+      ),
     );
   }, [editId, isAdmin, inspections, inspectionsLoading, router]);
 
@@ -358,12 +368,8 @@ export default function CargoInspectionFormScreen() {
       );
       return null;
     }
-    if (!awbNumber) {
-      Alert.alert('AWB required', 'Enter the air waybill number.');
-      return null;
-    }
     if (!foodType) {
-      Alert.alert('Food type required', 'Enter the type of food or product.');
+      Alert.alert('Cargo type required', 'Enter the type of cargo or product.');
       return null;
     }
     if (form.hasIssues && !form.issueDescription?.trim()) {
@@ -377,9 +383,10 @@ export default function CargoInspectionFormScreen() {
       return null;
     }
 
-    const exitVehiclePlate = form.exitVehiclePlate?.trim() ?? '';
-    const driverName = form.driverName?.trim() ?? '';
-    const transportCompany = form.transportCompany?.trim() ?? '';
+    const exitVehiclePlate = showDriverFields ? form.exitVehiclePlate?.trim() ?? '' : '';
+    const driverName = showDriverFields ? form.driverName?.trim() ?? '' : '';
+    const transportCompany = showDriverFields ? form.transportCompany?.trim() ?? '' : '';
+    const notes = form.notes?.trim() ?? '';
 
     return {
       unitType,
@@ -391,6 +398,7 @@ export default function CargoInspectionFormScreen() {
       boxCount: parseBoxCount(boxCountText),
       hasIssues: form.hasIssues,
       issueDescription: form.hasIssues ? form.issueDescription?.trim() ?? '' : '',
+      notes,
       issueReportedAt: form.issueReportedAt,
       photoEvidence: form.photoEvidence,
       videoEvidence: form.videoEvidence,
@@ -676,7 +684,7 @@ export default function CargoInspectionFormScreen() {
               </View>
             )}
 
-            <FormField label="Air waybill (AWB)">
+            <FormField label="Air waybill (AWB) — optional">
               <TextInput
                 style={styles.input}
                 value={form.awbNumber}
@@ -737,7 +745,7 @@ export default function CargoInspectionFormScreen() {
               onChange={(value) => patchForm({ conservationType: value })}
             />
 
-            <FormField label="Food type">
+            <FormField label="Cargo type">
               <TextInput
                 style={styles.input}
                 value={form.foodType}
@@ -755,6 +763,9 @@ export default function CargoInspectionFormScreen() {
                     style={styles.input}
                     value={weightText}
                     onChangeText={setWeightText}
+                    onFocus={() => {
+                      if (weightText === '0') setWeightText('');
+                    }}
                     keyboardType="decimal-pad"
                     placeholder="0"
                     placeholderTextColor={colors.text.onSurfaceMuted}
@@ -767,6 +778,9 @@ export default function CargoInspectionFormScreen() {
                     style={styles.input}
                     value={boxCountText}
                     onChangeText={setBoxCountText}
+                    onFocus={() => {
+                      if (boxCountText === '0') setBoxCountText('');
+                    }}
                     keyboardType="number-pad"
                     placeholder="0"
                     placeholderTextColor={colors.text.onSurfaceMuted}
@@ -776,14 +790,35 @@ export default function CargoInspectionFormScreen() {
             </View>
 
             <FormField label="Temperature (°C) — optional">
-              <TextInput
-                style={styles.input}
-                value={temperatureText}
-                onChangeText={setTemperatureText}
-                keyboardType="decimal-pad"
-                placeholder="e.g. -18 or 4"
-                placeholderTextColor={colors.text.onSurfaceMuted}
-              />
+              <View style={styles.tempRow}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.tempSignBtn,
+                    pressed && styles.tempSignBtnPressed,
+                  ]}
+                  onPress={() => {
+                    setTemperatureText((prev) => {
+                      const trimmed = prev.trim();
+                      if (!trimmed) return '-';
+                      if (trimmed.startsWith('-')) return trimmed.slice(1);
+                      return `-${trimmed}`;
+                    });
+                  }}
+                  accessibilityLabel="Toggle negative temperature">
+                  <Text style={styles.tempSignBtnText}>+/−</Text>
+                </Pressable>
+                <TextInput
+                  style={[styles.input, styles.tempInput]}
+                  value={temperatureText}
+                  onChangeText={(text) => {
+                    const cleaned = text.replace(/[^0-9.,\-]/g, '');
+                    setTemperatureText(cleaned);
+                  }}
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                  placeholder="e.g. -18 or 4"
+                  placeholderTextColor={colors.text.onSurfaceMuted}
+                />
+              </View>
             </FormField>
 
             <View style={styles.switchCard}>
@@ -826,37 +861,61 @@ export default function CargoInspectionFormScreen() {
             icon="bus-outline"
             title="Outbound transport"
             subtitle="Optional — truck, driver, and carrier">
-            <FormField label="Exit vehicle plate">
-              <TextInput
-                style={styles.input}
-                value={form.exitVehiclePlate ?? ''}
-                onChangeText={(text) => patchForm({ exitVehiclePlate: text })}
-                placeholder="e.g. ABC-123"
-                placeholderTextColor={colors.text.onSurfaceMuted}
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-            </FormField>
-            <FormField label="Driver name">
-              <TextInput
-                style={styles.input}
-                value={form.driverName ?? ''}
-                onChangeText={(text) => patchForm({ driverName: text })}
-                placeholder="Driver full name"
-                placeholderTextColor={colors.text.onSurfaceMuted}
-                autoCorrect={false}
-              />
-            </FormField>
-            <FormField label="Transport company">
-              <TextInput
-                style={styles.input}
-                value={form.transportCompany ?? ''}
-                onChangeText={(text) => patchForm({ transportCompany: text })}
-                placeholder="Carrier / haulage company"
-                placeholderTextColor={colors.text.onSurfaceMuted}
-                autoCorrect={false}
-              />
-            </FormField>
+            <View style={styles.switchCard}>
+              <View style={styles.switchRow}>
+                <View style={styles.switchText}>
+                  <Text style={styles.switchLabel}>Add driver / transport details?</Text>
+                  <Text style={styles.switchHint}>
+                    Turn on to enter vehicle plate, driver name, and carrier
+                  </Text>
+                </View>
+                <Switch
+                  value={showDriverFields}
+                  onValueChange={setShowDriverFields}
+                  trackColor={{
+                    false: colors.border.onSurface,
+                    true: colors.accent.primary,
+                  }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+            </View>
+
+            {showDriverFields ? (
+              <>
+                <FormField label="Exit vehicle plate">
+                  <TextInput
+                    style={styles.input}
+                    value={form.exitVehiclePlate ?? ''}
+                    onChangeText={(text) => patchForm({ exitVehiclePlate: text })}
+                    placeholder="e.g. ABC-123"
+                    placeholderTextColor={colors.text.onSurfaceMuted}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                </FormField>
+                <FormField label="Driver name">
+                  <TextInput
+                    style={styles.input}
+                    value={form.driverName ?? ''}
+                    onChangeText={(text) => patchForm({ driverName: text })}
+                    placeholder="Driver full name"
+                    placeholderTextColor={colors.text.onSurfaceMuted}
+                    autoCorrect={false}
+                  />
+                </FormField>
+                <FormField label="Transport company">
+                  <TextInput
+                    style={styles.input}
+                    value={form.transportCompany ?? ''}
+                    onChangeText={(text) => patchForm({ transportCompany: text })}
+                    placeholder="Carrier / haulage company"
+                    placeholderTextColor={colors.text.onSurfaceMuted}
+                    autoCorrect={false}
+                  />
+                </FormField>
+              </>
+            ) : null}
           </FormSectionCard>
 
           <FormSectionCard
@@ -873,6 +932,24 @@ export default function CargoInspectionFormScreen() {
               videos={form.videoEvidence}
               onChange={(videoEvidence) => patchForm({ videoEvidence })}
             />
+          </FormSectionCard>
+
+          <FormSectionCard
+            icon="document-text-outline"
+            title="Cargo notes"
+            subtitle="Optional remarks about this load">
+            <FormField label="Notes">
+              <TextInput
+                style={styles.textArea}
+                value={form.notes ?? ''}
+                onChangeText={(text) => patchForm({ notes: text })}
+                placeholder="Any extra notes about the cargo..."
+                placeholderTextColor={colors.text.onSurfaceMuted}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </FormField>
           </FormSectionCard>
 
           <View style={styles.footerCard}>
@@ -1254,6 +1331,29 @@ function createFormStyles(colors: AppColors) {
     },
     rowTwo: { flexDirection: 'row', gap: 12 },
     halfField: { flex: 1 },
+    tempRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    tempSignBtn: {
+      minWidth: 52,
+      height: 48,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border.onSurface,
+      backgroundColor: colors.background.secondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    tempSignBtnPressed: { opacity: 0.85 },
+    tempSignBtnText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 16,
+      color: colors.text.onSurface,
+    },
+    tempInput: { flex: 1 },
     switchRow: {
       flexDirection: 'row',
       alignItems: 'center',

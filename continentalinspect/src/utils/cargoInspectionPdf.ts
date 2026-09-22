@@ -197,7 +197,7 @@ function buildInspectionHtml(
         ${tableRow('Unit type', getUnitTypeLabel(inspection.unitType))}
         ${tableRow('AWB Number', inspection.awbNumber)}
         ${tableRow('Conservation', getConservationLabel(inspection.conservationType))}
-        ${tableRow('Food Type', inspection.foodType)}
+        ${tableRow('Cargo Type', inspection.foodType)}
         ${tableRow('Weight (Kg)', String(inspection.weightKg))}
         ${tableRow('Box Count', String(inspection.boxCount))}
         ${
@@ -225,6 +225,11 @@ function buildInspectionHtml(
         ${
           inspection.issueReportedAt
             ? tableRow('Issue reported at', formatInspectionDate(inspection.issueReportedAt))
+            : ''
+        }
+        ${
+          inspection.notes?.trim()
+            ? tableRow('Cargo notes', inspection.notes.trim())
             : ''
         }
         ${tableRow('Inspector Email', inspection.createdBy)}

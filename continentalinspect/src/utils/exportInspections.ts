@@ -14,7 +14,7 @@ const CSV_HEADERS = [
   'Client',
   'Client Location ID',
   'Conservation',
-  'Food Type',
+  'Cargo Type',
   'Weight (Kg)',
   'Box Count',
   'Temperature (°C)',
@@ -24,6 +24,7 @@ const CSV_HEADERS = [
   'Status',
   'Has Issues',
   'Issue Description',
+  'Cargo Notes',
   'Issue Reported At',
   'Inspector Email',
   'Registered At',
@@ -61,6 +62,7 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     getInspectionStatusExportLabel(inspection),
     inspection.hasIssues ? 'Yes' : 'No',
     inspection.issueDescription ?? '',
+    inspection.notes ?? '',
     inspection.issueReportedAt
       ? formatInspectionDate(inspection.issueReportedAt)
       : '',
