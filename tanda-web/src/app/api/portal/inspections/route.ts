@@ -29,6 +29,7 @@ export async function GET(request: Request) {
         hasIssues: inspection.hasIssues,
         conservationType: inspection.conservationType,
         foodType: inspection.foodType,
+        unitType: inspection.unitType,
         weightKg: inspection.weightKg,
         boxCount: inspection.boxCount,
         registeredAt: inspection.registeredAt,

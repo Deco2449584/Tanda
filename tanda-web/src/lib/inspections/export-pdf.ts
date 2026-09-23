@@ -3,8 +3,13 @@ import { PORTAL_COMPANY_TAGLINE, PORTAL_CONTACT } from '@/lib/portal/portal-bran
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import { formatInspectionDate } from '@/lib/inspections/format';
 import { resolveInspectionMapsUrl } from '@/lib/inspections/inspection-maps-url';
+import {
+  getInspectionDisplayTitle,
+  getUnitTypeLabel,
+  resolveUnitType,
+} from '@/lib/inspections/cargo-unit-type';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
-import { getInspectionListStatus } from '@/lib/inspections/status';
+import { formatPersonName, getInspectionListStatus } from '@/lib/inspections/status';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 
 const INK = '#1A1A1A';
@@ -24,20 +29,11 @@ function escapeAttr(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
-function detailItem(label: string, value: string | null | undefined): string {
-  const text = value?.trim();
-  if (!text) return '';
-  return `<div class="detail-item">
-    <dt>${escapeHtml(label)}</dt>
-    <dd>${escapeHtml(text)}</dd>
-  </div>`;
-}
-
-function detailLink(label: string, href: string, linkLabel: string): string {
-  return `<div class="detail-item">
-    <dt>${escapeHtml(label)}</dt>
-    <dd><a class="map-link" href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(linkLabel)}</a></dd>
-  </div>`;
+function tableRow(label: string, value: string): string {
+  return `<tr>
+    <th>${escapeHtml(label)}</th>
+    <td>${escapeHtml(value)}</td>
+  </tr>`;
 }
 
 function buildVisualPhotoEvidenceHtml(photoSources: readonly string[]): string {
@@ -118,53 +114,72 @@ function buildInspectionHtml(
     status.kind === 'processed'
       ? 'badge-processed'
       : status.kind === 'loaded'
-        ? 'badge-ok'
+        ? 'badge-loaded'
         : 'badge-new';
+  const unitLabel = getUnitTypeLabel(resolveUnitType(inspection.unitType, inspection.uldId));
 
   const logoHtml = logoDataUrl
     ? `<img src="${escapeAttr(logoDataUrl)}" alt="${escapeAttr(COMPANY_NAME)}" class="brand-logo" />`
     : `<div class="brand-fallback">${escapeHtml(COMPANY_NAME)}</div>`;
 
   const detailsHtml = `
-    <dl class="detail-grid">
-      ${detailItem('Site / client', inspection.clientLocationName)}
-      ${detailItem('ULD ID', inspection.uldId)}
-      ${detailItem('AWB number', inspection.awbNumber)}
-      ${detailItem('Conservation', getConservationLabel(inspection.conservationType))}
-      ${detailItem('Food type', inspection.foodType)}
-      ${detailItem('Weight', `${inspection.weightKg} kg`)}
-      ${detailItem('Boxes', String(inspection.boxCount))}
-      ${
-        typeof inspection.temperatureCelsius === 'number'
-          ? detailItem('Temperature', `${inspection.temperatureCelsius} °C`)
-          : ''
-      }
-      ${detailItem('Exit vehicle plate', inspection.exitVehiclePlate)}
-      ${detailItem('Driver', inspection.driverName)}
-      ${detailItem('Transport company', inspection.transportCompany)}
-      ${detailItem('Created by', inspection.createdByName?.trim() || inspection.createdBy || '—')}
-      ${detailItem('Registered', formatInspectionDate(inspection.registeredAt))}
-      ${
-        inspection.dispatchedAt
-          ? detailItem('Loaded on truck', formatInspectionDate(inspection.dispatchedAt))
-          : ''
-      }
-      ${
-        inspection.updatedAt && !inspection.dispatchedAt
-          ? detailItem('Last updated', formatInspectionDate(inspection.updatedAt))
-          : ''
-      }
-      ${
-        inspection.issueReportedAt
-          ? detailItem('Issue reported', formatInspectionDate(inspection.issueReportedAt))
-          : ''
-      }
-      ${
-        mapsUrl
-          ? detailLink('Registration location', mapsUrl, 'View on map')
-          : ''
-      }
-    </dl>`;
+    <table class="data-table">
+      <tbody>
+        ${tableRow('Client', inspection.clientLocationName?.trim() || '—')}
+        ${tableRow('ULD ID', inspection.uldId || '—')}
+        ${tableRow('Unit type', unitLabel)}
+        ${tableRow('AWB Number', inspection.awbNumber)}
+        ${tableRow('Conservation', getConservationLabel(inspection.conservationType))}
+        ${tableRow('Cargo Type', inspection.foodType)}
+        ${tableRow('Weight (Kg)', String(inspection.weightKg))}
+        ${tableRow('Box Count', String(inspection.boxCount))}
+        ${
+          typeof inspection.temperatureCelsius === 'number'
+            ? tableRow('Temperature (°C)', String(inspection.temperatureCelsius))
+            : ''
+        }
+        ${
+          inspection.exitVehiclePlate?.trim()
+            ? tableRow('Exit vehicle plate', inspection.exitVehiclePlate.trim())
+            : ''
+        }
+        ${
+          inspection.driverName?.trim()
+            ? tableRow('Driver name', inspection.driverName.trim())
+            : ''
+        }
+        ${
+          inspection.transportCompany?.trim()
+            ? tableRow('Transport company', inspection.transportCompany.trim())
+            : ''
+        }
+        ${tableRow('Status', status.label)}
+        ${tableRow('Has Issues', inspection.hasIssues ? 'Yes' : 'No')}
+        ${
+          inspection.issueReportedAt
+            ? tableRow('Issue reported at', formatInspectionDate(inspection.issueReportedAt))
+            : ''
+        }
+        ${tableRow('Created by', formatPersonName(inspection.createdByName, inspection.createdBy))}
+        ${tableRow('Last edited by', formatPersonName(inspection.updatedByName, inspection.updatedBy))}
+        ${tableRow('Registered at', formatInspectionDate(inspection.registeredAt))}
+        ${
+          mapsUrl
+            ? `<tr><th>Location</th><td><a class="map-link" href="${escapeAttr(mapsUrl)}" target="_blank" rel="noreferrer">View on map</a></td></tr>`
+            : ''
+        }
+        ${
+          inspection.dispatchedAt
+            ? tableRow('Loaded on truck at', formatInspectionDate(inspection.dispatchedAt))
+            : ''
+        }
+        ${
+          inspection.updatedAt && !inspection.dispatchedAt
+            ? tableRow('Last Updated', formatInspectionDate(inspection.updatedAt))
+            : ''
+        }
+      </tbody>
+    </table>`;
 
   const issueBlock = inspection.hasIssues
     ? `<section class="issue-block">
@@ -268,7 +283,7 @@ function buildInspectionHtml(
       font-weight: 800;
       letter-spacing: 0.08em;
     }
-    .badge-ok { background: #E8F8EE; color: #166534; }
+    .badge-loaded { background: #E0E7FF; color: #3730A3; }
     .badge-new { background: #E8F2FF; color: #1D4ED8; }
     .badge-processed { background: #CCFBF1; color: #0F766E; }
     .badge-warn { background: #FFF4E5; color: #B45309; }
@@ -281,38 +296,33 @@ function buildInspectionHtml(
       text-transform: uppercase;
       color: ${BRAND.graphite};
     }
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-      margin: 0;
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
       border: 1px solid ${LINE};
-      border-radius: 12px;
-      overflow: hidden;
-      background: #fff;
     }
-    .detail-item {
-      display: grid;
-      gap: 4px;
-      padding: 12px 14px;
-      border-bottom: 1px solid ${LINE};
-      border-right: 1px solid ${LINE};
-      background: #fff;
-    }
-    .detail-item:nth-child(2n) { border-right: none; }
-    .detail-item dt {
+    .data-table tr { page-break-inside: avoid; }
+    .data-table th {
+      width: 34%;
+      text-align: left;
+      padding: 10px 14px;
+      background: ${WASH};
       font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: ${MUTED};
+      border-bottom: 1px solid ${LINE};
+      vertical-align: top;
     }
-    .detail-item dd {
-      margin: 0;
-      font-size: 13.5px;
-      font-weight: 700;
+    .data-table td {
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid ${LINE};
       color: ${INK};
     }
+    .data-table tr:last-child th,
+    .data-table tr:last-child td { border-bottom: none; }
     .map-link {
       color: ${BRAND.magenta};
       font-weight: 700;
@@ -461,7 +471,7 @@ function buildInspectionHtml(
 
     <section class="hero">
       <p class="hero-label">Shipment unit</p>
-      <h1>${escapeHtml(inspection.uldId)}</h1>
+      <h1>${escapeHtml(getInspectionDisplayTitle(inspection))}</h1>
       <p class="hero-awb">AWB ${escapeHtml(inspection.awbNumber)}</p>
       <span class="badge ${statusClass}">${escapeHtml(status.label)}</span>
     </section>

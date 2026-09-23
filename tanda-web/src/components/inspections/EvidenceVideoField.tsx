@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Film, Upload, Video, X } from 'lucide-react';
+import { Film, Upload, X } from 'lucide-react';
 import {
   formatMegabytes,
   validateInspectionVideoFile,
@@ -166,7 +166,6 @@ export function EvidenceVideoField({
   onError,
   disabled,
 }: EvidenceVideoFieldProps) {
-  const recordInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(list: FileList | null) {
@@ -202,16 +201,7 @@ export function EvidenceVideoField({
         {files.length} video{files.length === 1 ? '' : 's'} attached
       </p>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => recordInputRef.current?.click()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
-        >
-          <Video className="h-4 w-4" aria-hidden />
-          Record video
-        </button>
+      <div className="mt-3">
         <button
           type="button"
           disabled={disabled}
@@ -219,21 +209,10 @@ export function EvidenceVideoField({
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-xs font-semibold text-foreground transition hover:bg-surface-hover disabled:opacity-50"
         >
           <Upload className="h-4 w-4" aria-hidden />
-          Upload video
+          Import from gallery
         </button>
       </div>
 
-      <input
-        ref={recordInputRef}
-        type="file"
-        accept="video/*"
-        capture="environment"
-        className="hidden"
-        onChange={(event) => {
-          void handleFiles(event.target.files);
-          event.target.value = '';
-        }}
-      />
       <input
         ref={uploadInputRef}
         type="file"

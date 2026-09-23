@@ -9,6 +9,7 @@ export interface PortalInspectionSummary {
   hasIssues: boolean;
   conservationType: CargoInspection['conservationType'];
   foodType: string;
+  unitType?: CargoInspection['unitType'];
   weightKg: number;
   boxCount: number;
   registeredAt: string;

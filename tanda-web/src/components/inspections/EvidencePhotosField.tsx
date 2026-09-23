@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { Camera, ImagePlus, X } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
 import {
   MAX_INSPECTION_PHOTOS,
   validateInspectionPhotoFile,
@@ -21,7 +21,6 @@ export function EvidencePhotosField({
   onError,
   disabled,
 }: EvidencePhotosFieldProps) {
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const previews = useMemo(
@@ -75,16 +74,7 @@ export function EvidencePhotosField({
         {files.length} photo{files.length === 1 ? '' : 's'} attached
       </p>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => cameraInputRef.current?.click()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
-        >
-          <Camera className="h-4 w-4" aria-hidden />
-          Take photo
-        </button>
+      <div className="mt-3">
         <button
           type="button"
           disabled={disabled}
@@ -92,21 +82,10 @@ export function EvidencePhotosField({
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-xs font-semibold text-foreground transition hover:bg-surface-hover disabled:opacity-50"
         >
           <ImagePlus className="h-4 w-4" aria-hidden />
-          Gallery
+          Import from gallery
         </button>
       </div>
 
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(event) => {
-          void handleFiles(event.target.files);
-          event.target.value = '';
-        }}
-      />
       <input
         ref={galleryInputRef}
         type="file"

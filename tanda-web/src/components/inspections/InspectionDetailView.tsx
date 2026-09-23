@@ -3,16 +3,31 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
 import {
   ArrowLeft,
+  Bus,
   CheckCircle2,
   FileText,
   Loader2,
   Pencil,
-  Plane,
+  Thermometer,
   Trash2,
+  User,
+  Building2,
+  Calendar,
+  MapPin,
+  Package,
+  Dumbbell,
+  Truck,
+  Snowflake,
 } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
+import {
+  InspectionIssuesBadge,
+  InspectionLifecycleBadge,
+} from '@/components/inspections/InspectionLifecycleBadge';
+import { LifecycleStepper } from '@/components/inspections/LifecycleStepper';
 import { DeleteInspectionConfirmModal } from '@/components/inspections/DeleteInspectionConfirmModal';
 import { EditInspectionModal } from '@/components/inspections/EditInspectionModal';
 import { InspectionPortalAccess } from '@/components/inspections/InspectionPortalAccess';
@@ -21,10 +36,23 @@ import { InspectionVideoGallery } from '@/components/inspections/InspectionVideo
 import { exportCargoInspectionPdf } from '@/lib/inspections/export-pdf';
 import { formatInspectionDate } from '@/lib/inspections/format';
 import { requestDeleteInspection } from '@/lib/inspections/inspections-api';
-import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
+import {
+  getInspectionDisplayTitle,
+  getUnitTypeLabel,
+  resolveUnitType,
+} from '@/lib/inspections/cargo-unit-type';
+import {
+  CONSERVATION_COLORS,
+  getConservationLabel,
+} from '@/lib/inspections/normalize-conservation';
 import { markCargoInspectionAsLoaded } from '@/lib/inspections/mark-loaded';
 import { markCargoInspectionAsProcessed } from '@/lib/inspections/mark-processed';
-import { formatPersonName, getInspectionDetailStatus } from '@/lib/inspections/status';
+import {
+  STATUS_ISSUES,
+  STATUS_LOADED,
+  formatPersonName,
+  getInspectionDetailStatus,
+} from '@/lib/inspections/status';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 
 interface InspectionDetailViewProps {
@@ -37,13 +65,26 @@ interface InspectionDetailViewProps {
   onUpdated?: () => void;
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailIconRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-subtle">
-        {label}
-      </p>
-      <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
+    <div className="flex items-start gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-[#0265DC]">
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-subtle">
+          {label}
+        </p>
+        <p className="mt-0.5 text-base font-semibold text-foreground">{value}</p>
+      </div>
     </div>
   );
 }
@@ -208,28 +249,66 @@ export function InspectionDetailView({
         </div>
 
         <section className="rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+          <LifecycleStepper inspection={viewInspection} />
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">
             Cargo inspection
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-foreground md:text-3xl">
-            {inspection.uldId}
-          </h1>
+          <div className="mt-2 flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-2xl font-semibold text-foreground md:text-3xl">
+              {getInspectionDisplayTitle(viewInspection)}
+            </h1>
+            <CopyAwbButton
+              value={inspection.uldId.trim() || inspection.awbNumber}
+              label="Copy identification number"
+              iconOnly
+            />
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="text-sm text-muted">AWB {inspection.awbNumber}</p>
+            <p className="text-sm text-muted">
+              {getUnitTypeLabel(resolveUnitType(inspection.unitType, inspection.uldId))} · AWB{' '}
+              {inspection.awbNumber}
+            </p>
             <CopyAwbButton awbNumber={inspection.awbNumber} />
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <span
-              className={`inline-flex rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${detailStatus.lifecycleClassName}`}
+            <InspectionLifecycleBadge inspection={viewInspection} />
+            {detailStatus.hasIssues ? <InspectionIssuesBadge /> : null}
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-xl border border-border bg-surface-base px-3 py-2.5">
+              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+                <Dumbbell className="h-3.5 w-3.5 text-[#0265DC]" aria-hidden />
+                Weight
+              </p>
+              <p className="mt-1 text-lg font-semibold text-foreground">
+                {inspection.weightKg} kg
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface-base px-3 py-2.5">
+              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+                <Package className="h-3.5 w-3.5 text-[#0265DC]" aria-hidden />
+                Boxes
+              </p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{inspection.boxCount}</p>
+            </div>
+            <div
+              className="rounded-xl border px-3 py-2.5"
+              style={{
+                backgroundColor: CONSERVATION_COLORS[inspection.conservationType].bg,
+                borderColor: `${CONSERVATION_COLORS[inspection.conservationType].text}33`,
+                color: CONSERVATION_COLORS[inspection.conservationType].text,
+              }}
             >
-              {detailStatus.lifecycleLabel}
-            </span>
-            {detailStatus.hasIssues ? (
-              <span className="inline-flex rounded-md bg-amber-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-200 ring-1 ring-amber-400/30">
-                Issues
-              </span>
-            ) : null}
+              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide">
+                <Snowflake className="h-3.5 w-3.5" aria-hidden />
+                Cold chain
+              </p>
+              <p className="mt-1 text-sm font-semibold">
+                {getConservationLabel(inspection.conservationType)}
+              </p>
+            </div>
           </div>
 
           <p className="mt-4 text-xs text-subtle">
@@ -245,7 +324,8 @@ export function InspectionDetailView({
             type="button"
             onClick={() => void handleMarkAsProcessed()}
             disabled={markingProcessed}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ backgroundColor: STATUS_LOADED }}
           >
             {markingProcessed ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -261,12 +341,13 @@ export function InspectionDetailView({
             type="button"
             onClick={() => void handleMarkAsLoaded()}
             disabled={markingLoaded}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ backgroundColor: STATUS_LOADED }}
           >
             {markingLoaded ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
-              <Plane className="h-4 w-4" aria-hidden />
+              <Bus className="h-4 w-4" aria-hidden />
             )}
             Mark on truck
           </button>
@@ -286,89 +367,108 @@ export function InspectionDetailView({
 
         <section className="grid gap-4 rounded-2xl border border-border bg-surface-raised p-5 sm:grid-cols-2 md:p-6">
           {inspection.clientLocationName ? (
-            <DetailRow label="Client" value={inspection.clientLocationName} />
+            <DetailIconRow
+              icon={Building2}
+              label="Client"
+              value={inspection.clientLocationName}
+            />
           ) : null}
-          <DetailRow
-            label="Conservation"
-            value={getConservationLabel(inspection.conservationType)}
+          <DetailIconRow
+            icon={Package}
+            label="Cargo type"
+            value={getUnitTypeLabel(resolveUnitType(inspection.unitType, inspection.uldId))}
           />
-          <DetailRow label="Food type" value={inspection.foodType} />
-          <DetailRow label="Weight" value={`${inspection.weightKg} kg`} />
-          <DetailRow label="Box count" value={String(inspection.boxCount)} />
+          <DetailIconRow label="Product name" icon={Package} value={inspection.foodType} />
           {typeof inspection.temperatureCelsius === 'number' ? (
-            <DetailRow
+            <DetailIconRow
+              icon={Thermometer}
               label="Temperature"
               value={`${inspection.temperatureCelsius} °C`}
             />
           ) : null}
           {inspection.exitVehiclePlate ? (
-            <DetailRow label="Exit vehicle plate" value={inspection.exitVehiclePlate} />
+            <DetailIconRow
+              icon={Truck}
+              label="Exit vehicle plate"
+              value={inspection.exitVehiclePlate}
+            />
           ) : null}
           {inspection.driverName ? (
-            <DetailRow label="Driver name" value={inspection.driverName} />
+            <DetailIconRow icon={User} label="Driver name" value={inspection.driverName} />
           ) : null}
           {inspection.transportCompany ? (
-            <DetailRow label="Transport company" value={inspection.transportCompany} />
+            <DetailIconRow
+              icon={Truck}
+              label="Transport company"
+              value={inspection.transportCompany}
+            />
           ) : null}
-          <DetailRow
+          <DetailIconRow
+            icon={User}
             label="Created by"
             value={formatPersonName(inspection.createdByName, inspection.createdBy)}
           />
           {inspection.updatedBy || inspection.updatedByName ? (
-            <DetailRow
+            <DetailIconRow
+              icon={User}
               label="Last edited by"
               value={formatPersonName(inspection.updatedByName, inspection.updatedBy)}
             />
           ) : null}
-          <DetailRow
+          <DetailIconRow
+            icon={Calendar}
             label="Registered at"
             value={formatInspectionDate(inspection.registeredAt)}
           />
           {inspection.dispatchedAt ? (
-            <DetailRow
+            <DetailIconRow
+              icon={Bus}
               label="Loaded on truck at"
               value={formatInspectionDate(inspection.dispatchedAt)}
             />
           ) : null}
-          {typeof inspection.registeredLatitude === 'number' &&
-          typeof inspection.registeredLongitude === 'number' ? (
-            <DetailRow
-              label="Registered GPS"
-              value={`${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
-                typeof inspection.registeredAccuracyMeters === 'number'
-                  ? ` (±${inspection.registeredAccuracyMeters} m)`
-                  : ''
-              }`}
-            />
-          ) : null}
           {inspection.registeredLocationAt ? (
-            <DetailRow
+            <DetailIconRow
+              icon={Calendar}
               label="GPS captured at"
               value={formatInspectionDate(inspection.registeredLocationAt)}
             />
           ) : null}
           {inspection.registeredMapsUrl ? (
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Maps
-              </p>
-              <a
-                href={inspection.registeredMapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1 inline-block text-sm font-semibold text-primary underline"
-              >
-                Open in Maps
-              </a>
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-[#0265DC]">
+                <MapPin className="h-4 w-4" aria-hidden />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-subtle">
+                  Maps
+                </p>
+                <a
+                  href={inspection.registeredMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-0.5 inline-block text-sm font-semibold text-primary underline"
+                >
+                  Open in Maps
+                </a>
+              </div>
             </div>
           ) : null}
         </section>
 
         {inspection.hasIssues && (
-          <section className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5 md:p-6">
-            <h2 className="text-sm font-semibold text-amber-200">Issue description</h2>
+          <section
+            className="rounded-2xl border p-5 md:p-6"
+            style={{
+              backgroundColor: `${STATUS_ISSUES}14`,
+              borderColor: `${STATUS_ISSUES}66`,
+            }}
+          >
+            <h2 className="text-sm font-semibold" style={{ color: STATUS_ISSUES }}>
+              Issue description
+            </h2>
             {inspection.issueReportedAt ? (
-              <p className="mt-2 text-xs text-amber-200/80">
+              <p className="mt-2 text-xs" style={{ color: STATUS_ISSUES }}>
                 Reported {formatInspectionDate(inspection.issueReportedAt)}
               </p>
             ) : null}

@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react';
+import { Inbox, Layers, Package, Plane, Wrench } from 'lucide-react';
 import { normalizeUldId } from '@/lib/inspections/normalize-uld-id';
 import type {
   CargoInspection,
@@ -14,8 +16,9 @@ export const CARGO_UNIT_TYPES: readonly CargoUnitType[] = [
 
 /** Manual choices when there is no recognized ULD code. */
 export const MANUAL_UNIT_TYPES: readonly CargoUnitType[] = [
-  'lcl',
+  'uld',
   'pallet_skid',
+  'lcl',
   'loose_cargo',
   'breakbulk',
 ] as const;
@@ -78,6 +81,18 @@ const LEGACY_UNIT_TYPE_MAP: Record<string, CargoUnitType> = {
 
 export function getUnitTypeLabel(unitType: CargoUnitType): string {
   return UNIT_TYPE_LABELS[unitType];
+}
+
+const UNIT_TYPE_ICONS: Record<CargoUnitType, LucideIcon> = {
+  uld: Plane,
+  pallet_skid: Layers,
+  lcl: Inbox,
+  loose_cargo: Package,
+  breakbulk: Wrench,
+};
+
+export function getUnitTypeIcon(unitType: CargoUnitType): LucideIcon {
+  return UNIT_TYPE_ICONS[unitType];
 }
 
 export function getUnitTypeHint(unitType: CargoUnitType): string {

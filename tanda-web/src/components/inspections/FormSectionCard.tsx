@@ -101,3 +101,49 @@ export function OptionGroup<T extends string>({
     </div>
   );
 }
+
+export function FormSwitch({
+  id,
+  checked,
+  onChange,
+  label,
+  hint,
+  onClassName = 'peer-checked:bg-primary',
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  hint?: string;
+  onClassName?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border-strong bg-surface-base p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <label htmlFor={id} className="block text-xs font-semibold text-foreground">
+            {label}
+          </label>
+          {hint ? <p className="mt-1 text-xs text-subtle">{hint}</p> : null}
+        </div>
+        <label className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+          <input
+            id={id}
+            type="checkbox"
+            checked={checked}
+            onChange={(event) => onChange(event.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            className={`absolute inset-0 rounded-full bg-zinc-600 transition-colors ${onClassName}`}
+            aria-hidden
+          />
+          <span
+            className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"
+            aria-hidden
+          />
+        </label>
+      </div>
+    </div>
+  );
+}

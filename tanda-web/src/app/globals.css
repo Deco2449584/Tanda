@@ -195,3 +195,44 @@ select,
 .recharts-tooltip-cursor {
   fill: rgba(255, 255, 255, 0.06) !important;
 }
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.inspection-metric-slider {
+  --metric-ratio: 0;
+  appearance: none;
+  height: 28px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--accent) calc(var(--metric-ratio) * 100%),
+    var(--surface-hover) calc(var(--metric-ratio) * 100%)
+  );
+  outline: none;
+}
+
+.inspection-metric-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #fff;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+
+.inspection-metric-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #fff;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
