@@ -22,7 +22,8 @@ import { formatInspectionDate } from '@/lib/inspections/format';
 import { requestDeleteInspection } from '@/lib/inspections/inspections-api';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
 import { markCargoInspectionAsLoaded } from '@/lib/inspections/mark-loaded';
-import { getInspectionDetailStatus } from '@/lib/inspections/status';
+import { markCargoInspectionAsProcessed } from '@/lib/inspections/mark-processed';
+import { formatPersonName, getInspectionDetailStatus } from '@/lib/inspections/status';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 
 interface InspectionDetailViewProps {
@@ -56,6 +57,7 @@ export function InspectionDetailView({
   onUpdated,
 }: InspectionDetailViewProps) {
   const router = useRouter();
+  const [markingProcessed, setMarkingProcessed] = useState(false);
   const [markingLoaded, setMarkingLoaded] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -75,7 +77,32 @@ export function InspectionDetailView({
 
   const detailStatus = getInspectionDetailStatus(viewInspection);
 
+  async function handleMarkAsProcessed() {
+    setMarkError('');
+    setMarkingProcessed(true);
+
+    try {
+      const updatedAtIso = await markCargoInspectionAsProcessed(inspection.id);
+      setLocalStatus('processed');
+      setLocalUpdatedAt(updatedAtIso);
+      onUpdated?.();
+    } catch {
+      setMarkError('Could not mark this record as processed. Please try again.');
+    } finally {
+      setMarkingProcessed(false);
+    }
+  }
+
   async function handleMarkAsLoaded() {
+    if (
+      viewInspection.hasIssues &&
+      !window.confirm(
+        'This record still has open issues. Mark it on truck anyway?',
+      )
+    ) {
+      return;
+    }
+
     setMarkError('');
     setMarkingLoaded(true);
 
@@ -85,7 +112,7 @@ export function InspectionDetailView({
       setLocalUpdatedAt(updatedAtIso);
       onUpdated?.();
     } catch {
-      setMarkError('Could not mark this container as loaded. Please try again.');
+      setMarkError('Could not mark this record as on truck. Please try again.');
     } finally {
       setMarkingLoaded(false);
     }
@@ -189,19 +216,16 @@ export function InspectionDetailView({
           <p className="mt-1 text-sm text-muted">AWB {inspection.awbNumber}</p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {detailStatus.showLifecycleBadge && detailStatus.lifecycleLabel && (
-              <span
-                className={`inline-flex rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${detailStatus.lifecycleClassName}`}
-              >
-                {detailStatus.lifecycleLabel}
+            <span
+              className={`inline-flex rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${detailStatus.lifecycleClassName}`}
+            >
+              {detailStatus.lifecycleLabel}
+            </span>
+            {detailStatus.hasIssues ? (
+              <span className="inline-flex rounded-md bg-amber-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-200 ring-1 ring-amber-400/30">
+                Issues
               </span>
-            )}
-            {detailStatus.isFullyLoaded && (
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-500/30">
-                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-                Fully Loaded
-              </span>
-            )}
+            ) : null}
           </div>
 
           <p className="mt-4 text-xs text-subtle">
@@ -212,7 +236,23 @@ export function InspectionDetailView({
           </p>
         </section>
 
-        {canEdit && detailStatus.isNewInWarehouse ? (
+        {canEdit && detailStatus.status === 'identification' ? (
+          <button
+            type="button"
+            onClick={() => void handleMarkAsProcessed()}
+            disabled={markingProcessed}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {markingProcessed ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" aria-hidden />
+            )}
+            Mark processed
+          </button>
+        ) : null}
+
+        {canEdit && detailStatus.status === 'processed' ? (
           <button
             type="button"
             onClick={() => void handleMarkAsLoaded()}
@@ -224,7 +264,7 @@ export function InspectionDetailView({
             ) : (
               <Plane className="h-4 w-4" aria-hidden />
             )}
-            Mark as Loaded
+            Mark on truck
           </button>
         ) : null}
 
@@ -266,7 +306,16 @@ export function InspectionDetailView({
           {inspection.transportCompany ? (
             <DetailRow label="Transport company" value={inspection.transportCompany} />
           ) : null}
-          <DetailRow label="Operator" value={inspection.createdBy || '—'} />
+          <DetailRow
+            label="Created by"
+            value={formatPersonName(inspection.createdByName, inspection.createdBy)}
+          />
+          {inspection.updatedBy || inspection.updatedByName ? (
+            <DetailRow
+              label="Last edited by"
+              value={formatPersonName(inspection.updatedByName, inspection.updatedBy)}
+            />
+          ) : null}
           <DetailRow
             label="Registered at"
             value={formatInspectionDate(inspection.registeredAt)}

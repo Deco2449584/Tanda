@@ -4,7 +4,7 @@ import * as Sharing from 'expo-sharing';
 import type { CargoInspection } from '@/types';
 import { formatInspectionDate } from '@/utils/formatDate';
 import { getConservationLabel } from '@/utils/cargoLabels';
-import { getInspectionStatusExportLabel } from '@/utils/cargoInspectionStatus';
+import { formatPersonName, getInspectionStatusExportLabel } from '@/utils/cargoInspectionStatus';
 import { getUnitTypeLabel } from '@/utils/cargoUnitType';
 
 const CSV_HEADERS = [
@@ -26,7 +26,7 @@ const CSV_HEADERS = [
   'Issue Description',
   'Cargo Notes',
   'Issue Reported At',
-  'Inspector Email',
+  'Inspector',
   'Registered At',
   'Loaded On Truck At',
   'Latitude',
@@ -66,7 +66,7 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.issueReportedAt
       ? formatInspectionDate(inspection.issueReportedAt)
       : '',
-    inspection.createdBy,
+    formatPersonName(inspection.createdByName, inspection.createdBy),
     formatInspectionDate(inspection.registeredAt),
     inspection.dispatchedAt ? formatInspectionDate(inspection.dispatchedAt) : '',
     typeof inspection.registeredLatitude === 'number'

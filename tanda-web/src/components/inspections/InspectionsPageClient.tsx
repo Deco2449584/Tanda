@@ -60,18 +60,14 @@ export function InspectionsPageClient() {
 
     return today.reduce(
       (acc, inspection) => {
-        if (resolveInspectionStatus(inspection) === 'new') {
-          acc.newCargo += 1;
-        }
-        if (resolveInspectionStatus(inspection) === 'loaded') {
-          acc.loaded += 1;
-        }
-        if (inspection.hasIssues) {
-          acc.requiresAttention += 1;
-        }
+        const status = resolveInspectionStatus(inspection);
+        if (status === 'identification') acc.identification += 1;
+        if (status === 'processed') acc.processed += 1;
+        if (status === 'loaded') acc.loaded += 1;
+        if (inspection.hasIssues) acc.requiresAttention += 1;
         return acc;
       },
-      { newCargo: 0, loaded: 0, requiresAttention: 0 },
+      { identification: 0, processed: 0, loaded: 0, requiresAttention: 0 },
     );
   }, [inspections]);
 
@@ -129,10 +125,11 @@ export function InspectionsPageClient() {
           </div>
         }
         stats={[
-          { label: 'New today', value: todayStats.newCargo },
-          { label: 'Loaded today', value: todayStats.loaded },
+          { label: 'Identification', value: todayStats.identification },
+          { label: 'Processed', value: todayStats.processed },
+          { label: 'On truck', value: todayStats.loaded },
           {
-            label: 'Attention',
+            label: 'Issues',
             value: todayStats.requiresAttention,
             accent: todayStats.requiresAttention > 0,
           },
@@ -169,7 +166,9 @@ export function InspectionsPageClient() {
                 </div>
               ) : null}
               <p className="mt-1.5 text-xs text-muted">
-                Keep this tab open until uploads finish.
+                {failedJobs.length > 0
+                  ? 'The inspection is saved. These files are still in this browser. Tap Retry failed. If you close the tab, attach the files again from the record.'
+                  : 'The inspection is saved. Keep this tab open until the files finish uploading. If the connection drops, wait here and it will continue.'}
               </p>
             </div>
             {failedJobs.length > 0 ? (

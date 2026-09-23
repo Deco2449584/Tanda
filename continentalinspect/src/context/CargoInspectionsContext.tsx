@@ -281,6 +281,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
           createdBy: user.email ?? '',
           input: {
             ...input,
+            createdByName: profile?.name?.trim() || input.createdByName,
             photoEvidence,
             videoEvidence,
             issueReportedAt: input.hasIssues
@@ -296,7 +297,11 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       }
 
       const { inspection, pendingPhotoUris, pendingVideoUris } =
-        await createCargoInspectionRecord(user.uid, input, user.email ?? '');
+        await createCargoInspectionRecord(
+          user.uid,
+          { ...input, createdByName: profile?.name?.trim() || input.createdByName },
+          user.email ?? '',
+        );
 
       let photoUris = pendingPhotoUris;
       let videoUris = pendingVideoUris;
@@ -336,7 +341,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
 
       return { ...inspection, syncStatus: 'synced' };
     },
-    [user, inspections, pendingQueue, isOnline, reloadPendingQueue, enqueueInspectionUploads],
+    [user, profile?.name, inspections, pendingQueue, isOnline, reloadPendingQueue, enqueueInspectionUploads],
   );
 
   const saveInspectionDraft = useCallback(
@@ -368,6 +373,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         createdBy: user.email ?? '',
         input: {
           ...input,
+          createdByName: profile?.name?.trim() || input.createdByName,
           photoEvidence,
           videoEvidence,
           issueReportedAt: input.hasIssues
@@ -381,7 +387,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       await reloadPendingQueue(user.uid);
       return pendingCreateToInspection(operation);
     },
-    [user, inspections, pendingQueue, reloadPendingQueue],
+    [user, profile?.name, inspections, pendingQueue, reloadPendingQueue],
   );
 
   const syncLocalDraft = useCallback(
@@ -417,10 +423,11 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       }
 
       const editor = user.email ?? existing.createdBy;
+      const editorName = profile?.name?.trim();
       const { photoEvidence, videoEvidence, updatedAtIso } = await updateCargoInspection(
         user.uid,
         inspectionId,
-        input,
+        { ...input, createdByName: existing.createdByName, updatedByName: editorName },
         existing.createdBy,
         resolveInspectionStatus(existing),
         editor,
@@ -446,6 +453,8 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         videoEvidence,
         updatedAt: updatedAtIso,
         updatedBy: editor,
+        updatedByName: editorName || existing.updatedByName,
+        createdByName: existing.createdByName,
         syncStatus: 'synced',
         clientLocationId: input.clientLocationId?.trim() || undefined,
         clientLocationName: input.clientLocationName?.trim() || undefined,
@@ -521,12 +530,17 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         };
       }
 
-      const { updatedAtIso } = await markCargoInspectionAsProcessed(inspectionId, user.email ?? '');
+      const { updatedAtIso } = await markCargoInspectionAsProcessed(
+        inspectionId,
+        user.email ?? '',
+        profile?.name,
+      );
       const updated: CargoInspection = {
         ...existing,
         status: 'processed',
         updatedAt: updatedAtIso,
         updatedBy: user.email ?? existing.updatedBy,
+        updatedByName: profile?.name?.trim() || existing.updatedByName,
         syncStatus: 'synced',
       };
 
@@ -583,6 +597,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       const { updatedAtIso, dispatchedAtIso } = await markCargoInspectionAsLoaded(
         inspectionId,
         user.email ?? '',
+        profile?.name,
       );
 
       const updated: CargoInspection = {
@@ -590,6 +605,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         status: 'loaded',
         updatedAt: updatedAtIso,
         updatedBy: user.email ?? existing.updatedBy,
+        updatedByName: profile?.name?.trim() || existing.updatedByName,
         dispatchedAt: dispatchedAtIso,
         syncStatus: 'synced',
       };

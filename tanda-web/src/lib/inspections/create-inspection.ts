@@ -29,6 +29,7 @@ export async function createCargoInspectionRecord(
   createdByEmail: string,
   input: CargoInspectionCreateInput,
   geo: RegistrationGeoSnapshot,
+  createdByName?: string,
 ): Promise<CreateCargoInspectionResult> {
   if (!db) {
     throw new Error('Firestore is not available.');
@@ -49,11 +50,12 @@ export async function createCargoInspectionRecord(
     weightKg: input.weightKg,
     boxCount: input.boxCount,
     hasIssues,
-    status: 'new',
+    status: 'identification',
     issueDescription: hasIssues ? input.issueDescription.trim() : '',
     photoEvidence: [],
     videoEvidence: [],
     createdBy: createdByEmail,
+    ...(createdByName?.trim() ? { createdByName: createdByName.trim() } : {}),
     registeredAt: serverTimestamp(),
     registeredAtIso,
     exitVehiclePlate: input.exitVehiclePlate.trim(),

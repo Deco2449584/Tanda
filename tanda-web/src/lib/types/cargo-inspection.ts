@@ -15,7 +15,7 @@ export const CONSERVATION_TYPES: readonly ConservationType[] = [
   'Ambient',
 ] as const;
 
-export type CargoInspectionStatus = 'new' | 'loaded';
+export type CargoInspectionStatus = 'identification' | 'processed' | 'loaded';
 
 /**
  * Warehouse cargo categories:
@@ -48,6 +48,9 @@ export interface CargoInspectionFirestore {
   photoEvidence: string[];
   videoEvidence: string[];
   createdBy: string;
+  createdByName?: string;
+  updatedBy?: string;
+  updatedByName?: string;
   registeredAt: unknown;
   registeredAtIso?: string;
   updatedAt?: unknown;
@@ -89,6 +92,9 @@ export interface CargoInspection {
   updatedAt?: string;
   dispatchedAt?: string;
   createdBy: string;
+  createdByName?: string;
+  updatedBy?: string;
+  updatedByName?: string;
   portalEnabled: boolean;
   portalClientId?: string;
   clientLocationId?: string;

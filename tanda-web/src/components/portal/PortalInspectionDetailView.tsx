@@ -1,12 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ExternalLink,
-  MapPin,
-} from 'lucide-react';
+import { ArrowLeft, ExternalLink, MapPin } from 'lucide-react';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
 import { formatInspectionDate } from '@/lib/inspections/format';
@@ -58,17 +53,16 @@ export function PortalInspectionDetailView({
         <p className="mt-1 text-sm text-white/70">AWB {inspection.awbNumber}</p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {detailStatus.showLifecycleBadge && detailStatus.lifecycleLabel && (
-            <span className="inline-flex rounded-md bg-sky-400/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-sky-100 ring-1 ring-sky-300/30">
-              {detailStatus.lifecycleLabel}
+          <span
+            className={`inline-flex rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${detailStatus.lifecycleClassName}`}
+          >
+            {detailStatus.lifecycleLabel}
+          </span>
+          {detailStatus.hasIssues ? (
+            <span className="inline-flex rounded-md bg-amber-400/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-100 ring-1 ring-amber-300/30">
+              Issues
             </span>
-          )}
-          {detailStatus.isFullyLoaded && (
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-400/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-100 ring-1 ring-emerald-300/30">
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-              Fully loaded
-            </span>
-          )}
+          ) : null}
         </div>
 
         <p className="mt-4 text-xs text-white/50">

@@ -20,6 +20,10 @@ import { LifecycleStepper } from '@/components/LifecycleStepper';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
+import {
+  useEvidenceMediaPipeline,
+  type InspectionMediaUploadSummary,
+} from '@/context/EvidenceMediaPipelineContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { brand } from '@/theme/brand';
@@ -29,6 +33,7 @@ import { METRIC_ATTENTION, METRIC_LOADED } from '@/components/TodayOperationsDon
 import { shareCargoInspectionPdf } from '@/utils/cargoInspectionPdf';
 import { CONSERVATION_COLORS, getConservationLabel } from '@/utils/cargoLabels';
 import {
+  formatPersonName,
   getInspectionDisplayBadge,
   getSyncBadge,
   resolveInspectionStatus,
@@ -39,6 +44,44 @@ import {
   resolveUnitType,
 } from '@/utils/cargoUnitType';
 import { formatInspectionDate } from '@/utils/formatDate';
+
+function describeRecordRecovery(
+  syncStatus: string | undefined,
+  media: InspectionMediaUploadSummary | null,
+): { title: string; body: string; canRetry?: boolean } | null {
+  if (syncStatus === 'local') {
+    return {
+      title: 'Saved on this phone',
+      body: 'Nothing has been uploaded yet. Tap Sync cloud when you have a connection. Closing the app will not delete this record.',
+    };
+  }
+  if (syncStatus === 'error') {
+    return {
+      title: 'Cloud sync did not finish',
+      body: 'The record is still on this phone. Check the connection, then tap Sync cloud. The files are kept until the upload succeeds.',
+    };
+  }
+  if (syncStatus === 'pending') {
+    return {
+      title: 'Waiting to upload',
+      body: 'The phone retries on its own when it is online. You can close the app. This record stays here until the upload finishes.',
+    };
+  }
+  if (media?.status === 'error') {
+    return {
+      title: 'Upload stopped',
+      body: 'The video or photos are still on this phone. A dropped connection does not delete them. Tap Retry upload.',
+      canRetry: true,
+    };
+  }
+  if (media?.status === 'pending') {
+    return {
+      title: media.label,
+      body: 'Leave the phone online. If the connection drops, the upload pauses and continues later from the copy saved on this phone.',
+    };
+  }
+  return null;
+}
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PHOTO_WIDTH = SCREEN_WIDTH - 40;
@@ -162,6 +205,25 @@ function createDetailStyles(colors: AppColors) {
       fontSize: 13,
       color: colors.text.onSurface,
       lineHeight: 18,
+    },
+    recoveryTitle: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 14,
+      color: colors.text.onSurface,
+      marginBottom: 4,
+    },
+    recoveryAction: {
+      marginTop: 10,
+      alignSelf: 'flex-start',
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      backgroundColor: colors.accent.primary,
+    },
+    recoveryActionText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 13,
+      color: '#FFFFFF',
     },
     statusBadge: {
       paddingHorizontal: 10,
@@ -349,6 +411,8 @@ export default function CargoDetailScreen() {
   const [isMarkingProcessed, setIsMarkingProcessed] = useState(false);
   const [isMarkingLoaded, setIsMarkingLoaded] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const { getInspectionMediaUploadSummary, retryFailedJobsForInspection } =
+    useEvidenceMediaPipeline();
 
   const inspection = useMemo(
     () => inspections.find((item) => item.id === id),
@@ -491,6 +555,8 @@ export default function CargoDetailScreen() {
   const isProcessed = operationalStatus === 'processed';
   const displayBadge = getInspectionDisplayBadge(inspection);
   const syncBadge = getSyncBadge(inspection.syncStatus);
+  const mediaUploadSummary = getInspectionMediaUploadSummary(inspection.id);
+  const recoveryNotice = describeRecordRecovery(inspection.syncStatus, mediaUploadSummary);
   const statusBg = `${displayBadge.color}22`;
   const statusColor = displayBadge.color;
 
@@ -593,6 +659,20 @@ export default function CargoDetailScreen() {
               ) : null}
             </View>
           </View>
+
+          {recoveryNotice ? (
+            <View style={styles.dispatchWarning}>
+              <Text style={styles.recoveryTitle}>{recoveryNotice.title}</Text>
+              <Text style={styles.dispatchWarningText}>{recoveryNotice.body}</Text>
+              {recoveryNotice.canRetry ? (
+                <Pressable
+                  style={styles.recoveryAction}
+                  onPress={() => retryFailedJobsForInspection(inspection.id)}>
+                  <Text style={styles.recoveryActionText}>Retry upload</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
           {isProcessed && inspection.hasIssues ? (
             <View style={styles.dispatchWarning}>
@@ -748,8 +828,24 @@ export default function CargoDetailScreen() {
                   styles={styles}
                 />
               ) : null}
+              <DetailRow
+                label="Created by"
+                value={formatPersonName(inspection.createdByName, inspection.createdBy)}
+                styles={styles}
+              />
+              {inspection.updatedBy || inspection.updatedByName ? (
+                <DetailRow
+                  label="Last edited by"
+                  value={formatPersonName(inspection.updatedByName, inspection.updatedBy)}
+                  styles={styles}
+                />
+              ) : null}
               {isAdmin ? (
-                <DetailRow label="Operator" value={inspection.createdBy} styles={styles} />
+                <DetailRow
+                  label="Account email"
+                  value={inspection.createdBy || '—'}
+                  styles={styles}
+                />
               ) : null}
             </View>
           </View>

@@ -53,7 +53,9 @@ export type CargoInspectionDocument = {
   photoEvidence: string[];
   videoEvidence: string[];
   createdBy: string;
+  createdByName?: string;
   updatedBy?: string;
+  updatedByName?: string;
   registeredAt: Timestamp | string;
   registeredAtIso?: string;
   updatedAt?: Timestamp | string;
@@ -135,7 +137,9 @@ function mapDocumentToCargoInspection(
     updatedAt: timestampToIso(data.updatedAt) ?? data.updatedAtIso,
     dispatchedAt: dispatchedAtIso,
     createdBy: data.createdBy ?? '',
+    createdByName: data.createdByName?.trim() || undefined,
     updatedBy: data.updatedBy?.trim() || undefined,
+    updatedByName: data.updatedByName?.trim() || undefined,
     clientPhotoUrl: data.clientPhotoUrl?.trim() || undefined,
     clientLocationId: data.clientLocationId?.trim() || undefined,
     clientLocationName: data.clientLocationName?.trim() || undefined,
@@ -207,6 +211,8 @@ function buildFirestorePayload(
     photoEvidence,
     videoEvidence,
     createdBy,
+    ...(input.createdByName?.trim() ? { createdByName: input.createdByName.trim() } : {}),
+    ...(input.updatedByName?.trim() ? { updatedByName: input.updatedByName.trim() } : {}),
     ...(input.clientPhotoUrl?.trim() ? { clientPhotoUrl: input.clientPhotoUrl.trim() } : {}),
     ...(issueReportedAt ? { issueReportedAt } : {}),
     ...(typeof input.temperatureCelsius === 'number' &&
@@ -268,6 +274,7 @@ function toInspectionFromCreatePayload(
     videoEvidence,
     registeredAt: registeredAtIso,
     createdBy: createdByEmail,
+    createdByName: input.createdByName?.trim() || undefined,
     clientPhotoUrl: input.clientPhotoUrl?.trim() || undefined,
     clientLocationId: payload.clientLocationId,
     clientLocationName: payload.clientLocationName,
@@ -576,6 +583,7 @@ export async function updateCargoInspection(
 export async function markCargoInspectionAsProcessed(
   inspectionId: string,
   updatedBy?: string,
+  updatedByName?: string,
 ): Promise<{ updatedAtIso: string }> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -587,6 +595,7 @@ export async function markCargoInspectionAsProcessed(
     updatedAt: serverTimestamp(),
     updatedAtIso,
     ...(updatedBy?.trim() ? { updatedBy: updatedBy.trim() } : {}),
+    ...(updatedByName?.trim() ? { updatedByName: updatedByName.trim() } : {}),
   });
 
   return { updatedAtIso };
@@ -595,6 +604,7 @@ export async function markCargoInspectionAsProcessed(
 export async function markCargoInspectionAsLoaded(
   inspectionId: string,
   updatedBy?: string,
+  updatedByName?: string,
 ): Promise<{ updatedAtIso: string; dispatchedAtIso: string }> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -608,6 +618,7 @@ export async function markCargoInspectionAsLoaded(
     dispatchedAt: serverTimestamp(),
     dispatchedAtIso,
     ...(updatedBy?.trim() ? { updatedBy: updatedBy.trim() } : {}),
+    ...(updatedByName?.trim() ? { updatedByName: updatedByName.trim() } : {}),
   });
 
   return { updatedAtIso: dispatchedAtIso, dispatchedAtIso };

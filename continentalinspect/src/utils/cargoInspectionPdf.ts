@@ -12,7 +12,7 @@ import {
 } from '@/theme/pdfBrand';
 import { PDF_LOGO_PNG_BASE64 } from '@/theme/pdfLogoBase64';
 import type { CargoInspection } from '@/types';
-import { getInspectionDisplayBadge } from '@/utils/cargoInspectionStatus';
+import { formatPersonName, getInspectionDisplayBadge } from '@/utils/cargoInspectionStatus';
 import { getConservationLabel } from '@/utils/cargoLabels';
 import { getUnitTypeLabel } from '@/utils/cargoUnitType';
 import { formatInspectionDate } from '@/utils/formatDate';
@@ -49,17 +49,21 @@ function buildVisualPhotoEvidenceHtml(photoSources: readonly string[]): string {
     return '<p class="empty-evidence">No photo evidence captured for this inspection.</p>';
   }
 
-  const photosHtml = photoSources
-    .map(
-      (src, index) =>
-        `<figure class="photo-figure">
-          <img src="${escapeAttr(src)}" alt="Evidence photo ${index + 1}" class="photo-evidence-img" />
-          <figcaption>Photo ${index + 1}</figcaption>
-        </figure>`,
-    )
-    .join('');
+  const cells = photoSources.map(
+    (src, index) =>
+      `<td class="photo-cell">
+        <img src="${escapeAttr(src)}" alt="Evidence photo ${index + 1}" class="photo-evidence-img" />
+        <div class="photo-caption">Photo ${index + 1}</div>
+      </td>`,
+  );
+  const rows: string[] = [];
+  for (let index = 0; index < cells.length; index += 3) {
+    const slice = cells.slice(index, index + 3);
+    while (slice.length < 3) slice.push('<td class="photo-cell"></td>');
+    rows.push(`<tr>${slice.join('')}</tr>`);
+  }
 
-  return `<div class="photo-grid">${photosHtml}</div>`;
+  return `<table class="photo-table">${rows.join('')}</table>`;
 }
 
 function buildMediaAccessLinks(urls: readonly string[], label: string): string {
@@ -72,19 +76,12 @@ function buildMediaAccessLinks(urls: readonly string[], label: string): string {
     return `<p class="empty-evidence">${escapeHtml(label)} pending upload — open this report again once media has synced.</p>`;
   }
 
-  const items = remoteOnly
+  return remoteOnly
     .map(
       (url, index) =>
-        `<li class="access-item">
-          <a href="${escapeAttr(url)}" class="access-link">
-            <span class="access-index">${index + 1}</span>
-            <span class="access-text">${escapeHtml(label)} ${index + 1} — open in browser</span>
-          </a>
-        </li>`,
+        `<p class="access-line"><a href="${escapeAttr(url)}">${escapeHtml(label)} ${index + 1}</a></p>`,
     )
     .join('');
-
-  return `<ul class="access-list">${items}</ul>`;
 }
 
 function statusClassForBadge(kind: 'identification' | 'processed' | 'truck'): string {
@@ -174,16 +171,6 @@ function buildInspectionHtml(
       </div>`
     : '';
 
-  const locationValue =
-    typeof inspection.registeredLatitude === 'number' &&
-    typeof inspection.registeredLongitude === 'number'
-      ? `${inspection.registeredLatitude.toFixed(6)}, ${inspection.registeredLongitude.toFixed(6)}${
-          typeof inspection.registeredAccuracyMeters === 'number'
-            ? ` (±${inspection.registeredAccuracyMeters} m)`
-            : ''
-        }`
-      : '—';
-
   const mapsLink =
     inspection.registeredMapsUrl?.trim()
       ? `<a href="${escapeAttr(inspection.registeredMapsUrl.trim())}">Open in Maps</a>`
@@ -232,18 +219,12 @@ function buildInspectionHtml(
             ? tableRow('Cargo notes', inspection.notes.trim())
             : ''
         }
-        ${tableRow('Created by', inspection.createdBy || '—')}
-        ${tableRow('Last edited by', inspection.updatedBy || '—')}
+        ${tableRow('Created by', formatPersonName(inspection.createdByName, inspection.createdBy))}
+        ${tableRow('Last edited by', formatPersonName(inspection.updatedByName, inspection.updatedBy))}
         ${tableRow('Registered at', formatInspectionDate(inspection.registeredAt))}
-        ${tableRow('Registered location', locationValue)}
         ${
           mapsLink
-            ? `<tr><th>Maps</th><td>${mapsLink}</td></tr>`
-            : ''
-        }
-        ${
-          inspection.registeredLocationAt
-            ? tableRow('GPS captured at', formatInspectionDate(inspection.registeredLocationAt))
+            ? `<tr><th>Location</th><td>${mapsLink}</td></tr>`
             : ''
         }
         ${
@@ -263,18 +244,20 @@ function buildInspectionHtml(
   <meta charset="utf-8" />
   <title>${escapeHtml(brand.name)} — Inspection ${escapeHtml(inspection.uldId || 'record')}</title>
   <style>
-    @page { size: A4; margin: 16mm 14mm 18mm; }
-    body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #0F172A; font-size: 13px; line-height: 1.5; margin: 0; background: #fff; }
-    .header { background: ${PDF_PORTAL_NAVY}; color: #fff; padding: 28px 36px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-    .header-brand { display: flex; align-items: center; gap: 20px; min-width: 0; }
-    .header-logo { height: 52px; width: auto; max-width: 240px; object-fit: contain; }
+    @page { size: A4; margin: 14mm 12mm 16mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #0F172A; font-size: 12px; line-height: 1.45; margin: 0; background: #fff; }
+    .header { background: ${PDF_PORTAL_NAVY}; color: #fff; padding: 18px 22px; }
+    .header table { width: 100%; border-collapse: collapse; }
+    .header td { vertical-align: middle; color: #fff; }
+    .header-logo { height: 42px; width: auto; max-width: 200px; }
     .header-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
     .header-meta { text-align: right; flex-shrink: 0; }
     .header-report { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
     .header-title { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .header-tagline { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 2px; }
     .accent-bar { height: 4px; background: linear-gradient(90deg, ${PDF_PORTAL_ACCENT}, ${PDF_PORTAL_NAVY_LIGHT}); }
-    .hero { padding: 28px 36px 20px; border-bottom: 1px solid ${BORDER}; background: ${SURFACE}; }
+    .hero { padding: 16px 22px 14px; border-bottom: 1px solid ${BORDER}; background: ${SURFACE}; }
     .hero-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: ${PDF_PORTAL_ACCENT}; margin: 0 0 8px; }
     .hero-title { font-size: 30px; font-weight: 800; margin: 0 0 4px; color: ${PDF_PORTAL_NAVY}; letter-spacing: -0.02em; }
     .hero-sub { color: ${MUTED}; font-size: 15px; margin: 0; }
@@ -283,7 +266,7 @@ function buildInspectionHtml(
     .status-warn { background: #FEF3C7; color: #B45309; }
     .status-warehouse { background: #DBEAFE; color: #1D4ED8; }
     .status-processed { background: #CCFBF1; color: #0F766E; }
-    .section { padding: 22px 36px; page-break-inside: avoid; }
+    .section { padding: 16px 22px; }
     .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; margin: 0 0 14px; color: ${PDF_PORTAL_NAVY}; }
     .data-table { width: 100%; border-collapse: collapse; border: 1px solid ${BORDER}; }
     .data-table tr { page-break-inside: avoid; }
@@ -297,10 +280,13 @@ function buildInspectionHtml(
     .media-stat { flex: 1; min-width: 140px; padding: 14px 16px; background: ${SURFACE}; border: 1px solid ${BORDER}; border-radius: 10px; }
     .media-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: ${MUTED}; }
     .media-stat-value { font-size: 22px; font-weight: 800; color: ${PDF_PORTAL_NAVY}; margin-top: 4px; }
-    .photo-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
-    .photo-figure { margin: 0; page-break-inside: avoid; }
-    .photo-evidence-img { width: 220px; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid ${BORDER}; display: block; object-fit: cover; }
-    .photo-figure figcaption { margin-top: 6px; font-size: 11px; color: ${MUTED}; font-weight: 600; }
+    .photo-table { width: 100%; border-collapse: collapse; }
+    .photo-table tr { page-break-inside: avoid; }
+    .photo-cell { width: 33%; vertical-align: top; padding: 6px 8px 12px 0; }
+    .photo-evidence-img { width: 160px; height: 120px; border-radius: 6px; border: 1px solid ${BORDER}; display: block; object-fit: cover; }
+    .photo-caption { margin-top: 4px; font-size: 11px; color: ${MUTED}; font-weight: 600; }
+    .access-line { margin: 0 0 8px; font-size: 13px; }
+    .access-line a { color: ${PDF_PORTAL_NAVY}; font-weight: 700; }
     .access-panel { background: ${SURFACE}; border: 1px solid ${BORDER}; border-radius: 12px; padding: 18px 20px; }
     .access-note { margin: 0 0 14px; font-size: 12px; color: ${MUTED}; line-height: 1.5; }
     .access-group { margin-bottom: 18px; }
@@ -324,14 +310,16 @@ function buildInspectionHtml(
 </head>
 <body>
   <div class="header">
-    <div class="header-brand">
-      ${logoHtml}
-    </div>
-    <div class="header-meta">
-      <div class="header-report">Cargo inspection report</div>
-      <div class="header-title">${escapeHtml(brand.name)}</div>
-      <div class="header-tagline">${escapeHtml(PDF_COMPANY_TAGLINE)}</div>
-    </div>
+    <table>
+      <tr>
+        <td>${logoHtml}</td>
+        <td style="text-align:right">
+          <div class="header-report">Cargo inspection report</div>
+          <div class="header-title">${escapeHtml(brand.name)}</div>
+          <div class="header-tagline">${escapeHtml(PDF_COMPANY_TAGLINE)}</div>
+        </td>
+      </tr>
+    </table>
   </div>
   <div class="accent-bar"></div>
   <div class="hero">
@@ -347,16 +335,10 @@ function buildInspectionHtml(
   </div>
   <div class="section">
     <h2 class="section-title">Evidence summary</h2>
-    <div class="media-summary">
-      <div class="media-stat">
-        <div class="media-stat-label">Photos</div>
-        <div class="media-stat-value">${photoCount}</div>
-      </div>
-      <div class="media-stat">
-        <div class="media-stat-label">Videos</div>
-        <div class="media-stat-value">${videoCount}</div>
-      </div>
-    </div>
+    <table class="data-table">
+      <tr><th>Photos</th><td>${photoCount}</td></tr>
+      <tr><th>Videos</th><td>${videoCount}</td></tr>
+    </table>
   </div>
   <div class="section">
     <h2 class="section-title">Photo evidence</h2>
@@ -378,16 +360,16 @@ function buildInspectionHtml(
   </div>
   <div class="section">
     <h2 class="section-title">Signatures</h2>
-    <div class="signatures">
-      <div class="sign-box">
-        <div class="sign-role">Inspector</div>
-        <div class="sign-name">${escapeHtml(inspection.createdBy || '')}</div>
-      </div>
-      <div class="sign-box">
-        <div class="sign-role">Receiver</div>
-        <div class="sign-name">Name / date</div>
-      </div>
-    </div>
+    <table class="data-table">
+      <tr>
+        <th>Inspector</th>
+        <td style="height:64px;vertical-align:bottom">${escapeHtml(formatPersonName(inspection.createdByName, inspection.createdBy))}</td>
+      </tr>
+      <tr>
+        <th>Receiver</th>
+        <td style="height:64px;vertical-align:bottom">Name and date</td>
+      </tr>
+    </table>
   </div>
   <div class="footer">
     <div class="footer-brand">${escapeHtml(brand.name)} · ${escapeHtml(PDF_COMPANY_TAGLINE)}</div>

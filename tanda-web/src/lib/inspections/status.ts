@@ -3,88 +3,88 @@ import type {
   CargoInspectionStatus,
 } from '@/lib/types/cargo-inspection';
 
-export type InspectionListStatusLabel = 'NEW' | 'LOADED' | 'REQUIRES ATTENTION';
+export type InspectionListStatusLabel = 'Identification' | 'Processed' | 'On truck';
+
+export type InspectionStatusKind = 'identification' | 'processed' | 'loaded';
 
 export interface InspectionStatusDisplay {
   label: InspectionListStatusLabel;
+  kind: InspectionStatusKind;
   className: string;
+}
+
+export function formatPersonName(
+  name: string | undefined,
+  email: string | undefined,
+): string {
+  const trimmedName = name?.trim();
+  if (trimmedName) return trimmedName;
+  const trimmedEmail = email?.trim();
+  if (trimmedEmail) return trimmedEmail;
+  return 'Unknown';
 }
 
 export function normalizeInspectionStatus(
   value: string | undefined,
 ): CargoInspectionStatus {
   const raw = value?.trim().toLowerCase();
-  if (raw === 'new' || raw === 'loaded') {
-    return raw;
+  if (raw === 'identification' || raw === 'new' || raw === 'in warehouse') {
+    return 'identification';
   }
-  return 'loaded';
+  if (raw === 'processed' || raw === 'processing') {
+    return 'processed';
+  }
+  if (raw === 'loaded' || raw === 'on truck') {
+    return 'loaded';
+  }
+  return 'identification';
 }
 
 export function resolveInspectionStatus(
-  inspection: CargoInspection,
+  inspection: Pick<CargoInspection, 'status'>,
 ): CargoInspectionStatus {
   return normalizeInspectionStatus(inspection.status);
 }
 
 export function getInspectionListStatus(
-  inspection: CargoInspection,
+  inspection: Pick<CargoInspection, 'status'>,
 ): InspectionStatusDisplay {
-  if (inspection.hasIssues) {
+  const status = resolveInspectionStatus(inspection);
+
+  if (status === 'processed') {
     return {
-      label: 'REQUIRES ATTENTION',
-      className: 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30',
+      label: 'Processed',
+      kind: 'processed',
+      className: 'bg-teal-500/20 text-teal-200 ring-1 ring-teal-400/30',
     };
   }
 
-  if (resolveInspectionStatus(inspection) === 'new') {
+  if (status === 'loaded') {
     return {
-      label: 'NEW',
-      className: 'bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30',
+      label: 'On truck',
+      kind: 'loaded',
+      className: 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/30',
     };
   }
 
   return {
-    label: 'LOADED',
-    className: 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30',
+    label: 'Identification',
+    kind: 'identification',
+    className: 'bg-sky-500/20 text-sky-200 ring-1 ring-sky-400/30',
   };
 }
 
-export function getInspectionDetailStatus(
-  inspection: CargoInspection,
-): {
-  showLifecycleBadge: boolean;
-  lifecycleLabel?: string;
-  lifecycleClassName?: string;
-  isFullyLoaded: boolean;
-  isNewInWarehouse: boolean;
+export function getInspectionDetailStatus(inspection: CargoInspection): {
+  status: CargoInspectionStatus;
+  lifecycleLabel: InspectionListStatusLabel;
+  lifecycleClassName: string;
+  hasIssues: boolean;
 } {
-  const operationalStatus = resolveInspectionStatus(inspection);
-  const isNewInWarehouse = operationalStatus === 'new';
-  const isFullyLoaded = operationalStatus === 'loaded' && !inspection.hasIssues;
-
-  if (inspection.hasIssues) {
-    return {
-      showLifecycleBadge: true,
-      lifecycleLabel: 'REQUIRES ATTENTION',
-      lifecycleClassName: 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30',
-      isFullyLoaded: false,
-      isNewInWarehouse,
-    };
-  }
-
-  if (isNewInWarehouse) {
-    return {
-      showLifecycleBadge: true,
-      lifecycleLabel: 'NEW IN WAREHOUSE',
-      lifecycleClassName: 'bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30',
-      isFullyLoaded: false,
-      isNewInWarehouse: true,
-    };
-  }
-
+  const display = getInspectionListStatus(inspection);
   return {
-    showLifecycleBadge: false,
-    isFullyLoaded,
-    isNewInWarehouse: false,
+    status: display.kind === 'loaded' ? 'loaded' : display.kind,
+    lifecycleLabel: display.label,
+    lifecycleClassName: display.className,
+    hasIssues: inspection.hasIssues,
   };
 }

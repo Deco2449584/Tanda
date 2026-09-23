@@ -197,8 +197,19 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
       return;
     }
 
-    await rememberMeta(asset.uri, asset, 'gallery');
-    appendVideo(asset.uri);
+    setIsSavingCapture(true);
+    try {
+      const durableUri = await persistEvidenceCaptureUri(asset.uri, 'video');
+      await rememberMeta(durableUri, asset, 'gallery');
+      appendVideo(durableUri);
+    } catch {
+      Alert.alert(
+        'Could not keep this video',
+        'The clip could not be saved on this phone. Pick it again before you leave this screen.',
+      );
+    } finally {
+      setIsSavingCapture(false);
+    }
   };
 
   const openCameraRecorder = async () => {
@@ -298,9 +309,7 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
                     <View style={[styles.bandFill, { width: '100%', backgroundColor: bandColor }]} />
                   </View>
                   <Text style={styles.sourceHint}>
-                    {meta?.source === 'gallery'
-                      ? 'Gallery reference — not copied locally'
-                      : 'Recorded — saved on this device'}
+                    Saved on this phone. It stays here if the app closes or the connection drops.
                   </Text>
                 </View>
                 <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)}>

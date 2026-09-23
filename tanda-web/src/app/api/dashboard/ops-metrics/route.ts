@@ -157,25 +157,26 @@ async function buildInspectionsMetrics(
     return true;
   });
 
-  let statusNew = 0;
+  let identification = 0;
+  let processed = 0;
+  let loaded = 0;
   let withIssues = 0;
 
   for (const inspection of filtered) {
-    if (inspection.status === 'new') statusNew += 1;
+    if (inspection.status === 'processed') processed += 1;
+    else if (inspection.status === 'loaded') loaded += 1;
+    else identification += 1;
     if (inspection.hasIssues) withIssues += 1;
   }
 
   return {
     total: filtered.length,
-    statusNew,
+    statusNew: identification,
     withIssues,
     byStatus: [
-      { name: 'New', value: statusNew },
-      { name: 'With issues', value: withIssues },
-      {
-        name: 'Loaded / other',
-        value: Math.max(0, filtered.length - statusNew),
-      },
+      { name: 'Identification', value: identification },
+      { name: 'Processed', value: processed },
+      { name: 'On truck', value: loaded },
     ].filter((item) => item.value > 0),
   };
 }

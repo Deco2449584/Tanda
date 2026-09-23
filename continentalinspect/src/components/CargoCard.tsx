@@ -14,7 +14,7 @@ import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
 import { METRIC_ATTENTION } from '@/components/TodayOperationsDonut';
 import { CONSERVATION_COLORS, CONSERVATION_ICONS, getConservationLabel } from '@/utils/cargoLabels';
-import { getInspectionDisplayBadge, getSyncBadge } from '@/utils/cargoInspectionStatus';
+import { formatPersonName, getInspectionDisplayBadge, getSyncBadge } from '@/utils/cargoInspectionStatus';
 import {
   getCargoTypeIcon,
   getInspectionDisplayTitle,
@@ -371,8 +371,10 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
               ) : null}
             </View>
             <Text style={styles.authorLine} numberOfLines={2}>
-              Created by {inspection.createdBy || 'Unknown'}
-              {inspection.updatedBy ? ` · Edited by ${inspection.updatedBy}` : ''}
+              Created by {formatPersonName(inspection.createdByName, inspection.createdBy)}
+              {inspection.updatedBy || inspection.updatedByName
+                ? ` · Edited by ${formatPersonName(inspection.updatedByName, inspection.updatedBy)}`
+                : ''}
             </Text>
           </View>
         </View>

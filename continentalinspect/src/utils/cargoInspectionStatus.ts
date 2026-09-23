@@ -49,6 +49,17 @@ export function getInspectionDisplayBadge(inspection: CargoInspection): Inspecti
   return getLifecycleBadge(resolveInspectionStatus(inspection));
 }
 
+export function formatPersonName(
+  name: string | undefined,
+  email: string | undefined,
+): string {
+  const trimmedName = name?.trim();
+  if (trimmedName) return trimmedName;
+  const trimmedEmail = email?.trim();
+  if (trimmedEmail) return trimmedEmail;
+  return 'Unknown';
+}
+
 export function getInspectionStatusExportLabel(inspection: CargoInspection): string {
   return getInspectionDisplayBadge(inspection).label;
 }

@@ -59,6 +59,11 @@ import {
   captureRegistrationLocation,
   RegistrationLocationError,
 } from '@/utils/captureRegistrationLocation';
+import {
+  clearInspectionFormDraft,
+  loadInspectionFormDraft,
+  saveInspectionFormDraft,
+} from '@/utils/inspectionFormDraft';
 import { normalizeUldId } from '@/utils/uldId';
 import {
   extractCargoLabelFromImage,
@@ -124,6 +129,7 @@ export default function CargoInspectionFormScreen() {
   const [sectionIndex, setSectionIndex] = useState(0);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const sectionOffsets = useRef({ cargo: 0, summary: 0 });
+  const draftHydrated = useRef(false);
 
   const isEditMode = Boolean(editingId);
 
@@ -154,12 +160,15 @@ export default function CargoInspectionFormScreen() {
         if (cancelled) return;
         setAllowedClients(clients);
         if (clients.length === 1 && !editId) {
-          setForm((prev) => ({
-            ...prev,
-            clientLocationId: clients[0].id,
-            clientLocationName: clients[0].name,
-            portalClientId: clients[0].id,
-          }));
+          setForm((prev) => {
+            if (prev.clientLocationId) return prev;
+            return {
+              ...prev,
+              clientLocationId: clients[0].id,
+              clientLocationName: clients[0].name,
+              portalClientId: clients[0].id,
+            };
+          });
         }
       } catch {
         if (!cancelled) {
@@ -175,6 +184,79 @@ export default function CargoInspectionFormScreen() {
       cancelled = true;
     };
   }, [isAdmin, profile?.locationId, profile?.locationGroupId, editId]);
+
+  useEffect(() => {
+    if (editId) {
+      draftHydrated.current = true;
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const draft = await loadInspectionFormDraft<FormState>();
+      if (cancelled) return;
+      if (draft) {
+        setForm({ ...EMPTY_CARGO_INSPECTION_INPUT, ...draft.form });
+        setWeightText(draft.weightText);
+        setBoxCountText(draft.boxCountText);
+        setTemperatureText(draft.temperatureText);
+        setShowDriverFields(draft.showDriverFields);
+        setNotice({
+          title: 'Form restored',
+          message:
+            'This inspection was still on the phone, including photos and videos already copied here. Finish it, then tap Save locally or Sync cloud. Closing the app will not erase it.',
+        });
+      }
+      draftHydrated.current = true;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
+
+  useEffect(() => {
+    if (editId || editingId || !draftHydrated.current) return;
+
+    const handle = setTimeout(() => {
+      const hasContent = Boolean(
+        form.uldId.trim() ||
+          form.awbNumber.trim() ||
+          form.foodType.trim() ||
+          form.notes?.trim() ||
+          form.clientLocationId?.trim() ||
+          form.issueDescription?.trim() ||
+          form.photoEvidence.length ||
+          form.videoEvidence.length ||
+          weightText.trim() ||
+          boxCountText.trim() ||
+          temperatureText.trim(),
+      );
+
+      if (!hasContent) {
+        void clearInspectionFormDraft();
+        return;
+      }
+
+      void saveInspectionFormDraft({
+        form,
+        weightText,
+        boxCountText,
+        temperatureText,
+        showDriverFields,
+      });
+    }, 700);
+
+    return () => clearTimeout(handle);
+  }, [
+    boxCountText,
+    editId,
+    editingId,
+    form,
+    showDriverFields,
+    temperatureText,
+    weightText,
+  ]);
 
   useEffect(() => {
     if (!editId || inspectionsLoading) return;
@@ -456,6 +538,7 @@ export default function CargoInspectionFormScreen() {
       } else {
         await addInspection(geoPayload);
       }
+      await clearInspectionFormDraft();
       router.replace('/(tabs)' as Href);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';

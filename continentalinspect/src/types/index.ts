@@ -65,8 +65,12 @@ export interface CargoInspection {
   /** When the cargo was marked on the transport truck. */
   dispatchedAt?: Date | string;
   createdBy: string;
+  /** Display name captured when the record was created. */
+  createdByName?: string;
   /** Last person who edited the record (email). */
   updatedBy?: string;
+  /** Display name captured on the last edit. */
+  updatedByName?: string;
   syncStatus?: InspectionSyncStatus;
   /** Assigned client/site (Firestore `locations` id). */
   clientLocationId?: string;

@@ -11,19 +11,17 @@ interface PortalInspectionCardProps {
   inspection: PortalInspectionSummary;
 }
 
-const PORTAL_STATUS_CLASSES: Record<string, string> = {
-  'REQUIRES ATTENTION': 'bg-amber-400/20 text-amber-100 ring-amber-300/30',
-  NEW: 'bg-sky-400/20 text-sky-100 ring-sky-300/30',
-  LOADED: 'bg-emerald-400/20 text-emerald-100 ring-emerald-300/30',
+const PORTAL_STATUS_BAR: Record<string, string> = {
+  identification: 'bg-sky-400',
+  processed: 'bg-teal-400',
+  loaded: 'bg-emerald-400',
 };
 
 export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) {
   const status = getInspectionListStatus(
     inspection as Parameters<typeof getInspectionListStatus>[0],
   );
-  const statusClass =
-    PORTAL_STATUS_CLASSES[status.label] ??
-    'bg-white/10 text-white/80 ring-white/15';
+  const statusBar = PORTAL_STATUS_BAR[status.kind] ?? 'bg-sky-400';
 
   const dateLabel = inspection.updatedAt
     ? formatInspectionDate(inspection.updatedAt)
@@ -34,7 +32,7 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
       href={`/portal/track/${inspection.id}`}
       className="group flex overflow-hidden rounded-2xl border border-[#262626]/20 bg-[#2F2F2F] text-white shadow-md transition hover:border-[#F51EA0]/40 hover:shadow-lg"
     >
-      <div className="w-1.5 shrink-0 bg-[#F51EA0]" aria-hidden />
+      <div className={`w-1.5 shrink-0 ${statusBar}`} aria-hidden />
 
       <div className="flex min-w-0 flex-1 gap-4 p-5">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
@@ -70,10 +68,17 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
           </p>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <span
-              className={`inline-flex rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${statusClass}`}
-            >
-              {status.label}
+            <span className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${status.className}`}
+              >
+                {status.label}
+              </span>
+              {inspection.hasIssues ? (
+                <span className="inline-flex rounded-md bg-amber-400/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-100 ring-1 ring-amber-300/30">
+                  Issues
+                </span>
+              ) : null}
             </span>
             <span className="text-[10px] text-white/45">{dateLabel}</span>
           </div>

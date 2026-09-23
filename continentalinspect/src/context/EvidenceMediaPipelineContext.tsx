@@ -686,15 +686,19 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
         return {
           status: 'pending',
           progress,
-          label: waiting ? 'Waiting Wi‑Fi' : 'Uploading',
+          label: waiting ? 'Saved on phone · waiting for connection' : 'Uploading',
         };
       }
 
       if (inspectionJobs.some((job) => job.status === 'error')) {
-        return { status: 'error', progress: 0, label: 'Error · tap retry' };
+        return {
+          status: 'error',
+          progress: 0,
+          label: 'Upload stopped · file kept · tap to retry',
+        };
       }
 
-      return { status: 'uploaded', progress: 100, label: 'Update' };
+      return { status: 'uploaded', progress: 100, label: 'Evidence uploaded' };
     },
     [jobs],
   );

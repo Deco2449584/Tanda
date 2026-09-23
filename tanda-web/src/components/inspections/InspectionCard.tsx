@@ -24,7 +24,16 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
       href={`/inspections/${inspection.id}`}
       className="group flex overflow-hidden rounded-xl border border-border bg-surface-raised transition-colors hover:border-zinc-600 hover:bg-surface-raised"
     >
-      <div className="w-1 shrink-0 bg-primary" aria-hidden />
+      <div
+        className={`w-1 shrink-0 ${
+          status.kind === 'processed'
+            ? 'bg-teal-400'
+            : status.kind === 'loaded'
+              ? 'bg-emerald-400'
+              : 'bg-sky-400'
+        }`}
+        aria-hidden
+      />
 
       <div className="flex min-w-0 flex-1 gap-3 p-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-hover">
@@ -74,6 +83,11 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
               >
                 {status.label}
               </span>
+              {inspection.hasIssues ? (
+                <span className="inline-flex rounded-md bg-amber-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-200 ring-1 ring-amber-400/30">
+                  Issues
+                </span>
+              ) : null}
               {inspection.portalEnabled ? (
                 <span className="inline-flex rounded-md bg-violet-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-300 ring-1 ring-violet-500/30">
                   Portal

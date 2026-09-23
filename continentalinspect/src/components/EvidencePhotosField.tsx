@@ -137,6 +137,7 @@ export function EvidencePhotosField({
 }: EvidencePhotosFieldProps) {
   const styles = useThemedStyles(createStyles);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
   const lockedSet = useMemo(() => new Set(lockedPhotoUris), [lockedPhotoUris]);
   const photosRef = useRef(photos);
 
@@ -178,8 +179,24 @@ export function EvidencePhotosField({
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      const uris = result.assets.map((asset) => asset.uri).filter(Boolean);
-      appendPhotos(uris);
+      setIsCopying(true);
+      const uris: string[] = [];
+      try {
+        for (const asset of result.assets) {
+          if (!asset.uri) continue;
+          try {
+            uris.push(await persistEvidenceCaptureUri(asset.uri, 'photo'));
+          } catch {
+            Alert.alert(
+              'Could not keep a photo',
+              'One photo could not be saved on this phone. Pick it again before you leave this screen.',
+            );
+          }
+        }
+        appendPhotos(uris);
+      } finally {
+        setIsCopying(false);
+      }
     }
   };
 
@@ -199,9 +216,11 @@ export function EvidencePhotosField({
     <View style={styles.container}>
       <Text style={styles.label}>Photo evidence</Text>
       <Text style={styles.hint}>
-        Photos are optimized and uploaded after you tap Save (≤{formatMaxPhotoSizeMb()} MB each)
+        Photos are copied onto this phone first, then uploaded when you sync (≤{formatMaxPhotoSizeMb()} MB each)
       </Text>
-      <Text style={styles.countHint}>{photos.length} photo(s) attached</Text>
+      <Text style={styles.countHint}>
+        {isCopying ? 'Saving photos on this phone…' : `${photos.length} photo(s) attached`}
+      </Text>
 
       <View style={styles.actions}>
         <Pressable

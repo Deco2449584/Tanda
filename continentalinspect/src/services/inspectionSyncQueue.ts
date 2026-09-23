@@ -218,6 +218,7 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     updatedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     dispatchedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     createdBy: operation.createdBy,
+    createdByName: operation.input.createdByName?.trim() || undefined,
     syncStatus: operation.holdUntilSync ? 'local' : 'pending',
     clientLocationId: operation.input.clientLocationId,
     clientLocationName: operation.input.clientLocationName,

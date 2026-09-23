@@ -193,6 +193,7 @@ export function NewInspectionForm() {
           transportCompany: transportCompany.trim(),
         },
         geo,
+        user.displayName || undefined,
       );
 
       enqueueInspectionMedia({

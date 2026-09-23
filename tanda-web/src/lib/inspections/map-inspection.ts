@@ -69,6 +69,18 @@ export function mapInspectionDoc(
       record.dispatchedAtIso ??
       undefined,
     createdBy: record.createdBy ?? '',
+    createdByName:
+      typeof record.createdByName === 'string' && record.createdByName.trim()
+        ? record.createdByName.trim()
+        : undefined,
+    updatedBy:
+      typeof record.updatedBy === 'string' && record.updatedBy.trim()
+        ? record.updatedBy.trim()
+        : undefined,
+    updatedByName:
+      typeof record.updatedByName === 'string' && record.updatedByName.trim()
+        ? record.updatedByName.trim()
+        : undefined,
     portalEnabled: Boolean(record.portalEnabled),
     portalClientId,
     clientLocationId,

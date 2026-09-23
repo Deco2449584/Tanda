@@ -9,6 +9,7 @@ import {
   fetchPortalInspectionsList,
   type PortalInspectionSummary,
 } from '@/lib/portal/client-api';
+import { normalizeInspectionStatus } from '@/lib/inspections/status';
 import {
   clearPortalSession,
   getPortalAwb,
@@ -79,8 +80,14 @@ function PortalTrackContent() {
     router.replace('/portal');
   }
 
+  const identificationCount = inspections.filter(
+    (item) => normalizeInspectionStatus(item.status) === 'identification',
+  ).length;
+  const processedCount = inspections.filter(
+    (item) => normalizeInspectionStatus(item.status) === 'processed',
+  ).length;
   const loadedCount = inspections.filter(
-    (item) => item.status === 'loaded' && !item.hasIssues,
+    (item) => normalizeInspectionStatus(item.status) === 'loaded',
   ).length;
 
   return (
@@ -136,21 +143,21 @@ function PortalTrackContent() {
           <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                Active ULDs
+                Identification
               </p>
-              <p className="mt-1 text-2xl font-bold">{inspections.length}</p>
+              <p className="mt-1 text-2xl font-bold">{identificationCount}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                Loaded
+                Processed
+              </p>
+              <p className="mt-1 text-2xl font-bold">{processedCount}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
+                On truck
               </p>
               <p className="mt-1 text-2xl font-bold">{loadedCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                Auto-refresh
-              </p>
-              <p className="mt-1 text-sm font-semibold">Every 60 seconds</p>
             </div>
           </div>
         </div>

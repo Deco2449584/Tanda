@@ -1,32 +1,32 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoUnitType } from '@/types';
-import { CARGO_UNIT_TYPES, getUnitTypeIcon, getUnitTypeLabel } from '@/utils/cargoUnitType';
+import { CARGO_UNIT_TYPES, getUnitTypeLabel } from '@/utils/cargoUnitType';
+
+const CARGO_TYPE_IMAGES: Record<CargoUnitType, number> = {
+  uld: require('../../assets/cargo-types/uld.png'),
+  pallet_skid: require('../../assets/cargo-types/pallet.png'),
+  lcl: require('../../assets/cargo-types/lcl.png'),
+  loose_cargo: require('../../assets/cargo-types/loose.png'),
+  breakbulk: require('../../assets/cargo-types/breakbulk.png'),
+};
 
 type CargoTypeStripProps = {
   value: CargoUnitType;
   onChange: (unitType: CargoUnitType) => void;
 };
 
-const TILE_TINT: Record<CargoUnitType, string> = {
-  uld: '#0288D1',
-  pallet_skid: '#8D6E63',
-  lcl: '#00897B',
-  loose_cargo: '#F59E0B',
-  breakbulk: '#7C4DFF',
-};
-
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
     row: { gap: 10, paddingVertical: 4 },
     tile: {
-      width: 92,
+      width: 104,
       borderRadius: 16,
-      padding: 10,
+      padding: 8,
       gap: 8,
       backgroundColor: colors.surface.muted,
       borderWidth: 1.5,
@@ -37,10 +37,10 @@ function createStyles(colors: AppColors) {
       backgroundColor: colors.surface.card,
     },
     art: {
-      height: 64,
+      width: '100%',
+      height: 78,
       borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
+      backgroundColor: '#F3F4F6',
     },
     label: {
       fontFamily: fonts.bodyMedium,
@@ -58,15 +58,16 @@ export function CargoTypeStrip({ value, onChange }: CargoTypeStripProps) {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {CARGO_UNIT_TYPES.map((unitType) => {
         const selected = unitType === value;
-        const tint = TILE_TINT[unitType];
         return (
           <Pressable
             key={unitType}
             style={[styles.tile, selected && styles.tileSelected]}
             onPress={() => onChange(unitType)}>
-            <View style={[styles.art, { backgroundColor: `${tint}22` }]}>
-              <Ionicons name={getUnitTypeIcon(unitType)} size={28} color={tint} />
-            </View>
+            <Image
+              source={CARGO_TYPE_IMAGES[unitType]}
+              style={styles.art}
+              contentFit="cover"
+            />
             <Text style={styles.label} numberOfLines={2}>
               {getUnitTypeLabel(unitType)}
             </Text>

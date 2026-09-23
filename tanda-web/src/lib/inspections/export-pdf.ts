@@ -115,11 +115,11 @@ function buildInspectionHtml(
   const status = getInspectionListStatus(inspection);
   const mapsUrl = resolveInspectionMapsUrl(inspection);
   const statusClass =
-    status.label === 'REQUIRES ATTENTION'
-      ? 'badge-warn'
-      : status.label === 'NEW'
-        ? 'badge-new'
-        : 'badge-ok';
+    status.kind === 'processed'
+      ? 'badge-processed'
+      : status.kind === 'loaded'
+        ? 'badge-ok'
+        : 'badge-new';
 
   const logoHtml = logoDataUrl
     ? `<img src="${escapeAttr(logoDataUrl)}" alt="${escapeAttr(COMPANY_NAME)}" class="brand-logo" />`
@@ -142,7 +142,7 @@ function buildInspectionHtml(
       ${detailItem('Exit vehicle plate', inspection.exitVehiclePlate)}
       ${detailItem('Driver', inspection.driverName)}
       ${detailItem('Transport company', inspection.transportCompany)}
-      ${detailItem('Inspector', inspection.createdBy)}
+      ${detailItem('Created by', inspection.createdByName?.trim() || inspection.createdBy || '—')}
       ${detailItem('Registered', formatInspectionDate(inspection.registeredAt))}
       ${
         inspection.dispatchedAt
@@ -270,6 +270,7 @@ function buildInspectionHtml(
     }
     .badge-ok { background: #E8F8EE; color: #166534; }
     .badge-new { background: #E8F2FF; color: #1D4ED8; }
+    .badge-processed { background: #CCFBF1; color: #0F766E; }
     .badge-warn { background: #FFF4E5; color: #B45309; }
     .section { padding: 20px 26px; }
     .section h2 {
