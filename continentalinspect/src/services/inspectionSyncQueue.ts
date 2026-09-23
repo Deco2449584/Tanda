@@ -22,7 +22,7 @@ export type PendingCreateOperation = {
   enqueuedAt: string;
   retryCount: number;
   lastError?: string;
-  /** Local draft. Auto-sync skips it until the user taps Sync cloud. */
+  /** Local draft. Auto-sync skips it until the user taps Sync. */
   holdUntilSync?: boolean;
 };
 
@@ -218,6 +218,7 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     updatedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     dispatchedAt: operation.status === 'loaded' ? operation.dispatchedAt : undefined,
     createdBy: operation.createdBy,
+    userId: operation.userId,
     createdByName: operation.input.createdByName?.trim() || undefined,
     syncStatus: operation.holdUntilSync ? 'local' : 'pending',
     clientLocationId: operation.input.clientLocationId,

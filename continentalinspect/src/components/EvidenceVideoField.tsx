@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 
 import { InteractiveVideoPreview } from '@/components/InteractiveVideoPreview';
-import { RecordTipsModal } from '@/components/RecordTipsModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import {
@@ -31,33 +30,17 @@ import {
   videoDurationSeconds,
 } from '@/utils/evidenceMediaValidation';
 
-const CAMERA_PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
-  mediaTypes: ['videos'],
-  videoMaxDuration: 0,
-  allowsEditing: false,
-};
-
 const LIBRARY_PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['videos'],
   allowsEditing: false,
+  allowsMultipleSelection: true,
+  selectionLimit: 0,
 };
 
 type EvidenceVideoFieldProps = {
   videos: string[];
   onChange: (videos: string[]) => void;
 };
-
-async function ensureCameraPermission(): Promise<boolean> {
-  const current = await ImagePicker.getCameraPermissionsAsync();
-  if (current.granted) return true;
-
-  const requested = await ImagePicker.requestCameraPermissionsAsync();
-  if (!requested.granted) {
-    Alert.alert('Camera permission', 'We need camera access to record video evidence.');
-    return false;
-  }
-  return true;
-}
 
 async function ensureLibraryPermission(): Promise<boolean> {
   const current = await ImagePicker.getMediaLibraryPermissionsAsync();
@@ -113,10 +96,18 @@ function createStyles(colors: AppColors) {
       backgroundColor: colors.surface.muted,
     },
     rowLabel: { flex: 1, fontSize: 13, color: colors.text.onSurface },
-    removeBtn: { padding: 4 },
+    removeBtn: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      zIndex: 2,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      borderRadius: 14,
+    },
     empty: { fontSize: 13, color: colors.text.onSurfaceMuted, fontStyle: 'italic' },
     countHint: { fontSize: 12, color: colors.text.onSurfaceMuted },
     previewCard: {
+      position: 'relative',
       gap: 8,
       padding: 10,
       borderRadius: 12,
@@ -146,7 +137,6 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
   const styles = useThemedStyles(createStyles);
   const videosRef = useRef(videos);
   const [isSavingCapture, setIsSavingCapture] = useState(false);
-  const [showRecordTips, setShowRecordTips] = useState(false);
   const [metaByUri, setMetaByUri] = useState<Record<string, VideoMeta>>({});
 
   useEffect(() => {
@@ -172,32 +162,11 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
     }));
   };
 
-  const ingestRecordedVideo = async (asset: ImagePicker.ImagePickerAsset) => {
-    if (!asset.uri) {
-      return;
-    }
-
-    setIsSavingCapture(true);
-    try {
-      const durableUri = await persistEvidenceCaptureUri(asset.uri, 'video');
-      await rememberMeta(durableUri, asset, 'record');
-      appendVideo(durableUri);
-    } catch {
-      Alert.alert(
-        'Could not save video',
-        'The recording could not be copied to device storage. Try again — do not leave this screen until the video is listed below.',
-      );
-    } finally {
-      setIsSavingCapture(false);
-    }
-  };
-
   const ingestLibraryVideo = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!asset.uri) {
       return;
     }
 
-    setIsSavingCapture(true);
     try {
       const durableUri = await persistEvidenceCaptureUri(asset.uri, 'video');
       await rememberMeta(durableUri, asset, 'gallery');
@@ -207,24 +176,7 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
         'Could not keep this video',
         'The clip could not be saved on this phone. Pick it again before you leave this screen.',
       );
-    } finally {
-      setIsSavingCapture(false);
     }
-  };
-
-  const openCameraRecorder = async () => {
-    const allowed = await ensureCameraPermission();
-    if (!allowed) return;
-
-    const result = await ImagePicker.launchCameraAsync(CAMERA_PICKER_OPTIONS);
-    if (!result.canceled && result.assets[0]) {
-      await ingestRecordedVideo(result.assets[0]);
-    }
-  };
-
-  const handleRecordVideo = () => {
-    if (isSavingCapture) return;
-    setShowRecordTips(true);
   };
 
   const handlePickFromLibrary = async () => {
@@ -234,8 +186,15 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
     if (!allowed) return;
 
     const result = await ImagePicker.launchImageLibraryAsync(LIBRARY_PICKER_OPTIONS);
-    if (!result.canceled && result.assets[0]) {
-      await ingestLibraryVideo(result.assets[0]);
+    if (result.canceled || result.assets.length === 0) return;
+
+    setIsSavingCapture(true);
+    try {
+      for (const asset of result.assets) {
+        await ingestLibraryVideo(asset);
+      }
+    } finally {
+      setIsSavingCapture(false);
     }
   };
 
@@ -246,20 +205,14 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
 
   return (
     <View style={styles.container}>
-      <RecordTipsModal
-        visible={showRecordTips}
-        onCancel={() => setShowRecordTips(false)}
-        onContinue={() => {
-          setShowRecordTips(false);
-          void openCameraRecorder();
-        }}
-      />
       <Text style={styles.label}>Video evidence</Text>
       <Text style={styles.hint}>
-        Prefer HD (720p), up to ~10 min. Videos are saved on this device first, then uploaded when
-        online (optimized to ≤{formatMaxVideoSizeMb()} MB).
+        Choose videos from the gallery. Prefer HD (720p), about 2–5 minutes. Files stay on this
+        phone until the upload finishes (optimized to ≤{formatMaxVideoSizeMb()} MB).
       </Text>
-      <Text style={styles.countHint}>{videos.length} video(s) attached</Text>
+      <Text style={styles.countHint}>
+        {isSavingCapture ? 'Saving videos on this phone…' : `${videos.length} video(s) attached`}
+      </Text>
 
       <View style={styles.actions}>
         <Pressable
@@ -268,24 +221,13 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
             pressed && styles.actionButtonPressed,
             isSavingCapture && styles.actionButtonDisabled,
           ]}
-          onPress={handleRecordVideo}
+          onPress={() => void handlePickFromLibrary()}
           disabled={isSavingCapture}>
           {isSavingCapture ? (
             <ActivityIndicator color={colors.text.onAccent} />
           ) : (
-            <Text style={styles.actionButtonText}>Record video</Text>
+            <Text style={styles.actionButtonText}>Choose videos</Text>
           )}
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [
-            styles.actionButton,
-            styles.actionButtonSecondary,
-            pressed && styles.actionButtonPressed,
-            isSavingCapture && styles.actionButtonDisabled,
-          ]}
-          onPress={() => void handlePickFromLibrary()}
-          disabled={isSavingCapture}>
-          <Text style={styles.actionButtonTextSecondary}>Upload video</Text>
         </Pressable>
       </View>
 
@@ -312,8 +254,8 @@ export function EvidenceVideoField({ videos, onChange }: EvidenceVideoFieldProps
                     Saved on this phone. It stays here if the app closes or the connection drops.
                   </Text>
                 </View>
-                <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)}>
-                  <Ionicons name="close-circle" size={22} color="#c62828" />
+                <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)} hitSlop={8}>
+                  <Ionicons name="close-circle" size={26} color="#FFFFFF" />
                 </Pressable>
               </View>
             );

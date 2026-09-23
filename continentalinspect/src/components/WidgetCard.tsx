@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { radius, widgetShadow } from '@/theme/motion';
+import { cardShadow, radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 
 type WidgetCardProps = {
@@ -16,9 +16,9 @@ function createStyles(colors: AppColors) {
     card: {
       backgroundColor: colors.surface.card,
       borderRadius: radius.card,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
       borderColor: colors.border.onSurface,
-      ...widgetShadow,
+      ...cardShadow(colors.background.primary),
     },
     padded: {
       padding: 16,

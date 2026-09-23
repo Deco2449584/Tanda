@@ -86,6 +86,34 @@ export function filterInspectionsToday(inspections: CargoInspection[]): CargoIns
   return filterInspectionsByDateRange(inspections, from, to);
 }
 
+/** Admin sees the org. Employees only see records they own. */
+export function scopeInspectionsForViewer(
+  inspections: CargoInspection[],
+  options: {
+    isAdmin: boolean;
+    userId?: string | null;
+    email?: string | null;
+  },
+): CargoInspection[] {
+  if (options.isAdmin) {
+    return inspections;
+  }
+
+  const uid = options.userId?.trim();
+  const email = options.email?.trim().toLowerCase();
+
+  return inspections.filter((item) => {
+    if (uid && item.userId && item.userId === uid) {
+      return true;
+    }
+    const author = item.createdBy?.trim().toLowerCase();
+    if (email && author === email) {
+      return true;
+    }
+    return Boolean(uid && author === uid);
+  });
+}
+
 export function startOfMonth(reference = new Date()): Date {
   return new Date(reference.getFullYear(), reference.getMonth(), 1);
 }

@@ -151,7 +151,7 @@ export function TodayOperationsDonut({
 
       {isEmpty ? (
         <Text style={styles.emptyHint}>
-          No warehouse or truck cargo today yet. Scan a ULD to see the breakdown here.
+          No cargo today yet. Open New to register a load and see the breakdown here.
         </Text>
       ) : (
         <>

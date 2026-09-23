@@ -11,7 +11,11 @@ import {
 } from '@/services/inspectionPendingMedia';
 import type { AppColors } from '@/theme/palettes';
 import {
-  formatMaxPhotoSizeMb,
+  VIDEO_BAND_COLORS,
+  VIDEO_BAND_LABELS,
+  classifyPhotoWeight,
+  formatFileSizeBytes,
+  resolveAssetFileSizeBytes,
 } from '@/utils/evidenceMediaValidation';
 
 const IMAGE_PICKER_OPTIONS: Pick<
@@ -28,18 +32,6 @@ type EvidencePhotosFieldProps = {
   isAdmin?: boolean;
   lockedPhotoUris?: readonly string[];
 };
-
-async function ensureCameraPermission(): Promise<boolean> {
-  const current = await ImagePicker.getCameraPermissionsAsync();
-  if (current.granted) return true;
-
-  const requested = await ImagePicker.requestCameraPermissionsAsync();
-  if (!requested.granted) {
-    Alert.alert('Camera permission', 'We need camera access to capture photo evidence.');
-    return false;
-  }
-  return true;
-}
 
 async function ensureLibraryPermission(): Promise<boolean> {
   const current = await ImagePicker.getMediaLibraryPermissionsAsync();
@@ -84,7 +76,8 @@ function createStyles(colors: AppColors) {
       color: colors.text.onSurface,
     },
     thumbnails: { gap: 10, paddingVertical: 4 },
-    thumbnailWrap: {
+    thumbnailWrap: { width: THUMB_SIZE, gap: 4 },
+    imageBox: {
       width: THUMB_SIZE,
       height: THUMB_SIZE,
       borderRadius: 10,
@@ -93,6 +86,7 @@ function createStyles(colors: AppColors) {
       backgroundColor: colors.surface.muted,
     },
     thumbnail: { width: THUMB_SIZE, height: THUMB_SIZE },
+    photoMeta: { fontSize: 10, fontWeight: '600' },
     removeBtn: {
       position: 'absolute',
       top: 4,
@@ -138,11 +132,30 @@ export function EvidencePhotosField({
   const styles = useThemedStyles(createStyles);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [sizeByUri, setSizeByUri] = useState<Record<string, number | null>>({});
+  const knownSizes = useRef(new Set<string>());
   const lockedSet = useMemo(() => new Set(lockedPhotoUris), [lockedPhotoUris]);
   const photosRef = useRef(photos);
 
   useEffect(() => {
     photosRef.current = photos;
+  }, [photos]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      for (const uri of photos) {
+        if (knownSizes.current.has(uri)) continue;
+        knownSizes.current.add(uri);
+        const size = await resolveAssetFileSizeBytes(uri);
+        if (!cancelled) {
+          setSizeByUri((current) => ({ ...current, [uri]: size }));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [photos]);
 
   const canRemovePhoto = (uri: string) => isAdmin || !lockedSet.has(uri);
@@ -154,21 +167,6 @@ export function EvidencePhotosField({
     onChange(next);
   };
 
-  const handleTakePhoto = async () => {
-    const allowed = await ensureCameraPermission();
-    if (!allowed) return;
-
-    const result = await ImagePicker.launchCameraAsync(IMAGE_PICKER_OPTIONS);
-    if (!result.canceled && result.assets[0]?.uri) {
-      try {
-        const durableUri = await persistEvidenceCaptureUri(result.assets[0].uri, 'photo');
-        appendPhotos([durableUri]);
-      } catch {
-        Alert.alert('Could not save photo', 'Try taking the photo again.');
-      }
-    }
-  };
-
   const handlePickFromGallery = async () => {
     const allowed = await ensureLibraryPermission();
     if (!allowed) return;
@@ -176,6 +174,7 @@ export function EvidencePhotosField({
     const result = await ImagePicker.launchImageLibraryAsync({
       ...IMAGE_PICKER_OPTIONS,
       allowsMultipleSelection: true,
+      selectionLimit: 0,
     });
 
     if (!result.canceled && result.assets.length > 0) {
@@ -185,7 +184,11 @@ export function EvidencePhotosField({
         for (const asset of result.assets) {
           if (!asset.uri) continue;
           try {
-            uris.push(await persistEvidenceCaptureUri(asset.uri, 'photo'));
+            const durableUri = await persistEvidenceCaptureUri(asset.uri, 'photo');
+            uris.push(durableUri);
+            const size = await resolveAssetFileSizeBytes(durableUri, asset.fileSize);
+            knownSizes.current.add(durableUri);
+            setSizeByUri((current) => ({ ...current, [durableUri]: size }));
           } catch {
             Alert.alert(
               'Could not keep a photo',
@@ -216,7 +219,7 @@ export function EvidencePhotosField({
     <View style={styles.container}>
       <Text style={styles.label}>Photo evidence</Text>
       <Text style={styles.hint}>
-        Photos are copied onto this phone first, then uploaded when you sync (≤{formatMaxPhotoSizeMb()} MB each)
+        Choose photos from the gallery. They are copied onto this phone first, then uploaded when you sync.
       </Text>
       <Text style={styles.countHint}>
         {isCopying ? 'Saving photos on this phone…' : `${photos.length} photo(s) attached`}
@@ -225,17 +228,9 @@ export function EvidencePhotosField({
       <View style={styles.actions}>
         <Pressable
           style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
-          onPress={() => void handleTakePhoto()}>
-          <Text style={styles.actionButtonText}>Take photo</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [
-            styles.actionButton,
-            styles.actionButtonSecondary,
-            pressed && styles.actionButtonPressed,
-          ]}
-          onPress={() => void handlePickFromGallery()}>
-          <Text style={styles.actionButtonTextSecondary}>Gallery</Text>
+          onPress={() => void handlePickFromGallery()}
+          disabled={isCopying}>
+          <Text style={styles.actionButtonText}>{isCopying ? 'Saving…' : 'Choose photos'}</Text>
         </Pressable>
       </View>
 
@@ -260,20 +255,32 @@ export function EvidencePhotosField({
           contentContainerStyle={styles.thumbnails}>
           {photos.map((uri) => (
             <View key={uri} style={styles.thumbnailWrap}>
-              <Pressable onPress={() => setPreviewUri(uri)}>
-                <Image
-                  source={{ uri }}
-                  style={styles.thumbnail}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  recyclingKey={uri}
-                />
-              </Pressable>
-              {canRemovePhoto(uri) ? (
-                <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)}>
-                  <Text style={styles.removeBtnText}>×</Text>
+              <View style={styles.imageBox}>
+                <Pressable onPress={() => setPreviewUri(uri)}>
+                  <Image
+                    source={{ uri }}
+                    style={styles.thumbnail}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    recyclingKey={uri}
+                  />
                 </Pressable>
-              ) : null}
+                {canRemovePhoto(uri) ? (
+                  <Pressable style={styles.removeBtn} onPress={() => handleRemove(uri)} hitSlop={6}>
+                    <Ionicons name="close-circle" size={22} color="#FFFFFF" />
+                  </Pressable>
+                ) : null}
+              </View>
+              <Text
+                style={[
+                  styles.photoMeta,
+                  { color: VIDEO_BAND_COLORS[classifyPhotoWeight(sizeByUri[uri] ?? null)] },
+                ]}
+                numberOfLines={2}>
+                {sizeByUri[uri] != null ? formatFileSizeBytes(sizeByUri[uri] as number) : 'Size pending'}
+                {' · '}
+                {VIDEO_BAND_LABELS[classifyPhotoWeight(sizeByUri[uri] ?? null)]}
+              </Text>
             </View>
           ))}
         </ScrollView>

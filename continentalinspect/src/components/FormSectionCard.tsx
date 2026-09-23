@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { ACCENT } from '@/theme/accent';
-import { radius, widgetShadow } from '@/theme/motion';
+import { cardShadow, radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
@@ -22,7 +22,7 @@ function createStyles(colors: AppColors) {
       borderRadius: radius.card,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border.onSurface,
-      ...widgetShadow,
+      ...cardShadow(colors.background.primary),
     },
     header: {
       flexDirection: 'row',

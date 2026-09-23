@@ -40,7 +40,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="search" options={{ title: 'Search' }} />
       <Tabs.Screen
         name="scan"
-        options={{ title: 'Scan' }}
+        options={{ title: 'New' }}
         listeners={{
           tabPress: (event) => {
             event.preventDefault();

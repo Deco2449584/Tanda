@@ -26,6 +26,7 @@ import {
   filterInspectionsBySearch,
   formatFilterDate,
   getDateRangeForPreset,
+  scopeInspectionsForViewer,
   startOfMonth,
   type DateFilterPreset,
 } from '@/utils/filterInspections';
@@ -124,8 +125,17 @@ export default function SearchScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useThemedStyles(createSearchStyles);
-  const { isLoading: authLoading } = useAuth();
+  const { isAdmin, user, isLoading: authLoading } = useAuth();
   const { inspections, isLoading: inspectionsLoading } = useCargoInspections();
+  const scopedInspections = useMemo(
+    () =>
+      scopeInspectionsForViewer(inspections, {
+        isAdmin,
+        userId: user?.uid,
+        email: user?.email,
+      }),
+    [inspections, isAdmin, user?.email, user?.uid],
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [datePreset, setDatePreset] = useState<DateFilterPreset>('week');
@@ -139,12 +149,12 @@ export default function SearchScreen() {
 
   const filteredInspections = useMemo(() => {
     const byDate = filterInspectionsByDateRange(
-      inspections,
+      scopedInspections,
       dateRange.from,
       dateRange.to,
     );
     return filterInspectionsBySearch(byDate, searchQuery);
-  }, [inspections, dateRange, searchQuery]);
+  }, [scopedInspections, dateRange, searchQuery]);
 
   const rangeLabel = useMemo(
     () => describeRange(datePreset, dateRange.from, dateRange.to),

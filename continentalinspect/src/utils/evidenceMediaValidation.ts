@@ -63,11 +63,25 @@ export const VIDEO_BAND_COLORS: Record<VideoWeightBand, string> = {
 };
 
 export const VIDEO_BAND_LABELS: Record<VideoWeightBand, string> = {
-  optimal: 'Optimal',
-  attention: 'Attention',
-  limit: 'Limit',
-  unknown: 'Unknown',
+  optimal: 'Suitable',
+  attention: 'Medium',
+  limit: 'Excessive',
+  unknown: 'Size pending',
 };
+
+/** Green under 3 MB, amber up to 8 MB, red above that. */
+export function classifyPhotoWeight(sizeBytes: number | null): VideoWeightBand {
+  if (sizeBytes == null) {
+    return 'unknown';
+  }
+  if (sizeBytes > 8 * 1024 * 1024) {
+    return 'limit';
+  }
+  if (sizeBytes > MAX_PHOTO_BYTES) {
+    return 'attention';
+  }
+  return 'optimal';
+}
 
 /** Green 2–5 min, yellow under 2 or 5–10, red over 10 min or excessive file size. */
 export function classifyVideoWeight(

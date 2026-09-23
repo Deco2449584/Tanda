@@ -8,7 +8,7 @@ import { useEvidenceMediaPipeline } from '@/context/EvidenceMediaPipelineContext
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { ACCENT, ACCENT_DIM } from '@/theme/accent';
-import { radius, widgetShadow } from '@/theme/motion';
+import { cardShadow, radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
@@ -40,9 +40,9 @@ function createStyles(colors: AppColors) {
       marginBottom: 12,
       overflow: 'hidden',
       flexDirection: 'row',
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1.5,
       borderColor: colors.border.onSurface,
-      ...widgetShadow,
+      ...cardShadow(colors.background.primary),
     },
     accentBar: {
       width: 3,
@@ -260,6 +260,18 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
 
   const displayBadge = getInspectionDisplayBadge(inspection);
   const syncBadge = getSyncBadge(inspection.syncStatus);
+  const cloudKind =
+    mediaUploadSummary?.status === 'error'
+      ? 'error'
+      : mediaUploadSummary?.status === 'pending'
+        ? 'pending'
+        : syncBadge.kind;
+  const cloudLabel =
+    mediaUploadSummary?.status === 'error'
+      ? 'Upload failed'
+      : mediaUploadSummary?.status === 'pending'
+        ? 'Uploading'
+        : syncBadge.label;
   const title = getInspectionDisplayTitle(inspection);
   const unitType = resolveUnitType(inspection.unitType, inspection.uldId);
   const unitTypeLabel = getUnitTypeLabel(unitType);
@@ -270,7 +282,7 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
 
   return (
     <PressableScale
-      style={[styles.card, { backgroundColor: statusBg, borderColor: `${statusColor}55` }]}
+      style={[styles.card, { borderColor: statusColor }]}
       onPress={onPress}
       disabled={!onPress}>
       <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
@@ -392,16 +404,16 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
             <View
               style={[
                 styles.pendingBadge,
-                syncBadge.kind === 'synced' && styles.uploadedBadge,
-                syncBadge.kind === 'error' && styles.errorBadge,
+                cloudKind === 'synced' && styles.uploadedBadge,
+                cloudKind === 'error' && styles.errorBadge,
               ]}>
               <Text
                 style={[
                   styles.pendingBadgeText,
-                  syncBadge.kind === 'synced' && styles.uploadedBadgeText,
-                  syncBadge.kind === 'error' && styles.errorBadgeText,
+                  cloudKind === 'synced' && styles.uploadedBadgeText,
+                  cloudKind === 'error' && styles.errorBadgeText,
                 ]}>
-                {syncBadge.label}
+                {cloudLabel}
               </Text>
             </View>
             {mediaUploadSummary?.status === 'pending' ? (
@@ -413,15 +425,10 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
                   <View
                     style={[
                       styles.mediaProgressFill,
-                      { width: `${mediaUploadSummary.progress}%` },
+                      { width: `${Math.max(mediaUploadSummary.progress, 4)}%` },
                     ]}
                   />
                 </View>
-              </View>
-            ) : null}
-            {mediaUploadSummary?.status === 'uploaded' ? (
-              <View style={styles.uploadedBadge}>
-                <Text style={styles.uploadedBadgeText}>{mediaUploadSummary.label}</Text>
               </View>
             ) : null}
             {mediaUploadSummary?.status === 'error' ? (

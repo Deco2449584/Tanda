@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
@@ -21,7 +21,13 @@ function createStyles(colors: AppColors) {
   });
 }
 
-export function FormSectionRail({ activeIndex }: { activeIndex: number }) {
+export function FormSectionRail({
+  activeIndex,
+  onSelect,
+}: {
+  activeIndex: number;
+  onSelect?: (index: number) => void;
+}) {
   const styles = useThemedStyles(createStyles);
 
   return (
@@ -29,12 +35,12 @@ export function FormSectionRail({ activeIndex }: { activeIndex: number }) {
       {STEPS.map((label, index) => {
         const active = index <= activeIndex;
         return (
-          <View key={label} style={styles.step}>
+          <Pressable key={label} style={styles.step} onPress={() => onSelect?.(index)}>
             <View style={[styles.bar, active && styles.barActive]} />
             <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
               {label}
             </Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>

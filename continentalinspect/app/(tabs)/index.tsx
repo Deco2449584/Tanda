@@ -34,7 +34,12 @@ import { brand } from '@/theme/brand';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import { countTodayDashboardMetrics } from '@/utils/cargoInspectionStatus';
-import { filterInspectionsToday, formatFilterDate, getTodayRange } from '@/utils/filterInspections';
+import {
+  filterInspectionsToday,
+  formatFilterDate,
+  getTodayRange,
+  scopeInspectionsForViewer,
+} from '@/utils/filterInspections';
 
 function createIndexStyles(colors: AppColors) {
   return StyleSheet.create({
@@ -166,17 +171,15 @@ export default function RecordsScreen() {
   } = useCargoInspections();
   const todayLabel = useMemo(() => formatFilterDate(getTodayRange().from), []);
 
-  const scopedInspections = useMemo(() => {
-    if (isAdmin) {
-      return inspections;
-    }
-    const email = user?.email?.trim().toLowerCase();
-    return inspections.filter((item) => {
-      const author = item.createdBy?.trim().toLowerCase();
-      if (!author) return true;
-      return author === email || author === user?.uid;
-    });
-  }, [inspections, isAdmin, user?.email, user?.uid]);
+  const scopedInspections = useMemo(
+    () =>
+      scopeInspectionsForViewer(inspections, {
+        isAdmin,
+        userId: user?.uid,
+        email: user?.email,
+      }),
+    [inspections, isAdmin, user?.email, user?.uid],
+  );
 
   const dailyInspections = useMemo(
     () => filterInspectionsToday(scopedInspections),
@@ -301,7 +304,7 @@ export default function RecordsScreen() {
             <Ionicons name="cube-outline" size={48} color={colors.text.secondary} />
             <Text style={styles.emptyTitle}>No inspections today</Text>
             <Text style={styles.emptyHint}>
-              Open the Scan tab to register a ULD, or use Search to find inspections from other
+              Open the New tab to register cargo, or use Search to find inspections from other
               dates.
             </Text>
           </View>

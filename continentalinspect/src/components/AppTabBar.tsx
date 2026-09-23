@@ -22,7 +22,7 @@ type TabIconName = keyof typeof Ionicons.glyphMap;
 const TAB_META: Record<string, { label: string; icon: TabIconName; iconFocused: TabIconName }> = {
   index: { label: 'Records', icon: 'albums-outline', iconFocused: 'albums' },
   search: { label: 'Search', icon: 'search-outline', iconFocused: 'search' },
-  scan: { label: 'Scan', icon: 'scan-outline', iconFocused: 'scan' },
+  scan: { label: 'New', icon: 'add-circle-outline', iconFocused: 'add-circle' },
   admin: { label: 'Admin', icon: 'shield-checkmark-outline', iconFocused: 'shield-checkmark' },
   account: { label: 'Account', icon: 'person-outline', iconFocused: 'person' },
 };

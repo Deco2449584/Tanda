@@ -65,6 +65,8 @@ export interface CargoInspection {
   /** When the cargo was marked on the transport truck. */
   dispatchedAt?: Date | string;
   createdBy: string;
+  /** Firebase Auth uid of the owner. Employee dashboards scope to this. */
+  userId?: string;
   /** Display name captured when the record was created. */
   createdByName?: string;
   /** Last person who edited the record (email). */
@@ -95,7 +97,7 @@ export interface CargoInspection {
 
 export type NewCargoInspectionInput = Omit<
   CargoInspection,
-  'id' | 'status' | 'registeredAt' | 'updatedAt' | 'createdBy' | 'syncStatus'
+  'id' | 'status' | 'registeredAt' | 'updatedAt' | 'createdBy' | 'syncStatus' | 'userId'
 >;
 
 export type UpdateCargoInspectionInput = NewCargoInspectionInput;

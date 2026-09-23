@@ -17,6 +17,7 @@ import {
   appendInspectionVideoUrl,
 } from '@/services/cargoInspectionRepository';
 import { uploadSingleInspectionMediaFile } from '@/services/cargoInspectionStorage';
+import { deleteLocalEvidenceFileIfOwned } from '@/services/inspectionPendingMedia';
 import { compressPhotoEvidenceUri } from '@/utils/compressPhotoEvidence';
 import { compressVideoEvidenceUri } from '@/utils/compressVideoEvidence';
 import { isPhotoSizeAllowed } from '@/utils/evidenceMediaValidation';
@@ -53,6 +54,9 @@ export type MediaJob = {
   errorMessage?: string;
   retryCount: number;
   nextRetryAt?: number;
+  /** Firebase resumable session so a large video can continue after the app closes. */
+  uploadSessionUrl?: string;
+  uploadObjectPath?: string;
 };
 
 type EnqueueInspectionUploadsOptions = {
@@ -357,6 +361,16 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
             progress: combineProgress(1, uploadPercent / 100, 'uploading'),
           });
         },
+        {
+          sessionUrl: job.uploadSessionUrl,
+          objectPath: job.uploadObjectPath,
+          onSession: (session) => {
+            patchJob(job.id, {
+              uploadSessionUrl: session.sessionUrl,
+              uploadObjectPath: session.objectPath,
+            });
+          },
+        },
       );
     },
     [patchJob],
@@ -477,6 +491,7 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
             errorMessage: undefined,
             nextRetryAt: undefined,
           });
+          void deleteLocalEvidenceFileIfOwned(localUri);
         } catch (error: unknown) {
           if (isNonRetryableMediaError(error)) {
             patchJob(job.id, {
@@ -694,11 +709,11 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
         return {
           status: 'error',
           progress: 0,
-          label: 'Upload stopped · file kept · tap to retry',
+          label: 'Upload failed',
         };
       }
 
-      return { status: 'uploaded', progress: 100, label: 'Evidence uploaded' };
+      return null;
     },
     [jobs],
   );

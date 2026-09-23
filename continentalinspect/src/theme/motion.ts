@@ -13,6 +13,27 @@ export const widgetShadow = {
   elevation: 3,
 } as const;
 
+/** Light cards stay on a pale surface, so Android elevation would paint a black plate. */
+export function cardShadow(backgroundPrimary: string) {
+  const light = backgroundPrimary.toLowerCase() === '#eef3f8';
+  if (light) {
+    return {
+      shadowColor: '#1E3A5F',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 0,
+    };
+  }
+  return {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 2,
+  };
+}
+
 export const motion = {
   pressScale: 0.98,
   enterDuration: 360,

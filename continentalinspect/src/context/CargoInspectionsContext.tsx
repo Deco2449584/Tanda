@@ -89,6 +89,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isSyncingRef = useRef(false);
+  const syncingIdsRef = useRef(new Set<string>());
 
   const inspections = useMemo(
     () => mergeInspectionsWithPending(remoteInspections, pendingQueue),
@@ -191,7 +192,10 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     (async () => {
       isSyncingRef.current = true;
       try {
-        await syncPendingInspections(user.uid, user.email ?? '');
+        const result = await syncPendingInspections(user.uid, user.email ?? '');
+        for (const media of result.pendingMedia) {
+          enqueueInspectionUploads(media);
+        }
         if (!cancelled) {
           await reloadPendingQueue(user.uid);
         }
@@ -203,7 +207,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     return () => {
       cancelled = true;
     };
-  }, [user?.uid, user?.email, isOnline, pendingSyncCount, reloadPendingQueue]);
+  }, [user?.uid, user?.email, isOnline, pendingSyncCount, reloadPendingQueue, enqueueInspectionUploads]);
 
   const refreshRecords = useCallback(async () => {
     if (!user?.uid) {
@@ -213,14 +217,17 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     setIsRefreshing(true);
     try {
       if (isOnline && pendingSyncCount > 0) {
-        await syncPendingInspections(user.uid, user.email ?? '');
+        const result = await syncPendingInspections(user.uid, user.email ?? '');
+        for (const media of result.pendingMedia) {
+          enqueueInspectionUploads(media);
+        }
         await reloadPendingQueue(user.uid);
       }
     } finally {
       await new Promise((resolve) => setTimeout(resolve, 400));
       setIsRefreshing(false);
     }
-  }, [user?.uid, user?.email, isOnline, pendingSyncCount, reloadPendingQueue]);
+  }, [user?.uid, user?.email, isOnline, pendingSyncCount, reloadPendingQueue, enqueueInspectionUploads]);
 
   const findByUldId = useCallback(
     (uldId: string) => findCargoInspectionByUldId(inspections, uldId),
@@ -395,13 +402,24 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
       if (!user) {
         throw new Error('You must be signed in to sync a record.');
       }
-      await releaseDraftHold(user.uid, inspectionId);
-      if (isOnline) {
-        await syncPendingInspections(user.uid, user.email ?? '');
+      if (syncingIdsRef.current.has(inspectionId)) {
+        return;
       }
-      await reloadPendingQueue(user.uid);
+      syncingIdsRef.current.add(inspectionId);
+      try {
+        await releaseDraftHold(user.uid, inspectionId);
+        if (isOnline) {
+          const result = await syncPendingInspections(user.uid, user.email ?? '');
+          for (const media of result.pendingMedia) {
+            enqueueInspectionUploads(media);
+          }
+        }
+        await reloadPendingQueue(user.uid);
+      } finally {
+        syncingIdsRef.current.delete(inspectionId);
+      }
     },
-    [user, isOnline, reloadPendingQueue],
+    [user, isOnline, reloadPendingQueue, enqueueInspectionUploads],
   );
 
   const updateInspectionById = useCallback(

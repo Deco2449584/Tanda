@@ -137,6 +137,7 @@ function mapDocumentToCargoInspection(
     updatedAt: timestampToIso(data.updatedAt) ?? data.updatedAtIso,
     dispatchedAt: dispatchedAtIso,
     createdBy: data.createdBy ?? '',
+    userId: data.userId?.trim() || undefined,
     createdByName: data.createdByName?.trim() || undefined,
     updatedBy: data.updatedBy?.trim() || undefined,
     updatedByName: data.updatedByName?.trim() || undefined,
@@ -255,6 +256,7 @@ function toInspectionFromCreatePayload(
   videoEvidence: string[],
   registeredAtIso: string,
   createdByEmail: string,
+  userId?: string,
 ): CargoInspection {
   return {
     id,
@@ -274,6 +276,7 @@ function toInspectionFromCreatePayload(
     videoEvidence,
     registeredAt: registeredAtIso,
     createdBy: createdByEmail,
+    userId,
     createdByName: input.createdByName?.trim() || undefined,
     clientPhotoUrl: input.clientPhotoUrl?.trim() || undefined,
     clientLocationId: payload.clientLocationId,
@@ -439,6 +442,8 @@ export async function createCargoInspectionRecord(
   userId: string,
   input: NewCargoInspectionInput,
   createdByEmail: string,
+  status: CargoInspectionStatus = 'identification',
+  dispatchedAtIso?: string,
 ): Promise<CreateCargoInspectionResult> {
   if (!db) {
     throw new Error('Firestore is not configured.');
@@ -454,7 +459,7 @@ export async function createCargoInspectionRecord(
     photoSplit.remote,
     videoSplit.remote,
     createdByEmail,
-    'identification',
+    status,
   );
 
   await setDoc(inspectionRef, {
@@ -462,6 +467,14 @@ export async function createCargoInspectionRecord(
     ...payload,
     registeredAt: serverTimestamp(),
     registeredAtIso,
+    ...(status === 'loaded' && dispatchedAtIso
+      ? {
+          updatedAt: serverTimestamp(),
+          updatedAtIso: dispatchedAtIso,
+          dispatchedAt: serverTimestamp(),
+          dispatchedAtIso,
+        }
+      : {}),
   });
 
   const inspection = toInspectionFromCreatePayload(
@@ -472,6 +485,7 @@ export async function createCargoInspectionRecord(
     [...videoSplit.remote, ...videoSplit.local],
     registeredAtIso,
     createdByEmail,
+    userId,
   );
 
   return {
@@ -534,6 +548,7 @@ export async function createCargoInspection(
     videoEvidence,
     registeredAtIso,
     createdByEmail,
+    userId,
   );
 }
 

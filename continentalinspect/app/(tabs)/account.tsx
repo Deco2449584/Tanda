@@ -195,10 +195,8 @@ export default function AccountScreen() {
         <View style={styles.centerBlock}>
           <ContinentalInspectLogo width={220} />
           <UserAvatar size={84} />
-          <Text style={styles.title}>My Account</Text>
-          <Text style={styles.subtitle}>
-            {brand.panelTitle} · {brand.location}
-          </Text>
+          <Text style={styles.title}>{profile?.name?.trim() || 'Account'}</Text>
+          <Text style={styles.subtitle}>Cargo Operations</Text>
 
           <View style={styles.card}>
             <Text style={styles.label}>Name</Text>

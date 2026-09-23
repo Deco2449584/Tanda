@@ -1,5 +1,5 @@
 import {
-  createCargoInspection,
+  createCargoInspectionRecord,
   markCargoInspectionAsLoaded,
   markCargoInspectionAsProcessed,
 } from '@/services/cargoInspectionRepository';
@@ -10,19 +10,28 @@ import {
   type PendingInspectionOperation,
 } from '@/services/inspectionSyncQueue';
 
+export type QueuedInspectionMedia = {
+  inspectionId: string;
+  userId: string;
+  awbLabel: string;
+  photoUris: string[];
+  videoUris: string[];
+};
+
 export type InspectionSyncResult = {
   synced: number;
   failed: number;
   errors: string[];
+  pendingMedia: QueuedInspectionMedia[];
 };
 
 async function processQueueItem(
   userId: string,
   createdByEmail: string,
   operation: PendingInspectionOperation,
-): Promise<void> {
+): Promise<QueuedInspectionMedia | null> {
   if (operation.kind === 'create') {
-    await createCargoInspection(
+    const { inspection, pendingPhotoUris, pendingVideoUris } = await createCargoInspectionRecord(
       userId,
       operation.input,
       createdByEmail,
@@ -30,12 +39,23 @@ async function processQueueItem(
       operation.dispatchedAt,
     );
 
-    await deletePendingInspectionMedia(operation.localId);
     await removeSyncQueueItem(
       userId,
       (item) => item.kind === 'create' && item.localId === operation.localId,
     );
-    return;
+
+    if (pendingPhotoUris.length === 0 && pendingVideoUris.length === 0) {
+      await deletePendingInspectionMedia(operation.localId);
+      return null;
+    }
+
+    return {
+      inspectionId: inspection.id,
+      userId,
+      awbLabel: operation.input.awbNumber.trim() || inspection.uldId,
+      photoUris: pendingPhotoUris,
+      videoUris: pendingVideoUris,
+    };
   }
 
   if (operation.kind === 'markProcessed') {
@@ -44,7 +64,7 @@ async function processQueueItem(
       userId,
       (item) => item.kind === 'markProcessed' && item.inspectionId === operation.inspectionId,
     );
-    return;
+    return null;
   }
 
   await markCargoInspectionAsLoaded(operation.inspectionId);
@@ -52,6 +72,7 @@ async function processQueueItem(
     userId,
     (item) => item.kind === 'markLoaded' && item.inspectionId === operation.inspectionId,
   );
+  return null;
 }
 
 export async function syncPendingInspections(
@@ -62,13 +83,17 @@ export async function syncPendingInspections(
   let synced = 0;
   let failed = 0;
   const errors: string[] = [];
+  const pendingMedia: QueuedInspectionMedia[] = [];
 
   for (const operation of queue) {
     if (operation.kind === 'create' && operation.holdUntilSync) {
       continue;
     }
     try {
-      await processQueueItem(userId, createdByEmail, operation);
+      const media = await processQueueItem(userId, createdByEmail, operation);
+      if (media) {
+        pendingMedia.push(media);
+      }
       synced += 1;
     } catch (error: unknown) {
       failed += 1;
@@ -78,7 +103,7 @@ export async function syncPendingInspections(
     }
   }
 
-  return { synced, failed, errors };
+  return { synced, failed, errors, pendingMedia };
 }
 
 export async function getPendingSyncCount(userId: string): Promise<number> {

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -17,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CargoVideoEvidenceSection } from '@/components/CargoVideoEvidenceSection';
 import { LifecycleStepper } from '@/components/LifecycleStepper';
+import { InfoModal } from '@/components/InfoModal';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
@@ -26,6 +28,7 @@ import {
 } from '@/context/EvidenceMediaPipelineContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { persistEvidenceCaptureUri } from '@/services/inspectionPendingMedia';
 import { brand } from '@/theme/brand';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
@@ -52,13 +55,13 @@ function describeRecordRecovery(
   if (syncStatus === 'local') {
     return {
       title: 'Saved on this phone',
-      body: 'Nothing has been uploaded yet. Tap Sync cloud when you have a connection. Closing the app will not delete this record.',
+      body: 'Nothing has been uploaded yet. Tap Sync when you have a connection. Closing the app will not delete this record.',
     };
   }
   if (syncStatus === 'error') {
     return {
       title: 'Cloud sync did not finish',
-      body: 'The record is still on this phone. Check the connection, then tap Sync cloud. The files are kept until the upload succeeds.',
+      body: 'The record is still on this phone. Check the connection, then tap Sync. The files are kept until the upload succeeds.',
     };
   }
   if (syncStatus === 'pending') {
@@ -70,14 +73,8 @@ function describeRecordRecovery(
   if (media?.status === 'error') {
     return {
       title: 'Upload stopped',
-      body: 'The video or photos are still on this phone. A dropped connection does not delete them. Tap Retry upload.',
+      body: 'The video or photos are still on this phone. A dropped connection does not delete them. Tap Retry upload, or add the files again.',
       canRetry: true,
-    };
-  }
-  if (media?.status === 'pending') {
-    return {
-      title: media.label,
-      body: 'Leave the phone online. If the connection drops, the upload pauses and continues later from the copy saved on this phone.',
     };
   }
   return null;
@@ -212,12 +209,29 @@ function createDetailStyles(colors: AppColors) {
       color: colors.text.onSurface,
       marginBottom: 4,
     },
-    recoveryAction: {
+    recoveryActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
       marginTop: 10,
+    },
+    recoveryAction: {
       alignSelf: 'flex-start',
       borderRadius: 999,
       paddingHorizontal: 14,
       paddingVertical: 8,
+      backgroundColor: colors.accent.primary,
+    },
+    progressTrack: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.surface.muted,
+      overflow: 'hidden',
+      marginTop: 10,
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 3,
       backgroundColor: colors.accent.primary,
     },
     recoveryActionText: {
@@ -266,9 +280,26 @@ function createDetailStyles(colors: AppColors) {
       color: colors.text.onSurface,
     },
     detailsGrid: {
-      gap: 12,
+      gap: 10,
     },
-    row: { gap: 4 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: colors.surface.muted,
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    detailIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface.card,
+    },
+    detailCopy: { flex: 1, gap: 2 },
     rowLabel: {
       fontSize: 11,
       fontWeight: '600',
@@ -379,15 +410,24 @@ function DetailRow({
   label,
   value,
   styles,
+  icon,
+  iconColor,
 }: {
   label: string;
   value: string;
   styles: ReturnType<typeof createDetailStyles>;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
 }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <View style={styles.detailIcon}>
+        <Ionicons name={icon} size={16} color={iconColor} />
+      </View>
+      <View style={styles.detailCopy}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowValue}>{value}</Text>
+      </View>
     </View>
   );
 }
@@ -398,7 +438,7 @@ export default function CargoDetailScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(createDetailStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const {
     inspections,
     isLoading,
@@ -411,7 +451,8 @@ export default function CargoDetailScreen() {
   const [isMarkingProcessed, setIsMarkingProcessed] = useState(false);
   const [isMarkingLoaded, setIsMarkingLoaded] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
-  const { getInspectionMediaUploadSummary, retryFailedJobsForInspection } =
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const { getInspectionMediaUploadSummary, retryFailedJobsForInspection, enqueueInspectionUploads } =
     useEvidenceMediaPipeline();
 
   const inspection = useMemo(
@@ -434,14 +475,17 @@ export default function CargoDetailScreen() {
     setIsMarkingProcessed(true);
     try {
       await markInspectionAsProcessed(inspection.id);
-      Alert.alert(
-        isOnline ? 'Processed' : 'Saved on device',
-        isOnline
+      setNotice({
+        title: isOnline ? 'Processed' : 'Saved on this phone',
+        message: isOnline
           ? `${title} is marked as processed by Continental.`
-          : `${title} is marked processed on this device and will sync when you are back online.`,
-      );
+          : `${title} is marked processed on this phone and will sync when you are back online.`,
+      });
     } catch {
-      Alert.alert('Update failed', 'Could not mark this cargo as processed. Please try again.');
+      setNotice({
+        title: 'Update failed',
+        message: 'Could not mark this cargo as processed. Please try again.',
+      });
     } finally {
       setIsMarkingProcessed(false);
     }
@@ -454,14 +498,17 @@ export default function CargoDetailScreen() {
     setIsMarkingLoaded(true);
     try {
       await markInspectionAsLoaded(inspection.id);
-      Alert.alert(
-        isOnline ? 'On truck' : 'Saved on device',
-        isOnline
+      setNotice({
+        title: isOnline ? 'On truck' : 'Saved on this phone',
+        message: isOnline
           ? `${title} is marked on truck.`
-          : `${title} is marked on truck on this device and will sync when you are back online.`,
-      );
+          : `${title} is marked on truck on this phone and will sync when you are back online.`,
+      });
     } catch {
-      Alert.alert('Update failed', 'Could not mark this cargo as on truck. Please try again.');
+      setNotice({
+        title: 'Update failed',
+        message: 'Could not mark this cargo as on truck. Please try again.',
+      });
     } finally {
       setIsMarkingLoaded(false);
     }
@@ -500,20 +547,55 @@ export default function CargoDetailScreen() {
     setIsSyncingCloud(true);
     try {
       await syncLocalDraft(inspection.id);
-      if (isOnline) {
-        router.back();
-      }
-      Alert.alert(
-        isOnline ? 'Synced' : 'Waiting for connection',
-        isOnline
-          ? 'The record was uploaded.'
-          : 'It will upload automatically when you are back online.',
-      );
+      router.replace('/(tabs)' as Href);
     } catch {
-      Alert.alert('Sync failed', 'Could not upload this draft. Please try again.');
-    } finally {
+      setNotice({
+        title: 'Sync failed',
+        message: 'Could not upload this record. It is still on this phone. Try again when the connection is stable.',
+      });
       setIsSyncingCloud(false);
     }
+  };
+
+  const handleAddEvidence = async (kind: 'photo' | 'video') => {
+    if (!inspection || !user) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setNotice({
+        title: 'Photo library',
+        message: 'Allow photo library access to attach evidence to this record.',
+      });
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: kind === 'photo' ? ['images'] : ['videos'],
+      allowsMultipleSelection: true,
+      selectionLimit: 0,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+
+    const uris: string[] = [];
+    for (const asset of result.assets) {
+      if (!asset.uri) continue;
+      try {
+        uris.push(await persistEvidenceCaptureUri(asset.uri, kind));
+      } catch {
+        setNotice({
+          title: 'Could not keep a file',
+          message: 'One file could not be saved on this phone. Pick it again.',
+        });
+      }
+    }
+    if (uris.length === 0) return;
+
+    enqueueInspectionUploads({
+      inspectionId: inspection.id,
+      userId: user.uid,
+      awbLabel: inspection.awbNumber || inspection.uldId,
+      photoUris: kind === 'photo' ? uris : [],
+      videoUris: kind === 'video' ? uris : [],
+    });
   };
 
   const handleExportPdf = async () => {
@@ -584,6 +666,13 @@ export default function CargoDetailScreen() {
             </View>
           }
         />
+        <InfoModal
+          visible={notice != null}
+          icon="alert-circle-outline"
+          title={notice?.title ?? ''}
+          message={notice?.message ?? ''}
+          onConfirm={() => setNotice(null)}
+        />
 
         <ScrollView
           style={styles.scroll}
@@ -616,17 +705,23 @@ export default function CargoDetailScreen() {
                 ) : null}
                 <View style={[styles.statusBadge, { backgroundColor: 'rgba(2, 101, 220, 0.12)' }]}>
                   <Text style={[styles.statusText, { color: colors.accent.primary }]}>
-                    {syncBadge.label}
+                    {mediaUploadSummary?.status === 'error'
+                      ? 'Upload failed'
+                      : mediaUploadSummary?.status === 'pending'
+                        ? 'Uploading'
+                        : syncBadge.label}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.metricsRow}>
                 <View style={styles.metricTile}>
+                  <Ionicons name="barbell-outline" size={16} color={colors.accent.primary} />
                   <Text style={styles.metricValue}>{inspection.weightKg} kg</Text>
                   <Text style={styles.metricLabel}>Weight</Text>
                 </View>
                 <View style={styles.metricTile}>
+                  <Ionicons name="cube-outline" size={16} color={colors.accent.primary} />
                   <Text style={styles.metricValue}>{inspection.boxCount}</Text>
                   <Text style={styles.metricLabel}>Boxes</Text>
                 </View>
@@ -660,16 +755,43 @@ export default function CargoDetailScreen() {
             </View>
           </View>
 
+          {mediaUploadSummary?.status === 'pending' ? (
+            <View style={styles.dispatchWarning}>
+              <Text style={styles.recoveryTitle}>{mediaUploadSummary.label}</Text>
+              <Text style={styles.dispatchWarningText}>{mediaUploadSummary.progress}%</Text>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.max(mediaUploadSummary.progress, 4)}%` },
+                  ]}
+                />
+              </View>
+            </View>
+          ) : null}
+
           {recoveryNotice ? (
             <View style={styles.dispatchWarning}>
               <Text style={styles.recoveryTitle}>{recoveryNotice.title}</Text>
               <Text style={styles.dispatchWarningText}>{recoveryNotice.body}</Text>
               {recoveryNotice.canRetry ? (
-                <Pressable
-                  style={styles.recoveryAction}
-                  onPress={() => retryFailedJobsForInspection(inspection.id)}>
-                  <Text style={styles.recoveryActionText}>Retry upload</Text>
-                </Pressable>
+                <View style={styles.recoveryActions}>
+                  <Pressable
+                    style={styles.recoveryAction}
+                    onPress={() => retryFailedJobsForInspection(inspection.id)}>
+                    <Text style={styles.recoveryActionText}>Retry upload</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.recoveryAction}
+                    onPress={() => void handleAddEvidence('photo')}>
+                    <Text style={styles.recoveryActionText}>Add photos</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.recoveryAction}
+                    onPress={() => void handleAddEvidence('video')}>
+                    <Text style={styles.recoveryActionText}>Add videos</Text>
+                  </Pressable>
+                </View>
               ) : null}
             </View>
           ) : null}
@@ -697,7 +819,7 @@ export default function CargoDetailScreen() {
                 ) : (
                   <>
                     <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.dispatchBtnText}>Sync cloud</Text>
+                    <Text style={styles.dispatchBtnText}>Sync</Text>
                   </>
                 )}
               </Pressable>
@@ -755,6 +877,8 @@ export default function CargoDetailScreen() {
                   label="Client"
                   value={inspection.clientLocationName.trim()}
                   styles={styles}
+                  icon="business-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               <DetailRow
@@ -763,17 +887,39 @@ export default function CargoDetailScreen() {
                   resolveUnitType(inspection.unitType, inspection.uldId),
                 )}
                 styles={styles}
+                icon="layers-outline"
+                iconColor={colors.accent.primary}
               />
               {inspection.uldId.trim() ? (
-                <DetailRow label="ULD ID" value={inspection.uldId} styles={styles} />
+                <DetailRow
+                  label="Identifier"
+                  value={inspection.uldId}
+                  styles={styles}
+                  icon="barcode-outline"
+                  iconColor={colors.accent.primary}
+                />
               ) : null}
-              <DetailRow label="AWB" value={inspection.awbNumber} styles={styles} />
-              <DetailRow label="Cargo type" value={inspection.foodType} styles={styles} />
+              <DetailRow
+                label="AWB"
+                value={inspection.awbNumber}
+                styles={styles}
+                icon="airplane-outline"
+                iconColor={colors.accent.primary}
+              />
+              <DetailRow
+                label="Cargo type"
+                value={inspection.foodType}
+                styles={styles}
+                icon="nutrition-outline"
+                iconColor={colors.accent.primary}
+              />
               {typeof inspection.temperatureCelsius === 'number' ? (
                 <DetailRow
                   label="Temperature"
                   value={`${inspection.temperatureCelsius} °C`}
                   styles={styles}
+                  icon="thermometer-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               {inspection.exitVehiclePlate?.trim() ? (
@@ -781,6 +927,8 @@ export default function CargoDetailScreen() {
                   label="Exit vehicle plate"
                   value={inspection.exitVehiclePlate.trim()}
                   styles={styles}
+                  icon="car-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               {inspection.driverName?.trim() ? (
@@ -788,6 +936,8 @@ export default function CargoDetailScreen() {
                   label="Driver name"
                   value={inspection.driverName.trim()}
                   styles={styles}
+                  icon="person-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               {inspection.transportCompany?.trim() ? (
@@ -795,6 +945,8 @@ export default function CargoDetailScreen() {
                   label="Transport company"
                   value={inspection.transportCompany.trim()}
                   styles={styles}
+                  icon="trail-sign-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               {inspection.notes?.trim() ? (
@@ -802,16 +954,21 @@ export default function CargoDetailScreen() {
                   label="Cargo notes"
                   value={inspection.notes.trim()}
                   styles={styles}
+                  icon="document-text-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               {inspection.registeredMapsUrl?.trim() ? (
                 <View style={styles.row}>
-                  <Text style={styles.rowLabel}>Maps</Text>
+                  <View style={styles.detailIcon}>
+                    <Ionicons name="map-outline" size={16} color={colors.accent.primary} />
+                  </View>
                   <Pressable
                     onPress={() => {
                       void Linking.openURL(inspection.registeredMapsUrl!.trim());
                     }}
                     hitSlop={8}>
+                    <Text style={styles.rowLabel}>Location</Text>
                     <Text style={styles.mapsLink}>Open in Maps</Text>
                   </Pressable>
                 </View>
@@ -820,24 +977,32 @@ export default function CargoDetailScreen() {
                 label="Registered at"
                 value={formatInspectionDate(inspection.registeredAt)}
                 styles={styles}
+                icon="time-outline"
+                iconColor={colors.accent.primary}
               />
               {inspection.dispatchedAt ? (
                 <DetailRow
                   label="Loaded on truck at"
                   value={formatInspectionDate(inspection.dispatchedAt)}
                   styles={styles}
+                  icon="bus-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               <DetailRow
                 label="Created by"
                 value={formatPersonName(inspection.createdByName, inspection.createdBy)}
                 styles={styles}
+                icon="person-circle-outline"
+                iconColor={colors.accent.primary}
               />
               {inspection.updatedBy || inspection.updatedByName ? (
                 <DetailRow
                   label="Last edited by"
                   value={formatPersonName(inspection.updatedByName, inspection.updatedBy)}
                   styles={styles}
+                  icon="create-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
               {isAdmin ? (
@@ -845,6 +1010,8 @@ export default function CargoDetailScreen() {
                   label="Account email"
                   value={inspection.createdBy || '—'}
                   styles={styles}
+                  icon="mail-outline"
+                  iconColor={colors.accent.primary}
                 />
               ) : null}
             </View>

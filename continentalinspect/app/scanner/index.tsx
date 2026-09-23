@@ -103,7 +103,6 @@ export default function CargoInspectionFormScreen() {
     inspections,
     isLoading: inspectionsLoading,
     addInspection,
-    saveInspectionDraft,
     updateInspectionById,
     lookupInspectionByUldId,
     isOnline,
@@ -128,7 +127,9 @@ export default function CargoInspectionFormScreen() {
   const [clientsLoading, setClientsLoading] = useState(true);
   const [sectionIndex, setSectionIndex] = useState(0);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const [leaveAfterNotice, setLeaveAfterNotice] = useState(false);
   const sectionOffsets = useRef({ cargo: 0, summary: 0 });
+  const scrollRef = useRef<ScrollView>(null);
   const draftHydrated = useRef(false);
 
   const isEditMode = Boolean(editingId);
@@ -204,7 +205,7 @@ export default function CargoInspectionFormScreen() {
         setNotice({
           title: 'Form restored',
           message:
-            'This inspection was still on the phone, including photos and videos already copied here. Finish it, then tap Save locally or Sync cloud. Closing the app will not erase it.',
+            'This inspection was still on the phone, including photos and videos already copied here. Finish it, then tap Sync. Closing the app will not erase it.',
         });
       }
       draftHydrated.current = true;
@@ -449,8 +450,13 @@ export default function CargoInspectionFormScreen() {
       return null;
     };
 
-    if (requiresUldId(unitType) && !uldId) {
-      return missing('ULD required', 'Enter or scan the ULD ID (e.g. AKE 12345 CX).');
+    if (!uldId) {
+      return missing(
+        requiresUldId(unitType) ? 'ULD required' : 'Reference number required',
+        requiresUldId(unitType)
+          ? 'Enter or scan the ULD ID (e.g. AKE 12345 CX).'
+          : 'Enter a reference number so this cargo can be found later.',
+      );
     }
     if (!clientLocationId) {
       return missing(
@@ -502,7 +508,7 @@ export default function CargoInspectionFormScreen() {
     };
   };
 
-  const saveInspection = async (mode: 'upload' | 'draft' = 'upload') => {
+  const saveInspection = async () => {
     const payload = buildPayload();
     if (!payload || isSaving) return;
 
@@ -524,35 +530,41 @@ export default function CargoInspectionFormScreen() {
         ? await lookupInspectionByUldId(geoPayload.uldId)
         : null;
       if (duplicate) {
-        Alert.alert(
-          'ULD already registered',
-          `${duplicate.uldId} is already on file (AWB ${duplicate.awbNumber}). Open the record or use another ULD.`,
-        );
+        setNotice({
+          title: 'Already registered',
+          message: `${duplicate.uldId} is already on file (AWB ${duplicate.awbNumber}). Open that record or use another identifier.`,
+        });
         setIsSaving(false);
         return;
       }
 
-      if (mode === 'draft') {
-        await saveInspectionDraft(geoPayload);
-        Alert.alert('Saved locally', 'This draft stays on the device until you tap Sync cloud.');
-      } else {
-        await addInspection(geoPayload);
-      }
+      await addInspection(geoPayload);
       await clearInspectionFormDraft();
+      if (!isOnline) {
+        setLeaveAfterNotice(true);
+        setNotice({
+          title: 'Saved on this phone',
+          message: 'There is no connection. This record will sync automatically when you are back online.',
+        });
+        return;
+      }
       router.replace('/(tabs)' as Href);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '';
       if (error instanceof RegistrationLocationError) {
-        Alert.alert('Location required', error.message);
+        setNotice({ title: 'Location required', message: error.message });
       } else if (message === 'DUPLICATE_ULD') {
-        Alert.alert('Duplicate ULD', 'This ULD is already registered.');
+        setNotice({
+          title: 'Already registered',
+          message: 'This identifier is already on file. Open the existing record or use another one.',
+        });
       } else if (message === 'OFFLINE_UPDATE_UNSUPPORTED') {
-        Alert.alert(
-          'Offline',
-          'Editing is not available offline. Reconnect or wait for pending records to sync.',
-        );
+        setNotice({
+          title: 'Offline',
+          message: 'Editing is not available offline. Reconnect or wait for pending records to sync.',
+        });
       } else {
-        Alert.alert('Error', 'Could not save the inspection. Please try again.');
+        setNotice({ title: 'Could not sync', message: 'The record was not uploaded. Please try again.' });
       }
     } finally {
       setIsSaving(false);
@@ -638,6 +650,17 @@ export default function CargoInspectionFormScreen() {
     );
   }
 
+  const scrollToSection = (index: number) => {
+    const y =
+      index <= 0
+        ? 0
+        : index === 1
+          ? sectionOffsets.current.cargo
+          : sectionOffsets.current.summary;
+    scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: true });
+    setSectionIndex(index);
+  };
+
   const formBottomPadding = Math.max(insets.bottom, 16) + 24;
   const inferredUldType = inferUnitTypeFromUldId(form.uldId);
   const uldPrefix = getUldPrefix(form.uldId);
@@ -651,11 +674,16 @@ export default function CargoInspectionFormScreen() {
         backLabel="Back"
       />
 
+      <View style={styles.railWrap}>
+        <FormSectionRail activeIndex={sectionIndex} onSelect={scrollToSection} />
+      </View>
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.formContent, { paddingBottom: formBottomPadding }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -670,13 +698,18 @@ export default function CargoInspectionFormScreen() {
               setSectionIndex(0);
             }
           }}>
-          <FormSectionRail activeIndex={sectionIndex} />
           <InfoModal
             visible={notice != null}
             icon="alert-circle-outline"
             title={notice?.title ?? ''}
             message={notice?.message ?? ''}
-            onConfirm={() => setNotice(null)}
+            onConfirm={() => {
+              setNotice(null);
+              if (leaveAfterNotice) {
+                setLeaveAfterNotice(false);
+                router.replace('/(tabs)' as Href);
+              }
+            }}
           />
           {!isEditMode ? (
             <View style={styles.formHero}>
@@ -707,7 +740,7 @@ export default function CargoInspectionFormScreen() {
             title="Identification"
             subtitle="ULD code and air waybill">
             <FormField
-              label={requiresUldId(form.unitType) ? 'ULD ID' : 'ULD ID (optional)'}>
+              label={requiresUldId(form.unitType) ? 'ULD ID' : 'Reference number'}>
               <View style={styles.uldRow}>
                 <TextInput
                   style={[styles.input, styles.uldInput]}
@@ -729,7 +762,7 @@ export default function CargoInspectionFormScreen() {
                   }}
                   placeholder={
                     isManualUnitType(form.unitType) && !inferredUldType
-                      ? 'Optional reference'
+                      ? 'Reference number'
                       : 'AKE 12345 CX'
                   }
                   placeholderTextColor={colors.text.onSurfaceMuted}
@@ -1058,25 +1091,13 @@ export default function CargoInspectionFormScreen() {
           </View>
 
           <View style={styles.footerCard}>
-            {!isEditMode ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  pressed && styles.secondaryButtonPressed,
-                  isSaving && styles.primaryButtonDisabled,
-                ]}
-                onPress={() => void saveInspection('draft')}
-                disabled={isSaving}>
-                <Text style={styles.secondaryButtonText}>Save locally</Text>
-              </Pressable>
-            ) : null}
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
                 (pressed || isSaving) && styles.primaryButtonPressed,
                 isSaving && styles.primaryButtonDisabled,
               ]}
-              onPress={() => void saveInspection(isEditMode ? 'upload' : 'upload')}
+              onPress={() => void saveInspection()}
               disabled={isSaving}>
               {isSaving ? (
                 <ActivityIndicator color={colors.text.onAccent} />
@@ -1084,7 +1105,7 @@ export default function CargoInspectionFormScreen() {
                 <>
                   <Ionicons name="cloud-upload-outline" size={20} color={colors.text.onAccent} />
                   <Text style={styles.primaryButtonText}>
-                    {isEditMode ? 'Update inspection' : 'Sync cloud'}
+                    {isEditMode ? 'Update inspection' : 'Sync'}
                   </Text>
                 </>
               )}
@@ -1224,6 +1245,12 @@ function createFormStyles(colors: AppColors) {
       color: colors.text.secondary,
       textAlign: 'center',
       lineHeight: 22,
+    },
+    railWrap: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 4,
+      backgroundColor: colors.background.primary,
     },
     formContent: { padding: 20, paddingTop: 4, gap: 14 },
     formHero: {

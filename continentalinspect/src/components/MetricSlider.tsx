@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
@@ -19,6 +19,20 @@ function createStyles(colors: AppColors) {
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     label: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text.onSurfaceMuted },
     value: { fontFamily: fonts.headingSemiBold, fontSize: 16, color: colors.text.onSurface },
+    valueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    input: {
+      minWidth: 72,
+      textAlign: 'right',
+      fontFamily: fonts.headingSemiBold,
+      fontSize: 16,
+      color: colors.text.onSurface,
+      borderWidth: 1,
+      borderColor: colors.border.onSurface,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      backgroundColor: colors.surface.card,
+    },
     track: {
       height: 28,
       borderRadius: 14,
@@ -59,9 +73,24 @@ export function MetricSlider({ label, value, max, unit, onChange }: MetricSlider
     <View style={styles.wrap}>
       <View style={styles.header}>
         <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value}>
-          {value} {unit}
-        </Text>
+        <View style={styles.valueRow}>
+          <TextInput
+            style={styles.input}
+            value={String(value)}
+            keyboardType="number-pad"
+            selectTextOnFocus
+            onChangeText={(text) => {
+              const digits = text.replace(/[^0-9]/g, '');
+              if (!digits) {
+                onChange(0);
+                return;
+              }
+              const next = Number(digits);
+              onChange(Math.max(0, Math.min(max, Number.isFinite(next) ? next : 0)));
+            }}
+          />
+          <Text style={styles.value}>{unit}</Text>
+        </View>
       </View>
       <View
         style={styles.track}
