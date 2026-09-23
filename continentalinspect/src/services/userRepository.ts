@@ -183,7 +183,15 @@ export async function loadEmployeeProfile(
     throw new EmployeeAccessError('no_email', 'Account has no email address.');
   }
 
-  const found = await findEmployeeDocForAuth(email, authUid);
+  let found: { docId: string; record: EmployeeRecord } | null;
+  try {
+    found = await findEmployeeDocForAuth(email, authUid);
+  } catch {
+    throw new EmployeeAccessError(
+      'firestore_unavailable',
+      'Could not reach the employee directory.',
+    );
+  }
   if (!found) {
     throw new EmployeeAccessError(
       'not_found',
@@ -352,7 +360,8 @@ export function subscribeToEmployeeRecord(
       onRecord(parseEmployeeRecord(snapshot.data() as Record<string, unknown>));
     },
     () => {
-      onRecord(null);
+      // Keep the last known record on a network blip. A missing doc still
+      // arrives as snapshot.exists() === false above.
     },
   );
 }

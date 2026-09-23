@@ -11,6 +11,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 
 import {
   appendInspectionPhotoUrl,
@@ -21,6 +22,7 @@ import { deleteLocalEvidenceFileIfOwned } from '@/services/inspectionPendingMedi
 import { compressPhotoEvidenceUri } from '@/utils/compressPhotoEvidence';
 import { compressVideoEvidenceUri } from '@/utils/compressVideoEvidence';
 import { isPhotoSizeAllowed } from '@/utils/evidenceMediaValidation';
+import { useAuth } from '@/context/AuthContext';
 import {
   fetchIsOnline,
   isLikelyNetworkError,
@@ -140,8 +142,15 @@ function formatJobError(error: unknown): string {
   return error.message || 'Media processing failed.';
 }
 
-function jobsEligibleForWork(jobs: MediaJob[], now = Date.now()): MediaJob | undefined {
+function jobsEligibleForWork(
+  jobs: MediaJob[],
+  now = Date.now(),
+  userId?: string | null,
+): MediaJob | undefined {
   return jobs.find((job) => {
+    if (userId && job.userId && job.userId !== userId) {
+      return false;
+    }
     if (job.status === 'queued' || job.status === 'compressing' || job.status === 'compressed') {
       return true;
     }
@@ -185,6 +194,8 @@ function serializeJobs(jobs: MediaJob[]): MediaJob[] {
 }
 
 export function EvidenceMediaPipelineProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const userId = user?.uid ?? null;
   const [jobs, setJobs] = useState<MediaJob[]>([]);
   const jobsRef = useRef<MediaJob[]>([]);
   const processingRef = useRef(false);
@@ -218,6 +229,15 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
     }
     void persistJobs(jobs);
   }, [jobs, persistJobs]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background' || state === 'inactive') {
+        void persistJobs(jobsRef.current);
+      }
+    });
+    return () => sub.remove();
+  }, [persistJobs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -403,7 +423,7 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
   );
 
   const processQueue = useCallback(async () => {
-    if (processingRef.current) {
+    if (processingRef.current || !userId) {
       return;
     }
 
@@ -415,21 +435,23 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
         if (!online) {
           syncJobs((prev) =>
             prev.map((job) =>
-              job.status === 'queued' ||
-              job.status === 'compressing' ||
-              job.status === 'compressed'
-                ? {
-                    ...job,
-                    status: 'waiting_network' as const,
-                    errorMessage: 'Waiting for network…',
-                  }
-                : job,
+              job.userId && job.userId !== userId
+                ? job
+                : job.status === 'queued' ||
+                    job.status === 'compressing' ||
+                    job.status === 'compressed'
+                  ? {
+                      ...job,
+                      status: 'waiting_network' as const,
+                      errorMessage: 'Waiting for network…',
+                    }
+                  : job,
             ),
           );
           break;
         }
 
-        const next = jobsEligibleForWork(jobsRef.current);
+        const next = jobsEligibleForWork(jobsRef.current, Date.now(), userId);
         if (!next) {
           break;
         }
@@ -528,7 +550,7 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
     } finally {
       processingRef.current = false;
 
-      const hasMore = Boolean(jobsEligibleForWork(jobsRef.current));
+      const hasMore = Boolean(jobsEligibleForWork(jobsRef.current, Date.now(), userId));
       if (hasMore && (await fetchIsOnline())) {
         void processQueue();
       }
@@ -540,14 +562,15 @@ export function EvidenceMediaPipelineProvider({ children }: { children: ReactNod
     runUpload,
     scheduleRetryPass,
     syncJobs,
+    userId,
   ]);
 
   useEffect(() => {
-    const needsWork = Boolean(jobsEligibleForWork(jobs));
+    const needsWork = Boolean(jobsEligibleForWork(jobs, Date.now(), userId));
     if (needsWork) {
       void processQueue();
     }
-  }, [jobs, processQueue]);
+  }, [jobs, processQueue, userId]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

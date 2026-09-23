@@ -9,7 +9,7 @@ import { fonts } from '@/theme/typography';
 
 export const METRIC_NEW_CARGO = '#0288D1';
 export const METRIC_PROCESSED = '#00897B';
-export const METRIC_LOADED = '#4CAF50';
+export const METRIC_LOADED = '#EC4899';
 export const METRIC_ATTENTION = '#F59E0B';
 
 type DonutSegment = {

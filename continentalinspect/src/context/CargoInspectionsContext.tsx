@@ -43,6 +43,7 @@ import { syncPendingInspections } from '@/services/inspectionSyncService';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { areCargoInspectionListsEqual } from '@/utils/cargoInspectionListEqual';
 import { resolveInspectionStatus } from '@/utils/cargoInspectionStatus';
+import { scopeInspectionsForViewer } from '@/utils/filterInspections';
 import { mergeInspectionsWithPending } from '@/utils/mergeInspectionsWithPending';
 import { isFirebaseConfigured } from '@/services/firebaseConfig';
 import type {
@@ -92,8 +93,13 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
   const syncingIdsRef = useRef(new Set<string>());
 
   const inspections = useMemo(
-    () => mergeInspectionsWithPending(remoteInspections, pendingQueue),
-    [remoteInspections, pendingQueue],
+    () =>
+      scopeInspectionsForViewer(mergeInspectionsWithPending(remoteInspections, pendingQueue), {
+        isAdmin,
+        userId: user?.uid,
+        email: user?.email,
+      }),
+    [remoteInspections, pendingQueue, isAdmin, user?.uid, user?.email],
   );
 
   const pendingSyncCount = countRetryableOperations(pendingQueue);
@@ -154,7 +160,12 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
     setError(null);
 
     const onData = (nextInspections: CargoInspection[]) => {
-      const synced = nextInspections.map((item) => ({
+      const scoped = scopeInspectionsForViewer(nextInspections, {
+        isAdmin,
+        userId: user.uid,
+        email: user.email,
+      });
+      const synced = scoped.map((item) => ({
         ...item,
         syncStatus: 'synced' as const,
       }));

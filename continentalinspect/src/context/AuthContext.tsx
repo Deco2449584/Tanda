@@ -15,6 +15,11 @@ import {
 } from 'react';
 import { Alert } from 'react-native';
 
+import {
+  clearCachedEmployeeProfile,
+  loadCachedEmployeeProfile,
+  saveCachedEmployeeProfile,
+} from '@/services/employeeProfileCache';
 import { auth, isFirebaseConfigured } from '@/services/firebaseConfig';
 import {
   EmployeeAccessError,
@@ -24,6 +29,7 @@ import {
   resolveUserRole,
   subscribeToEmployeeRecord,
 } from '@/services/userRepository';
+import { fetchIsOnline } from '@/utils/networkStatus';
 import type { EmployeeProfile, EmployeeRecord, UserRole } from '@/types/auth';
 
 export type AuthAccessDeniedReason =
@@ -84,6 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const rejectSession = useCallback(async (reason: AuthAccessDeniedReason) => {
+    const uid = auth?.currentUser?.uid;
+    if (uid) {
+      await clearCachedEmployeeProfile(uid);
+    }
     setProfile(null);
     setProfileSyncFailed(false);
     setAccessDeniedReason(reason);
@@ -126,8 +136,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(firebaseUser);
-      setIsLoading(true);
       setProfileSyncFailed(false);
+
+      const cachedProfile = await loadCachedEmployeeProfile(firebaseUser.uid);
+      if (cancelled) return;
+
+      if (cachedProfile) {
+        setProfile(cachedProfile);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+
+      const attachEmployeeListener = (docId: string) => {
+        employeeUnsubscribe = subscribeToEmployeeRecord(docId, (record) => {
+          if (!record || !record.active) {
+            void fetchIsOnline().then((online) => {
+              if (online) {
+                void handleInactiveAccount();
+              }
+            });
+            return;
+          }
+
+          if (!hasContinentalInspectAccess(record)) {
+            void fetchIsOnline().then((online) => {
+              if (online) {
+                void handleInspectDisabled();
+              }
+            });
+            return;
+          }
+
+          setProfile((current) => {
+            if (!current || current.docId !== docId) {
+              return current;
+            }
+
+            const email = firebaseUser.email ?? current.email;
+            if (!employeeRecordChanged(current, record, email)) {
+              return current;
+            }
+
+            const next = {
+              ...current,
+              ...record,
+              email: record.email || email,
+              role: resolveRoleFromEmployee(record, email),
+            };
+            void saveCachedEmployeeProfile(firebaseUser.uid, next);
+            return next;
+          });
+        });
+      };
 
       try {
         const { profile: nextProfile } = await loadEmployeeProfile(
@@ -140,39 +201,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(nextProfile);
         setProfileSyncFailed(false);
         setAccessDeniedReason(null);
-
-        employeeUnsubscribe = subscribeToEmployeeRecord(nextProfile.docId, (record) => {
-          if (!record || !record.active) {
-            void handleInactiveAccount();
-            return;
-          }
-
-          if (!hasContinentalInspectAccess(record)) {
-            void handleInspectDisabled();
-            return;
-          }
-
-          setProfile((current) => {
-            if (!current || current.docId !== nextProfile.docId) {
-              return current;
-            }
-
-            const email = firebaseUser.email ?? current.email;
-            if (!employeeRecordChanged(current, record, email)) {
-              return current;
-            }
-
-            return {
-              ...current,
-              ...record,
-              email: record.email || email,
-              role: resolveRoleFromEmployee(record, email),
-            };
-          });
-        });
+        await saveCachedEmployeeProfile(firebaseUser.uid, nextProfile);
+        attachEmployeeListener(nextProfile.docId);
       } catch (error) {
-        setProfile(null);
-
         if (error instanceof EmployeeAccessError) {
           if (
             error.code === 'not_found' ||
@@ -180,6 +211,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             error.code === 'inspect_disabled' ||
             error.code === 'no_email'
           ) {
+            const online = await fetchIsOnline();
+            if (!online && cachedProfile) {
+              setProfile(cachedProfile);
+              setProfileSyncFailed(true);
+              attachEmployeeListener(cachedProfile.docId);
+              return;
+            }
             if (error.code === 'inactive') {
               Alert.alert('Account deactivated', INACTIVE_ALERT_MESSAGE);
             }
@@ -189,8 +227,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await rejectSession(error.code);
             return;
           }
+
+          if (cachedProfile) {
+            setProfile(cachedProfile);
+            setProfileSyncFailed(true);
+            attachEmployeeListener(cachedProfile.docId);
+            return;
+          }
+
           setProfileSyncFailed(true);
           await rejectSession('firestore_unavailable');
+          return;
+        }
+
+        if (cachedProfile) {
+          setProfile(cachedProfile);
+          setProfileSyncFailed(true);
+          attachEmployeeListener(cachedProfile.docId);
           return;
         }
 
@@ -224,6 +277,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const uid = auth?.currentUser?.uid;
+    if (uid) {
+      await clearCachedEmployeeProfile(uid);
+    }
     if (!auth) return;
     await firebaseSignOut(auth);
     setProfile(null);

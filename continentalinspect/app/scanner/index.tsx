@@ -98,7 +98,7 @@ export default function CargoInspectionFormScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(createFormStyles);
   const { editId } = useLocalSearchParams<{ editId?: string }>();
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin, profile, user } = useAuth();
   const {
     inspections,
     isLoading: inspectionsLoading,
@@ -187,14 +187,17 @@ export default function CargoInspectionFormScreen() {
   }, [isAdmin, profile?.locationId, profile?.locationGroupId, editId]);
 
   useEffect(() => {
-    if (editId) {
+    draftHydrated.current = false;
+    resetForm();
+
+    if (editId || !user?.uid) {
       draftHydrated.current = true;
       return;
     }
 
     let cancelled = false;
     void (async () => {
-      const draft = await loadInspectionFormDraft<FormState>();
+      const draft = await loadInspectionFormDraft<FormState>(user.uid);
       if (cancelled) return;
       if (draft) {
         setForm({ ...EMPTY_CARGO_INSPECTION_INPUT, ...draft.form });
@@ -214,7 +217,7 @@ export default function CargoInspectionFormScreen() {
     return () => {
       cancelled = true;
     };
-  }, [editId]);
+  }, [editId, resetForm, user?.uid]);
 
   useEffect(() => {
     if (editId || editingId || !draftHydrated.current) return;
@@ -234,12 +237,16 @@ export default function CargoInspectionFormScreen() {
           temperatureText.trim(),
       );
 
-      if (!hasContent) {
-        void clearInspectionFormDraft();
+      if (!user?.uid) {
         return;
       }
 
-      void saveInspectionFormDraft({
+      if (!hasContent) {
+        void clearInspectionFormDraft(user.uid);
+        return;
+      }
+
+      void saveInspectionFormDraft(user.uid, {
         form,
         weightText,
         boxCountText,
@@ -256,6 +263,7 @@ export default function CargoInspectionFormScreen() {
     form,
     showDriverFields,
     temperatureText,
+    user?.uid,
     weightText,
   ]);
 
@@ -539,7 +547,7 @@ export default function CargoInspectionFormScreen() {
       }
 
       await addInspection(geoPayload);
-      await clearInspectionFormDraft();
+      await clearInspectionFormDraft(user?.uid);
       if (!isOnline) {
         setLeaveAfterNotice(true);
         setNotice({
@@ -878,15 +886,7 @@ export default function CargoInspectionFormScreen() {
             <FormField label="Cargo type">
               <CargoTypeStrip
                 value={form.unitType}
-                onChange={(unitType) => {
-                  const previousLabel = getUnitTypeLabel(form.unitType);
-                  const custom =
-                    form.foodType.trim().length > 0 && form.foodType.trim() !== previousLabel;
-                  patchForm({
-                    unitType,
-                    foodType: custom ? form.foodType : getUnitTypeLabel(unitType),
-                  });
-                }}
+                onChange={(unitType) => patchForm({ unitType })}
               />
             </FormField>
 
@@ -903,6 +903,9 @@ export default function CargoInspectionFormScreen() {
                 placeholder="e.g. Fresh salmon"
                 placeholderTextColor={colors.text.onSurfaceMuted}
                 autoCorrect={false}
+                autoComplete="off"
+                textContentType="none"
+                importantForAutofill="no"
               />
             </FormField>
 

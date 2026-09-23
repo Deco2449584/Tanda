@@ -3,7 +3,7 @@ import { filterInspectionsToday } from '@/utils/filterInspections';
 
 export const STATUS_IDENTIFICATION = '#0288D1';
 export const STATUS_PROCESSED = '#00897B';
-export const STATUS_LOADED = '#4CAF50';
+export const STATUS_LOADED = '#EC4899';
 export const STATUS_ISSUES = '#F59E0B';
 
 export function normalizeInspectionStatus(

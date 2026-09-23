@@ -6,6 +6,7 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import type { CargoInspection } from '@/types';
+import { CARGO_UNIT_TYPES, getUnitTypeLabel } from '@/utils/cargoUnitType';
 
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
@@ -50,8 +51,19 @@ function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-export function InspectionInsights({ inspections }: { inspections: CargoInspection[] }) {
+const UNIT_BAR_COLORS = ['#0288D1', '#7C4DFF', '#F59E0B', '#00897B', '#EC4899'];
+
+export function InspectionInsights({
+  inspections,
+  titlePrefix = '',
+}: {
+  inspections: CargoInspection[];
+  titlePrefix?: string;
+}) {
   const styles = useThemedStyles(createStyles);
+  const volumeTitle = titlePrefix ? `${titlePrefix} volume by client` : 'Volume by client';
+  const trendTitle = titlePrefix ? `${titlePrefix} 7-day trend` : '7-day trend';
+  const typesTitle = titlePrefix ? `${titlePrefix} cargo types` : 'Cargo types';
 
   const byClient = useMemo(() => {
     const counts = new Map<string, number>();
@@ -76,13 +88,30 @@ export function InspectionInsights({ inspections }: { inspections: CargoInspecti
     return days;
   }, [inspections]);
 
+  const byUnitType = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const unitType of CARGO_UNIT_TYPES) {
+      counts.set(unitType, 0);
+    }
+    for (const inspection of inspections) {
+      const key = inspection.unitType;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return CARGO_UNIT_TYPES.map((unitType, index) => ({
+      name: getUnitTypeLabel(unitType),
+      count: counts.get(unitType) ?? 0,
+      color: UNIT_BAR_COLORS[index] ?? UNIT_BAR_COLORS[0],
+    })).filter((item) => item.count > 0);
+  }, [inspections]);
+
   const clientMax = Math.max(1, ...byClient.map(([, count]) => count));
   const trendMax = Math.max(1, ...trend.map((day) => day.count));
+  const unitMax = Math.max(1, ...byUnitType.map((item) => item.count));
 
   return (
     <>
       <WidgetCard style={styles.card}>
-        <Text style={styles.title}>Volume by client</Text>
+        <Text style={styles.title}>{volumeTitle}</Text>
         {byClient.length === 0 ? (
           <Text style={styles.label}>No records yet</Text>
         ) : (
@@ -108,7 +137,33 @@ export function InspectionInsights({ inspections }: { inspections: CargoInspecti
         )}
       </WidgetCard>
       <WidgetCard style={styles.card}>
-        <Text style={styles.title}>7-day trend</Text>
+        <Text style={styles.title}>{typesTitle}</Text>
+        {byUnitType.length === 0 ? (
+          <Text style={styles.label}>No records yet</Text>
+        ) : (
+          byUnitType.map((item) => (
+            <View key={item.name} style={styles.row}>
+              <Text style={styles.label} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <View style={styles.track}>
+                <View
+                  style={[
+                    styles.fill,
+                    {
+                      width: `${Math.max(8, (item.count / unitMax) * 100)}%`,
+                      backgroundColor: item.color,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.value}>{item.count}</Text>
+            </View>
+          ))
+        )}
+      </WidgetCard>
+      <WidgetCard style={styles.card}>
+        <Text style={styles.title}>{trendTitle}</Text>
         {trend.map((day) => (
           <View key={day.label} style={styles.row}>
             <Text style={styles.label}>{day.label}</Text>

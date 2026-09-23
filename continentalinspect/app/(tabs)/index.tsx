@@ -283,7 +283,10 @@ export default function RecordsScreen() {
               loaded={counts.loaded}
             />
 
-            <InspectionInsights inspections={scopedInspections} />
+            <InspectionInsights
+              inspections={scopedInspections}
+              titlePrefix={isAdmin ? '' : 'Your'}
+            />
 
             {inspectionsError ? (
               <Text style={styles.errorBanner}>
