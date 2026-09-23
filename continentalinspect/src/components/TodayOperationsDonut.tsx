@@ -7,9 +7,9 @@ import { radius } from '@/theme/motion';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 
-export const METRIC_NEW_CARGO = '#0288D1';
-export const METRIC_PROCESSED = '#00897B';
-export const METRIC_LOADED = '#EC4899';
+export const METRIC_NEW_CARGO = '#2563EB';
+export const METRIC_PROCESSED = '#0D9488';
+export const METRIC_LOADED = '#4F46E5';
 export const METRIC_ATTENTION = '#F59E0B';
 
 type DonutSegment = {

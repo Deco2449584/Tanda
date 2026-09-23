@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MapPin } from 'lucide-react';
+import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { InspectionPhotoGallery } from '@/components/inspections/InspectionPhotoGallery';
 import { InspectionVideoGallery } from '@/components/inspections/InspectionVideoGallery';
 import { formatInspectionDate } from '@/lib/inspections/format';
@@ -50,7 +51,10 @@ export function PortalInspectionDetailView({
         <h1 className="font-display mt-2 text-2xl font-normal tracking-wide md:text-3xl">
           {inspection.uldId}
         </h1>
-        <p className="mt-1 text-sm text-white/70">AWB {inspection.awbNumber}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <p className="text-sm text-white/70">AWB {inspection.awbNumber}</p>
+          <CopyAwbButton awbNumber={inspection.awbNumber} variant="onDark" />
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <span

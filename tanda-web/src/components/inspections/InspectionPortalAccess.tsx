@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Globe, Loader2 } from 'lucide-react';
+import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { updateInspectionPortalAccess } from '@/lib/inspections/update-portal-access';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 
@@ -135,13 +136,16 @@ export function InspectionPortalAccess({
         </label>
 
         {portalEnabled && detectedClientId ? (
-          <p className="text-xs text-subtle">
-            AWB for portal lookup:{' '}
-            <span className="font-mono text-muted">
-              {inspection.awbNumber.trim()}
-            </span>{' '}
-            (with or without dashes when logging in)
-          </p>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-subtle">
+            <p>
+              AWB for portal lookup:{' '}
+              <span className="font-mono text-muted">
+                {inspection.awbNumber.trim()}
+              </span>{' '}
+              (with or without dashes when logging in)
+            </p>
+            <CopyAwbButton awbNumber={inspection.awbNumber} />
+          </div>
         ) : null}
 
         {message ? (

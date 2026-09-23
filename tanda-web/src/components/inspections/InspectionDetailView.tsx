@@ -12,6 +12,7 @@ import {
   Plane,
   Trash2,
 } from 'lucide-react';
+import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { DeleteInspectionConfirmModal } from '@/components/inspections/DeleteInspectionConfirmModal';
 import { EditInspectionModal } from '@/components/inspections/EditInspectionModal';
 import { InspectionPortalAccess } from '@/components/inspections/InspectionPortalAccess';
@@ -213,7 +214,10 @@ export function InspectionDetailView({
           <h1 className="mt-2 text-2xl font-semibold text-foreground md:text-3xl">
             {inspection.uldId}
           </h1>
-          <p className="mt-1 text-sm text-muted">AWB {inspection.awbNumber}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-sm text-muted">AWB {inspection.awbNumber}</p>
+            <CopyAwbButton awbNumber={inspection.awbNumber} />
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             <span

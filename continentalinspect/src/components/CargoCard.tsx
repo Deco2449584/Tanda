@@ -298,8 +298,8 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
               recyclingKey={thumbUri}
             />
           ) : (
-            <View style={styles.iconWrap}>
-              <Ionicons name="cube-outline" size={22} color={colors.accent.primary} />
+            <View style={[styles.iconWrap, { backgroundColor: `${statusColor}22` }]}>
+              <Ionicons name="cube-outline" size={22} color={statusColor} />
             </View>
           )}
 

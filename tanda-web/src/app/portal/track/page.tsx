@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Plane, RefreshCw } from 'lucide-react';
+import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { PortalInspectionCard } from '@/components/portal/PortalInspectionCard';
 import { PortalAuthGuard } from '@/components/portal/PortalAuthGuard';
 import {
@@ -110,10 +111,13 @@ function PortalTrackContent() {
                 </p>
               </div>
               <h1 className="mt-2 text-2xl font-bold md:text-3xl">Your cargo status</h1>
-              <p className="mt-2 text-sm text-white/75">
-                AWB{' '}
-                <span className="font-mono font-semibold text-white">{awbNumber}</span>
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/75">
+                <p>
+                  AWB{' '}
+                  <span className="font-mono font-semibold text-white">{awbNumber}</span>
+                </p>
+                <CopyAwbButton awbNumber={awbNumber} variant="onDark" />
+              </div>
             </div>
 
             <div className="flex gap-2">
