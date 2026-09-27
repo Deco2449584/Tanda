@@ -108,9 +108,6 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
               <Package className="h-3 w-3" aria-hidden />
               {formatCountLabel(inspection.boxCount, inspection.countUnit)}
             </Chip>
-            {inspection.clientLocationName ? (
-              <Chip>{inspection.clientLocationName}</Chip>
-            ) : null}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

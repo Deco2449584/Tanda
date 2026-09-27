@@ -16,7 +16,6 @@ import {
   User,
 } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
-import { InspectionClientChip } from '@/components/inspections/InspectionClientChip';
 import {
   InspectionIssuesBadge,
   InspectionLifecycleBadge,
@@ -123,15 +122,6 @@ export function PortalInspectionDetailView({
             {unitLabel} · AWB {inspection.awbNumber}
           </p>
           <CopyAwbButton awbNumber={inspection.awbNumber} variant="onDark" />
-        </div>
-
-        <div className="mt-3">
-          <InspectionClientChip
-            name={inspection.clientLocationName}
-            photoUrl={inspection.clientPhotoUrl}
-            variant="dark"
-            size="md"
-          />
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">

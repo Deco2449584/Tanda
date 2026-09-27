@@ -3,7 +3,11 @@ import {
   getBearerToken,
   verifyPortalSessionToken,
 } from '@/lib/portal/session';
-import { fetchPortalInspections } from '@/lib/portal/server-inspections';
+import {
+  enrichInspectionWithSignedMedia,
+  fetchPortalInspectionById,
+  fetchPortalInspections,
+} from '@/lib/portal/server-inspections';
 
 export async function GET(request: Request) {
   try {
@@ -15,6 +19,20 @@ export async function GET(request: Request) {
     const session = await verifyPortalSessionToken(token);
     if (!session) {
       return NextResponse.json({ error: 'Session expired.' }, { status: 401 });
+    }
+
+    const inspectionId = new URL(request.url).searchParams.get('id')?.trim();
+    if (inspectionId) {
+      const inspection = await fetchPortalInspectionById(session, inspectionId);
+      if (!inspection) {
+        return NextResponse.json(
+          { error: 'Inspection not found.' },
+          { status: 404 },
+        );
+      }
+
+      const enriched = await enrichInspectionWithSignedMedia(inspection);
+      return NextResponse.json({ inspection: enriched });
     }
 
     const inspections = await fetchPortalInspections(session);

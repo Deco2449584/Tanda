@@ -1,6 +1,19 @@
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 import { portalAuthHeaders } from '@/lib/portal/client-session';
 
+async function readPortalJson<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      response.status === 404
+        ? 'Inspection not found.'
+        : 'Could not reach the portal service. Please try again.',
+    );
+  }
+
+  return (await response.json()) as T;
+}
+
 export interface PortalInspectionSummary {
   id: string;
   uldId: string;
@@ -33,12 +46,12 @@ export async function verifyPortalAccess(
     body: JSON.stringify({ awbNumber, pin }),
   });
 
-  const data = (await response.json()) as {
+  const data = await readPortalJson<{
     token?: string;
     awbNumber?: string;
     clientName?: string;
     error?: string;
-  };
+  }>(response);
 
   if (!response.ok) {
     throw new Error(data.error ?? 'Could not verify access.');
@@ -66,11 +79,11 @@ export async function loginPortalAccount(
     body: JSON.stringify({ username, password }),
   });
 
-  const data = (await response.json()) as {
+  const data = await readPortalJson<{
     token?: string;
     clientName?: string;
     error?: string;
-  };
+  }>(response);
 
   if (!response.ok) {
     throw new Error(data.error ?? 'Could not sign in.');
@@ -98,13 +111,13 @@ export async function fetchPortalInspectionsList(): Promise<{
     cache: 'no-store',
   });
 
-  const data = (await response.json()) as {
+  const data = await readPortalJson<{
     kind?: 'awb' | 'account';
     awbNumber?: string;
     clientName?: string;
     inspections?: PortalInspectionSummary[];
     error?: string;
-  };
+  }>(response);
 
   if (!response.ok) {
     throw new Error(data.error ?? 'Could not load inspections.');
@@ -121,15 +134,18 @@ export async function fetchPortalInspectionsList(): Promise<{
 export async function fetchPortalInspectionDetail(
   id: string,
 ): Promise<CargoInspection> {
-  const response = await fetch(`/api/portal/inspections/${id}`, {
-    headers: portalAuthHeaders(),
-    cache: 'no-store',
-  });
+  const response = await fetch(
+    `/api/portal/inspections?id=${encodeURIComponent(id)}`,
+    {
+      headers: portalAuthHeaders(),
+      cache: 'no-store',
+    },
+  );
 
-  const data = (await response.json()) as {
+  const data = await readPortalJson<{
     inspection?: CargoInspection;
     error?: string;
-  };
+  }>(response);
 
   if (!response.ok) {
     throw new Error(data.error ?? 'Could not load inspection.');
