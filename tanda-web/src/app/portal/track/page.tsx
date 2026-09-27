@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Plane, RefreshCw } from 'lucide-react';
+import { LogOut, Plane, RefreshCw, Search } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { PortalInspectionCard } from '@/components/portal/PortalInspectionCard';
 import { PortalAuthGuard } from '@/components/portal/PortalAuthGuard';
@@ -14,6 +14,8 @@ import { normalizeInspectionStatus } from '@/lib/inspections/status';
 import {
   clearPortalSession,
   getPortalAwb,
+  getPortalClientName,
+  getPortalKind,
 } from '@/lib/portal/client-session';
 
 const POLL_MS = 60_000;
@@ -28,7 +30,10 @@ export default function PortalTrackPage() {
 
 function PortalTrackContent() {
   const router = useRouter();
+  const [kind, setKind] = useState<'awb' | 'account'>(getPortalKind);
   const [awbNumber, setAwbNumber] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [inspections, setInspections] = useState<PortalInspectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,7 +46,9 @@ function PortalTrackContent() {
 
     try {
       const data = await fetchPortalInspectionsList();
+      setKind(data.kind);
       setAwbNumber(data.awbNumber);
+      setClientName(data.clientName);
       setInspections(data.inspections);
     } catch (loadError) {
       const message =
@@ -65,7 +72,9 @@ function PortalTrackContent() {
   }, [router]);
 
   useEffect(() => {
+    setKind(getPortalKind());
     setAwbNumber(getPortalAwb() ?? '');
+    setClientName(getPortalClientName());
     void load();
   }, [load]);
 
@@ -81,13 +90,24 @@ function PortalTrackContent() {
     router.replace('/portal');
   }
 
-  const identificationCount = inspections.filter(
+  const visibleInspections = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return inspections;
+    return inspections.filter((item) => {
+      const haystack = [item.awbNumber, item.uldId, item.foodType]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [inspections, searchQuery]);
+
+  const identificationCount = visibleInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'identification',
   ).length;
-  const processedCount = inspections.filter(
+  const processedCount = visibleInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'processed',
   ).length;
-  const loadedCount = inspections.filter(
+  const loadedCount = visibleInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'loaded',
   ).length;
 
@@ -110,13 +130,32 @@ function PortalTrackContent() {
                   Shipment overview
                 </p>
               </div>
-              <h1 className="mt-2 text-2xl font-bold md:text-3xl">Your cargo status</h1>
+              <h1 className="mt-2 text-2xl font-bold md:text-3xl">
+                {kind === 'account' ? 'Your inspections' : 'Your cargo status'}
+              </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/75">
-                <p>
-                  AWB{' '}
-                  <span className="font-mono font-semibold text-white">{awbNumber}</span>
-                </p>
-                <CopyAwbButton awbNumber={awbNumber} variant="onDark" />
+                {kind === 'account' ? (
+                  <p>
+                    {clientName ? (
+                      <>
+                        Client{' '}
+                        <span className="font-semibold text-white">{clientName}</span>
+                      </>
+                    ) : (
+                      'All portal-enabled inspections for your account'
+                    )}
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      AWB{' '}
+                      <span className="font-mono font-semibold text-white">
+                        {awbNumber}
+                      </span>
+                    </p>
+                    <CopyAwbButton awbNumber={awbNumber} variant="onDark" />
+                  </>
+                )}
               </div>
             </div>
 
@@ -167,6 +206,21 @@ function PortalTrackContent() {
         </div>
       </section>
 
+      {kind === 'account' && !loading && inspections.length > 0 ? (
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
+            aria-hidden
+          />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Filter by AWB, ULD, or product…"
+            className="w-full rounded-xl border border-[#262626]/20 bg-[#2F2F2F] py-3 pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#F51EA0]/50"
+          />
+        </div>
+      ) : null}
+
       {loading ? (
         <p className="text-sm text-white/55">Loading inspections…</p>
       ) : error ? (
@@ -175,11 +229,17 @@ function PortalTrackContent() {
         </p>
       ) : inspections.length === 0 ? (
         <p className="rounded-xl border border-[#262626]/20 bg-[#2F2F2F] px-4 py-10 text-center text-sm text-white/70 shadow-md">
-          No inspections are available for this AWB on the portal.
+          {kind === 'account'
+            ? 'No portal-enabled inspections are available for this account yet.'
+            : 'No inspections are available for this AWB on the portal.'}
+        </p>
+      ) : visibleInspections.length === 0 ? (
+        <p className="rounded-xl border border-[#262626]/20 bg-[#2F2F2F] px-4 py-10 text-center text-sm text-white/70 shadow-md">
+          No inspections match “{searchQuery.trim()}”.
         </p>
       ) : (
         <div className="grid gap-4">
-          {inspections.map((inspection) => (
+          {visibleInspections.map((inspection) => (
             <PortalInspectionCard key={inspection.id} inspection={inspection} />
           ))}
         </div>

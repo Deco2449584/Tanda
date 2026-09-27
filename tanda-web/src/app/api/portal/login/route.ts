@@ -6,14 +6,14 @@ import {
   recordFailedAttempt,
 } from '@/lib/portal/rate-limit';
 import { createPortalSessionToken } from '@/lib/portal/session';
-import { verifyPortalCredentials } from '@/lib/portal/server-inspections';
+import { verifyPortalAccountCredentials } from '@/lib/portal/server-inspections';
 
-const INVALID_MESSAGE = 'Incorrect AWB or PIN.';
+const INVALID_MESSAGE = 'Incorrect username or password.';
 
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const rateKey = `verify:${ip}`;
+    const rateKey = `login:${ip}`;
 
     if (isRateLimited(rateKey)) {
       return NextResponse.json(
@@ -23,19 +23,19 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as {
-      awbNumber?: string;
-      pin?: string;
+      username?: string;
+      password?: string;
     };
 
-    const awbNumber = body.awbNumber ?? '';
-    const pin = body.pin ?? '';
+    const username = body.username ?? '';
+    const password = body.password ?? '';
 
-    if (!awbNumber.trim() || !pin.trim()) {
+    if (!username.trim() || !password) {
       recordFailedAttempt(rateKey);
       return NextResponse.json({ error: INVALID_MESSAGE }, { status: 401 });
     }
 
-    const session = await verifyPortalCredentials(awbNumber, pin);
+    const session = await verifyPortalAccountCredentials(username, password);
     if (!session) {
       recordFailedAttempt(rateKey);
       return NextResponse.json({ error: INVALID_MESSAGE }, { status: 401 });
@@ -47,13 +47,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       token,
       kind: session.kind,
-      awbNumber: session.awbNumber,
       clientName: session.clientName ?? '',
     });
   } catch (error) {
-    console.error('POST /api/portal/verify', error);
+    console.error('POST /api/portal/login', error);
     return NextResponse.json(
-      { error: 'Could not verify access.' },
+      { error: 'Could not sign in.' },
       { status: 500 },
     );
   }

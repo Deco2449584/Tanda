@@ -78,7 +78,7 @@ export function InspectionPortalAccess({
             Client portal access
           </h2>
           <p className="mt-1 text-xs text-subtle">
-            Clients track this shipment at{' '}
+            New records with a client are published to{' '}
             <Link
               href="/portal"
               target="_blank"
@@ -87,7 +87,8 @@ export function InspectionPortalAccess({
             >
               /portal
             </Link>{' '}
-            with AWB {inspection.awbNumber} and their company PIN.
+            by default. Clients can sign in with AWB + PIN or their account.
+            Turn this off to hide this inspection.
           </p>
         </div>
         <Link

@@ -20,7 +20,9 @@ export async function GET(request: Request) {
     const inspections = await fetchPortalInspections(session);
 
     return NextResponse.json({
-      awbNumber: session.awbNumber,
+      kind: session.kind,
+      awbNumber: session.awbNumber ?? '',
+      clientName: session.clientName ?? '',
       inspections: inspections.map((inspection) => ({
         id: inspection.id,
         uldId: inspection.uldId,

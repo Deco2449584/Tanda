@@ -8,10 +8,14 @@ import {
   PackageSearch,
   ShieldCheck,
   Thermometer,
+  User,
 } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { PortalFooter } from '@/components/portal/PortalFooter';
-import { verifyPortalAccess } from '@/lib/portal/client-api';
+import {
+  loginPortalAccount,
+  verifyPortalAccess,
+} from '@/lib/portal/client-api';
 import {
   PORTAL_COMPANY_TAGLINE,
   PORTAL_HIGHLIGHTS,
@@ -22,10 +26,15 @@ import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 const HIGHLIGHT_ICONS = [PackageSearch, Camera, ShieldCheck] as const;
 
+type PortalLoginMode = 'awb' | 'account';
+
 export default function PortalLoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<PortalLoginMode>('awb');
   const [awbNumber, setAwbNumber] = useState('');
   const [pin, setPin] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,8 +44,22 @@ export default function PortalLoginPage() {
     setLoading(true);
 
     try {
-      const result = await verifyPortalAccess(awbNumber, pin);
-      savePortalSession(result.token, result.awbNumber);
+      if (mode === 'account') {
+        const result = await loginPortalAccount(username, password);
+        savePortalSession({
+          token: result.token,
+          kind: 'account',
+          clientName: result.clientName,
+        });
+      } else {
+        const result = await verifyPortalAccess(awbNumber, pin);
+        savePortalSession({
+          token: result.token,
+          kind: 'awb',
+          awbNumber: result.awbNumber,
+          clientName: result.clientName,
+        });
+      }
       router.push('/portal/track');
     } catch (submitError) {
       const message =
@@ -155,15 +178,48 @@ export default function PortalLoginPage() {
                   Client portal
                 </p>
                 <h2 className="font-display mt-2 text-2xl font-normal text-white">
-                  Track your shipment
+                  Track your cargo
                 </h2>
                 <p className="mt-2 text-sm font-light text-white/65">
-                  Enter your AWB number and company PIN to view live inspection
-                  status.
+                  Use a shipment AWB and company PIN, or sign in with your
+                  client account to see every enabled inspection.
                 </p>
               </div>
 
+              <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-[#1F1F1F] p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('awb');
+                    setError('');
+                  }}
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                    mode === 'awb'
+                      ? 'bg-[#F51EA0] text-white'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  AWB + PIN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('account');
+                    setError('');
+                  }}
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                    mode === 'account'
+                      ? 'bg-[#F51EA0] text-white'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  Username
+                </button>
+              </div>
+
               <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+                {mode === 'awb' ? (
+                  <>
                 <div>
                   <label
                     htmlFor="awb"
@@ -178,7 +234,7 @@ export default function PortalLoginPage() {
                     onChange={(e) => setAwbNumber(e.target.value)}
                     placeholder="e.g. 045-12345678"
                     autoComplete="off"
-                    required
+                    required={mode === 'awb'}
                     className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
                   />
                 </div>
@@ -203,11 +259,64 @@ export default function PortalLoginPage() {
                       onChange={(e) => setPin(e.target.value)}
                       placeholder="6–8 digits"
                       autoComplete="off"
-                      required
+                      required={mode === 'awb'}
                       className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
                     />
                   </div>
                 </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="portal-username"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
+                      >
+                        Username
+                      </label>
+                      <div className="relative">
+                        <User
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
+                          aria-hidden
+                        />
+                        <input
+                          id="portal-username"
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Your client username"
+                          autoComplete="username"
+                          required={mode === 'account'}
+                          className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="portal-password"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
+                      >
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
+                          aria-hidden
+                        />
+                        <input
+                          id="portal-password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="At least 8 characters"
+                          autoComplete="current-password"
+                          required={mode === 'account'}
+                          className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {error ? (
                   <p
@@ -223,12 +332,16 @@ export default function PortalLoginPage() {
                   disabled={loading}
                   className="w-full rounded-xl bg-[#F51EA0] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F51EA0]/25 transition hover:bg-[#d4198a] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Verifying…' : 'Check status'}
+                  {loading
+                    ? 'Verifying…'
+                    : mode === 'account'
+                      ? 'Sign in'
+                      : 'Check status'}
                 </button>
               </form>
 
               <p className="mt-6 text-center text-xs font-light leading-relaxed text-white/50">
-                Don&apos;t have a PIN? Contact your {COMPANY_NAME} representative.
+                Need a PIN or account? Contact your {COMPANY_NAME} representative.
               </p>
             </div>
           </div>

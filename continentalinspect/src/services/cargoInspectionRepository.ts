@@ -68,6 +68,7 @@ export type CargoInspectionDocument = {
   clientLocationName?: string;
   clientPhotoUrl?: string;
   portalClientId?: string;
+  portalEnabled?: boolean;
   registeredLatitude?: number;
   registeredLongitude?: number;
   registeredAccuracyMeters?: number;
@@ -232,6 +233,7 @@ function buildFirestorePayload(
           clientLocationId,
           clientLocationName,
           portalClientId: clientLocationId,
+          portalEnabled: true,
         }
       : {}),
     ...(typeof input.registeredLatitude === 'number'

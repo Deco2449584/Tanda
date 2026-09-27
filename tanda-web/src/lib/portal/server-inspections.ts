@@ -3,6 +3,7 @@ import { COLLECTIONS } from '@/lib/constants';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
 import { mapLocationDoc } from '@/lib/locations/map-location';
 import { normalizeAwbNumber } from '@/lib/portal/normalize-awb';
+import { normalizePortalUsername } from '@/lib/portal/account-credentials';
 import { verifyPortalPin } from '@/lib/portal/pin';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
 import type { PortalSessionPayload } from '@/lib/portal/session';
@@ -56,8 +57,50 @@ export async function verifyPortalCredentials(
     if (typeof pinHash !== 'string') continue;
 
     if (verifyPortalPin(pin, pinHash)) {
-      return { awbNumber: normalizedAwb, portalClientId: clientId };
+      return {
+        kind: 'awb',
+        awbNumber: normalizedAwb,
+        portalClientId: clientId,
+        clientName: client.name || undefined,
+      };
     }
+  }
+
+  return null;
+}
+
+export async function verifyPortalAccountCredentials(
+  username: string,
+  password: string,
+): Promise<PortalSessionPayload | null> {
+  const normalized = normalizePortalUsername(username);
+  if (!normalized || !password) return null;
+
+  const db = getAdminFirestore();
+  const snapshot = await db.collection(COLLECTIONS.LOCATIONS).get();
+
+  for (const document of snapshot.docs) {
+    const storedUsername = document.data().portalUsername;
+    if (
+      typeof storedUsername !== 'string' ||
+      storedUsername.trim().toLowerCase() !== normalized
+    ) {
+      continue;
+    }
+
+    const client = mapLocationDoc(document.id, document.data() ?? {});
+    if (!client.active) return null;
+
+    const passwordHash = document.data().passwordHash;
+    if (typeof passwordHash !== 'string') return null;
+
+    if (!verifyPortalPin(password, passwordHash)) return null;
+
+    return {
+      kind: 'account',
+      portalClientId: document.id,
+      clientName: client.name || undefined,
+    };
   }
 
   return null;
@@ -75,10 +118,10 @@ export async function fetchPortalInspections(
 
   return snapshot.docs
     .map((document) => mapInspectionDoc(document.id, document.data()))
-    .filter(
-      (inspection) =>
-        normalizeAwbNumber(inspection.awbNumber) === session.awbNumber,
-    )
+    .filter((inspection) => {
+      if (session.kind === 'account' || !session.awbNumber) return true;
+      return normalizeAwbNumber(inspection.awbNumber) === session.awbNumber;
+    })
     .sort(
       (a, b) =>
         new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime(),
@@ -100,7 +143,14 @@ export async function fetchPortalInspectionById(
   const inspection = mapInspectionDoc(doc.id, doc.data() ?? {});
   if (
     !inspection.portalEnabled ||
-    inspection.portalClientId !== session.portalClientId ||
+    inspection.portalClientId !== session.portalClientId
+  ) {
+    return null;
+  }
+
+  if (
+    session.kind !== 'account' &&
+    session.awbNumber &&
     normalizeAwbNumber(inspection.awbNumber) !== session.awbNumber
   ) {
     return null;

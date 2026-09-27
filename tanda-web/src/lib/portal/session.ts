@@ -1,8 +1,12 @@
 import { SignJWT, jwtVerify } from 'jose';
 
+export type PortalSessionKind = 'awb' | 'account';
+
 export interface PortalSessionPayload {
-  awbNumber: string;
   portalClientId: string;
+  kind: PortalSessionKind;
+  awbNumber?: string;
+  clientName?: string;
 }
 
 const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
@@ -19,8 +23,10 @@ export async function createPortalSessionToken(
   payload: PortalSessionPayload,
 ): Promise<string> {
   return new SignJWT({
-    awbNumber: payload.awbNumber,
     portalClientId: payload.portalClientId,
+    kind: payload.kind,
+    ...(payload.awbNumber ? { awbNumber: payload.awbNumber } : {}),
+    ...(payload.clientName ? { clientName: payload.clientName } : {}),
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -33,14 +39,32 @@ export async function verifyPortalSessionToken(
 ): Promise<PortalSessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    const awbNumber = payload.awbNumber;
     const portalClientId = payload.portalClientId;
-
-    if (typeof awbNumber !== 'string' || typeof portalClientId !== 'string') {
+    if (typeof portalClientId !== 'string' || !portalClientId.trim()) {
       return null;
     }
 
-    return { awbNumber, portalClientId };
+    const kind: PortalSessionKind =
+      payload.kind === 'account' ? 'account' : 'awb';
+    const awbNumber =
+      typeof payload.awbNumber === 'string' && payload.awbNumber.trim()
+        ? payload.awbNumber
+        : undefined;
+    const clientName =
+      typeof payload.clientName === 'string' && payload.clientName.trim()
+        ? payload.clientName
+        : undefined;
+
+    if (kind === 'awb' && !awbNumber) {
+      return null;
+    }
+
+    return {
+      portalClientId,
+      kind,
+      awbNumber,
+      clientName,
+    };
   } catch {
     return null;
   }

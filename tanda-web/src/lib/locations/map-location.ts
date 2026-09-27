@@ -52,6 +52,12 @@ export function mapLocationDoc(
     hasPortalPin:
       (typeof record.pinHash === 'string' && record.pinHash.length > 0) ||
       (typeof record.pin === 'string' && record.pin.trim().length > 0),
+    portalUsername:
+      typeof record.portalUsername === 'string' && record.portalUsername.trim()
+        ? record.portalUsername.trim().toLowerCase()
+        : undefined,
+    hasPortalAccount:
+      typeof record.passwordHash === 'string' && record.passwordHash.length > 0,
     scanPunchEnabled: record.scanPunchEnabled === true,
     scanPunchToken:
       typeof record.scanPunchToken === 'string' && record.scanPunchToken.trim()

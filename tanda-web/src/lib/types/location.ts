@@ -14,6 +14,10 @@ export interface LocationFirestore {
   /** Plaintext PIN for admin display and copy — never exposed on the public portal. */
   pin?: string;
   pinHash?: string;
+  /** Login for the client portal account (lowercase). */
+  portalUsername?: string;
+  /** bcrypt hash — never sent to the browser. */
+  passwordHash?: string;
   /** Session QR/NFC clock-in at this site (employee must be signed in). */
   scanPunchEnabled?: boolean;
   /** Opaque token embedded in /punch/s/{token} — rotate to invalidate stickers. */
@@ -42,6 +46,10 @@ export interface Location {
   pin?: string;
   /** True when pinHash (or plaintext pin) is stored — eligible for portal assignment. */
   hasPortalPin?: boolean;
+  /** Username for /portal account login. */
+  portalUsername?: string;
+  /** True when a portal password hash is stored. */
+  hasPortalAccount?: boolean;
   scanPunchEnabled?: boolean;
   scanPunchToken?: string;
   /** Site position used to validate QR/NFC/kiosk punches are made on site. */
@@ -72,6 +80,9 @@ export interface CreateLocationInput extends LocationGeofenceInput {
   photoUrl?: string;
   /** Required for new clients — 6–8 digit portal PIN. */
   pin: string;
+  /** Optional /portal username + password (both required if either is set). */
+  portalUsername?: string;
+  portalPassword?: string;
 }
 
 export interface UpdateLocationInput extends LocationGeofenceInput {

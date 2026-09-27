@@ -37,10 +37,12 @@ import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import { buildScanPunchUrl } from '@/lib/attendance/scan-punch-token';
 import { AU_LOCATION_STATES, type AuLocationState } from '@/lib/locations/au-states';
 import {
+  clearLocationPortalAccount,
   createLocation,
   regenerateLocationPin,
   regenerateLocationScanPunchToken,
   setLocationActive,
+  setLocationPortalAccount,
   setLocationScanPunchEnabled,
   updateLocation,
 } from '@/lib/locations/locations-service';
@@ -52,6 +54,10 @@ import {
   isPortalPinTaken,
   validatePortalPinFormat,
 } from '@/lib/portal/pin';
+import {
+  validatePortalPassword,
+  validatePortalUsername,
+} from '@/lib/portal/account-credentials';
 import type { Location } from '@/lib/types/location';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { useLocations } from '@/providers/LocationsProvider';
@@ -67,6 +73,8 @@ interface ClientFormState {
   state: AuLocationState | '';
   code: string;
   pin: string;
+  portalUsername: string;
+  portalPassword: string;
   geofence: GeofenceFormValue;
 }
 
@@ -76,6 +84,8 @@ const emptyClientForm = (): ClientFormState => ({
   state: '',
   code: '',
   pin: '',
+  portalUsername: '',
+  portalPassword: '',
   geofence: { ...emptyGeofenceForm, required: false },
 });
 
@@ -130,6 +140,9 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
   const [pendingDelete, setPendingDelete] = useState<Location | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [scanBusyId, setScanBusyId] = useState<string | null>(null);
+  const [accountUsername, setAccountUsername] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
 
   const takenPins = useMemo(
     () =>
@@ -164,6 +177,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         location.state ?? '',
         location.code ?? '',
         location.pin ?? '',
+        location.portalUsername ?? '',
       ]
         .join(' ')
         .toLowerCase();
@@ -204,9 +218,13 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       state: location.state ?? '',
       code: location.code ?? '',
       pin: '',
+      portalUsername: '',
+      portalPassword: '',
       geofence: geofenceFormFromLocation(location),
     });
     setPhotoFile(null);
+    setAccountUsername(location.portalUsername ?? '');
+    setAccountPassword('');
   }
 
   function handleGeneratePin() {
@@ -242,6 +260,21 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       return;
     }
 
+    if (form.portalUsername.trim() || form.portalPassword) {
+      const usernameError = validatePortalUsername(form.portalUsername);
+      if (usernameError) {
+        onToast(usernameError, 'error');
+        setSaving(false);
+        return;
+      }
+      const passwordError = validatePortalPassword(form.portalPassword);
+      if (passwordError) {
+        onToast(passwordError, 'error');
+        setSaving(false);
+        return;
+      }
+    }
+
     const geofenceError = validateGeofenceForm(form.geofence);
     if (geofenceError) {
       onToast(geofenceError, 'error');
@@ -258,6 +291,8 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         state: form.state || undefined,
         code: form.code || undefined,
         pin: form.pin,
+        portalUsername: form.portalUsername || undefined,
+        portalPassword: form.portalPassword || undefined,
         ...geofenceInput,
       });
 
@@ -284,8 +319,12 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
         state: form.state,
         code: form.code,
         pin: '',
+        portalUsername: '',
+        portalPassword: '',
         geofence: form.geofence,
       });
+      setAccountUsername(form.portalUsername.trim().toLowerCase());
+      setAccountPassword('');
       onToast('Client created. Share the PIN for portal access.');
     } catch (error) {
       const message =
@@ -355,6 +394,62 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
       onToast('Could not regenerate PIN.', 'error');
     } finally {
       setRegeneratingId(null);
+    }
+  }
+
+  async function handleSavePortalAccount(location: Location) {
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
+
+    const usernameError = validatePortalUsername(accountUsername);
+    if (usernameError) {
+      onToast(usernameError, 'error');
+      return;
+    }
+    const passwordError = validatePortalPassword(accountPassword);
+    if (passwordError) {
+      onToast(passwordError, 'error');
+      return;
+    }
+
+    setSavingAccount(true);
+    try {
+      const saved = await setLocationPortalAccount(
+        location.id,
+        accountUsername,
+        accountPassword,
+      );
+      setAccountUsername(saved);
+      setAccountPassword('');
+      await refresh();
+      onToast(`Portal account saved for ${location.name}.`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not save portal account.';
+      onToast(message, 'error');
+    } finally {
+      setSavingAccount(false);
+    }
+  }
+
+  async function handleClearPortalAccount(location: Location) {
+    if (!canUpdateClients) {
+      onToast('You do not have permission to edit clients.', 'error');
+      return;
+    }
+    setSavingAccount(true);
+    try {
+      await clearLocationPortalAccount(location.id);
+      setAccountUsername('');
+      setAccountPassword('');
+      await refresh();
+      onToast(`Portal account removed for ${location.name}.`);
+    } catch {
+      onToast('Could not remove portal account.', 'error');
+    } finally {
+      setSavingAccount(false);
     }
   }
 
@@ -701,6 +796,84 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
           </div>
         </section>
 
+        <section className="min-w-0 rounded-2xl border border-border bg-surface-raised p-5 md:p-6">
+          <h3 className="text-sm font-semibold text-white">Portal account</h3>
+          <p className="mt-1 text-xs text-subtle">
+            Optional username and password. The client then sees every
+            portal-enabled inspection for this location.
+          </p>
+          {location.hasPortalAccount ? (
+            <p className="mt-3 text-xs text-emerald-300">
+              Account active
+              {location.portalUsername ? (
+                <>
+                  {' '}
+                  for{' '}
+                  <span className="font-mono font-semibold">
+                    {location.portalUsername}
+                  </span>
+                </>
+              ) : null}
+              .
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-subtle">No account yet — AWB + PIN still works.</p>
+          )}
+          {canUpdateClients ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium text-muted">
+                  Username
+                </label>
+                <input
+                  value={accountUsername}
+                  onChange={(e) => setAccountUsername(e.target.value)}
+                  placeholder="e.g. qantas"
+                  autoComplete="off"
+                  className={inputClass}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium text-muted">
+                  {location.hasPortalAccount ? 'New password' : 'Password'}
+                </label>
+                <input
+                  type="password"
+                  value={accountPassword}
+                  onChange={(e) => setAccountPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  className={inputClass}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => void handleSavePortalAccount(location)}
+                  disabled={savingAccount}
+                  className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {savingAccount
+                    ? 'Saving…'
+                    : location.hasPortalAccount
+                      ? 'Update account'
+                      : 'Create account'}
+                </button>
+                {location.hasPortalAccount ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleClearPortalAccount(location)}
+                    disabled={savingAccount}
+                    className="rounded-lg border border-border-strong px-3 py-2 text-xs font-semibold text-muted hover:text-foreground disabled:opacity-50"
+                  >
+                    Remove account
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
         <ScanPunchControls
           location={location}
           busy={scanBusyId === location.id}
@@ -927,6 +1100,48 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
               )}
             </div>
 
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium text-muted">
+                  Portal username (optional)
+                </label>
+                <input
+                  value={form.portalUsername}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      portalUsername: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. qantas"
+                  autoComplete="off"
+                  className={inputClass}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium text-muted">
+                  Portal password (optional)
+                </label>
+                <input
+                  type="password"
+                  value={form.portalPassword}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      portalPassword: e.target.value,
+                    }))
+                  }
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <p className="-mt-2 text-xs text-subtle">
+              If set, the client can sign in at /portal and see every enabled
+              inspection. Leave blank to use AWB + PIN only.
+            </p>
+
             <ClientGeofenceFields
               value={form.geofence}
               onChange={(geofence) =>
@@ -1026,7 +1241,7 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, city, PIN…"
+              placeholder="Search name, city, PIN, username…"
               className="w-full rounded-lg border border-border-strong bg-surface-base py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
@@ -1080,6 +1295,11 @@ export function LocationsTab({ onToast }: LocationsTabProps) {
                       >
                         {location.active ? 'Active' : 'Inactive'}
                       </span>
+                      {location.hasPortalAccount ? (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
+                          Account
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-0.5 truncate text-xs text-subtle">
                       {[location.city, location.state, location.code]

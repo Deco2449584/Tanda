@@ -21,7 +21,12 @@ export interface PortalInspectionSummary {
 export async function verifyPortalAccess(
   awbNumber: string,
   pin: string,
-): Promise<{ token: string; awbNumber: string }> {
+): Promise<{
+  token: string;
+  kind: 'awb';
+  awbNumber: string;
+  clientName: string;
+}> {
   const response = await fetch('/api/portal/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -31,6 +36,7 @@ export async function verifyPortalAccess(
   const data = (await response.json()) as {
     token?: string;
     awbNumber?: string;
+    clientName?: string;
     error?: string;
   };
 
@@ -42,11 +48,49 @@ export async function verifyPortalAccess(
     throw new Error('Invalid server response.');
   }
 
-  return { token: data.token, awbNumber: data.awbNumber };
+  return {
+    token: data.token,
+    kind: 'awb',
+    awbNumber: data.awbNumber,
+    clientName: data.clientName ?? '',
+  };
+}
+
+export async function loginPortalAccount(
+  username: string,
+  password: string,
+): Promise<{ token: string; kind: 'account'; clientName: string }> {
+  const response = await fetch('/api/portal/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = (await response.json()) as {
+    token?: string;
+    clientName?: string;
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(data.error ?? 'Could not sign in.');
+  }
+
+  if (!data.token) {
+    throw new Error('Invalid server response.');
+  }
+
+  return {
+    token: data.token,
+    kind: 'account',
+    clientName: data.clientName ?? '',
+  };
 }
 
 export async function fetchPortalInspectionsList(): Promise<{
+  kind: 'awb' | 'account';
   awbNumber: string;
+  clientName: string;
   inspections: PortalInspectionSummary[];
 }> {
   const response = await fetch('/api/portal/inspections', {
@@ -55,7 +99,9 @@ export async function fetchPortalInspectionsList(): Promise<{
   });
 
   const data = (await response.json()) as {
+    kind?: 'awb' | 'account';
     awbNumber?: string;
+    clientName?: string;
     inspections?: PortalInspectionSummary[];
     error?: string;
   };
@@ -65,7 +111,9 @@ export async function fetchPortalInspectionsList(): Promise<{
   }
 
   return {
+    kind: data.kind === 'account' ? 'account' : 'awb',
     awbNumber: data.awbNumber ?? '',
+    clientName: data.clientName ?? '',
     inspections: data.inspections ?? [],
   };
 }

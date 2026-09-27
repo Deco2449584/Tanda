@@ -20,6 +20,11 @@ import { isValidLatitude, isValidLongitude } from '@/lib/geo/reverse-geocode';
 import { normalizeAuLocationState } from '@/lib/locations/au-states';
 import { mapLocationDoc } from '@/lib/locations/map-location';
 import {
+  normalizePortalUsername,
+  validatePortalPassword,
+  validatePortalUsername,
+} from '@/lib/portal/account-credentials';
+import {
   generatePortalPin,
   hashPortalPin,
   validatePortalPinFormat,
@@ -165,6 +170,24 @@ async function generateUniqueLocationPin(
   throw new Error('Could not generate a unique PIN. Try again.');
 }
 
+async function assertPortalUsernameAvailable(
+  username: string,
+  excludeLocationId?: string,
+): Promise<void> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  const normalized = normalizePortalUsername(username);
+  const snapshot = await getDocs(collection(db, COLLECTIONS.LOCATIONS));
+
+  for (const document of snapshot.docs) {
+    if (excludeLocationId && document.id === excludeLocationId) continue;
+    const stored = document.data().portalUsername;
+    if (typeof stored === 'string' && stored.trim().toLowerCase() === normalized) {
+      throw new Error('This portal username is already in use.');
+    }
+  }
+}
+
 export async function createLocation(
   input: CreateLocationInput,
 ): Promise<{ locationId: string; pin: string }> {
@@ -185,6 +208,18 @@ export async function createLocation(
 
   await assertLocationPinAvailable(pin);
 
+  const portalUsername = input.portalUsername?.trim()
+    ? normalizePortalUsername(input.portalUsername)
+    : '';
+  const portalPassword = input.portalPassword ?? '';
+  if (portalUsername || portalPassword) {
+    const usernameError = validatePortalUsername(portalUsername);
+    if (usernameError) throw new Error(usernameError);
+    const passwordError = validatePortalPassword(portalPassword);
+    if (passwordError) throw new Error(passwordError);
+    await assertPortalUsernameAvailable(portalUsername);
+  }
+
   const photoUrl = input.photoUrl?.trim();
   const geofenceFields = buildGeofenceCreateFields(input);
 
@@ -197,6 +232,12 @@ export async function createLocation(
     ...geofenceFields,
     pinHash: hashPortalPin(pin),
     pin,
+    ...(portalUsername
+      ? {
+          portalUsername,
+          passwordHash: hashPortalPin(portalPassword),
+        }
+      : {}),
     active: true,
     createdAt: serverTimestamp(),
   });
@@ -254,6 +295,40 @@ export async function regenerateLocationPin(locationId: string): Promise<string>
   });
 
   return pin;
+}
+
+export async function setLocationPortalAccount(
+  locationId: string,
+  username: string,
+  password: string,
+): Promise<string> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  const normalized = normalizePortalUsername(username);
+  const usernameError = validatePortalUsername(normalized);
+  if (usernameError) throw new Error(usernameError);
+  const passwordError = validatePortalPassword(password);
+  if (passwordError) throw new Error(passwordError);
+
+  await assertPortalUsernameAvailable(normalized, locationId);
+
+  await updateDoc(doc(db, COLLECTIONS.LOCATIONS, locationId), {
+    portalUsername: normalized,
+    passwordHash: hashPortalPin(password),
+  });
+
+  return normalized;
+}
+
+export async function clearLocationPortalAccount(
+  locationId: string,
+): Promise<void> {
+  if (!db) throw new Error('Firestore is not available.');
+
+  await updateDoc(doc(db, COLLECTIONS.LOCATIONS, locationId), {
+    portalUsername: deleteField(),
+    passwordHash: deleteField(),
+  });
 }
 
 export async function setLocationScanPunchEnabled(
