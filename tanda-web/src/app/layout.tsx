@@ -9,11 +9,15 @@ const poppins = Poppins({
   variable: '--font-poppins',
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
+  // Avoid Chrome "preloaded but not used" warnings: login only applies
+  // some weights; the rest still load via @font-face when first used.
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  preload: false,
 });
 
 const metadataBase = new URL(
