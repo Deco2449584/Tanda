@@ -111,7 +111,7 @@ function SetPasswordContent() {
   }
 
   if (phase === 'verifying') {
-    return <LoadingSplash message="Verifying your invite link…" />;
+    return <LoadingSplash message="Verifying your reset link…" />;
   }
 
   return (
@@ -166,7 +166,7 @@ function SetPasswordContent() {
                 <KeyRound className="h-5 w-5" strokeWidth={1.75} />
               </span>
               <div>
-                <h1 className="text-xl font-semibold text-foreground">Set your password</h1>
+                <h1 className="text-xl font-semibold text-foreground">Reset your password</h1>
                 <p className="mt-0.5 text-sm text-muted">
                   {accountEmail
                     ? `Create a password for ${accountEmail}`
