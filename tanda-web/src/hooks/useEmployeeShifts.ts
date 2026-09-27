@@ -1,40 +1,29 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { COLLECTIONS } from '@/lib/constants';
+import { useMemo } from 'react';
 import {
   compareInputDates,
   isDateInRange,
   normalizeInputDate,
-  offsetInputDate,
   toInputDate,
 } from '@/lib/dates/input-date';
-import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { isShiftStrictlyUpcoming } from '@/lib/schedule/shift-future';
 import { buildWeekRange } from '@/lib/schedule/week';
-import { db } from '@/lib/firebase';
+import { useEmployeeShiftsContext } from '@/providers/EmployeeShiftsProvider';
 import type { Shift } from '@/lib/types/shift';
 
-const SHIFT_LOOKBACK_DAYS = 28;
-const SHIFT_LOOKAHEAD_DAYS = 90;
-
 interface UseEmployeeShiftsOptions {
-  employeeCode: string;
+  employeeCode?: string;
   weekReference?: Date;
   includeUpcoming?: boolean;
 }
 
 export function useEmployeeShifts({
-  employeeCode,
   weekReference = new Date(),
   includeUpcoming = true,
-}: UseEmployeeShiftsOptions) {
-  const [allShifts, setAllShifts] = useState<Shift[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-  const initialLoadDoneRef = useRef(false);
+}: UseEmployeeShiftsOptions = {}) {
+  const { allShifts, loading, refreshing, error, refresh } =
+    useEmployeeShiftsContext();
 
   const todayKey = toInputDate();
   const week = useMemo(
@@ -42,78 +31,10 @@ export function useEmployeeShifts({
     [weekReference, todayKey],
   );
 
-  const code = employeeCode.trim();
-  const minDate = offsetInputDate(todayKey, -SHIFT_LOOKBACK_DAYS);
-  const maxDate = offsetInputDate(todayKey, SHIFT_LOOKAHEAD_DAYS);
-
-  const refresh = useCallback(async () => {
-    if (!db || !code) {
-      setAllShifts([]);
-      setLoading(false);
-      setRefreshing(false);
-      setError('');
-      initialLoadDoneRef.current = false;
-      return;
-    }
-
-    if (!initialLoadDoneRef.current) {
-      setLoading(true);
-    } else {
-      setRefreshing(true);
-    }
-    setError('');
-
-    try {
-      let docs;
-      try {
-        const snapshot = await getDocs(
-          query(
-            collection(db, COLLECTIONS.SHIFTS),
-            where('employeeId', '==', code),
-            where('date', '>=', minDate),
-            where('date', '<=', maxDate),
-          ),
-        );
-        docs = snapshot.docs;
-      } catch (rangeError) {
-        // Composite index may be missing; fall back to employee-only query.
-        console.warn('useEmployeeShifts ranged query failed, falling back', rangeError);
-        const snapshot = await getDocs(
-          query(collection(db, COLLECTIONS.SHIFTS), where('employeeId', '==', code)),
-        );
-        docs = snapshot.docs.filter((document) => {
-          const date = normalizeInputDate(
-            typeof document.data().date === 'string' ? document.data().date : '',
-          );
-          return date && isDateInRange(date, minDate, maxDate);
-        });
-      }
-
-      setAllShifts(docs.map((document) => mapShiftDoc(document.id, document.data())));
-    } catch (fetchError) {
-      console.error('useEmployeeShifts', fetchError);
-      setAllShifts([]);
-      setError('Could not load shifts.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      initialLoadDoneRef.current = true;
-    }
-  }, [code, maxDate, minDate]);
-
-  useEffect(() => {
-    initialLoadDoneRef.current = false;
-    void refresh();
-  }, [refresh]);
-
   const weekShifts = useMemo(() => {
     return allShifts
       .filter((shift) =>
-        isDateInRange(
-          normalizeInputDate(shift.date),
-          week.start,
-          week.end,
-        ),
+        isDateInRange(normalizeInputDate(shift.date), week.start, week.end),
       )
       .sort((a, b) => compareInputDates(a.date, b.date));
   }, [allShifts, week.end, week.start]);

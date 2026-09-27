@@ -14,8 +14,10 @@ import { isAdminAreaRole } from '@/lib/auth/roles';
 import { useAdminAccess } from '@/hooks/useAdminAccess';
 import { AdminAccessProvider } from '@/providers/AdminAccessProvider';
 import { useAttendanceAlertSync } from '@/hooks/useAttendanceAlertSync';
+import { EmployeeAttendanceProvider } from '@/providers/EmployeeAttendanceProvider';
 import { EmployeesProvider } from '@/providers/EmployeesProvider';
 import { EmployeeShiftNotificationsProvider } from '@/providers/EmployeeShiftNotificationsProvider';
+import { EmployeeShiftsProvider } from '@/providers/EmployeeShiftsProvider';
 import { LocationsProvider } from '@/providers/LocationsProvider';
 import { LocationGroupsProvider } from '@/providers/LocationGroupsProvider';
 import { DepartmentsProvider } from '@/providers/DepartmentsProvider';
@@ -105,10 +107,7 @@ function RouteGuard({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuthRole();
-  const { employee, loading: employeeLoading } = useCurrentEmployee(
-    role === 'empleado' ? user?.email : null,
-  );
+  const { employee, loading: employeeLoading } = useCurrentEmployee();
   const redirectTo =
     role === 'empleado' && employeeLoading
       ? null
@@ -194,18 +193,23 @@ function EmployeeNotificationsShell({
   userEmail: string | null | undefined;
   children: React.ReactNode;
 }) {
-  const { employee, loading } = useCurrentEmployee(userEmail);
+  const { employee, loading } = useCurrentEmployee();
+  const employeeCode = employee?.employeeId ?? '';
 
   if (loading) {
     return <LoadingScreen message="Loading profile…" />;
   }
 
   return (
-    <EmployeeShiftNotificationsProvider
-      userEmail={userEmail ?? ''}
-      employeeCode={employee?.employeeId ?? ''}
-    >
-      {children}
-    </EmployeeShiftNotificationsProvider>
+    <EmployeeShiftsProvider employeeCode={employeeCode}>
+      <EmployeeAttendanceProvider employeeCode={employeeCode}>
+        <EmployeeShiftNotificationsProvider
+          userEmail={userEmail ?? ''}
+          employeeCode={employeeCode}
+        >
+          {children}
+        </EmployeeShiftNotificationsProvider>
+      </EmployeeAttendanceProvider>
+    </EmployeeShiftsProvider>
   );
 }
