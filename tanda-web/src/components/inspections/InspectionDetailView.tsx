@@ -41,6 +41,7 @@ import {
   getUnitTypeLabel,
   resolveUnitType,
 } from '@/lib/inspections/cargo-unit-type';
+import { getCountUnitLabel } from '@/lib/inspections/count-unit';
 import {
   CONSERVATION_COLORS,
   getConservationLabel,
@@ -65,6 +66,13 @@ interface InspectionDetailViewProps {
   onUpdated?: () => void;
 }
 
+function hasDetailValue(value: string | null | undefined): boolean {
+  const text = value?.trim();
+  if (!text) return false;
+  const normalized = text.toLowerCase();
+  return normalized !== '—' && normalized !== '-' && normalized !== 'unknown';
+}
+
 function DetailIconRow({
   icon: Icon,
   label,
@@ -74,6 +82,10 @@ function DetailIconRow({
   label: string;
   value: string;
 }) {
+  if (!hasDetailValue(value)) {
+    return null;
+  }
+
   return (
     <div className="flex items-start gap-3">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-hover text-[#0265DC]">
@@ -277,22 +289,26 @@ export function InspectionDetailView({
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="rounded-xl border border-border bg-surface-base px-3 py-2.5">
-              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
-                <Dumbbell className="h-3.5 w-3.5 text-[#0265DC]" aria-hidden />
-                Weight
-              </p>
-              <p className="mt-1 text-lg font-semibold text-foreground">
-                {inspection.weightKg} kg
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-surface-base px-3 py-2.5">
-              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
-                <Package className="h-3.5 w-3.5 text-[#0265DC]" aria-hidden />
-                Boxes
-              </p>
-              <p className="mt-1 text-lg font-semibold text-foreground">{inspection.boxCount}</p>
-            </div>
+            {inspection.weightKg > 0 ? (
+              <div className="rounded-xl border border-border bg-surface-base px-3 py-2.5">
+                <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+                  <Dumbbell className="h-3.5 w-3.5 text-[#0265DC]" aria-hidden />
+                  Weight
+                </p>
+                <p className="mt-1 text-lg font-semibold text-foreground">
+                  {inspection.weightKg} kg
+                </p>
+              </div>
+            ) : null}
+            {inspection.boxCount > 0 ? (
+              <div className="rounded-xl border border-border bg-surface-base px-3 py-2.5">
+                <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+                  <Package className="h-3.5 w-3.5 text-[#0265DC]" aria-hidden />
+                  {getCountUnitLabel(inspection.countUnit, inspection.boxCount)}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-foreground">{inspection.boxCount}</p>
+              </div>
+            ) : null}
             <div
               className="rounded-xl border px-3 py-2.5"
               style={{

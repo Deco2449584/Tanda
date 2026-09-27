@@ -30,6 +30,7 @@ import type {
 } from '@/types';
 import { normalizeConservationType } from '@/types';
 import { normalizeInspectionStatus } from '@/utils/cargoInspectionStatus';
+import { normalizeCountUnit } from '@/utils/countUnit';
 import { resolveUnitType } from '@/utils/cargoUnitType';
 import { isRemoteMediaUri } from '@/utils/evidenceMediaValidation';
 import { hasUldId, normalizeUldId } from '@/utils/uldId';
@@ -45,6 +46,7 @@ export type CargoInspectionDocument = {
   foodType: string;
   weightKg: number;
   boxCount: number;
+  countUnit?: string;
   hasIssues: boolean;
   status?: CargoInspectionStatus | string;
   issueDescription: string;
@@ -126,6 +128,7 @@ function mapDocumentToCargoInspection(
     foodType: data.foodType,
     weightKg: data.weightKg ?? 0,
     boxCount: data.boxCount ?? 0,
+    countUnit: normalizeCountUnit(data.countUnit),
     hasIssues: Boolean(data.hasIssues),
     status,
     issueDescription: issueDescription || undefined,
@@ -205,6 +208,7 @@ function buildFirestorePayload(
     foodType: input.foodType.trim(),
     weightKg: input.weightKg,
     boxCount: input.boxCount,
+    countUnit: normalizeCountUnit(input.countUnit),
     hasIssues: input.hasIssues,
     status,
     issueDescription,
@@ -267,6 +271,7 @@ function toInspectionFromCreatePayload(
     foodType: payload.foodType,
     weightKg: payload.weightKg,
     boxCount: payload.boxCount,
+    countUnit: payload.countUnit,
     status: normalizeInspectionStatus(payload.status),
     hasIssues: payload.hasIssues,
     issueDescription: payload.issueDescription || undefined,

@@ -14,6 +14,7 @@ import {
 import { CargoTypeIconStrip } from '@/components/inspections/CargoTypeIconStrip';
 import { ClientChipRow } from '@/components/inspections/ClientChipRow';
 import { ConservationPills } from '@/components/inspections/ConservationPills';
+import { CountUnitPills } from '@/components/inspections/CountUnitPills';
 import { EvidencePhotosField } from '@/components/inspections/EvidencePhotosField';
 import { EvidenceVideoField } from '@/components/inspections/EvidenceVideoField';
 import {
@@ -22,6 +23,7 @@ import {
   FormSwitch,
 } from '@/components/inspections/FormSectionCard';
 import { MetricSlider } from '@/components/inspections/MetricSlider';
+import { TemperatureSlider } from '@/components/inspections/TemperatureSlider';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { useAuthRole } from '@/hooks/useAuthRole';
@@ -41,6 +43,10 @@ import {
   RegistrationLocationError,
 } from '@/lib/inspections/capture-location';
 import { enqueueInspectionMedia } from '@/lib/inspections/media-queue';
+import {
+  getCountUnitLabel,
+  type CargoCountUnit,
+} from '@/lib/inspections/count-unit';
 import { type CargoUnitType, type ConservationType } from '@/lib/types/cargo-inspection';
 import { useLocations } from '@/providers/LocationsProvider';
 
@@ -60,7 +66,8 @@ export function NewInspectionForm() {
   const [foodType, setFoodType] = useState('');
   const [weightKg, setWeightKg] = useState(0);
   const [boxCount, setBoxCount] = useState(0);
-  const [temperature, setTemperature] = useState('');
+  const [countUnit, setCountUnit] = useState<CargoCountUnit>('boxes');
+  const [temperature, setTemperature] = useState<number | null>(null);
   const [hasIssues, setHasIssues] = useState(false);
   const [issueDescription, setIssueDescription] = useState('');
   const [showDriverFields, setShowDriverFields] = useState(false);
@@ -112,7 +119,7 @@ export function NewInspectionForm() {
     if (hasIssues && !issueDescription.trim()) {
       return 'Describe the issue when damage or problems are reported.';
     }
-    if (temperature.trim() && !Number.isFinite(Number(temperature))) {
+    if (temperature != null && !Number.isFinite(temperature)) {
       return 'Enter a valid temperature in °C, or leave the field empty.';
     }
     return null;
@@ -164,13 +171,12 @@ export function NewInspectionForm() {
           foodType: foodType.trim(),
           weightKg,
           boxCount,
+          countUnit,
           hasIssues,
           issueDescription: hasIssues ? issueDescription.trim() : '',
           clientLocationId: client.id,
           clientLocationName: client.name,
-          temperatureCelsius: temperature.trim()
-            ? Number(temperature)
-            : undefined,
+          temperatureCelsius: temperature ?? undefined,
           exitVehiclePlate: showDriverFields ? exitVehiclePlate.trim() : '',
           driverName: showDriverFields ? driverName.trim() : '',
           transportCompany: showDriverFields ? transportCompany.trim() : '',
@@ -296,22 +302,16 @@ export function NewInspectionForm() {
           unit="kg"
           onChange={setWeightKg}
         />
+        <CountUnitPills value={countUnit} onChange={setCountUnit} />
         <MetricSlider
-          label="Box count"
+          label="Quantity"
           value={boxCount}
           max={200}
-          unit="boxes"
+          unit={getCountUnitLabel(countUnit)}
           onChange={setBoxCount}
         />
 
-        <FieldLabel label="Temperature (°C)">
-          <Input
-            value={temperature}
-            onChange={(event) => setTemperature(event.target.value)}
-            placeholder="Optional"
-            inputMode="decimal"
-          />
-        </FieldLabel>
+        <TemperatureSlider value={temperature} onChange={setTemperature} />
 
         <FormSwitch
           id="has-issues"

@@ -51,6 +51,7 @@ export async function updateCargoInspection(
     foodType: input.foodType.trim(),
     weightKg: input.weightKg,
     boxCount: input.boxCount,
+    countUnit: input.countUnit ?? 'boxes',
     hasIssues: input.hasIssues,
     status: existingStatus,
     issueDescription,

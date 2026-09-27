@@ -13,6 +13,7 @@ import {
   getUnitTypeLabel,
   resolveUnitType,
 } from '@/lib/inspections/cargo-unit-type';
+import { formatCountLabel } from '@/lib/inspections/count-unit';
 import { formatInspectionDate } from '@/lib/inspections/format';
 import {
   CONSERVATION_COLORS,
@@ -120,7 +121,7 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
             </Chip>
             <Chip>
               <Package className="h-3 w-3" aria-hidden />
-              {inspection.boxCount} boxes
+              {formatCountLabel(inspection.boxCount, inspection.countUnit)}
             </Chip>
             {inspection.clientLocationName?.trim() ? (
               <Chip>

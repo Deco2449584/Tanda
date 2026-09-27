@@ -208,6 +208,7 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     foodType: operation.input.foodType.trim(),
     weightKg: operation.input.weightKg,
     boxCount: operation.input.boxCount,
+    countUnit: operation.input.countUnit,
     status: operation.status,
     hasIssues: operation.input.hasIssues,
     issueDescription: issueDescription || undefined,

@@ -1,4 +1,5 @@
 import { formatInspectionDate } from '@/lib/inspections/format';
+import { getCountUnitLabel } from '@/lib/inspections/count-unit';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
 import {
   getInspectionListStatus,
@@ -23,7 +24,8 @@ const CSV_HEADERS = [
   'Conservation',
   'Food Type',
   'Weight (Kg)',
-  'Box Count',
+  'Quantity',
+  'Quantity Unit',
   'Temperature (°C)',
   'Exit Vehicle Plate',
   'Driver Name',
@@ -64,6 +66,7 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.foodType,
     String(inspection.weightKg),
     String(inspection.boxCount),
+    getCountUnitLabel(inspection.countUnit, inspection.boxCount),
     typeof inspection.temperatureCelsius === 'number'
       ? String(inspection.temperatureCelsius)
       : '',

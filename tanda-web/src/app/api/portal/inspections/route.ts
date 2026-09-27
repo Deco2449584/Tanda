@@ -32,6 +32,7 @@ export async function GET(request: Request) {
         unitType: inspection.unitType,
         weightKg: inspection.weightKg,
         boxCount: inspection.boxCount,
+        countUnit: inspection.countUnit,
         registeredAt: inspection.registeredAt,
         updatedAt: inspection.updatedAt,
         clientLocationName: inspection.clientLocationName,

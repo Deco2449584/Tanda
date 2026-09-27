@@ -5,6 +5,7 @@ import type { CargoInspection } from '@/types';
 import { formatInspectionDate } from '@/utils/formatDate';
 import { getConservationLabel } from '@/utils/cargoLabels';
 import { formatPersonName, getInspectionStatusExportLabel } from '@/utils/cargoInspectionStatus';
+import { getCountUnitLabel, normalizeCountUnit } from '@/utils/countUnit';
 import { getUnitTypeLabel } from '@/utils/cargoUnitType';
 
 const CSV_HEADERS = [
@@ -16,7 +17,8 @@ const CSV_HEADERS = [
   'Conservation',
   'Cargo Type',
   'Weight (Kg)',
-  'Box Count',
+  'Quantity',
+  'Quantity Unit',
   'Temperature (°C)',
   'Exit Vehicle Plate',
   'Driver Name',
@@ -53,6 +55,7 @@ function inspectionToRow(inspection: CargoInspection): string[] {
     inspection.foodType,
     String(inspection.weightKg),
     String(inspection.boxCount),
+    getCountUnitLabel(normalizeCountUnit(inspection.countUnit), inspection.boxCount),
     typeof inspection.temperatureCelsius === 'number'
       ? String(inspection.temperatureCelsius)
       : '',

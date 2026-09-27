@@ -471,6 +471,7 @@ export function CargoInspectionsProvider({ children }: { children: ReactNode }) 
         foodType: input.foodType.trim(),
         weightKg: input.weightKg,
         boxCount: input.boxCount,
+        countUnit: input.countUnit ?? existing.countUnit ?? 'boxes',
         hasIssues: input.hasIssues,
         status: resolveInspectionStatus(existing),
         issueDescription: input.hasIssues ? input.issueDescription?.trim() : undefined,

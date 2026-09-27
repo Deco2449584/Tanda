@@ -236,3 +236,39 @@ select,
   border: 2px solid var(--accent);
   cursor: pointer;
 }
+
+.inspection-temp-slider {
+  --temp-ratio: 0.48;
+  --temp-color: #10B981;
+  appearance: none;
+  height: 28px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    #2563EB 0%,
+    #0EA5E9 25%,
+    #10B981 50%,
+    #F59E0B 75%,
+    #EF4444 100%
+  );
+  outline: none;
+}
+
+.inspection-temp-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #fff;
+  border: 2px solid var(--temp-color);
+  cursor: pointer;
+}
+
+.inspection-temp-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #fff;
+  border: 2px solid var(--temp-color);
+  cursor: pointer;
+}

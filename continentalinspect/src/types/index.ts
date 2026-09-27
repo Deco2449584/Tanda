@@ -40,6 +40,15 @@ export type CargoUnitType =
   | 'loose_cargo'
   | 'breakbulk';
 
+export type CargoCountUnit =
+  | 'boxes'
+  | 'cartons'
+  | 'pieces'
+  | 'bags'
+  | 'crates'
+  | 'pallets'
+  | 'units';
+
 export type InspectionSyncStatus = 'synced' | 'pending' | 'error' | 'local';
 
 export interface CargoInspection {
@@ -51,6 +60,7 @@ export interface CargoInspection {
   foodType: string;
   weightKg: number;
   boxCount: number;
+  countUnit?: CargoCountUnit;
   status: CargoInspectionStatus;
   hasIssues: boolean;
   issueDescription?: string;
@@ -111,6 +121,7 @@ export const EMPTY_CARGO_INSPECTION_INPUT: NewCargoInspectionInput = {
   foodType: '',
   weightKg: 0,
   boxCount: 0,
+  countUnit: 'boxes',
   hasIssues: false,
   issueDescription: '',
   notes: '',

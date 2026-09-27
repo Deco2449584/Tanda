@@ -46,6 +46,7 @@ import {
   getUnitTypeLabel,
   resolveUnitType,
 } from '@/utils/cargoUnitType';
+import { getCountUnitLabel, normalizeCountUnit } from '@/utils/countUnit';
 import { formatInspectionDate } from '@/utils/formatDate';
 
 function describeRecordRecovery(
@@ -406,6 +407,13 @@ function createDetailStyles(colors: AppColors) {
   });
 }
 
+function hasDetailValue(value: string | null | undefined): boolean {
+  const text = value?.trim();
+  if (!text) return false;
+  const normalized = text.toLowerCase();
+  return normalized !== '—' && normalized !== '-' && normalized !== 'unknown';
+}
+
 function DetailRow({
   label,
   value,
@@ -419,6 +427,10 @@ function DetailRow({
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
 }) {
+  if (!hasDetailValue(value)) {
+    return null;
+  }
+
   return (
     <View style={styles.row}>
       <View style={styles.detailIcon}>
@@ -715,16 +727,22 @@ export default function CargoDetailScreen() {
               </View>
 
               <View style={styles.metricsRow}>
-                <View style={styles.metricTile}>
-                  <Ionicons name="barbell-outline" size={16} color={colors.accent.primary} />
-                  <Text style={styles.metricValue}>{inspection.weightKg} kg</Text>
-                  <Text style={styles.metricLabel}>Weight</Text>
-                </View>
-                <View style={styles.metricTile}>
-                  <Ionicons name="cube-outline" size={16} color={colors.accent.primary} />
-                  <Text style={styles.metricValue}>{inspection.boxCount}</Text>
-                  <Text style={styles.metricLabel}>Boxes</Text>
-                </View>
+                {inspection.weightKg > 0 ? (
+                  <View style={styles.metricTile}>
+                    <Ionicons name="barbell-outline" size={16} color={colors.accent.primary} />
+                    <Text style={styles.metricValue}>{inspection.weightKg} kg</Text>
+                    <Text style={styles.metricLabel}>Weight</Text>
+                  </View>
+                ) : null}
+                {inspection.boxCount > 0 ? (
+                  <View style={styles.metricTile}>
+                    <Ionicons name="cube-outline" size={16} color={colors.accent.primary} />
+                    <Text style={styles.metricValue}>{inspection.boxCount}</Text>
+                    <Text style={styles.metricLabel}>
+                      {getCountUnitLabel(normalizeCountUnit(inspection.countUnit), inspection.boxCount)}
+                    </Text>
+                  </View>
+                ) : null}
                 <View
                   style={[
                     styles.metricTile,
@@ -1005,10 +1023,10 @@ export default function CargoDetailScreen() {
                   iconColor={colors.accent.primary}
                 />
               ) : null}
-              {isAdmin ? (
+              {isAdmin && hasDetailValue(inspection.createdBy) ? (
                 <DetailRow
                   label="Account email"
-                  value={inspection.createdBy || '—'}
+                  value={inspection.createdBy}
                   styles={styles}
                   icon="mail-outline"
                   iconColor={colors.accent.primary}

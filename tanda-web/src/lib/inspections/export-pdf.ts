@@ -8,6 +8,7 @@ import {
   getUnitTypeLabel,
   resolveUnitType,
 } from '@/lib/inspections/cargo-unit-type';
+import { formatCountLabel } from '@/lib/inspections/count-unit';
 import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
 import { formatPersonName, getInspectionListStatus } from '@/lib/inspections/status';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
@@ -132,7 +133,7 @@ function buildInspectionHtml(
         ${tableRow('Conservation', getConservationLabel(inspection.conservationType))}
         ${tableRow('Cargo Type', inspection.foodType)}
         ${tableRow('Weight (Kg)', String(inspection.weightKg))}
-        ${tableRow('Box Count', String(inspection.boxCount))}
+        ${tableRow('Quantity', formatCountLabel(inspection.boxCount, inspection.countUnit))}
         ${
           typeof inspection.temperatureCelsius === 'number'
             ? tableRow('Temperature (°C)', String(inspection.temperatureCelsius))

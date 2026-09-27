@@ -14,6 +14,7 @@ import { PDF_LOGO_PNG_BASE64 } from '@/theme/pdfLogoBase64';
 import type { CargoInspection } from '@/types';
 import { formatPersonName, getInspectionDisplayBadge } from '@/utils/cargoInspectionStatus';
 import { getConservationLabel } from '@/utils/cargoLabels';
+import { formatCountLabel } from '@/utils/countUnit';
 import { getUnitTypeLabel } from '@/utils/cargoUnitType';
 import { formatInspectionDate } from '@/utils/formatDate';
 
@@ -186,7 +187,7 @@ function buildInspectionHtml(
         ${tableRow('Conservation', getConservationLabel(inspection.conservationType))}
         ${tableRow('Cargo Type', inspection.foodType)}
         ${tableRow('Weight (Kg)', String(inspection.weightKg))}
-        ${tableRow('Box Count', String(inspection.boxCount))}
+        ${tableRow('Quantity', formatCountLabel(inspection.boxCount, inspection.countUnit))}
         ${
           typeof inspection.temperatureCelsius === 'number'
             ? tableRow('Temperature (°C)', String(inspection.temperatureCelsius))

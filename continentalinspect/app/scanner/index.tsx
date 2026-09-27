@@ -22,12 +22,14 @@ import { CargoLabelOcrConfirmSheet } from '@/components/CargoLabelOcrConfirmShee
 import { CargoTypeStrip } from '@/components/CargoTypeStrip';
 import { ClientChipRow } from '@/components/ClientChipRow';
 import { ConservationPills } from '@/components/ConservationPills';
+import { CountUnitPills } from '@/components/CountUnitPills';
 import { EvidencePhotosField } from '@/components/EvidencePhotosField';
 import { EvidenceVideoField } from '@/components/EvidenceVideoField';
 import { FormSectionRail } from '@/components/FormSectionRail';
 import { InfoModal } from '@/components/InfoModal';
 import { MetricSlider } from '@/components/MetricSlider';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { TemperatureSlider } from '@/components/TemperatureSlider';
 import { UldLabelOcrCamera } from '@/components/UldLabelOcrCamera';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
@@ -55,6 +57,7 @@ import {
   requiresUldId,
   resolveUnitType,
 } from '@/utils/cargoUnitType';
+import { getCountUnitLabel, normalizeCountUnit } from '@/utils/countUnit';
 import {
   captureRegistrationLocation,
   RegistrationLocationError,
@@ -287,6 +290,7 @@ export default function CargoInspectionFormScreen() {
       foodType: existing.foodType,
       weightKg: existing.weightKg,
       boxCount: existing.boxCount,
+      countUnit: existing.countUnit ?? 'boxes',
       hasIssues: existing.hasIssues,
       issueDescription: existing.issueDescription ?? '',
       notes: existing.notes ?? '',
@@ -499,6 +503,7 @@ export default function CargoInspectionFormScreen() {
       foodType,
       weightKg: parseWeight(weightText),
       boxCount: parseBoxCount(boxCountText),
+      countUnit: normalizeCountUnit(form.countUnit),
       hasIssues: form.hasIssues,
       issueDescription: form.hasIssues ? form.issueDescription?.trim() ?? '' : '',
       notes,
@@ -916,45 +921,22 @@ export default function CargoInspectionFormScreen() {
               unit="kg"
               onChange={(value) => setWeightText(String(value))}
             />
+            <CountUnitPills
+              value={normalizeCountUnit(form.countUnit)}
+              onChange={(countUnit) => patchForm({ countUnit })}
+            />
             <MetricSlider
-              label="Box count"
+              label="Quantity"
               value={Number.parseInt(boxCountText, 10) || 0}
               max={200}
-              unit="boxes"
+              unit={getCountUnitLabel(normalizeCountUnit(form.countUnit))}
               onChange={(value) => setBoxCountText(String(value))}
             />
 
-            <FormField label="Temperature (°C) — optional">
-              <View style={styles.tempRow}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.tempSignBtn,
-                    pressed && styles.tempSignBtnPressed,
-                  ]}
-                  onPress={() => {
-                    setTemperatureText((prev) => {
-                      const trimmed = prev.trim();
-                      if (!trimmed) return '-';
-                      if (trimmed.startsWith('-')) return trimmed.slice(1);
-                      return `-${trimmed}`;
-                    });
-                  }}
-                  accessibilityLabel="Toggle negative temperature">
-                  <Text style={styles.tempSignBtnText}>+/−</Text>
-                </Pressable>
-                <TextInput
-                  style={[styles.input, styles.tempInput]}
-                  value={temperatureText}
-                  onChangeText={(text) => {
-                    const cleaned = text.replace(/[^0-9.,\-]/g, '');
-                    setTemperatureText(cleaned);
-                  }}
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  placeholder="e.g. -18 or 4"
-                  placeholderTextColor={colors.text.onSurfaceMuted}
-                />
-              </View>
-            </FormField>
+            <TemperatureSlider
+              value={temperatureText.trim() === '' ? null : Number.parseFloat(temperatureText)}
+              onChange={(next) => setTemperatureText(next == null ? '' : String(next))}
+            />
 
             <View style={styles.switchCard}>
               <View style={styles.switchRow}>

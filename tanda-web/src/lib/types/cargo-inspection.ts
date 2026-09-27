@@ -1,3 +1,5 @@
+import type { CargoCountUnit } from '@/lib/inspections/count-unit';
+
 export interface DeleteCargoInspectionResult {
   id: string;
   uldId: string;
@@ -41,6 +43,7 @@ export interface CargoInspectionFirestore {
   foodType: string;
   weightKg: number;
   boxCount: number;
+  countUnit?: CargoCountUnit | string;
   hasIssues: boolean;
   status?: CargoInspectionStatus | string;
   issueDescription: string;
@@ -82,6 +85,7 @@ export interface CargoInspection {
   foodType: string;
   weightKg: number;
   boxCount: number;
+  countUnit: CargoCountUnit;
   status: CargoInspectionStatus;
   hasIssues: boolean;
   issueDescription?: string;
@@ -117,6 +121,7 @@ export type CargoInspectionFormInput = {
   foodType: string;
   weightKg: number;
   boxCount: number;
+  countUnit?: CargoCountUnit;
   hasIssues: boolean;
   issueDescription: string;
   photoEvidence: string[];
@@ -132,6 +137,7 @@ export type CargoInspectionCreateInput = {
   foodType: string;
   weightKg: number;
   boxCount: number;
+  countUnit: CargoCountUnit;
   hasIssues: boolean;
   issueDescription: string;
   clientLocationId: string;
@@ -150,6 +156,7 @@ export const EMPTY_CARGO_INSPECTION_CREATE_INPUT: CargoInspectionCreateInput = {
   foodType: '',
   weightKg: 0,
   boxCount: 0,
+  countUnit: 'boxes',
   hasIssues: false,
   issueDescription: '',
   clientLocationId: '',

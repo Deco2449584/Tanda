@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { resolveUnitType } from '@/lib/inspections/cargo-unit-type';
+import { normalizeCountUnit } from '@/lib/inspections/count-unit';
 import { normalizeConservationType } from '@/lib/inspections/normalize-conservation';
 import { normalizeInspectionStatus } from '@/lib/inspections/status';
 import type {
@@ -53,6 +54,7 @@ export function mapInspectionDoc(
     foodType: record.foodType ?? '',
     weightKg: record.weightKg ?? 0,
     boxCount: record.boxCount ?? 0,
+    countUnit: normalizeCountUnit(record.countUnit),
     hasIssues: Boolean(record.hasIssues),
     status: normalizeInspectionStatus(record.status),
     issueDescription: issueDescription || undefined,

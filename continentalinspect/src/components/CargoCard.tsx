@@ -23,6 +23,7 @@ import {
   isManualUnitType,
   resolveUnitType,
 } from '@/utils/cargoUnitType';
+import { formatCountLabel } from '@/utils/countUnit';
 import { formatInspectionDate } from '@/utils/formatDate';
 
 type CargoCardProps = {
@@ -38,14 +39,28 @@ function createStyles(colors: AppColors) {
       backgroundColor: colors.surface.card,
       borderRadius: radius.card,
       marginBottom: 12,
-      overflow: 'hidden',
-      flexDirection: 'row',
-      borderWidth: 1.5,
-      borderColor: colors.border.onSurface,
       ...cardShadow(colors.background.primary),
+      ...(colors.background.primary.toLowerCase() === '#eef3f8'
+        ? {
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.14,
+            shadowRadius: 18,
+          }
+        : {
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.42,
+            shadowRadius: 20,
+            elevation: 8,
+          }),
+    },
+    cardClip: {
+      overflow: 'hidden',
+      borderRadius: radius.card,
+      flexDirection: 'row',
+      backgroundColor: colors.surface.card,
     },
     accentBar: {
-      width: 3,
+      width: 4,
       backgroundColor: ACCENT,
     },
     body: {
@@ -281,10 +296,8 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
   const clientInitial = (inspection.clientLocationName?.trim() || 'C').slice(0, 1).toUpperCase();
 
   return (
-    <PressableScale
-      style={[styles.card, { borderColor: statusColor }]}
-      onPress={onPress}
-      disabled={!onPress}>
+    <PressableScale style={styles.card} onPress={onPress} disabled={!onPress}>
+      <View style={styles.cardClip}>
       <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
 
       <View style={styles.body}>
@@ -361,7 +374,9 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
               </View>
               <View style={styles.metricChip}>
                 <Ionicons name="cube-outline" size={14} color={colors.text.onSurfaceMuted} />
-                <Text style={styles.metricChipText}>{inspection.boxCount} boxes</Text>
+                <Text style={styles.metricChipText}>
+                  {formatCountLabel(inspection.boxCount, inspection.countUnit)}
+                </Text>
               </View>
               {inspection.clientLocationName?.trim() ? (
                 <View style={styles.metricChip}>
@@ -454,6 +469,7 @@ export const CargoCard = memo(function CargoCard({ inspection, onPress }: CargoC
             <Text style={styles.date}>{dateLabel}</Text>
           </View>
         </View>
+      </View>
       </View>
     </PressableScale>
   );

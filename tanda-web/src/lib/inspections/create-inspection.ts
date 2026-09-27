@@ -49,6 +49,7 @@ export async function createCargoInspectionRecord(
     foodType: input.foodType.trim(),
     weightKg: input.weightKg,
     boxCount: input.boxCount,
+    countUnit: input.countUnit,
     hasIssues,
     status: 'identification',
     issueDescription: hasIssues ? input.issueDescription.trim() : '',

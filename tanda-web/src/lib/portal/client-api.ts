@@ -12,6 +12,7 @@ export interface PortalInspectionSummary {
   unitType?: CargoInspection['unitType'];
   weightKg: number;
   boxCount: number;
+  countUnit?: CargoInspection['countUnit'];
   registeredAt: string;
   updatedAt?: string;
   clientLocationName?: string;
