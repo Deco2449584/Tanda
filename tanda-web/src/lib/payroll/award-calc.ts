@@ -1,4 +1,8 @@
-import { toInputDateInTimeZone, getMinutesInTimeZone } from '@/lib/dates/timezone';
+import {
+  formatClockTimeInTimeZone,
+  getMinutesInTimeZone,
+  toInputDateInTimeZone,
+} from '@/lib/dates/timezone';
 import type { WorkSession } from '@/lib/attendance/work-sessions';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
@@ -61,6 +65,10 @@ export interface AwardSessionLine {
   hasOvertime: boolean;
   missingSiteChargeCard?: boolean;
   isLeave?: boolean;
+  checkInTime?: string;
+  checkOutTime?: string;
+  breakMinutes?: number;
+  overtimeFrom?: string;
 }
 
 export interface AwardIncompleteSession {
@@ -257,6 +265,21 @@ function cardActive(effectiveFrom: string | undefined, date: string): boolean {
   return date >= effectiveFrom;
 }
 
+function overtimeStartTime(
+  rules: PayRules,
+  timeZone: string,
+  startedAt: Date,
+  sessionPriced: AwardSlice[],
+): string {
+  if (!sessionPriced.some((slice) => slice.overtime)) return '';
+  const daily = rules.overtimeRules.find((rule) => rule.scope === 'daily');
+  if (!daily || !(daily.thresholdHours > 0)) return '';
+  return formatClockTimeInTimeZone(
+    timeZone,
+    new Date(startedAt.getTime() + daily.thresholdHours * 3_600_000),
+  );
+}
+
 interface ClockSlice {
   date: string;
   weekday: number;
@@ -435,6 +458,8 @@ interface SessionMeta {
   locationId: string;
   locationName: string;
   sessionDate: string;
+  startedAt: Date;
+  endedAt: Date;
   clockHours: number;
   billableHours: number;
   billing: SiteBilling | undefined;
@@ -537,6 +562,8 @@ export function buildAwardReport(input: {
       locationId,
       locationName: location?.name ?? '',
       sessionDate,
+      startedAt: start,
+      endedAt: end,
       clockHours,
       billableHours: billable,
       billing,
@@ -734,6 +761,13 @@ export function buildAwardReport(input: {
       usedFallbackRate: sessionPriced.some((slice) => slice.usedFallbackRate),
       hasOvertime: sessionPriced.some((slice) => slice.overtime),
       missingSiteChargeCard: !meta.hasSiteChargeCard,
+      checkInTime: formatClockTimeInTimeZone(timeZone, meta.startedAt),
+      checkOutTime: formatClockTimeInTimeZone(timeZone, meta.endedAt),
+      breakMinutes: Math.max(
+        0,
+        Math.round((meta.clockHours - meta.billableHours) * 60),
+      ),
+      overtimeFrom: overtimeStartTime(rules, timeZone, meta.startedAt, sessionPriced),
     });
   }
 
@@ -804,6 +838,10 @@ export function buildAwardReport(input: {
             usedFallbackRate: !cell,
             hasOvertime: false,
             isLeave: true,
+            checkInTime: '',
+            checkOutTime: '',
+            breakMinutes: 0,
+            overtimeFrom: '',
           });
         }
       }

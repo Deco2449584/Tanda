@@ -6,6 +6,20 @@ export function toInputDateInTimeZone(
   return new Intl.DateTimeFormat('en-CA', { timeZone: ianaTimeZone }).format(date);
 }
 
+/** Wall-clock HH:mm in the given IANA timezone (24-hour). */
+export function formatClockTimeInTimeZone(
+  ianaTimeZone: string,
+  date: Date,
+): string {
+  return new Intl.DateTimeFormat('en-AU', {
+    timeZone: ianaTimeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    hourCycle: 'h23',
+  }).format(date);
+}
+
 /** Returns minutes since midnight for a date in the given IANA timezone. */
 export function getMinutesInTimeZone(
   ianaTimeZone: string,

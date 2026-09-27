@@ -81,6 +81,28 @@ export function AwardSessionDetail({
           <>
             <dl className="grid gap-3 rounded-xl border border-border bg-surface-base/40 p-4 text-sm sm:grid-cols-3">
               <div>
+                <dt className="text-xs text-subtle">Time in / out</dt>
+                <dd className="mt-0.5 tabular-nums text-foreground">
+                  {line.isLeave
+                    ? 'Paid leave'
+                    : `${line.checkInTime || '—'} – ${line.checkOutTime || '—'}`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-subtle">Break</dt>
+                <dd className="mt-0.5 tabular-nums text-foreground">
+                  {line.breakMinutes && line.breakMinutes > 0
+                    ? `${line.breakMinutes} min`
+                    : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-subtle">OT starts</dt>
+                <dd className="mt-0.5 tabular-nums text-foreground">
+                  {line.overtimeFrom || '—'}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-xs text-subtle">Clock</dt>
                 <dd className="mt-0.5 tabular-nums text-foreground">
                   {line.clockHours.toFixed(2)} h

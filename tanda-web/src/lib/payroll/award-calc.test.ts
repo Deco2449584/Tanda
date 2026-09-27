@@ -6,6 +6,7 @@ import type { Employee } from '../types/employee';
 import type { Location } from '../types/location';
 import { DEFAULT_PAY_RULES } from './default-pay-rules';
 import { buildAwardExceptions, buildAwardReport } from './award-calc';
+import { buildClientTimesheetCsv } from './award-export';
 import type { PayRules } from '../types/pay-rules';
 
 function fakeTs(iso: string): Timestamp {
@@ -97,6 +98,9 @@ test('2h Saturday with 4h min pay and charge uses hourlyRate fallback', () => {
   });
   assert.equal(report.sessions[0]?.payHours, 4);
   assert.equal(report.sessions[0]?.chargeHours, 4);
+  assert.equal(report.sessions[0]?.checkInTime, '02:00');
+  assert.equal(report.sessions[0]?.checkOutTime, '04:00');
+  assert.equal(report.sessions[0]?.breakMinutes, 0);
   assert.equal(report.totals.payAmount, 100);
   assert.equal(report.totals.chargeAmount, 100);
 });
@@ -122,6 +126,7 @@ test('daily OT after 8 hours marks the overflow as overtime', () => {
   const ordinaryHours = ordinary.reduce((sum, slice) => sum + slice.payHours, 0);
   assert.equal(ordinaryHours, 8);
   assert.equal(otHours, 2);
+  assert.equal(report.sessions[0]?.overtimeFrom, '16:00');
 });
 
 test('band crossover splits early morning and base', () => {
@@ -247,5 +252,37 @@ test('shipped company default loadings apply on Saturday early morning', () => {
   assert.equal(report.sessions[0]?.usedFallbackRate, false);
   assert.equal(report.totals.payAmount, 43.75);
   assert.equal(report.totals.chargeAmount, 65.63);
+});
+
+test('unpaid break is clock minus billable minutes', () => {
+  const punched = session('2026-08-10T08:00:00+10:00', '2026-08-10T12:30:00+10:00', 4.5);
+  punched.billableHours = 4;
+  const report = run({
+    rules: fallbackRules({ minPayHours: 0, minChargeHours: 0 }),
+    sessions: [punched],
+  });
+  assert.equal(report.sessions[0]?.breakMinutes, 30);
+  assert.equal(report.sessions[0]?.checkInTime, '08:00');
+  assert.equal(report.sessions[0]?.checkOutTime, '12:30');
+});
+
+test('client timesheet csv includes punches and band columns', () => {
+  const report = run({
+    rules: fallbackRules({ minPayHours: 0, minChargeHours: 0 }),
+    sessions: [session('2026-08-10T05:30:00+10:00', '2026-08-10T06:30:00+10:00', 1)],
+  });
+  const csv = buildClientTimesheetCsv({
+    sessions: report.sessions,
+    slices: report.slices,
+    rules: fallbackRules({ minPayHours: 0, minChargeHours: 0 }),
+    periodLabel: 'Test week',
+    periodStart: '2026-08-10',
+    periodEnd: '2026-08-16',
+    generatedAt: 'now',
+  }).join('\n');
+  assert.match(csv, /Time in/);
+  assert.match(csv, /05:30/);
+  assert.match(csv, /06:30/);
+  assert.match(csv, /Early morning hours/);
 });
 

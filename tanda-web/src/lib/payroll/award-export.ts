@@ -1,6 +1,11 @@
 import { csvCell, downloadCsv } from '@/lib/csv/download-csv';
-import type { AwardReport, AwardSlice } from '@/lib/payroll/award-calc';
+import type {
+  AwardReport,
+  AwardSessionLine,
+  AwardSlice,
+} from '@/lib/payroll/award-calc';
 import { bandDisplayName, dayTypeDisplayName, groupAwardSlices } from '@/lib/payroll/award-calc';
+import { rateMatrixRows } from '@/lib/payroll/rate-matrix';
 import type { PayRules } from '@/lib/types/pay-rules';
 
 export type AccountingReportView =
@@ -160,6 +165,159 @@ export function buildAccountingTimesheetCsv(input: {
         csvCell(money(slice.payAmount)),
         csvCell(money(slice.chargeAmount)),
         csvCell(money(slice.chargeAmount - slice.payAmount)),
+      ].join(','),
+    );
+  }
+
+  return lines;
+}
+
+export interface ClientTimesheetBandColumn {
+  id: string;
+  name: string;
+}
+
+export interface ClientTimesheetRow {
+  sessionKey: string;
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  locationName: string;
+  dayTypeName: string;
+  checkInTime: string;
+  checkOutTime: string;
+  breakMinutes: number;
+  hours: number;
+  overtimeFrom: string;
+  totalCharge: number;
+  isLeave: boolean;
+  bands: Record<string, { hours: number; amount: number }>;
+}
+
+export function clientTimesheetBandColumns(
+  rules: PayRules,
+  slices: AwardSlice[],
+): ClientTimesheetBandColumn[] {
+  const columns = rateMatrixRows(rules).map((row) => ({
+    id: row.id,
+    name: row.name.replace(/\s+\(\d{2}:\d{2}–\d{2}:\d{2}\)$/, ''),
+  }));
+  const known = new Set(columns.map((column) => column.id));
+  for (const slice of slices) {
+    if (known.has(slice.bandId)) continue;
+    known.add(slice.bandId);
+    columns.splice(columns.length - 1, 0, {
+      id: slice.bandId,
+      name: bandDisplayName(rules, slice.bandId),
+    });
+  }
+  return columns;
+}
+
+export function buildClientTimesheetRows(input: {
+  sessions: AwardSessionLine[];
+  slices: AwardSlice[];
+  rules: PayRules;
+}): ClientTimesheetRow[] {
+  const keys = new Set(input.slices.map((slice) => slice.sessionKey));
+  const lines = input.sessions
+    .filter((session) => keys.has(session.sessionKey))
+    .sort(
+      (left, right) =>
+        left.date.localeCompare(right.date) ||
+        left.employeeName.localeCompare(right.employeeName) ||
+        (left.checkInTime ?? '').localeCompare(right.checkInTime ?? ''),
+    );
+
+  return lines.map((session) => {
+    const sessionSlices = input.slices.filter(
+      (slice) => slice.sessionKey === session.sessionKey,
+    );
+    const bands: ClientTimesheetRow['bands'] = {};
+    for (const slice of sessionSlices) {
+      const current = bands[slice.bandId] ?? { hours: 0, amount: 0 };
+      current.hours += slice.chargeHours;
+      current.amount += slice.chargeAmount;
+      bands[slice.bandId] = current;
+    }
+    const dayTypeId = sessionSlices[0]?.dayTypeId ?? '';
+    return {
+      sessionKey: session.sessionKey,
+      employeeId: session.employeeId,
+      employeeName: session.employeeName,
+      date: session.date,
+      locationName: session.locationName,
+      dayTypeName: dayTypeId ? dayTypeDisplayName(input.rules, dayTypeId) : '',
+      checkInTime: session.checkInTime ?? '',
+      checkOutTime: session.checkOutTime ?? '',
+      breakMinutes: session.breakMinutes ?? 0,
+      hours: session.chargeHours,
+      overtimeFrom: session.overtimeFrom ?? '',
+      totalCharge: session.chargeAmount,
+      isLeave: Boolean(session.isLeave),
+      bands,
+    };
+  });
+}
+
+export function buildClientTimesheetCsv(input: {
+  sessions: AwardSessionLine[];
+  slices: AwardSlice[];
+  rules: PayRules;
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+}): string[] {
+  const columns = clientTimesheetBandColumns(input.rules, input.slices);
+  const rows = buildClientTimesheetRows(input);
+  const header = [
+    'Staff',
+    'Employee ID',
+    'Date',
+    'Client',
+    'Day type',
+    'Time in',
+    'Time out',
+    'Break (min)',
+    'Hours',
+    ...columns.flatMap((column) => [`${column.name} hours`, `${column.name} $`]),
+    'OT starts',
+    'Total $',
+  ].map(csvCell);
+
+  const lines: string[] = [
+    headerRow('Report', 'Client timesheet'),
+    headerRow('Pay period', input.periodLabel),
+    headerRow('Period start', input.periodStart),
+    headerRow('Period end', input.periodEnd),
+    headerRow('Generated at', input.generatedAt),
+    '',
+    header.join(','),
+  ];
+
+  for (const row of rows) {
+    const bandCells = columns.flatMap((column) => {
+      const cell = row.bands[column.id];
+      return [
+        csvCell((cell?.hours ?? 0).toFixed(2)),
+        csvCell(money(cell?.amount ?? 0)),
+      ];
+    });
+    lines.push(
+      [
+        csvCell(row.employeeName),
+        csvCell(row.employeeId),
+        csvCell(row.date),
+        csvCell(row.locationName),
+        csvCell(row.dayTypeName),
+        csvCell(row.isLeave ? 'Leave' : row.checkInTime || '—'),
+        csvCell(row.isLeave ? 'Leave' : row.checkOutTime || '—'),
+        csvCell(String(row.breakMinutes)),
+        csvCell(row.hours.toFixed(2)),
+        ...bandCells,
+        csvCell(row.overtimeFrom || '—'),
+        csvCell(money(row.totalCharge)),
       ].join(','),
     );
   }
@@ -424,8 +582,9 @@ export function exportAccountingViewToCsv(input: {
 
   if (input.view === 'timesheet') {
     downloadCsv(
-      filename,
-      buildAccountingTimesheetCsv({
+      `client-timesheet-${input.periodStart}_${input.periodEnd}.csv`,
+      buildClientTimesheetCsv({
+        sessions: input.report.sessions,
         slices: input.slices,
         rules: input.rules,
         periodLabel: input.periodLabel,

@@ -2,9 +2,9 @@
 
 **Audience:** Accounting / finance administrators (Holly)  
 **Path in app:** Finance → Accounting  
-**Version:** March 2026
+**Version:** September 2026
 
-> Companion to the designed PDF: `Accounting-Module-Guide-Holly.pdf`
+> Printable PDF: `Accounting-Module-Guide-Holly.pdf` (from `Accounting-Module-Guide-Holly.html`).
 
 ---
 
@@ -16,65 +16,138 @@ Turns real clocked hours into:
 - **Charge** — client billing  
 - **Margin** — Charge − Pay  
 
-Then produces exports: Xero sales & bills, client timesheets, journals, charge packs.
+Then produces two kinds of files:
 
-**Important:** Use a real workforce employee for timesheets — not admin/master/kiosk accounts.
+- **Xero** — one sales line per client for the week, one bill line per staff member  
+- **Client timesheet** — the detailed sheet you attach to the invoice (time in, time out, break, hours by band, overtime start, $)
 
----
-
-## 2. Configure this first
-
-1. **Access role** — Accounting module + Edit rate cards + Edit pay rules + Export CSV  
-2. **Settings → Clients** — set **State** (NSW / QLD / VIC…) for Xero Location tracking  
-3. **Accounting → Setup → Pay and charge rules** — bands, day types, OT, holidays, employment types, Xero settings  
-4. **Rate cards → Company defaults** — default pay/charge matrices  
-5. **Rate cards → Staff** — base hourly rate **> $0**  
-6. **Rate cards → Clients** — charge matrix + optional client time bands  
+**Important:** Use a real workforce employee for timesheets — not admin, master, or kiosk accounts.
 
 ---
 
-## 3. Test end-to-end
+## 2. Where everything lives
 
-1. Complete setup for one employee + one client (with State)  
-2. Log hours for that employee (not the admin user)  
-3. Check **Overview** — Pay/Charge should not be $0  
-4. **Weekly close** → review → Close week  
-5. **Exports** → download Xero sales/bills, timesheet, charge pack  
-6. Confirm Xero CSV has TrackingName1 / TrackingOption1 when Location tracking is on  
-
-If totals are $0: hourly rate is usually still 0 while matrices are %.
-
----
-
-## 4. Feature map
-
-| Area | Use |
+| Tab | Use |
 |---|---|
 | Overview | Week health, totals, setup warnings |
-| Pay and charge rules | Company rules, time bands, OT, Xero |
-| Rate cards → Staff | Hourly + pay matrix |
-| Rate cards → Clients | Charge matrix + client time bands |
-| Rate cards → Company defaults | Fallback matrices |
-| Weekly close | Freeze / reopen week |
-| Exports | Xero, timesheet, journal, charge pack, summary |
+| Settings → Pay & charge rules | Company bands, day types, OT, minimums, holidays, employment types, Xero |
+| Settings → Rate cards → Staff | Employment type, hourly rate, pay matrix |
+| Settings → Rate cards → Clients | Client hours (From / To) and charge % or $ |
+| Settings → Rate cards → Defaults | Company fallback rate and matrices |
+| Weekly close | Review exceptions, freeze or reopen the week |
+| Exports | Xero, client timesheet, band summary, journal, charge pack |
 
 ---
 
-## 5. Xero Location tracking
+## 3. Configure this first
 
-1. Settings → Clients → State  
-2. Accounting → Setup → Xero export settings → Location tracking (category name **Location**)  
-3. Export sales/bills — TrackingName1 / TrackingOption1 filled from client state  
+1. **Access role** — Accounting module + *Edit staff and site rate cards* + *Edit pay rules, bands, and holidays* + *Export accounting reports (CSV)*. Without Export you will see “No export permission”.
+2. **Settings → Clients** — set **State** (NSW / QLD / VIC…) for Xero Location tracking.
+3. **Accounting → Settings → Pay & charge rules** — company time bands, overtime (daily and weekly), minimum hours, holidays, employment types / GL, Xero settings.
+4. **Rate cards → Defaults** — default hourly rate and pay/charge matrices.
+5. **Rate cards → Staff** — real employee, **hourly rate > $0**.
+6. **Rate cards → Clients** — that client’s From / To hours and charge % or $.
 
----
-
-## 6. Client time bands
-
-- Company bands: Setup → Pay and charge rules → Time bands  
-- Per client: Rate cards → Clients → Client time bands  
-- Empty client bands inherit company (default Early morning 00:00–06:00)  
-- Set per client for 02:00–05:00 or 01:00–08:00 when needed  
+If totals are $0: the hourly rate is usually still 0 while matrices are %, or hours were logged on an admin account.
 
 ---
 
-For historical validation, send a sample week of hours, rates, and expected totals.
+## 4. Client hours and rates (per customer)
+
+Different clients can have different early-morning windows and loadings. Example:
+
+- Client A — Early morning **00:00–06:00 @ 125%**  
+- Client B — Early morning **00:00–06:30 @ 120%**
+
+Path: **Accounting → Settings → Rate cards → Clients**
+
+1. Select the client.
+2. **Client time bands** already shows the company hours (Name, From, To). You do not need to add a band first.
+3. Change **From** / **To** for that client (e.g. Early morning to 06:30). Overnight wrap is allowed (22:00–06:00).
+4. Under **Client charge rates**, set **Edit** on the cells you want to customise (% or $). Leave a cell on **Default** to use company rules.
+5. Click **Save client rates**.
+
+**Reset to company bands** clears this client’s custom hours so they inherit the company bands again. **Add client band** adds an extra window; it appears as a new row in the charge matrix.
+
+Empty saved bands still inherit company hours. As soon as you edit a field, those hours are stored for that client only. The charge matrix uses the same bands (the row label shows the hours, e.g. Early morning (00:00–06:30)).
+
+---
+
+## 5. Staff rates
+
+Path: **Accounting → Settings → Rate cards → Staff**
+
+- Employment type (Full Time, Part Time, Casual, Contractor)  
+- Base hourly rate — % loadings multiply against this  
+- Optional min pay hours  
+- Pay matrix — Default inherits company; Edit sets a custom $ or %  
+
+Company overtime rules apply to everyone: daily (default > 8 hours) and weekly (default > 38 hours).
+
+---
+
+## 6. Weekly flow
+
+1. Hours come from kiosk, employee app, or **Attendance → Add manual record** (real employee only).
+2. **Overview** — Pay / Charge should not be $0.
+3. **Weekly close** — review exceptions, then **Close week** (freezes figures).
+4. **Exports** — download Xero and the client timesheet.
+5. **Reopen week** if you need to recalculate (needs pay-rules permission). Weeks closed before September 2026 may not show time in / out until reopened.
+
+---
+
+## 7. Exports — which file to use
+
+| File | Who uses it | What it contains |
+|---|---|---|
+| **Xero sales invoices** | Xero import | **One charge line per client for the week.** TrackingName1 / TrackingOption1 = Location / state when tracking is on. |
+| **Xero bills** | Xero import | **One pay line per staff member for the week**, split by site when Location tracking is on. |
+| **Client timesheet CSV** | Attach to the client invoice | **One row per shift:** staff, date, client, day type, time in, time out, break (minutes), hours, hours and $ by band (Base, Early morning, Afternoon, Overtime), OT starts, total $. |
+| **Band summary CSV** | Internal only | Pay/charge already split by day type and band. Not the file you send to clients. |
+| **Journal** | GL / internal | Debit/credit by employment type. |
+| **Charge pack** | Internal | Hours and $ by site and band. |
+| **Summary CSV** | Internal | Pay / charge / margin for the current filters. |
+
+Xero stays one line per week on purpose. The **client timesheet** is the detailed proof (clock times and how each hour was classified).
+
+---
+
+## 8. Xero Location tracking
+
+1. **Settings → Clients** → set **State**.  
+2. **Accounting → Settings → Pay & charge rules → Xero export settings** → Location tracking category name **Location** (must match Xero).  
+3. Export sales / bills — columns TrackingName1 / TrackingOption1 fill from the client state.
+
+---
+
+## 9. Worked example
+
+Staff hourly rate **$30**. Monday **04:00–12:00** (8 hours). Weekday early morning **00:00–06:00 @ 125%**.
+
+| Segment | Hours | Pay rate | Pay $ |
+|---|---:|---|---:|
+| Early morning 04:00–06:00 | 2 | 125% = $37.50 | $75.00 |
+| Base 06:00–12:00 | 6 | 100% = $30.00 | $180.00 |
+| **Total pay** | **8** | | **$255.00** |
+
+Charge uses that **client’s** From / To and charge matrix (which may differ from pay).
+
+If the same staff works 4 hours at JAS, the **Client timesheet** row should show the actual in / out, any unpaid break, which hours sit in Early morning vs Base, and the total charge. Use that file to check the $ yourself.
+
+---
+
+## 10. Checklist
+
+- Role has Accounting + rates + rules + export  
+- Clients have State set  
+- Company bands, OT (daily + weekly), and minimums reviewed  
+- Staff hourly rate > $0  
+- Each client’s hours (From / To) and charge % checked  
+- Hours logged on a real employee  
+- Overview shows non-zero totals  
+- Week closed before final Xero files  
+- Client invoice gets **Client timesheet CSV**, not the band summary  
+
+---
+
+Continental Cargo · Finance → Accounting · Internal use

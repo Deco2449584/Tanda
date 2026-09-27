@@ -21,21 +21,25 @@ import {
   dayTypeDisplayName,
   filterAwardSlices,
   groupAwardSlices,
-  type AwardSlice,
 } from '@/lib/payroll/award-calc';
 import {
   buildAccountingJournalRows,
+  buildAccountingTimesheetCsv,
+  buildClientTimesheetRows,
+  clientTimesheetBandColumns,
   buildSiteChargePacks,
   exportAccountingViewToCsv,
   type AccountingGroupBy,
   type AccountingJournalRow,
   type AccountingReportView,
+  type ClientTimesheetRow,
   type SiteChargePack,
 } from '@/lib/payroll/award-export';
 import {
   downloadXeroBillsCsv,
   downloadXeroSalesInvoiceCsv,
 } from '@/lib/payroll/xero-export';
+import { downloadCsv } from '@/lib/csv/download-csv';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { AttendanceBreakSettings } from '@/lib/types/company-settings';
 import type { Employee } from '@/lib/types/employee';
@@ -49,7 +53,7 @@ const VIEWS: Array<{ id: AccountingReportView; label: string }> = [
   { id: 'pay', label: 'Pay' },
   { id: 'charge', label: 'Charge' },
   { id: 'margin', label: 'Margin' },
-  { id: 'timesheet', label: 'Timesheet' },
+  { id: 'timesheet', label: 'Client timesheet' },
   { id: 'journal', label: 'Journal' },
   { id: 'chargePack', label: 'Charge pack' },
 ];
@@ -151,6 +155,19 @@ export function AccountingReportsPanel({
   const packs = useMemo(
     () => buildSiteChargePacks({ report: { ...report, slices }, rules }),
     [report, slices, rules],
+  );
+  const clientTimesheetRows = useMemo(
+    () =>
+      buildClientTimesheetRows({
+        sessions: report.sessions,
+        slices,
+        rules,
+      }),
+    [report.sessions, slices, rules],
+  );
+  const clientTimesheetColumns = useMemo(
+    () => clientTimesheetBandColumns(rules, slices),
+    [rules, slices],
   );
   const periodLabel = formatPayPeriodLabel(dateRange);
   const presets = rules.reportPresets ?? [];
@@ -263,7 +280,7 @@ export function AccountingReportsPanel({
           />
           <ExportCard
             title="Client timesheet CSV"
-            description="Detailed staff / band lines for the invoice you send to clients."
+            description="One row per shift with time in, time out, break, band hours, overtime start, and $ — attach this to the client invoice."
             onDownload={
               canExport
                 ? () =>
@@ -278,6 +295,34 @@ export function AccountingReportsPanel({
                       periodEnd: dateRange.end,
                       companyName: COMPANY_NAME,
                     })
+                : undefined
+            }
+          />
+          <ExportCard
+            title="Band summary CSV"
+            description="Internal pay/charge split by day type and band. Not the file you send to clients."
+            onDownload={
+              canExport
+                ? () => {
+                    const generatedAt = new Intl.DateTimeFormat('en-AU', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }).format(new Date());
+                    downloadCsv(
+                      `band-summary-${dateRange.start}_${dateRange.end}.csv`,
+                      buildAccountingTimesheetCsv({
+                        slices,
+                        rules,
+                        periodLabel,
+                        periodStart: dateRange.start,
+                        periodEnd: dateRange.end,
+                        generatedAt,
+                      }),
+                    );
+                  }
                 : undefined
             }
           />
@@ -466,7 +511,11 @@ export function AccountingReportsPanel({
       ) : view === 'chargePack' ? (
         <ChargePackTable packs={packs} currency={currency} />
       ) : view === 'timesheet' ? (
-        <TimesheetTable slices={slices} currency={currency} rules={rules} />
+        <ClientTimesheetTable
+          rows={clientTimesheetRows}
+          columns={clientTimesheetColumns}
+          currency={currency}
+        />
       ) : (
         <GroupedTable
           rows={grouped}
@@ -540,62 +589,80 @@ function GroupedTable({
   );
 }
 
-function TimesheetTable({
-  slices,
+function ClientTimesheetTable({
+  rows,
+  columns,
   currency,
-  rules,
 }: {
-  slices: AwardSlice[];
+  rows: ClientTimesheetRow[];
+  columns: ReturnType<typeof clientTimesheetBandColumns>;
   currency: string;
-  rules: PayRules;
 }) {
+  const colSpan = 9 + columns.length * 2 + 2;
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface-raised">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-primary/25 bg-primary/10">
-              <th className="px-4 py-3 font-semibold text-white">Date</th>
-              <th className="px-4 py-3 font-semibold text-white">Staff</th>
-              <th className="px-4 py-3 font-semibold text-white">Client</th>
-              <th className="px-4 py-3 font-semibold text-white">Band</th>
-              <th className="px-4 py-3 font-semibold text-white">Pay hrs</th>
-              <th className="px-4 py-3 font-semibold text-white">Charge hrs</th>
-              <th className="px-4 py-3 font-semibold text-white">Pay</th>
-              <th className="px-4 py-3 font-semibold text-white">Charge</th>
+              <th className="px-3 py-3 font-semibold text-white">Staff</th>
+              <th className="px-3 py-3 font-semibold text-white">Date</th>
+              <th className="px-3 py-3 font-semibold text-white">Client</th>
+              <th className="px-3 py-3 font-semibold text-white">Day</th>
+              <th className="px-3 py-3 font-semibold text-white">In</th>
+              <th className="px-3 py-3 font-semibold text-white">Out</th>
+              <th className="px-3 py-3 font-semibold text-white">Break</th>
+              <th className="px-3 py-3 font-semibold text-white">Hours</th>
+              {columns.map((column) => (
+                <th key={column.id} className="px-3 py-3 font-semibold text-white">
+                  {column.name}
+                </th>
+              ))}
+              <th className="px-3 py-3 font-semibold text-white">OT starts</th>
+              <th className="px-3 py-3 font-semibold text-white">Total</th>
             </tr>
           </thead>
           <tbody>
-            {slices.length === 0 ? (
+            {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-subtle">
+                <td colSpan={colSpan} className="px-4 py-10 text-center text-subtle">
                   No award hours in this period.
                 </td>
               </tr>
             ) : (
-              slices.map((slice) => (
-                <tr
-                  key={`${slice.sessionKey}|${slice.date}|${slice.dayTypeId}|${slice.bandId}`}
-                  className="border-b border-border/50"
-                >
-                  <td className="px-4 py-3 text-muted">{slice.date}</td>
-                  <td className="px-4 py-3 text-foreground">{slice.employeeName}</td>
-                  <td className="px-4 py-3 text-muted">{slice.locationName || '—'}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {dayTypeDisplayName(rules, slice.dayTypeId)} /{' '}
-                    {bandDisplayName(rules, slice.bandId)}
+              rows.map((row) => (
+                <tr key={row.sessionKey} className="border-b border-border/50">
+                  <td className="px-3 py-3 text-foreground">{row.employeeName}</td>
+                  <td className="px-3 py-3 text-muted">{row.date}</td>
+                  <td className="px-3 py-3 text-muted">{row.locationName || '—'}</td>
+                  <td className="px-3 py-3 text-muted">{row.dayTypeName || '—'}</td>
+                  <td className="px-3 py-3 tabular-nums text-muted">
+                    {row.isLeave ? 'Leave' : row.checkInTime || '—'}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-muted">
-                    {slice.payHours.toFixed(2)}
+                  <td className="px-3 py-3 tabular-nums text-muted">
+                    {row.isLeave ? 'Leave' : row.checkOutTime || '—'}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-muted">
-                    {slice.chargeHours.toFixed(2)}
+                  <td className="px-3 py-3 tabular-nums text-muted">
+                    {row.breakMinutes > 0 ? `${row.breakMinutes} min` : '—'}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-foreground">
-                    {formatDashboardCurrency(slice.payAmount, currency)}
+                  <td className="px-3 py-3 tabular-nums text-muted">{row.hours.toFixed(2)}</td>
+                  {columns.map((column) => {
+                    const cell = row.bands[column.id];
+                    const hours = cell?.hours ?? 0;
+                    const amount = cell?.amount ?? 0;
+                    return (
+                      <td key={column.id} className="px-3 py-3 tabular-nums text-muted">
+                        {hours > 0 || amount > 0
+                          ? `${hours.toFixed(2)} · ${formatDashboardCurrency(amount, currency)}`
+                          : '—'}
+                      </td>
+                    );
+                  })}
+                  <td className="px-3 py-3 tabular-nums text-muted">
+                    {row.overtimeFrom || '—'}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-foreground">
-                    {formatDashboardCurrency(slice.chargeAmount, currency)}
+                  <td className="px-3 py-3 tabular-nums text-foreground">
+                    {formatDashboardCurrency(row.totalCharge, currency)}
                   </td>
                 </tr>
               ))

@@ -5,6 +5,7 @@ import {
   type PayRateCell,
   type PayRateCells,
   type PayRules,
+  type PayTimeBand,
   type StaffPayRates,
 } from '@/lib/types/pay-rules';
 
@@ -13,10 +14,28 @@ export interface RateMatrixRow {
   name: string;
 }
 
-export function rateMatrixRows(rules: PayRules): RateMatrixRow[] {
+export function cloneTimeBands(bands: PayTimeBand[]): PayTimeBand[] {
+  return bands.map((band) => ({ ...band }));
+}
+
+export function effectiveTimeBands(
+  siteBands: PayTimeBand[] | undefined,
+  companyBands: PayTimeBand[],
+): PayTimeBand[] {
+  return siteBands && siteBands.length > 0 ? siteBands : companyBands;
+}
+
+export function rateMatrixRows(
+  rules: PayRules,
+  timeBands: PayTimeBand[] = rules.timeBands,
+): RateMatrixRow[] {
   return [
     { id: BASE_BAND_ID, name: 'Base' },
-    ...rules.timeBands.map((band) => ({ id: band.id, name: band.name })),
+    ...timeBands.map((band) => ({
+      id: band.id,
+      name:
+        band.from && band.to ? `${band.name} (${band.from}–${band.to})` : band.name,
+    })),
     { id: OVERTIME_BAND_ID, name: 'Overtime' },
   ];
 }

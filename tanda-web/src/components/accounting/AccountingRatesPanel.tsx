@@ -14,7 +14,9 @@ import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-e
 import {
   withSyncedBaseRate,
   baseHourlyRateFromCells,
+  cloneTimeBands,
   effectiveHourlyRate,
+  effectiveTimeBands,
 } from '@/lib/payroll/rate-matrix';
 import type { Employee } from '@/lib/types/employee';
 import type { Location } from '@/lib/types/location';
@@ -536,23 +538,35 @@ export function AccountingRatesPanel({
                   Client time bands
                 </h3>
                 <p className="mt-1 text-xs text-subtle">
-                  Leave empty to inherit company bands (Settings → Pay and charge rules → Time
-                  bands). Set early morning here per client if needed (e.g. 02:00–05:00 or
-                  01:00–08:00). Overnight bands can wrap (e.g. 22:00–06:00).
+                  These hours and rates are for this client only. Leave a charge cell on Default
+                  to use company rules. Edit From / To here if this client’s early morning or
+                  afternoon window is different (e.g. 00:00–06:30 instead of 00:00–06:00).
+                  Overnight bands can wrap (e.g. 22:00–06:00).
                 </p>
                 <SiteTimeBandsEditor
                   bands={currentSite.timeBands ?? []}
+                  companyBands={rules.timeBands}
                   disabled={!canEdit}
-                  onChange={(timeBands) => setSiteDraft({ ...currentSite, timeBands })}
+                  onChange={(timeBands) =>
+                    setSiteDraft({
+                      ...currentSite,
+                      timeBands,
+                    })
+                  }
                 />
               </div>
 
               <div className="mt-5">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                  Client charge rates
+                </h3>
                 <RateMatrixEditor
                   rules={rules}
+                  timeBands={effectiveTimeBands(currentSite.timeBands, rules.timeBands)}
+                  inheritCells={rules.defaultChargeCells}
                   cells={currentSite.cells}
                   disabled={!canEdit}
-                  emptyHint="Empty inherits the company charge matrix, then the staff weekday base."
+                  emptyHint="Default inherits the company charge matrix. Edit to set a % or $ for this client’s band."
                   emptyCellLabel="Default"
                   onChange={(cells) => setSiteDraft({ ...currentSite, cells })}
                 />
@@ -566,7 +580,7 @@ export function AccountingRatesPanel({
                     onClick={() => void saveSite()}
                     className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
                   >
-                    {saving ? 'Saving…' : 'Save site billing'}
+                    {saving ? 'Saving…' : 'Save client rates'}
                   </button>
                 </div>
               ) : null}
@@ -713,55 +727,85 @@ export function AccountingRatesPanel({
 
 function SiteTimeBandsEditor({
   bands,
+  companyBands,
   disabled,
   onChange,
 }: {
   bands: PayTimeBand[];
+  companyBands: PayTimeBand[];
   disabled: boolean;
-  onChange: (bands: PayTimeBand[]) => void;
+  onChange: (bands: PayTimeBand[] | undefined) => void;
 }) {
+  const inheriting = bands.length === 0;
+  const displayed = inheriting ? companyBands : bands;
+
+  function commitFromDisplay(next: PayTimeBand[]) {
+    onChange(next);
+  }
+
+  function updateBand(index: number, patch: Partial<PayTimeBand>) {
+    const next = cloneTimeBands(displayed);
+    const current = next[index];
+    if (!current) return;
+    next[index] = { ...current, ...patch };
+    commitFromDisplay(next);
+  }
+
   return (
     <div className="mt-3 space-y-2">
-      {bands.map((band, index) => (
-        <div key={band.id} className="grid gap-2 sm:grid-cols-4">
+      <p className="text-[11px] text-subtle">
+        {inheriting
+          ? 'Showing company hours. Edit a field or add a band to customize this client.'
+          : 'Custom hours for this client. Charge rates below use these same bands.'}
+      </p>
+      {displayed.length > 0 ? (
+        <div className="hidden grid-cols-[minmax(0,1.4fr)_5.5rem_5.5rem_auto] gap-2 text-[11px] font-medium text-subtle sm:grid">
+          <span>Name</span>
+          <span>From</span>
+          <span>To</span>
+          <span />
+        </div>
+      ) : (
+        <p className="text-xs text-subtle">
+          No company time bands yet. Add one here or under Pay &amp; charge rules.
+        </p>
+      )}
+      {displayed.map((band, index) => (
+        <div
+          key={band.id}
+          className="grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_5.5rem_5.5rem_auto]"
+        >
           <input
             disabled={disabled}
             value={band.name}
-            onChange={(event) => {
-              const next = [...bands];
-              next[index] = { ...band, name: event.target.value };
-              onChange(next);
-            }}
+            onChange={(event) => updateBand(index, { name: event.target.value })}
             className={inputClass}
             placeholder="Name"
+            aria-label="Band name"
           />
           <input
             disabled={disabled}
             value={band.from}
-            onChange={(event) => {
-              const next = [...bands];
-              next[index] = { ...band, from: event.target.value };
-              onChange(next);
-            }}
+            onChange={(event) => updateBand(index, { from: event.target.value })}
             className={inputClass}
             placeholder="00:00"
+            aria-label="From"
           />
           <input
             disabled={disabled}
             value={band.to}
-            onChange={(event) => {
-              const next = [...bands];
-              next[index] = { ...band, to: event.target.value };
-              onChange(next);
-            }}
+            onChange={(event) => updateBand(index, { to: event.target.value })}
             className={inputClass}
             placeholder="24:00"
+            aria-label="To"
           />
           {disabled ? null : (
             <button
               type="button"
-              onClick={() => onChange(bands.filter((item) => item.id !== band.id))}
-              className="text-xs text-rose-400 hover:underline"
+              onClick={() =>
+                commitFromDisplay(cloneTimeBands(displayed).filter((_, i) => i !== index))
+              }
+              className="text-left text-xs text-rose-400 hover:underline sm:text-center"
             >
               Remove
             </button>
@@ -769,18 +813,29 @@ function SiteTimeBandsEditor({
         </div>
       ))}
       {disabled ? null : (
-        <button
-          type="button"
-          onClick={() =>
-            onChange([
-              ...bands,
-              { id: newId('band'), name: 'Client band', from: '00:00', to: '06:00' },
-            ])
-          }
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          Add site band
-        </button>
+        <div className="flex flex-wrap gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() =>
+              commitFromDisplay([
+                ...cloneTimeBands(displayed),
+                { id: newId('band'), name: 'Client band', from: '00:00', to: '06:00' },
+              ])
+            }
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Add client band
+          </button>
+          {inheriting ? null : (
+            <button
+              type="button"
+              onClick={() => onChange(undefined)}
+              className="text-xs font-medium text-muted hover:underline"
+            >
+              Reset to company bands
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

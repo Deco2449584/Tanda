@@ -11,6 +11,7 @@ import {
   type PayRateCell,
   type PayRateCells,
   type PayRules,
+  type PayTimeBand,
 } from '@/lib/types/pay-rules';
 import { type OverrideMode } from '@/components/accounting/OverrideValueField';
 
@@ -34,6 +35,10 @@ interface RateMatrixEditorProps {
    * `defaults` — company matrix: edit values directly (no inherit dropdown).
    */
   editingMode?: 'override' | 'defaults';
+  /** Client/site bands. Defaults to company `rules.timeBands`. */
+  timeBands?: PayTimeBand[];
+  /** Cells used when switching a cell to Edit. Defaults to company pay matrix. */
+  inheritCells?: PayRateCells;
 }
 
 function cellHasOverride(cell: PayRateCell): boolean {
@@ -46,11 +51,16 @@ function resolveCustomSeed(
   dayTypeId: string,
   bandId: string,
   baseRateHint: number,
+  inheritCells?: PayRateCells,
 ): PayRateCell {
   const existing = readRateCell(cells, dayTypeId, bandId);
   if (cellHasOverride(existing)) return existing;
 
-  const company = readRateCell(rules.defaultPayCells, dayTypeId, bandId);
+  const company = readRateCell(
+    inheritCells ?? rules.defaultPayCells,
+    dayTypeId,
+    bandId,
+  );
   if (typeof company.percent === 'number') {
     return { percent: company.percent };
   }
@@ -150,6 +160,7 @@ function OverrideCellInputs({
   disabled,
   emptyCellLabel,
   baseRateHint,
+  inheritCells,
   onChange,
 }: {
   rules: PayRules;
@@ -159,6 +170,7 @@ function OverrideCellInputs({
   disabled?: boolean;
   emptyCellLabel: string;
   baseRateHint: number;
+  inheritCells?: PayRateCells;
   onChange: (cells: PayRateCells) => void;
 }) {
   const cell = readRateCell(cells, dayTypeId, bandId);
@@ -183,7 +195,14 @@ function OverrideCellInputs({
               cells,
               dayTypeId,
               bandId,
-              resolveCustomSeed(rules, cells, dayTypeId, bandId, baseRateHint),
+              resolveCustomSeed(
+                rules,
+                cells,
+                dayTypeId,
+                bandId,
+                baseRateHint,
+                inheritCells,
+              ),
             ),
           );
         }}
@@ -260,8 +279,10 @@ export function RateMatrixEditor({
   emptyCellLabel = 'Default',
   baseRateHint = 0,
   editingMode = 'override',
+  timeBands,
+  inheritCells,
 }: RateMatrixEditorProps) {
-  const rows = rateMatrixRows(rules);
+  const rows = rateMatrixRows(rules, timeBands);
   const resolvedBaseHint =
     baseRateHint > 0 ? baseRateHint : baseHourlyRateFromCells(cells, 0);
   const isDefaults = editingMode === 'defaults';
@@ -305,6 +326,7 @@ export function RateMatrixEditor({
                       disabled={disabled}
                       emptyCellLabel={emptyCellLabel}
                       baseRateHint={resolvedBaseHint}
+                      inheritCells={inheritCells}
                       onChange={onChange}
                     />
                   )}
@@ -352,6 +374,7 @@ export function RateMatrixEditor({
                         disabled={disabled}
                         emptyCellLabel={emptyCellLabel}
                         baseRateHint={resolvedBaseHint}
+                        inheritCells={inheritCells}
                         onChange={onChange}
                       />
                     )}
