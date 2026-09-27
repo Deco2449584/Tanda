@@ -1,6 +1,6 @@
-import { useRef } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { SliderTrack } from '@/components/SliderTrack';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
@@ -34,24 +34,24 @@ function createStyles(colors: AppColors) {
       backgroundColor: colors.surface.card,
     },
     track: {
-      height: 28,
-      borderRadius: 14,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: colors.surface.muted,
       justifyContent: 'center',
-      paddingHorizontal: 3,
+      paddingHorizontal: 4,
     },
     fill: {
       position: 'absolute',
-      left: 3,
-      height: 22,
-      borderRadius: 11,
+      left: 4,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: colors.accent.primary,
     },
     knob: {
       position: 'absolute',
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: '#FFFFFF',
       borderWidth: 2,
       borderColor: colors.accent.primary,
@@ -61,11 +61,10 @@ function createStyles(colors: AppColors) {
 
 export function MetricSlider({ label, value, max, unit, onChange }: MetricSliderProps) {
   const styles = useThemedStyles(createStyles);
-  const widthRef = useRef(1);
   const ratio = Math.max(0, Math.min(1, max === 0 ? 0 : value / max));
 
-  const updateFromX = (locationX: number) => {
-    const next = Math.round((locationX / widthRef.current) * max);
+  const updateFromRatio = (nextRatio: number) => {
+    const next = Math.round(nextRatio * max);
     onChange(Math.max(0, Math.min(max, next)));
   };
 
@@ -92,18 +91,13 @@ export function MetricSlider({ label, value, max, unit, onChange }: MetricSlider
           <Text style={styles.value}>{unit}</Text>
         </View>
       </View>
-      <View
-        style={styles.track}
-        onLayout={(event) => {
-          widthRef.current = Math.max(1, event.nativeEvent.layout.width);
-        }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={(event) => updateFromX(event.nativeEvent.locationX)}
-        onResponderMove={(event) => updateFromX(event.nativeEvent.locationX)}>
-        <View style={[styles.fill, { width: `${ratio * 100}%` }]} />
-        <View style={[styles.knob, { left: `${ratio * 100}%`, marginLeft: -11 }]} />
-      </View>
+      <SliderTrack style={styles.track} onRatioChange={updateFromRatio}>
+        <View pointerEvents="none" style={[styles.fill, { width: `${ratio * 100}%` }]} />
+        <View
+          pointerEvents="none"
+          style={[styles.knob, { left: `${ratio * 100}%`, marginLeft: -16 }]}
+        />
+      </SliderTrack>
     </View>
   );
 }

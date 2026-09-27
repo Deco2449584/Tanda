@@ -1,6 +1,6 @@
-import { useRef } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { SliderTrack } from '@/components/SliderTrack';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
@@ -37,8 +37,8 @@ function createStyles(colors: AppColors) {
       backgroundColor: colors.surface.card,
     },
     track: {
-      height: 28,
-      borderRadius: 14,
+      height: 40,
+      borderRadius: 20,
       justifyContent: 'center',
       overflow: 'hidden',
     },
@@ -49,9 +49,9 @@ function createStyles(colors: AppColors) {
     stop: { flex: 1 },
     knob: {
       position: 'absolute',
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: '#FFFFFF',
       borderWidth: 2,
     },
@@ -63,14 +63,13 @@ const STOPS = ['#2563EB', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
 
 export function TemperatureSlider({ value, onChange }: TemperatureSliderProps) {
   const styles = useThemedStyles(createStyles);
-  const widthRef = useRef(1);
   const display = value ?? 4;
   const tone = temperatureColor(display);
   const ratio = temperatureRatio(display);
 
-  const updateFromX = (locationX: number) => {
+  const updateFromRatio = (nextRatio: number) => {
     const next = Math.round(
-      TEMPERATURE_MIN + (locationX / widthRef.current) * (TEMPERATURE_MAX - TEMPERATURE_MIN),
+      TEMPERATURE_MIN + nextRatio * (TEMPERATURE_MAX - TEMPERATURE_MIN),
     );
     onChange(Math.max(TEMPERATURE_MIN, Math.min(TEMPERATURE_MAX, next)));
   };
@@ -103,24 +102,17 @@ export function TemperatureSlider({ value, onChange }: TemperatureSliderProps) {
           <Text style={[styles.value, { color: tone }]}>°C</Text>
         </View>
       </View>
-      <View
-        style={styles.track}
-        onLayout={(event) => {
-          widthRef.current = Math.max(1, event.nativeEvent.layout.width);
-        }}
-        onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={(event) => updateFromX(event.nativeEvent.locationX)}
-        onResponderMove={(event) => updateFromX(event.nativeEvent.locationX)}>
+      <SliderTrack style={styles.track} onRatioChange={updateFromRatio}>
         <View style={styles.gradient} pointerEvents="none">
           {STOPS.map((color) => (
             <View key={color} style={[styles.stop, { backgroundColor: color }]} />
           ))}
         </View>
         <View
-          style={[styles.knob, { left: `${ratio * 100}%`, marginLeft: -11, borderColor: tone }]}
+          pointerEvents="none"
+          style={[styles.knob, { left: `${ratio * 100}%`, marginLeft: -16, borderColor: tone }]}
         />
-      </View>
+      </SliderTrack>
       <Text style={styles.hint}>
         {value == null ? 'Optional — slide or type a reading.' : `${value} °C`}
       </Text>
