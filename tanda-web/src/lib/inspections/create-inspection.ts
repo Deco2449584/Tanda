@@ -85,6 +85,9 @@ export async function createCargoInspectionRecord(
     payload.clientLocationName = input.clientLocationName.trim();
     payload.portalClientId = clientLocationId;
     payload.portalEnabled = true;
+    if (input.clientPhotoUrl?.trim()) {
+      payload.clientPhotoUrl = input.clientPhotoUrl.trim();
+    }
   }
 
   const created = await addDoc(

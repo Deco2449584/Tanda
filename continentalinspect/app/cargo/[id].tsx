@@ -135,6 +135,44 @@ function createDetailStyles(colors: AppColors) {
       color: colors.text.onSurfaceMuted,
       lineHeight: 20,
     },
+    clientChip: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      maxWidth: '100%',
+      borderRadius: 12,
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+      backgroundColor: colors.background.secondary,
+      borderWidth: 1,
+      borderColor: colors.border.onSurface,
+    },
+    clientThumb: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.surface.muted,
+    },
+    clientThumbFallback: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface.muted,
+    },
+    clientInitial: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 13,
+      color: colors.text.onSurface,
+    },
+    clientName: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 14,
+      color: colors.text.onSurface,
+      flexShrink: 1,
+    },
     chipRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -706,6 +744,31 @@ export default function CargoDetailScreen() {
                 · AWB {inspection.awbNumber}
               </Text>
 
+              {inspection.clientLocationName?.trim() || inspection.clientPhotoUrl ? (
+                <View style={styles.clientChip}>
+                  {inspection.clientPhotoUrl ? (
+                    <Image
+                      source={{ uri: inspection.clientPhotoUrl }}
+                      style={styles.clientThumb}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={styles.clientThumbFallback}>
+                      <Text style={styles.clientInitial}>
+                        {(inspection.clientLocationName?.trim() || 'C')
+                          .slice(0, 1)
+                          .toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  {inspection.clientLocationName?.trim() ? (
+                    <Text style={styles.clientName} numberOfLines={1}>
+                      {inspection.clientLocationName.trim()}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+
               <View style={styles.chipRow}>
                 <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
                   <Text style={[styles.statusText, { color: statusColor }]}>{displayBadge.label}</Text>
@@ -890,15 +953,6 @@ export default function CargoDetailScreen() {
               <Text style={styles.cardHeaderTitle}>Shipment details</Text>
             </View>
             <View style={styles.detailsGrid}>
-              {inspection.clientLocationName?.trim() ? (
-                <DetailRow
-                  label="Client"
-                  value={inspection.clientLocationName.trim()}
-                  styles={styles}
-                  icon="business-outline"
-                  iconColor={colors.accent.primary}
-                />
-              ) : null}
               <DetailRow
                 label="Unit type"
                 value={getUnitTypeLabel(

@@ -4,7 +4,6 @@ import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Building2,
   Bus,
   Calendar,
   Dumbbell,
@@ -17,6 +16,7 @@ import {
   User,
 } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
+import { InspectionClientChip } from '@/components/inspections/InspectionClientChip';
 import {
   InspectionIssuesBadge,
   InspectionLifecycleBadge,
@@ -125,6 +125,15 @@ export function PortalInspectionDetailView({
           <CopyAwbButton awbNumber={inspection.awbNumber} variant="onDark" />
         </div>
 
+        <div className="mt-3">
+          <InspectionClientChip
+            name={inspection.clientLocationName}
+            photoUrl={inspection.clientPhotoUrl}
+            variant="dark"
+            size="md"
+          />
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
           <InspectionLifecycleBadge inspection={inspection} />
           {detailStatus.hasIssues ? <InspectionIssuesBadge /> : null}
@@ -178,13 +187,6 @@ export function PortalInspectionDetailView({
       </section>
 
       <section className="grid gap-4 rounded-2xl border border-[#262626]/12 bg-[#2F2F2F] p-5 shadow-md sm:grid-cols-2 md:p-6">
-        {inspection.clientLocationName ? (
-          <DetailIconRow
-            icon={Building2}
-            label="Site / client"
-            value={inspection.clientLocationName}
-          />
-        ) : null}
         <DetailIconRow icon={Package} label="Cargo type" value={unitLabel} />
         <DetailIconRow icon={Package} label="Product name" value={inspection.foodType} />
         {typeof inspection.temperatureCelsius === 'number' ? (

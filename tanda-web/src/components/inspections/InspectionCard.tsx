@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Dumbbell, Package, Paperclip } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
+import { InspectionClientChip } from '@/components/inspections/InspectionClientChip';
 import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import {
   InspectionIssuesBadge,
@@ -55,7 +56,6 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
   const dateLabel = inspection.updatedAt
     ? formatInspectionDate(inspection.updatedAt)
     : formatInspectionDate(inspection.registeredAt);
-  const clientInitial = (inspection.clientLocationName?.trim() || 'C').slice(0, 1).toUpperCase();
   const identificationNumber = inspection.uldId.trim() || inspection.awbNumber;
 
   return (
@@ -123,14 +123,10 @@ export function InspectionCard({ inspection }: InspectionCardProps) {
               <Package className="h-3 w-3" aria-hidden />
               {formatCountLabel(inspection.boxCount, inspection.countUnit)}
             </Chip>
-            {inspection.clientLocationName?.trim() ? (
-              <Chip>
-                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-zinc-600 text-[8px] text-white">
-                  {clientInitial}
-                </span>
-                {inspection.clientLocationName}
-              </Chip>
-            ) : null}
+            <InspectionClientChip
+              name={inspection.clientLocationName}
+              photoUrl={inspection.clientPhotoUrl}
+            />
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

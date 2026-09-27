@@ -64,6 +64,7 @@ export interface CargoInspectionFirestore {
   portalClientId?: string;
   clientLocationId?: string;
   clientLocationName?: string;
+  clientPhotoUrl?: string;
   registeredLatitude?: number;
   registeredLongitude?: number;
   registeredAccuracyMeters?: number;
@@ -103,6 +104,7 @@ export interface CargoInspection {
   portalClientId?: string;
   clientLocationId?: string;
   clientLocationName?: string;
+  clientPhotoUrl?: string;
   registeredLatitude?: number;
   registeredLongitude?: number;
   registeredAccuracyMeters?: number;
@@ -142,6 +144,7 @@ export type CargoInspectionCreateInput = {
   issueDescription: string;
   clientLocationId: string;
   clientLocationName: string;
+  clientPhotoUrl?: string;
   temperatureCelsius?: number;
   exitVehiclePlate: string;
   driverName: string;

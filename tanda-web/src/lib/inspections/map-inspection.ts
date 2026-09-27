@@ -90,6 +90,10 @@ export function mapInspectionDoc(
       typeof record.clientLocationName === 'string' && record.clientLocationName.trim()
         ? record.clientLocationName.trim()
         : undefined,
+    clientPhotoUrl:
+      typeof record.clientPhotoUrl === 'string' && record.clientPhotoUrl.trim()
+        ? record.clientPhotoUrl.trim()
+        : undefined,
     registeredLatitude:
       typeof record.registeredLatitude === 'number'
         ? record.registeredLatitude

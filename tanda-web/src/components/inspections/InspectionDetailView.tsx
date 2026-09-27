@@ -14,7 +14,6 @@ import {
   Thermometer,
   Trash2,
   User,
-  Building2,
   Calendar,
   MapPin,
   Package,
@@ -23,6 +22,7 @@ import {
   Snowflake,
 } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
+import { InspectionClientChip } from '@/components/inspections/InspectionClientChip';
 import {
   InspectionIssuesBadge,
   InspectionLifecycleBadge,
@@ -283,6 +283,14 @@ export function InspectionDetailView({
             <CopyAwbButton awbNumber={inspection.awbNumber} />
           </div>
 
+          <div className="mt-3">
+            <InspectionClientChip
+              name={inspection.clientLocationName}
+              photoUrl={inspection.clientPhotoUrl}
+              size="md"
+            />
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
             <InspectionLifecycleBadge inspection={viewInspection} />
             {detailStatus.hasIssues ? <InspectionIssuesBadge /> : null}
@@ -382,13 +390,6 @@ export function InspectionDetailView({
         )}
 
         <section className="grid gap-4 rounded-2xl border border-border bg-surface-raised p-5 sm:grid-cols-2 md:p-6">
-          {inspection.clientLocationName ? (
-            <DetailIconRow
-              icon={Building2}
-              label="Client"
-              value={inspection.clientLocationName}
-            />
-          ) : null}
           <DetailIconRow
             icon={Package}
             label="Cargo type"

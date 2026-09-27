@@ -176,6 +176,7 @@ export function NewInspectionForm() {
           issueDescription: hasIssues ? issueDescription.trim() : '',
           clientLocationId: client.id,
           clientLocationName: client.name,
+          clientPhotoUrl: client.photoUrl,
           temperatureCelsius: temperature ?? undefined,
           exitVehiclePlate: showDriverFields ? exitVehiclePlate.trim() : '',
           driverName: showDriverFields ? driverName.trim() : '',
