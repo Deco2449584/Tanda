@@ -25,7 +25,26 @@ Then produces two kinds of files:
 
 ---
 
-## 2. Where everything lives
+## 2. Scope — what this is and is not
+
+This is **not a live connection to Xero**. The system does not log in to Xero, sync invoices, or post bills automatically. You download CSV files and import them into Xero yourself (or attach the timesheet to the client invoice).
+
+**In scope**
+
+- Rate and time-band setup (company, staff, and per client)
+- Weekly review and close
+- Xero-ready **CSV exports** (sales invoices and bills)
+- Detailed client timesheet (time in / out, break, bands, overtime start, $)
+
+**Out of scope**
+
+- Xero API, bank feed, or automatic posting
+- Automatic invoice email to clients
+- Payroll lodging (STP, super, PAYG)
+
+---
+
+## 3. Where everything lives
 
 | Tab | Use |
 |---|---|
@@ -39,7 +58,7 @@ Then produces two kinds of files:
 
 ---
 
-## 3. Configure this first
+## 4. Configure this first
 
 1. **Access role** — Accounting module + *Edit staff and site rate cards* + *Edit pay rules, bands, and holidays* + *Export accounting reports (CSV)*. Without Export you will see “No export permission”.
 2. **Settings → Clients** — set **State** (NSW / QLD / VIC…) for Xero Location tracking.
@@ -52,7 +71,7 @@ If totals are $0: the hourly rate is usually still 0 while matrices are %, or ho
 
 ---
 
-## 4. Client hours and rates (per customer)
+## 5. Client hours and rates (per customer)
 
 Different clients can have different early-morning windows and loadings. Example:
 
@@ -73,7 +92,7 @@ Empty saved bands still inherit company hours. As soon as you edit a field, thos
 
 ---
 
-## 5. Staff rates
+## 6. Staff rates
 
 Path: **Accounting → Settings → Rate cards → Staff**
 
@@ -86,17 +105,41 @@ Company overtime rules apply to everyone: daily (default > 8 hours) and weekly (
 
 ---
 
-## 6. Weekly flow
+## 7. Weekly close — what it does
+
+**Close week** freezes the pay and charge figures for that week. It does **not** send anything to Xero, stop staff from clocking in, or lock Attendance.
+
+### If you leave the week open
+
+Accounting keeps recalculating. Overview and Exports always show the **current** hours and rates. You can still export. If someone later adds a missed punch or edits a time, **the totals change**. If you already imported a CSV into Xero, the next export may no longer match.
+
+### If you close the week
+
+The system saves a snapshot (who closed, when, and the totals). Overview, Weekly close, and Exports for **that week** use that snapshot. New clocks, attendance edits, or rate changes **do not change those numbers** until you click **Reopen week**.
+
+### If you close, then new records come in, and you do not reopen
+
+The new punches **are saved** in Attendance. Nobody loses a clock. They simply **do not appear** in Accounting totals or in the CSVs until you reopen.
+
+Example: you close Monday at $4,000. Tuesday someone enters 4 forgotten hours. Attendance has those hours. Accounting still shows $4,000. After **Reopen week**, the live total includes the 4 hours. If you already imported the old CSV into Xero, export again (or adjust Xero by hand).
+
+**Recommended:** review exceptions → **Close week** when the figure is the one you will invoice or import → then download Xero and the client timesheet. Reopen only if you need to correct hours.
+
+Weeks closed before September 2026 may not show time in / out on the timesheet until reopened.
+
+---
+
+## 8. Weekly flow
 
 1. Hours come from kiosk, employee app, or **Attendance → Add manual record** (real employee only).
 2. **Overview** — Pay / Charge should not be $0.
 3. **Weekly close** — review exceptions, then **Close week** (freezes figures).
 4. **Exports** — download Xero and the client timesheet.
-5. **Reopen week** if you need to recalculate (needs pay-rules permission). Weeks closed before September 2026 may not show time in / out until reopened.
+5. **Reopen week** if you need to recalculate (needs pay-rules permission).
 
 ---
 
-## 7. Exports — which file to use
+## 9. Exports — which file to use
 
 | File | Who uses it | What it contains |
 |---|---|---|
@@ -112,7 +155,7 @@ Xero stays one line per week on purpose. The **client timesheet** is the detaile
 
 ---
 
-## 8. Xero Location tracking
+## 10. Xero Location tracking
 
 1. **Settings → Clients** → set **State**.  
 2. **Accounting → Settings → Pay & charge rules → Xero export settings** → Location tracking category name **Location** (must match Xero).  
@@ -120,7 +163,7 @@ Xero stays one line per week on purpose. The **client timesheet** is the detaile
 
 ---
 
-## 9. Worked example
+## 11. Worked example
 
 Staff hourly rate **$30**. Monday **04:00–12:00** (8 hours). Weekday early morning **00:00–06:00 @ 125%**.
 
@@ -136,7 +179,7 @@ If the same staff works 4 hours at JAS, the **Client timesheet** row should show
 
 ---
 
-## 10. Checklist
+## 12. Checklist
 
 - Role has Accounting + rates + rules + export  
 - Clients have State set  

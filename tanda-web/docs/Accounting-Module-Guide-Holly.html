@@ -268,7 +268,36 @@
   </section>
 
   <section class="section">
-    <h2>2. Where everything lives</h2>
+    <h2>2. Scope — what this is and is not</h2>
+    <p>
+      This is <strong>not a live connection to Xero</strong>. The system does not
+      log in to Xero, sync invoices, or post bills automatically. You download
+      CSV files and import them into Xero yourself (or attach the timesheet to
+      the client invoice).
+    </p>
+    <div class="grid-2">
+      <div class="card">
+        <h4>In scope</h4>
+        <ul>
+          <li>Rate and time-band setup (company, staff, per client)</li>
+          <li>Weekly review and close</li>
+          <li>Xero-ready <strong>CSV exports</strong> (sales and bills)</li>
+          <li>Detailed client timesheet (in / out, break, bands, OT start, $)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Out of scope</h4>
+        <ul>
+          <li>Xero API, bank feed, or automatic posting</li>
+          <li>Automatic invoice email to clients</li>
+          <li>Payroll lodging (STP, super, PAYG)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>3. Where everything lives</h2>
     <table>
       <thead>
         <tr><th>Tab</th><th>Use</th></tr>
@@ -307,7 +336,7 @@
   </section>
 
   <section class="section">
-    <h2>3. Configure this first</h2>
+    <h2>4. Configure this first</h2>
     <p>Do these steps before expecting non-zero dollars or working exports.</p>
     <ol class="steps">
       <li>
@@ -343,7 +372,7 @@
       <li>
         <strong>Client hours and rates</strong><br />
         <span class="path">Accounting → Settings → Rate cards → Clients</span><br />
-        Edit that client’s From / To and charge % or $. See section 4.
+        Edit that client’s From / To and charge % or $. See section 5.
       </li>
     </ol>
     <div class="callout warn">
@@ -354,7 +383,7 @@
   </section>
 
   <section class="section">
-    <h2>4. Client hours and rates (per customer)</h2>
+    <h2>5. Client hours and rates (per customer)</h2>
     <p>
       Every number used to charge a client can be set on that client.
       Two customers can have different early-morning windows and loadings:
@@ -396,7 +425,7 @@
   </section>
 
   <section class="section">
-    <h2>5. Staff rates</h2>
+    <h2>6. Staff rates</h2>
     <p>Path: <span class="path">Accounting → Settings → Rate cards → Staff</span></p>
     <ul>
       <li>Employment type — Full Time, Part Time, Casual, Contractor</li>
@@ -411,7 +440,55 @@
   </section>
 
   <section class="section">
-    <h2>6. Weekly flow</h2>
+    <h2>7. Weekly close — what it does</h2>
+    <p>
+      <strong>Close week</strong> freezes the pay and charge figures for that week.
+      It does <strong>not</strong> send anything to Xero, stop staff from clocking in,
+      or lock Attendance.
+    </p>
+    <h3>If you leave the week open</h3>
+    <p>
+      Accounting keeps recalculating. Overview and Exports always show the
+      <strong>current</strong> hours and rates. You can still export. If someone
+      later adds a missed punch or edits a time, <strong>the totals change</strong>.
+      If you already imported a CSV into Xero, the next export may no longer match.
+    </p>
+    <h3>If you close the week</h3>
+    <p>
+      The system saves a snapshot (who closed, when, and the totals).
+      Overview, Weekly close, and Exports for <strong>that week</strong> use that
+      snapshot. New clocks, attendance edits, or rate changes
+      <strong>do not change those numbers</strong> until you click
+      <strong>Reopen week</strong>.
+    </p>
+    <h3>If you close, then new records come in, and you do not reopen</h3>
+    <p>
+      The new punches <strong>are saved</strong> in Attendance. Nobody loses a clock.
+      They simply <strong>do not appear</strong> in Accounting totals or in the CSVs
+      until you reopen.
+    </p>
+    <div class="callout warn">
+      <strong>Example</strong>
+      You close Monday at $4,000. Tuesday someone enters 4 forgotten hours.
+      Attendance has those hours. Accounting still shows $4,000. After
+      <strong>Reopen week</strong>, the live total includes the 4 hours.
+      If you already imported the old CSV into Xero, export again
+      (or adjust Xero by hand).
+    </div>
+    <div class="callout ok">
+      <strong>Recommended</strong>
+      Review exceptions → <strong>Close week</strong> when the figure is the one
+      you will invoice or import → then download Xero and the client timesheet.
+      Reopen only if you need to correct hours.
+    </div>
+    <p>
+      Weeks closed before September 2026 may not show time in / out on the
+      timesheet until reopened.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>8. Weekly flow</h2>
     <ol class="steps">
       <li>
         Record hours for a real employee (kiosk, employee app, or
@@ -439,7 +516,7 @@
   </section>
 
   <section class="section">
-    <h2>7. Exports — which file to use</h2>
+    <h2>9. Exports — which file to use</h2>
     <table>
       <thead>
         <tr><th>File</th><th>Who uses it</th><th>What it contains</th></tr>
@@ -495,7 +572,7 @@
   </section>
 
   <section class="section">
-    <h2>8. Xero Location tracking</h2>
+    <h2>10. Xero Location tracking</h2>
     <p>Aligned with Xero → Settings → Tracking categories → <strong>Location</strong> (NSW / QLD / VIC…).</p>
     <ol>
       <li><span class="path">Settings → Clients</span> — set each client’s <strong>State</strong>.</li>
@@ -508,7 +585,7 @@
   </section>
 
   <section class="section">
-    <h2>9. Worked example</h2>
+    <h2>11. Worked example</h2>
     <p>
       Staff hourly rate <strong>$30</strong>. Monday <strong>04:00–12:00</strong> (8 hours).
       Weekday early morning <strong>00:00–06:00 @ 125%</strong>.
@@ -532,7 +609,7 @@
   </section>
 
   <section class="section">
-    <h2>10. Checklist before you rely on a week</h2>
+    <h2>12. Checklist before you rely on a week</h2>
     <ul>
       <li>Role has Accounting + rates + rules + export</li>
       <li>Clients have State set (for Xero Location)</li>
