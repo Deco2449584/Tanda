@@ -1,6 +1,7 @@
 import { buildWorkSessionsFromRecords, type WorkSession } from '@/lib/attendance/work-sessions';
 import type { DateRange } from '@/lib/attendance/date-range';
 import { dateFromWallClock } from '@/lib/dates/timezone';
+import { isOpenEndedShift } from '@/lib/schedule/open-ended-shift';
 import { shiftDurationHours } from '@/lib/dashboard/compute-metrics';
 import { buildAwardReport } from '@/lib/payroll/award-calc';
 import { mapPayRules } from '@/lib/payroll/map-pay-rules';
@@ -62,6 +63,7 @@ export function buildSessionsFromShifts(input: {
   return input.shifts.flatMap((shift) => {
     const employee = employeeByCode.get(shift.employeeId);
     if (!employee) return [];
+    if (isOpenEndedShift(shift)) return [];
 
     const start = dateFromWallClock(shift.date, shift.startTime, input.timeZone);
     let end = dateFromWallClock(shift.date, shift.endTime, input.timeZone);

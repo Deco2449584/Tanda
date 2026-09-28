@@ -13,6 +13,7 @@ import { COLLECTIONS } from '@/lib/constants';
 import { auth, db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
+import { formatShiftTimeRangePlain } from '@/lib/schedule/open-ended-shift';
 import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
 import { normalizeInputDate, isOnOrAfterToday } from '@/lib/dates/input-date';
 import type { WeekDay } from '@/lib/schedule/week';
@@ -123,7 +124,7 @@ export function ScheduleGrid({
       void recordShiftAuditEvent({
         action: 'shift.deleted',
         shiftId: shift.id,
-        summary: `Deleted shift for ${pendingDelete.employeeName} on ${normalizeInputDate(shift.date)} (${shift.startTime}–${shift.endTime})`,
+        summary: `Deleted shift for ${pendingDelete.employeeName} on ${normalizeInputDate(shift.date)} (${formatShiftTimeRangePlain(shift.startTime, shift.endTime)})`,
         before: {
           employeeId: shift.employeeId,
           date: normalizeInputDate(shift.date),

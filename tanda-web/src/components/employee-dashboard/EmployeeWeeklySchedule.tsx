@@ -11,7 +11,7 @@ import { ShiftConfirmationBadge } from '@/components/shifts/ShiftConfirmationAct
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { getShiftStatusMeta } from '@/lib/employee-dashboard/shift-status-styles';
 import { compareInputDates, normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
-import { formatTimeLabel, formatWeekRangeLabel, type WeekDay } from '@/lib/schedule/week';
+import { formatShiftTimeRange, formatWeekRangeLabel, type WeekDay } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
 interface EmployeeWeeklyScheduleProps {
@@ -185,9 +185,7 @@ export function EmployeeWeeklySchedule({
                       {dayNumber(day.date)}
                     </p>
                     <p className="mt-2 text-[11px] font-medium leading-tight text-muted">
-                      {formatTimeLabel(shift.startTime)}
-                      <span className="text-subtle"> – </span>
-                      {formatTimeLabel(shift.endTime)}
+                      {formatShiftTimeRange(shift.startTime, shift.endTime)}
                     </p>
                     <p className="mt-1 truncate text-[10px] text-subtle">
                       {formatShortDate(shift.date)}

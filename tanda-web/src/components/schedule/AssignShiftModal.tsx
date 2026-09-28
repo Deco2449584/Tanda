@@ -9,6 +9,7 @@ import { isOnOrAfterToday } from '@/lib/dates/input-date';
 import { db } from '@/lib/firebase';
 import { notifyShiftChange } from '@/lib/notifications/client-notify';
 import { recordShiftAuditEvent } from '@/lib/audit/audit-logs-client';
+import { formatShiftTimeRangePlain } from '@/lib/schedule/open-ended-shift';
 import {
   getAllowedLocationsForEmployee,
   isLocationAllowedForEmployee,
@@ -29,7 +30,7 @@ interface AssignShiftModalProps {
 
 const emptyForm: Omit<AssignShiftInput, 'employeeId' | 'employeeName' | 'date'> = {
   startTime: '09:00',
-  endTime: '17:00',
+  endTime: '',
   locationId: '',
 };
 
@@ -77,7 +78,7 @@ export function AssignShiftModal({
 
     setEmployeeId(initialData.employeeId);
     setStartTime(initialData.startTime || emptyForm.startTime);
-    setEndTime(initialData.endTime || emptyForm.endTime);
+    setEndTime(initialData.endTime ?? emptyForm.endTime);
     setError('');
 
     const employee = employees.find((item) => item.employeeId === initialData.employeeId);
@@ -175,7 +176,13 @@ export function AssignShiftModal({
       return;
     }
 
-    if (startTime >= endTime) {
+    if (!startTime.trim()) {
+      setError('Select a start time.');
+      return;
+    }
+
+    const trimmedEnd = endTime.trim();
+    if (trimmedEnd && startTime >= trimmedEnd) {
       setError('End time must be after start time.');
       return;
     }
@@ -196,7 +203,7 @@ export function AssignShiftModal({
         employeeId: employeeId.trim(),
         date: shiftDate,
         startTime,
-        endTime,
+        endTime: trimmedEnd,
         department: employeeDepartment,
         locationId: locationId.trim(),
         locationNameSnapshot: selectedLocation?.name ?? '',
@@ -204,6 +211,8 @@ export function AssignShiftModal({
         status: 'scheduled' as const,
         confirmationStatus: 'pending' as const,
       };
+
+      const timeSummary = formatShiftTimeRangePlain(startTime, trimmedEnd);
 
       if (isEditing && initialData.shiftId) {
         await updateDoc(doc(db, COLLECTIONS.SHIFTS, initialData.shiftId), {
@@ -218,7 +227,7 @@ export function AssignShiftModal({
           shiftId: initialData.shiftId,
           date: shiftDate,
           startTime,
-          endTime,
+          endTime: trimmedEnd,
           department: employeeDepartment,
           locationLabel,
         });
@@ -226,7 +235,7 @@ export function AssignShiftModal({
         void recordShiftAuditEvent({
           action: 'shift.updated',
           shiftId: initialData.shiftId,
-          summary: `Updated shift for ${employeeName} on ${shiftDate} (${startTime}–${endTime})`,
+          summary: `Updated shift for ${employeeName} on ${shiftDate} (${timeSummary})`,
           after: payload,
         });
       } else {
@@ -238,7 +247,7 @@ export function AssignShiftModal({
           shiftId: shiftRef.id,
           date: shiftDate,
           startTime,
-          endTime,
+          endTime: trimmedEnd,
           department: employeeDepartment,
           locationLabel,
         });
@@ -246,7 +255,7 @@ export function AssignShiftModal({
         void recordShiftAuditEvent({
           action: 'shift.created',
           shiftId: shiftRef.id,
-          summary: `Assigned shift for ${employeeName} on ${shiftDate} (${startTime}–${endTime})`,
+          summary: `Assigned shift for ${employeeName} on ${shiftDate} (${timeSummary})`,
           after: payload,
         });
       }
@@ -346,17 +355,28 @@ export function AssignShiftModal({
             </div>
             <div>
               <label htmlFor="shift-end" className="mb-1.5 block text-sm text-muted">
-                End time
+                End time <span className="font-normal text-subtle">(optional)</span>
               </label>
               <input
                 id="shift-end"
                 type="time"
-                required
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 disabled={isSubmitting || isPastDate}
                 className="w-full rounded-lg border border-border-strong bg-surface-base px-3 py-2.5 text-sm text-white outline-none focus:border-primary disabled:opacity-60"
               />
+              {endTime ? (
+                <button
+                  type="button"
+                  onClick={() => setEndTime('')}
+                  disabled={isSubmitting || isPastDate}
+                  className="mt-1 text-xs text-subtle underline-offset-2 hover:text-muted hover:underline disabled:opacity-50"
+                >
+                  Clear — leave open
+                </button>
+              ) : (
+                <p className="mt-1 text-xs text-subtle">Leave empty to keep the shift open.</p>
+              )}
             </div>
           </div>
 

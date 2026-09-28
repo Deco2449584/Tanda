@@ -1,5 +1,6 @@
 import type { AttendanceJustificationType } from '@/lib/types/attendance-justification';
 import type { NotificationType } from '@/lib/types/notification';
+import { formatShiftTimeRangePlain } from '@/lib/schedule/open-ended-shift';
 
 export function buildAttendanceNotificationDocId(
   recipientEmail: string,
@@ -34,10 +35,7 @@ export function buildAttendanceNotificationContent(input: {
   href: string;
   metadata: Record<string, string | number>;
 } {
-  const timeRange =
-    input.startTime && input.endTime
-      ? `${input.startTime}–${input.endTime}`
-      : input.startTime || input.endTime;
+  const timeRange = formatShiftTimeRangePlain(input.startTime, input.endTime);
   const detail = [input.date, timeRange].filter(Boolean).join(' · ');
   const href = `/my-schedule?justify=${encodeURIComponent(input.justificationId)}`;
 

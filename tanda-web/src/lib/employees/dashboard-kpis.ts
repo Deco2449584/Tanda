@@ -1,5 +1,8 @@
 import { buildWorkSessions } from '@/lib/attendance/work-sessions';
-import { shiftDurationHours } from '@/lib/dashboard/compute-metrics';
+import {
+  scheduledHoursForShift,
+  workedHoursByEmployeeDate,
+} from '@/lib/dashboard/compute-metrics';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
@@ -45,16 +48,27 @@ export function computeScheduledPayrollKpi(
   employees: Employee[],
   todayShifts: Shift[],
   currency = 'AUD',
+  todayAttendance: AttendanceRecord[] = [],
+  attendanceBreak: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
 ): PayrollKpi {
   const employeesByCode = new Map(
     employees.map((employee) => [employee.employeeId, employee]),
   );
+  const workedByEmployeeDate = workedHoursByEmployeeDate(
+    todayAttendance,
+    attendanceBreak,
+  );
+  const consumed = new Set<string>();
 
   const total = todayShifts.reduce((sum, shift) => {
     const employee = employeesByCode.get(shift.employeeId);
     if (!employee) return sum;
 
-    const hours = shiftDurationHours(shift.startTime, shift.endTime);
+    const hours = scheduledHoursForShift(
+      shift,
+      workedByEmployeeDate,
+      consumed,
+    );
     return sum + employee.hourlyRate * hours;
   }, 0);
 
@@ -105,7 +119,13 @@ export function computeDualPayrollKpi(
   currency = 'AUD',
 ): DualPayrollKpi {
   return {
-    projected: computeScheduledPayrollKpi(employees, todayShifts, currency),
+    projected: computeScheduledPayrollKpi(
+      employees,
+      todayShifts,
+      currency,
+      todayAttendance,
+      attendanceBreak,
+    ),
     actual: computeActualPayrollKpi(
       employees,
       todayAttendance,

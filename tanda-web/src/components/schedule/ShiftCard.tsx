@@ -13,7 +13,8 @@ import {
   getShiftConfirmationShortCode,
 } from '@/lib/shifts/shift-confirmation';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
-import { formatShiftTimeRangeShort, formatTimeLabel } from '@/lib/schedule/week';
+import { formatShiftTimeRange, formatShiftTimeRangeShort, formatTimeLabel } from '@/lib/schedule/week';
+import { isOpenEndedShift } from '@/lib/schedule/open-ended-shift';
 import type { Shift } from '@/lib/types/shift';
 
 interface ShiftCardProps {
@@ -86,7 +87,7 @@ export function ShiftCard({
 }: ShiftCardProps) {
   const presentation = getShiftPresentation(shift);
   const Icon = presentation.icon;
-  const timeRange = `${formatTimeLabel(shift.startTime)} - ${formatTimeLabel(shift.endTime)}`;
+  const timeRange = formatShiftTimeRange(shift.startTime, shift.endTime);
   const locationLabel = formatShiftLocationLabel(shift);
   const confirmationLabel =
     shift.status === 'scheduled'
@@ -179,8 +180,9 @@ export function ShiftCard({
           ) : null}
           {shift.status === 'completed' && (
             <p className={`mt-1 text-[10px] ${presentation.subtext}`}>
-              Clock-in {formatTimeLabel(shift.startTime)} — Clock-out{' '}
-              {formatTimeLabel(shift.endTime)}
+              {isOpenEndedShift(shift)
+                ? `Clock-in ${formatTimeLabel(shift.startTime)} — open-ended`
+                : `Clock-in ${formatTimeLabel(shift.startTime)} — Clock-out ${formatTimeLabel(shift.endTime)}`}
             </p>
           )}
           {shift.status === 'absent' && (

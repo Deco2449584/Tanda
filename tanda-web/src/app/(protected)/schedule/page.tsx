@@ -256,7 +256,7 @@ export default function SchedulePage() {
       employeeName: employee.name,
       date,
       startTime: '09:00',
-      endTime: '17:00',
+      endTime: '',
       locationId: employee.locationId ?? '',
     });
     setAssignModalOpen(true);
@@ -271,7 +271,7 @@ export default function SchedulePage() {
       employeeName: first?.name ?? '',
       date,
       startTime: '09:00',
-      endTime: '17:00',
+      endTime: '',
       locationId: first?.locationId ?? '',
     });
     setAssignModalOpen(true);

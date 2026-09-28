@@ -8,7 +8,9 @@ import { normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
 import {
   computeLateAlerts,
   computeNoShowsToday,
-  shiftDurationHours,
+  scheduledHoursForShift,
+  sumScheduledHours,
+  workedHoursByEmployeeDate,
 } from '@/lib/dashboard/compute-metrics';
 import {
   filterAttendanceByEmployees,
@@ -374,9 +376,19 @@ function buildScheduledVsActualByLocation(
   const scheduled = new Map<string, number>();
   const actual = new Map<string, number>();
 
+  const workedByEmployeeDate = workedHoursByEmployeeDate(
+    attendance,
+    attendanceBreak,
+  );
+  const consumed = new Set<string>();
+
   shifts.forEach((shift) => {
     const site = getSiteKeyForShift(shift, locations);
-    const hours = shiftDurationHours(shift.startTime, shift.endTime);
+    const hours = scheduledHoursForShift(
+      shift,
+      workedByEmployeeDate,
+      consumed,
+    );
     scheduled.set(site, (scheduled.get(site) ?? 0) + hours);
   });
 
@@ -534,14 +546,15 @@ export function computeDashboardAnalytics(
   );
 
   const days = eachDayInRange(input.dateRange);
+  const workedByEmployeeDate = workedHoursByEmployeeDate(
+    attendance,
+    input.attendanceBreak,
+  );
   const weeklyHours: WeeklyHoursDatum[] = days.map((day) => {
     const dayShifts = shifts.filter(
       (shift) => normalizeInputDate(shift.date) === day,
     );
-    const horas = dayShifts.reduce(
-      (sum, shift) => sum + shiftDurationHours(shift.startTime, shift.endTime),
-      0,
-    );
+    const horas = sumScheduledHours(dayShifts, workedByEmployeeDate);
 
     return {
       day: formatDayLabel(day),

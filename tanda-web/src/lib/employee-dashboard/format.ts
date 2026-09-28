@@ -1,3 +1,5 @@
+import { formatShiftTimeRange } from '@/lib/schedule/week';
+
 export function formatShortDate(dateStr: string): string {
   const parsed = new Date(`${dateStr}T00:00:00`);
   return parsed.toLocaleDateString('en-AU', {
@@ -12,29 +14,12 @@ export function formatShiftBlockLabel(
   endTime: string,
   status: 'scheduled' | 'completed',
 ): string {
-  const timeStart = formatTime12h(startTime);
-  const timeEnd = formatTime12h(endTime);
+  const timeRange = formatShiftTimeRange(startTime, endTime);
   const dayLabel = formatShortDate(date);
 
   if (status === 'completed') {
-    return `${dayLabel}: Clock-in ${timeStart} - Clock-out ${timeEnd} (Completed)`;
+    return `${dayLabel}: ${timeRange} (Completed)`;
   }
 
-  return `${dayLabel}: Clock-in ${timeStart} - Clock-out ${timeEnd}`;
-}
-
-function formatTime12h(time: string): string {
-  const [hoursRaw, minutesRaw] = time.split(':');
-  const hours = Number(hoursRaw);
-  const minutes = Number(minutesRaw);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return time;
-
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  return `${dayLabel}: ${timeRange}`;
 }

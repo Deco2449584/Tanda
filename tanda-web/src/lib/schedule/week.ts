@@ -98,6 +98,29 @@ function formatTimeCompact(time: string): string {
   return `${h12}:${String(minutes).padStart(2, '0')}${period}`;
 }
 
-export function formatShiftTimeRangeShort(startTime: string, endTime: string): string {
-  return `${formatTimeCompact(startTime)}–${formatTimeCompact(endTime)}`;
+export function formatShiftTimeRange(startTime: string, endTime?: string | null): string {
+  const start = startTime.trim();
+  const end = endTime?.trim() ?? '';
+  if (!start && !end) return '';
+  if (!end) {
+    const startLabel = formatTimeLabel(start);
+    return startLabel ? `${startLabel} → open` : 'Open';
+  }
+  if (!start) return formatTimeLabel(end);
+  return `${formatTimeLabel(start)} – ${formatTimeLabel(end)}`;
+}
+
+export function formatShiftTimeRangeShort(
+  startTime: string,
+  endTime?: string | null,
+): string {
+  const start = startTime.trim();
+  const end = endTime?.trim() ?? '';
+  if (!start && !end) return '';
+  if (!end) {
+    const startLabel = formatTimeCompact(start);
+    return startLabel ? `${startLabel} → open` : 'open';
+  }
+  if (!start) return formatTimeCompact(end);
+  return `${formatTimeCompact(start)}–${formatTimeCompact(end)}`;
 }

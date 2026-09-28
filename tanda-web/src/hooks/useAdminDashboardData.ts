@@ -15,6 +15,7 @@ import {
   computeLateAlerts,
   countPendingLeaveRequests,
   filterTodayShifts,
+  workedHoursByEmployeeDate,
 } from '@/lib/dashboard/compute-metrics';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
@@ -22,21 +23,17 @@ import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
 import { buildWeekRange } from '@/lib/schedule/week';
 import { db } from '@/lib/firebase';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
 import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
 import type { ShiftLoadDatum, WeeklyHoursDatum } from '@/lib/dashboard/types';
 
-function getTodayTimestampBounds() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-
+function getRangeTimestampBounds(startDate: string, endDate: string) {
   return {
-    start: Timestamp.fromDate(start),
-    end: Timestamp.fromDate(end),
+    start: Timestamp.fromDate(new Date(`${startDate}T00:00:00`)),
+    end: Timestamp.fromDate(new Date(`${endDate}T23:59:59.999`)),
   };
 }
 
@@ -44,7 +41,7 @@ export function useAdminDashboardData() {
   const { settings } = useCompanySettings();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord[]>([]);
+  const [weekAttendance, setWeekAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState({
     shifts: true,
     leaveRequests: true,
@@ -68,7 +65,7 @@ export function useAdminDashboardData() {
       setRefreshing(true);
     }
 
-    const { start, end } = getTodayTimestampBounds();
+    const { start, end } = getRangeTimestampBounds(week.start, week.end);
 
     try {
       const [shiftsSnapshot, leaveSnapshot, attendanceSnapshot] = await Promise.all([
@@ -106,7 +103,7 @@ export function useAdminDashboardData() {
           mapLeaveRequestDoc(document.id, document.data()),
         ),
       );
-      setTodayAttendance(
+      setWeekAttendance(
         attendanceSnapshot.docs.map((document) =>
           mapAttendanceDoc(document.id, document.data()),
         ),
@@ -130,6 +127,17 @@ export function useAdminDashboardData() {
     [settings.timeZone, shifts],
   );
 
+  const todayAttendance = useMemo(() => {
+    const todayKey = toInputDateInTimeZone(settings.timeZone);
+    return weekAttendance.filter((record) => {
+      if (!record.timestampServer) return false;
+      return (
+        toInputDateInTimeZone(settings.timeZone, record.timestampServer.toDate()) ===
+        todayKey
+      );
+    });
+  }, [settings.timeZone, weekAttendance]);
+
   const lateAlerts = useMemo(
     () =>
       computeLateAlerts(todayShifts, todayAttendance, {
@@ -145,8 +153,13 @@ export function useAdminDashboardData() {
   );
 
   const weeklyHours: WeeklyHoursDatum[] = useMemo(
-    () => buildWeeklyHoursData(shifts, week.days),
-    [shifts, week.days],
+    () =>
+      buildWeeklyHoursData(
+        shifts,
+        week.days,
+        workedHoursByEmployeeDate(weekAttendance, settings.attendanceBreak),
+      ),
+    [settings.attendanceBreak, shifts, week.days, weekAttendance],
   );
 
   const shiftLoadByDepartment: ShiftLoadDatum[] = useMemo(

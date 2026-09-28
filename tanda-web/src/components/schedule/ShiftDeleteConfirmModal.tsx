@@ -1,6 +1,6 @@
 'use client';
 
-import { formatTimeLabel } from '@/lib/schedule/week';
+import { formatShiftTimeRange } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
 interface ShiftDeleteConfirmModalProps {
@@ -39,7 +39,7 @@ export function ShiftDeleteConfirmModal({
           Delete the shift for{' '}
           <span className="font-medium text-foreground">{employeeName}</span> on{' '}
           <span className="font-medium text-foreground">{shift.date}</span> (
-          {formatTimeLabel(shift.startTime)} – {formatTimeLabel(shift.endTime)})?
+          {formatShiftTimeRange(shift.startTime, shift.endTime)})?
           This action cannot be undone.
         </p>
 

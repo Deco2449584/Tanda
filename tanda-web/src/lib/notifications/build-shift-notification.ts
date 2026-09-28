@@ -1,4 +1,5 @@
 import type { NotificationType } from '@/lib/types/notification';
+import { formatShiftTimeRangePlain } from '@/lib/schedule/open-ended-shift';
 
 export type EmployeeShiftAlertType = 'assigned' | 'cancelled';
 
@@ -21,10 +22,7 @@ export function buildShiftNotificationContent(input: {
   href: string;
   metadata: Record<string, string>;
 } {
-  const timeRange =
-    input.startTime && input.endTime
-      ? `${input.startTime}–${input.endTime}`
-      : input.startTime || input.endTime;
+  const timeRange = formatShiftTimeRangePlain(input.startTime, input.endTime);
   const detail = [input.date, timeRange].filter(Boolean).join(' · ');
 
   if (input.type === 'cancelled') {

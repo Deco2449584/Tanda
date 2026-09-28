@@ -6,7 +6,7 @@ import { EmployeeAvatar } from '@/components/employees/EmployeeAvatar';
 import { ShiftConfirmationActions } from '@/components/shifts/ShiftConfirmationActions';
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
-import { formatTimeLabel } from '@/lib/schedule/week';
+import { formatShiftTimeRange } from '@/lib/schedule/week';
 import type { Employee } from '@/lib/types/employee';
 import type { Shift } from '@/lib/types/shift';
 
@@ -47,7 +47,7 @@ export function NextShiftCard({
               <p className="text-muted">
                 <span className="text-subtle">Time:</span>{' '}
                 <span className="font-medium text-white">
-                  {formatTimeLabel(nextShift.startTime)} – {formatTimeLabel(nextShift.endTime)}
+                  {formatShiftTimeRange(nextShift.startTime, nextShift.endTime)}
                 </span>
               </p>
               {locationLabel ? (

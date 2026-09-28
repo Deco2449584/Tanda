@@ -4,7 +4,7 @@ import { ShiftConfirmationActions } from '@/components/shifts/ShiftConfirmationA
 import { formatShortDate } from '@/lib/employee-dashboard/format';
 import { getShiftStatusMeta } from '@/lib/employee-dashboard/shift-status-styles';
 import { formatShiftLocationLabel } from '@/lib/schedule/format-shift-location';
-import { formatTimeLabel } from '@/lib/schedule/week';
+import { formatShiftTimeRange } from '@/lib/schedule/week';
 import type { Shift } from '@/lib/types/shift';
 
 interface ShiftListCardProps {
@@ -41,7 +41,7 @@ export function ShiftListCard({ shift, onUpdated }: ShiftListCardProps) {
       ) : null}
 
       <p className="mt-4 text-base font-semibold text-foreground">
-        {formatTimeLabel(shift.startTime)} – {formatTimeLabel(shift.endTime)}
+        {formatShiftTimeRange(shift.startTime, shift.endTime)}
       </p>
 
       <ShiftConfirmationActions

@@ -6,6 +6,7 @@ export interface ShiftFirestore {
   employeeId: string;
   date: string;
   startTime: string;
+  /** Empty string = open-ended (no planned finish). */
   endTime: string;
   department: string;
   locationId?: string;
@@ -28,6 +29,7 @@ export interface AssignShiftInput {
   employeeName: string;
   date: string;
   startTime: string;
+  /** Empty string = open-ended (no planned finish). */
   endTime: string;
   locationId?: string;
   /** When set, the modal updates an existing shift instead of creating one. */

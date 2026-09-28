@@ -1,4 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
+import { formatRecordDate } from '@/lib/attendance/format';
+import { buildWorkSessionsFromRecords } from '@/lib/attendance/work-sessions';
 import { getMinutesInTimeZone, timestampToMinutesInTimeZone } from '@/lib/dates/timezone';
 import { normalizeInputDate, toInputDate } from '@/lib/dates/input-date';
 import { toInputDateInTimeZone } from '@/lib/dates/timezone';
@@ -8,10 +10,13 @@ import {
   isNoShow,
   timeToMinutes,
 } from '@/lib/attendance/evaluate-shift-attendance';
+import { isOpenEndedShift } from '@/lib/schedule/open-ended-shift';
 import type { WeekDay } from '@/lib/schedule/week';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import {
+  DEFAULT_ATTENDANCE_BREAK,
   DEFAULT_ATTENDANCE_POLICY,
+  type AttendanceBreakSettings,
   type AttendancePolicySettings,
 } from '@/lib/types/company-settings';
 import type { LeaveRequest } from '@/lib/types/leave-request';
@@ -33,12 +38,73 @@ function resolveMetricsOptions(options?: AttendanceMetricsOptions) {
 }
 
 export function shiftDurationHours(startTime: string, endTime: string): number {
+  if (!startTime.trim() || !endTime.trim()) return 0;
   const start = timeToMinutes(startTime);
   let end = timeToMinutes(endTime);
   if (end <= start) {
     end += 24 * 60;
   }
   return (end - start) / 60;
+}
+
+export function employeeDateHoursKey(employeeId: string, date: string): string {
+  return `${employeeId}|${normalizeInputDate(date)}`;
+}
+
+/** Billable hours from complete sessions, keyed by `employeeId|YYYY-MM-DD`. */
+export function workedHoursByEmployeeDate(
+  records: AttendanceRecord[],
+  breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  const sessions = buildWorkSessionsFromRecords(records, breakSettings);
+
+  for (const session of sessions) {
+    if (session.status !== 'complete' || session.billableHours == null) continue;
+    const date = formatRecordDate(session.checkIn.timestampServer);
+    if (!date || date === '—') continue;
+    const key = employeeDateHoursKey(session.checkIn.employeeId, date);
+    map.set(key, (map.get(key) ?? 0) + session.billableHours);
+  }
+
+  return map;
+}
+
+/**
+ * Closed roster → planned duration.
+ * Open-ended + complete punch that day → punched hours (so scheduled ≈ actual).
+ * Open-ended with no clock-out yet → 0.
+ */
+export function scheduledHoursForShift(
+  shift: Shift,
+  workedByEmployeeDate?: Map<string, number>,
+  consumedKeys?: Set<string>,
+): number {
+  if (!isOpenEndedShift(shift)) {
+    return shiftDurationHours(shift.startTime, shift.endTime);
+  }
+
+  if (!workedByEmployeeDate) return 0;
+  const key = employeeDateHoursKey(shift.employeeId, shift.date);
+  const hours = workedByEmployeeDate.get(key) ?? 0;
+  if (hours <= 0) return 0;
+  if (consumedKeys) {
+    if (consumedKeys.has(key)) return 0;
+    consumedKeys.add(key);
+  }
+  return hours;
+}
+
+export function sumScheduledHours(
+  shifts: Shift[],
+  workedByEmployeeDate?: Map<string, number>,
+): number {
+  const consumed = new Set<string>();
+  return shifts.reduce(
+    (sum, shift) =>
+      sum + scheduledHoursForShift(shift, workedByEmployeeDate, consumed),
+    0,
+  );
 }
 
 export function filterTodayShifts(
@@ -258,15 +324,13 @@ export function buildShiftLoadByDepartment(todayShifts: Shift[]): ShiftLoadDatum
 export function buildWeeklyHoursData(
   weekShifts: Shift[],
   weekDays: WeekDay[],
+  workedByEmployeeDate?: Map<string, number>,
 ): WeeklyHoursDatum[] {
   return weekDays.map((day) => {
     const dayShifts = weekShifts.filter(
       (shift) => normalizeInputDate(shift.date) === day.date,
     );
-    const horas = dayShifts.reduce(
-      (sum, shift) => sum + shiftDurationHours(shift.startTime, shift.endTime),
-      0,
-    );
+    const horas = sumScheduledHours(dayShifts, workedByEmployeeDate);
 
     return {
       day: day.label,

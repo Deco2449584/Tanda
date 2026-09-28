@@ -33,6 +33,7 @@ import {
 } from '@/lib/types/company-settings';
 import { mapLeaveRequestDoc } from '@/lib/leave-requests/map-leave-request';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
+import { formatShiftTimeRangePlain } from '@/lib/schedule/open-ended-shift';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
@@ -203,7 +204,7 @@ function employeeLabel(employeeId: string, nameByCode: Map<string, string>): str
 }
 
 function shiftDetailLine(shift: Shift, nameByCode: Map<string, string>): string {
-  return `${employeeLabel(shift.employeeId, nameByCode)} · shift ${shift.startTime}–${shift.endTime}`;
+  return `${employeeLabel(shift.employeeId, nameByCode)} · shift ${formatShiftTimeRangePlain(shift.startTime, shift.endTime)}`;
 }
 
 function summarizeDetailLines(lines: string[]): string[] {

@@ -2,6 +2,7 @@ import { BRAND } from '@/lib/brand/tokens';
 import { PORTAL_COMPANY_TAGLINE, PORTAL_CONTACT } from '@/lib/portal/portal-brand';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 import type { EmployeeShiftAlertType } from '@/lib/notifications/build-shift-notification';
+import { formatShiftTimeRangePlain } from '@/lib/schedule/open-ended-shift';
 
 const EMAIL = {
   graphite: BRAND.graphite,
@@ -59,10 +60,10 @@ function buildShiftDetailRows(input: ShiftAssignmentEmailInput): string {
   const dateLabel = formatShiftDateLabel(input.date);
   if (dateLabel) rows.push({ label: 'Date', value: dateLabel });
 
-  const timeRange =
-    input.startTime && input.endTime
-      ? `${input.startTime} – ${input.endTime}`
-      : input.startTime || input.endTime || '';
+  const timeRange = formatShiftTimeRangePlain(input.startTime, input.endTime).replace(
+    '–',
+    ' – ',
+  );
   if (timeRange) rows.push({ label: 'Time', value: timeRange });
 
   if (input.locationLabel?.trim()) {
@@ -201,10 +202,10 @@ export function buildShiftAssignmentEmailHtml(input: ShiftAssignmentEmailInput):
 export function buildShiftAssignmentEmailText(input: ShiftAssignmentEmailInput): string {
   const firstName = input.name.split(/\s+/)[0] || input.name;
   const dateLabel = formatShiftDateLabel(input.date);
-  const timeRange =
-    input.startTime && input.endTime
-      ? `${input.startTime} – ${input.endTime}`
-      : input.startTime || input.endTime || '';
+  const timeRange = formatShiftTimeRangePlain(input.startTime, input.endTime).replace(
+    '–',
+    ' – ',
+  );
 
   const lines = [`Hi ${firstName},`, ''];
 
