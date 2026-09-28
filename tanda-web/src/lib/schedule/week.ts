@@ -98,8 +98,11 @@ function formatTimeCompact(time: string): string {
   return `${h12}:${String(minutes).padStart(2, '0')}${period}`;
 }
 
-export function formatShiftTimeRange(startTime: string, endTime?: string | null): string {
-  const start = startTime.trim();
+export function formatShiftTimeRange(
+  startTime?: string | null,
+  endTime?: string | null,
+): string {
+  const start = startTime?.trim() ?? '';
   const end = endTime?.trim() ?? '';
   if (!start && !end) return '';
   if (!end) {
@@ -111,10 +114,10 @@ export function formatShiftTimeRange(startTime: string, endTime?: string | null)
 }
 
 export function formatShiftTimeRangeShort(
-  startTime: string,
+  startTime?: string | null,
   endTime?: string | null,
 ): string {
-  const start = startTime.trim();
+  const start = startTime?.trim() ?? '';
   const end = endTime?.trim() ?? '';
   if (!start && !end) return '';
   if (!end) {

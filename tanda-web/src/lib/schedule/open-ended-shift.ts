@@ -8,10 +8,10 @@ export function isOpenEndedShift(shift: { endTime?: string | null }): boolean {
  * Closed: `09:00–17:00`. Open: `09:00 → open`.
  */
 export function formatShiftTimeRangePlain(
-  startTime: string,
+  startTime?: string | null,
   endTime?: string | null,
 ): string {
-  const start = startTime.trim();
+  const start = startTime?.trim() ?? '';
   const end = endTime?.trim() ?? '';
   if (!start && !end) return '';
   if (!end) return start ? `${start} → open` : '';

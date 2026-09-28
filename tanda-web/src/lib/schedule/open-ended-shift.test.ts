@@ -69,6 +69,8 @@ test('isOpenEndedShift: empty or whitespace end is open', () => {
 test('format open-ended ranges', () => {
   assert.equal(formatShiftTimeRangePlain('09:00', '17:00'), '09:00–17:00');
   assert.equal(formatShiftTimeRangePlain('09:00', ''), '09:00 → open');
+  assert.equal(formatShiftTimeRangePlain('09:00'), '09:00 → open');
+  assert.equal(formatShiftTimeRangePlain(undefined, undefined), '');
   assert.equal(formatShiftTimeRangeShort('09:00', '17:00'), '9a–5p');
   assert.equal(formatShiftTimeRangeShort('09:00', ''), '9a → open');
   assert.match(formatShiftTimeRange('09:00', ''), /open/);
