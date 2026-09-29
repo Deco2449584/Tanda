@@ -1,4 +1,5 @@
 import type { CargoInspection } from '@/types';
+import { formatPersonName } from '@/utils/cargoInspectionStatus';
 
 export type DateFilterPreset = 'day' | 'week' | 'month' | 'custom';
 
@@ -6,6 +7,14 @@ export type DateRange = {
   from: Date;
   to: Date;
 };
+
+export type InspectionFilterOption = {
+  value: string;
+  label: string;
+};
+
+/** Sentinel for inspections with no client/site assigned. */
+export const INSPECTION_CLIENT_UNASSIGNED = '__unassigned__';
 
 export function startOfDay(date: Date): Date {
   const d = new Date(date);
@@ -52,7 +61,68 @@ function inspectionDate(inspection: CargoInspection): Date {
   return new Date(inspection.registeredAt);
 }
 
-/** Filters inspections by ULD ID or AWB number only. */
+export function resolveInspectionClientKey(inspection: CargoInspection): string {
+  const id =
+    inspection.clientLocationId?.trim() ||
+    inspection.portalClientId?.trim() ||
+    '';
+  return id || INSPECTION_CLIENT_UNASSIGNED;
+}
+
+export function resolveInspectionEmployeeKey(inspection: CargoInspection): string {
+  return inspection.createdBy?.trim().toLowerCase() || '';
+}
+
+export function buildInspectionClientOptions(
+  inspections: CargoInspection[],
+): InspectionFilterOption[] {
+  const byKey = new Map<string, string>();
+  let hasUnassigned = false;
+
+  for (const inspection of inspections) {
+    const key = resolveInspectionClientKey(inspection);
+    if (key === INSPECTION_CLIENT_UNASSIGNED) {
+      hasUnassigned = true;
+      continue;
+    }
+    const label = inspection.clientLocationName?.trim() || key;
+    if (!byKey.has(key)) {
+      byKey.set(key, label);
+    }
+  }
+
+  const options = Array.from(byKey.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'en'));
+
+  if (hasUnassigned) {
+    options.push({ value: INSPECTION_CLIENT_UNASSIGNED, label: 'Unassigned' });
+  }
+
+  return options;
+}
+
+export function buildInspectionEmployeeOptions(
+  inspections: CargoInspection[],
+): InspectionFilterOption[] {
+  const byKey = new Map<string, string>();
+
+  for (const inspection of inspections) {
+    const key = resolveInspectionEmployeeKey(inspection);
+    if (!key) continue;
+    const label = formatPersonName(inspection.createdByName, inspection.createdBy);
+    const existing = byKey.get(key);
+    if (!existing || (existing.includes('@') && !label.includes('@'))) {
+      byKey.set(key, label);
+    }
+  }
+
+  return Array.from(byKey.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'en'));
+}
+
+/** Filters inspections by ULD, AWB, client name, or employee. */
 export function filterInspectionsBySearch(
   inspections: CargoInspection[],
   query: string,
@@ -63,7 +133,14 @@ export function filterInspectionsBySearch(
   return inspections.filter((item) => {
     const uldId = item.uldId.toLowerCase();
     const awbNumber = item.awbNumber.toLowerCase();
-    return uldId.includes(q) || awbNumber.includes(q);
+    const clientName = item.clientLocationName?.toLowerCase() ?? '';
+    const author = formatPersonName(item.createdByName, item.createdBy).toLowerCase();
+    return (
+      uldId.includes(q) ||
+      awbNumber.includes(q) ||
+      clientName.includes(q) ||
+      author.includes(q)
+    );
   });
 }
 
@@ -79,6 +156,28 @@ export function filterInspectionsByDateRange(
     const t = inspectionDate(item).getTime();
     return t >= fromMs && t <= toMs;
   });
+}
+
+export function filterInspectionsByClient(
+  inspections: CargoInspection[],
+  clientKey: string,
+): CargoInspection[] {
+  const key = clientKey.trim();
+  if (!key) return inspections;
+  return inspections.filter(
+    (item) => resolveInspectionClientKey(item) === key,
+  );
+}
+
+export function filterInspectionsByEmployee(
+  inspections: CargoInspection[],
+  employeeKey: string,
+): CargoInspection[] {
+  const key = employeeKey.trim().toLowerCase();
+  if (!key) return inspections;
+  return inspections.filter(
+    (item) => resolveInspectionEmployeeKey(item) === key,
+  );
 }
 
 export function filterInspectionsToday(inspections: CargoInspection[]): CargoInspection[] {

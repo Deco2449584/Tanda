@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CargoCard } from '@/components/CargoCard';
 import { DateRangeFilters } from '@/components/DateRangeFilters';
 import { FadeInItem } from '@/components/FadeInItem';
+import { InspectionSearchFilters } from '@/components/InspectionSearchFilters';
 import { RecordsSearchBar } from '@/components/RecordsSearchBar';
 import { useAuth } from '@/context/AuthContext';
 import { useCargoInspections } from '@/context/CargoInspectionsContext';
@@ -22,7 +23,11 @@ import { brand } from '@/theme/brand';
 import type { AppColors } from '@/theme/palettes';
 import { fonts } from '@/theme/typography';
 import {
+  buildInspectionClientOptions,
+  buildInspectionEmployeeOptions,
+  filterInspectionsByClient,
   filterInspectionsByDateRange,
+  filterInspectionsByEmployee,
   filterInspectionsBySearch,
   formatFilterDate,
   getDateRangeForPreset,
@@ -141,11 +146,40 @@ export default function SearchScreen() {
   const [datePreset, setDatePreset] = useState<DateFilterPreset>('week');
   const [customFrom, setCustomFrom] = useState(() => startOfMonth());
   const [customTo, setCustomTo] = useState(() => new Date());
+  const [clientId, setClientId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
 
   const dateRange = useMemo(
     () => getDateRangeForPreset(datePreset, customFrom, customTo),
     [datePreset, customFrom, customTo],
   );
+
+  const clientOptions = useMemo(
+    () => buildInspectionClientOptions(scopedInspections),
+    [scopedInspections],
+  );
+  const employeeOptions = useMemo(
+    () => buildInspectionEmployeeOptions(scopedInspections),
+    [scopedInspections],
+  );
+
+  useEffect(() => {
+    if (
+      clientId &&
+      !clientOptions.some((option) => option.value === clientId)
+    ) {
+      setClientId('');
+    }
+  }, [clientId, clientOptions]);
+
+  useEffect(() => {
+    if (
+      employeeId &&
+      !employeeOptions.some((option) => option.value === employeeId)
+    ) {
+      setEmployeeId('');
+    }
+  }, [employeeId, employeeOptions]);
 
   const filteredInspections = useMemo(() => {
     const byDate = filterInspectionsByDateRange(
@@ -153,8 +187,10 @@ export default function SearchScreen() {
       dateRange.from,
       dateRange.to,
     );
-    return filterInspectionsBySearch(byDate, searchQuery);
-  }, [scopedInspections, dateRange, searchQuery]);
+    const byClient = filterInspectionsByClient(byDate, clientId);
+    const byEmployee = filterInspectionsByEmployee(byClient, employeeId);
+    return filterInspectionsBySearch(byEmployee, searchQuery);
+  }, [scopedInspections, dateRange, clientId, employeeId, searchQuery]);
 
   const rangeLabel = useMemo(
     () => describeRange(datePreset, dateRange.from, dateRange.to),
@@ -198,14 +234,14 @@ export default function SearchScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Advanced search</Text>
               <Text style={styles.subtitle}>
-                {brand.panelTitle} · Filter by date, ULD or AWB
+                {brand.panelTitle} · Filter by date, client, employee, ULD or AWB
               </Text>
             </View>
 
             <RecordsSearchBar
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search by ULD serial or AWB..."
+              placeholder="Search ULD, AWB, client, or employee..."
             />
 
             <DateRangeFilters
@@ -215,6 +251,16 @@ export default function SearchScreen() {
               customTo={customTo}
               onCustomFromChange={setCustomFrom}
               onCustomToChange={setCustomTo}
+            />
+
+            <InspectionSearchFilters
+              clientOptions={clientOptions}
+              clientId={clientId}
+              onClientIdChange={setClientId}
+              employeeOptions={employeeOptions}
+              employeeId={employeeId}
+              onEmployeeIdChange={setEmployeeId}
+              showEmployeeFilter={isAdmin}
             />
 
             <Text style={styles.rangeSummary}>{rangeLabel}</Text>
@@ -232,7 +278,7 @@ export default function SearchScreen() {
             <Ionicons name="search-outline" size={48} color={colors.text.secondary} />
             <Text style={styles.emptyTitle}>No inspections found</Text>
             <Text style={styles.emptyHint}>
-              Try another date range or search by ULD serial or AWB number.
+              Try another date range, client, employee, or search by ULD / AWB.
             </Text>
           </View>
         }
