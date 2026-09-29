@@ -2,7 +2,7 @@
 
 import { LoadingIndicator } from '@/components/ui/LoadingSplash';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -20,7 +20,11 @@ import { useInspectionsAccess } from '@/hooks/useInspectionsAccess';
 import { useInspectionMediaQueue } from '@/hooks/useInspectionMediaQueue';
 import { exportInspectionsToCsv } from '@/lib/inspections/export-inspections-csv';
 import {
+  buildInspectionClientOptions,
+  buildInspectionEmployeeOptions,
+  filterInspectionsByClient,
   filterInspectionsByDateRange,
+  filterInspectionsByEmployee,
   filterInspectionsBySearch,
   getInspectionDateRangeForPreset,
   getTodayInspectionRange,
@@ -41,18 +45,64 @@ export function InspectionsPageClient() {
   const [datePreset, setDatePreset] = useState<InspectionDatePreset>('week');
   const [customFrom, setCustomFrom] = useState(() => new Date());
   const [customTo, setCustomTo] = useState(() => new Date());
+  const [clientId, setClientId] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
 
   const activeRange = useMemo(
     () => getInspectionDateRangeForPreset(datePreset, customFrom, customTo),
     [customFrom, customTo, datePreset],
   );
 
+  const clientOptions = useMemo(
+    () => buildInspectionClientOptions(inspections),
+    [inspections],
+  );
+  const employeeOptions = useMemo(
+    () => buildInspectionEmployeeOptions(inspections),
+    [inspections],
+  );
+
+  useEffect(() => {
+    if (
+      clientId &&
+      !clientOptions.some((option) => option.value === clientId)
+    ) {
+      setClientId('');
+    }
+  }, [clientId, clientOptions]);
+
+  useEffect(() => {
+    if (
+      employeeId &&
+      !employeeOptions.some((option) => option.value === employeeId)
+    ) {
+      setEmployeeId('');
+    }
+  }, [employeeId, employeeOptions]);
+
   const filteredInspections = useMemo(() => {
     return filterInspectionsBySearch(
-      filterInspectionsByDateRange(inspections, activeRange.from, activeRange.to),
+      filterInspectionsByEmployee(
+        filterInspectionsByClient(
+          filterInspectionsByDateRange(
+            inspections,
+            activeRange.from,
+            activeRange.to,
+          ),
+          clientId,
+        ),
+        employeeId,
+      ),
       searchQuery,
     );
-  }, [activeRange.from, activeRange.to, inspections, searchQuery]);
+  }, [
+    activeRange.from,
+    activeRange.to,
+    clientId,
+    employeeId,
+    inspections,
+    searchQuery,
+  ]);
 
   const todayStats = useMemo(() => {
     const { from, to } = getTodayInspectionRange();
@@ -196,7 +246,7 @@ export function InspectionsPageClient() {
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search ULD, AWB, or food type..."
+            placeholder="Search ULD, AWB, food type, client, or employee..."
             className="w-full rounded-xl border border-border bg-surface-raised py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-subtle outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
           />
         </div>
@@ -221,6 +271,12 @@ export function InspectionsPageClient() {
         customTo={customTo}
         onCustomFromChange={setCustomFrom}
         onCustomToChange={setCustomTo}
+        clientOptions={clientOptions}
+        clientId={clientId}
+        onClientIdChange={setClientId}
+        employeeOptions={employeeOptions}
+        employeeId={employeeId}
+        onEmployeeIdChange={setEmployeeId}
         resultCount={filteredInspections.length}
       />
 
