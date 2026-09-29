@@ -121,7 +121,7 @@ function RouteGuard({
     }
   }, [redirectTo, router]);
 
-  if ((role === 'empleado' && employeeLoading) || redirectTo) {
+  if ((role === 'empleado' && employeeLoading && !employee) || redirectTo) {
     return (
       <LoadingScreen
         message={employeeLoading ? 'Loading profile…' : 'Redirecting…'}
@@ -196,7 +196,7 @@ function EmployeeNotificationsShell({
   const { employee, loading } = useCurrentEmployee();
   const employeeCode = employee?.employeeId ?? '';
 
-  if (loading) {
+  if (loading && !employee) {
     return <LoadingScreen message="Loading profile…" />;
   }
 

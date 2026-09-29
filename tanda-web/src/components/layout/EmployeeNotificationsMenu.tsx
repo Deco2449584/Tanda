@@ -17,7 +17,7 @@ export function EmployeeNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthRole();
-  const { employee, refresh: refreshEmployee } = useCurrentEmployee(user?.email);
+  const { employee } = useCurrentEmployee(user?.email);
   const needsProfile = employeeNeedsPersonalProfile(employee?.personalProfileStatus);
   const {
     notifications,
@@ -72,12 +72,14 @@ export function EmployeeNotificationsMenu() {
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
       markAllRead();
+      // Push subscription check only — do NOT refreshEmployee() here.
+      // That flipped CurrentEmployeeProvider loading=true, unmounted the shell,
+      // and remounted this menu with open=false (tray looked like it auto-closed).
       void refreshSubscriptionState();
-      refreshEmployee();
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [markAllRead, open, refreshEmployee, refreshSubscriptionState]);
+  }, [markAllRead, open, refreshSubscriptionState]);
 
   return (
     <div className="relative" ref={containerRef}>

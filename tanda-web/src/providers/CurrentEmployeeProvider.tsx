@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -40,6 +41,8 @@ export function CurrentEmployeeProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
+  const hasLoadedProfileRef = useRef(false);
+  const loadedEmailRef = useRef('');
 
   const refresh = useCallback(() => {
     setReloadToken((token) => token + 1);
@@ -52,6 +55,8 @@ export function CurrentEmployeeProvider({ children }: { children: ReactNode }) {
     }
 
     if (!userEmail) {
+      hasLoadedProfileRef.current = false;
+      loadedEmailRef.current = '';
       setEmployee(null);
       setLoading(false);
       setError('No active session.');
@@ -59,13 +64,22 @@ export function CurrentEmployeeProvider({ children }: { children: ReactNode }) {
     }
 
     if (!db) {
+      hasLoadedProfileRef.current = false;
+      loadedEmailRef.current = '';
       setEmployee(null);
       setLoading(false);
       setError('Firebase is not available.');
       return;
     }
 
-    setLoading(true);
+    const sameEmailAlreadyLoaded =
+      hasLoadedProfileRef.current && loadedEmailRef.current === userEmail;
+
+    // Soft reload: keep existing profile on screen while the listener reconnects.
+    // Flipping loading=true remounts employee shells and closes open menus.
+    if (!sameEmailAlreadyLoaded) {
+      setLoading(true);
+    }
     setError('');
 
     const employeesQuery = query(
@@ -78,16 +92,22 @@ export function CurrentEmployeeProvider({ children }: { children: ReactNode }) {
       employeesQuery,
       (snapshot) => {
         if (snapshot.empty) {
+          hasLoadedProfileRef.current = false;
+          loadedEmailRef.current = '';
           setEmployee(null);
           setError('No employee profile linked to this user was found.');
         } else {
           const document = snapshot.docs[0];
+          hasLoadedProfileRef.current = true;
+          loadedEmailRef.current = userEmail;
           setEmployee(mapEmployeeDoc(document.id, document.data()));
           setError('');
         }
         setLoading(false);
       },
       () => {
+        hasLoadedProfileRef.current = false;
+        loadedEmailRef.current = '';
         setEmployee(null);
         setError('Could not load the employee profile.');
         setLoading(false);

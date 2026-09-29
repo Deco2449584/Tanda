@@ -11,9 +11,12 @@ self.addEventListener('activate', (event) => {
 /**
  * Required for Chrome Android to offer a real “Install app” (WebAPK)
  * instead of only “Create shortcut”. Network-only passthrough — no offline cache.
+ * Failed/aborted requests must not reject the respondWith promise (console noise / flaky navigations).
  */
 self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    fetch(event.request).catch(() => Response.error()),
+  );
 });
 
 self.addEventListener('push', (event) => {
