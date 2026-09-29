@@ -80,6 +80,7 @@ export async function createCargoInspectionRecord(
     payload.temperatureCelsius = input.temperatureCelsius;
   }
 
+  // Always publish to the client portal when a client is assigned on create.
   if (clientLocationId) {
     payload.clientLocationId = clientLocationId;
     payload.clientLocationName = input.clientLocationName.trim();
@@ -88,6 +89,8 @@ export async function createCargoInspectionRecord(
     if (input.clientPhotoUrl?.trim()) {
       payload.clientPhotoUrl = input.clientPhotoUrl.trim();
     }
+  } else {
+    payload.portalEnabled = false;
   }
 
   const created = await addDoc(

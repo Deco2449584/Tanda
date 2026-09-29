@@ -90,6 +90,8 @@ export interface CargoInspection {
   clientPhotoUrl?: string;
   /** Same as clientLocationId for TimeTracker portal linking. */
   portalClientId?: string;
+  /** When true, the assigned client can see this inspection in /portal. */
+  portalEnabled?: boolean;
   registeredLatitude?: number;
   registeredLongitude?: number;
   registeredAccuracyMeters?: number;

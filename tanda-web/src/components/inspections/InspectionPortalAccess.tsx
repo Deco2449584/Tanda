@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Globe, Loader2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Globe,
+  Loader2,
+  ShieldAlert,
+} from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { updateInspectionPortalAccess } from '@/lib/inspections/update-portal-access';
 import type { CargoInspection } from '@/lib/types/cargo-inspection';
@@ -28,12 +36,15 @@ export function InspectionPortalAccess({
   const detectedClientName =
     inspection.clientLocationName?.trim() ||
     (detectedClientId ? 'Assigned client' : '');
+  const canToggle = Boolean(detectedClientId) && !saving;
 
   useEffect(() => {
     setPortalEnabled(inspection.portalEnabled);
   }, [inspection.portalEnabled]);
 
   async function handleToggle(nextEnabled: boolean) {
+    if (!canToggle) return;
+
     setPortalEnabled(nextEnabled);
     setSaving(true);
     setError('');
@@ -53,8 +64,8 @@ export function InspectionPortalAccess({
       });
       setMessage(
         nextEnabled
-          ? 'Portal enabled for the assigned client.'
-          : 'Portal access disabled.',
+          ? 'Visible on the client portal.'
+          : 'Hidden from the client portal.',
       );
       onUpdated?.();
     } catch (saveError) {
@@ -78,7 +89,7 @@ export function InspectionPortalAccess({
             Client portal access
           </h2>
           <p className="mt-1 text-xs text-subtle">
-            New records with a client are published to{' '}
+            New inspections with a client are published to{' '}
             <Link
               href="/portal"
               target="_blank"
@@ -87,8 +98,7 @@ export function InspectionPortalAccess({
             >
               /portal
             </Link>{' '}
-            by default. Clients can sign in with AWB + PIN or their account.
-            Turn this off to hide this inspection.
+            by default. Turn this off only if the client should not see this record.
           </p>
         </div>
         <Link
@@ -107,43 +117,98 @@ export function InspectionPortalAccess({
           <p className="text-xs text-subtle">
             Client:{' '}
             <span className="font-medium text-foreground">{detectedClientName}</span>
-            {' '}(detected from the inspection — not selectable)
           </p>
         ) : (
-          <p className="text-xs text-amber-400">
-            No client/site on this inspection. It must be registered with a client in
-            Continental Inspect before portal access can be enabled.
-          </p>
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-3 text-xs text-amber-200">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <p>
+              No client/site on this inspection. Register it with a client in
+              Continental Inspect before portal access can be enabled.
+            </p>
+          </div>
         )}
 
-        <label
-          className={`flex items-center gap-3 ${
-            !detectedClientId || saving ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        <button
+          type="button"
+          role="switch"
+          aria-checked={portalEnabled}
+          aria-busy={saving}
+          disabled={!canToggle}
+          onClick={() => void handleToggle(!portalEnabled)}
+          className={`flex w-full items-center justify-between gap-4 rounded-xl border px-4 py-3.5 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            portalEnabled
+              ? 'border-emerald-500/40 bg-emerald-500/10'
+              : 'border-border bg-surface-base/50 hover:border-border-strong'
           }`}
         >
-          <input
-            type="checkbox"
-            checked={portalEnabled}
-            disabled={!detectedClientId || saving}
-            onChange={(e) => void handleToggle(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-600 bg-surface-raised text-primary focus:ring-primary/30"
-          />
-          <span className="text-sm text-foreground">
-            Enable portal for this inspection
+          <div className="min-w-0 flex items-start gap-3">
+            <span
+              className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                portalEnabled
+                  ? 'bg-emerald-500/20 text-emerald-300'
+                  : 'bg-zinc-700/60 text-zinc-400'
+              }`}
+            >
+              {portalEnabled ? (
+                <Eye className="h-4 w-4" aria-hidden />
+              ) : (
+                <EyeOff className="h-4 w-4" aria-hidden />
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">
+                {portalEnabled ? 'Visible on client portal' : 'Hidden from client portal'}
+              </p>
+              <p className="mt-0.5 text-xs text-subtle">
+                {portalEnabled
+                  ? 'The client can open this inspection with AWB + PIN or their account.'
+                  : 'This inspection stays internal until you enable portal access.'}
+              </p>
+              <span
+                className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                  portalEnabled
+                    ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30'
+                    : 'bg-zinc-700/50 text-zinc-400 ring-1 ring-zinc-600/40'
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                    Saving
+                  </>
+                ) : portalEnabled ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3" aria-hidden />
+                    Published
+                  </>
+                ) : (
+                  'Not published'
+                )}
+              </span>
+            </div>
+          </div>
+
+          <span
+            className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+              portalEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
+            }`}
+            aria-hidden
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition ${
+                portalEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
           </span>
-          {saving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted" aria-hidden />
-          ) : null}
-        </label>
+        </button>
 
         {portalEnabled && detectedClientId ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-subtle">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-base/40 px-3.5 py-3 text-xs text-subtle">
             <p>
               AWB for portal lookup:{' '}
               <span className="font-mono text-muted">
                 {inspection.awbNumber.trim()}
-              </span>{' '}
-              (with or without dashes when logging in)
+              </span>
             </p>
             <CopyAwbButton awbNumber={inspection.awbNumber} />
           </div>

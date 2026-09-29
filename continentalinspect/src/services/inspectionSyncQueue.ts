@@ -226,6 +226,10 @@ export function pendingCreateToInspection(operation: PendingCreateOperation): Ca
     clientLocationName: operation.input.clientLocationName,
     clientPhotoUrl: operation.input.clientPhotoUrl,
     portalClientId: operation.input.portalClientId ?? operation.input.clientLocationId,
+    portalEnabled: Boolean(
+      operation.input.clientLocationId?.trim() ||
+        operation.input.portalClientId?.trim(),
+    ),
     registeredLatitude: operation.input.registeredLatitude,
     registeredLongitude: operation.input.registeredLongitude,
     registeredAccuracyMeters: operation.input.registeredAccuracyMeters,

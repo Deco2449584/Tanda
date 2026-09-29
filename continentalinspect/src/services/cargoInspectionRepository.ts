@@ -149,6 +149,7 @@ function mapDocumentToCargoInspection(
     clientLocationId: data.clientLocationId?.trim() || undefined,
     clientLocationName: data.clientLocationName?.trim() || undefined,
     portalClientId: data.portalClientId?.trim() || undefined,
+    portalEnabled: Boolean(data.portalEnabled),
     registeredLatitude:
       typeof data.registeredLatitude === 'number' ? data.registeredLatitude : undefined,
     registeredLongitude:
@@ -289,6 +290,7 @@ function toInspectionFromCreatePayload(
     clientLocationId: payload.clientLocationId,
     clientLocationName: payload.clientLocationName,
     portalClientId: payload.portalClientId,
+    portalEnabled: Boolean(payload.portalEnabled),
     registeredLatitude: payload.registeredLatitude,
     registeredLongitude: payload.registeredLongitude,
     registeredAccuracyMeters: payload.registeredAccuracyMeters,
