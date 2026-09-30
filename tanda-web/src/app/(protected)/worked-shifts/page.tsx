@@ -105,7 +105,11 @@ function EmployeeWorkedShiftsView() {
 
   const rows = useMemo(() => {
     const scoped = filterEmployeeSessionsByRange(allRecords, recordsRange);
-    const sessions = buildWorkSessionsFromRecords(scoped, settings.attendanceBreak);
+    const sessions = buildWorkSessionsFromRecords(
+      scoped,
+      settings.attendanceBreak,
+      settings.timeZone,
+    );
     return mapSessionsToRows(sessions, settings.attendanceBreak, {
       [employeeCode]: employeePhotoUrl,
     });
@@ -113,6 +117,7 @@ function EmployeeWorkedShiftsView() {
     allRecords,
     recordsRange,
     settings.attendanceBreak,
+    settings.timeZone,
     employeeCode,
     employeePhotoUrl,
   ]);
@@ -209,7 +214,7 @@ function AdminWorkedShiftsView() {
     }
 
     try {
-      const { start, end } = toFirestoreRangeBounds(dateRange);
+      const { start, end } = toFirestoreRangeBounds(dateRange, settings.timeZone);
       const snapshot = await getDocs(
         query(
           collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
@@ -231,7 +236,7 @@ function AdminWorkedShiftsView() {
       setRefreshing(false);
       initialLoadDoneRef.current = true;
     }
-  }, [dateRange]);
+  }, [dateRange, settings.timeZone]);
 
   useEffect(() => {
     initialLoadDoneRef.current = false;
@@ -320,6 +325,7 @@ function AdminWorkedShiftsView() {
     const sessions = buildWorkSessionsFromRecords(
       searchFilteredRecords,
       settings.attendanceBreak,
+      settings.timeZone,
     );
     const inRange = filterSessionsByDateRange(
       sessions,
@@ -334,6 +340,7 @@ function AdminWorkedShiftsView() {
   }, [
     searchFilteredRecords,
     settings.attendanceBreak,
+    settings.timeZone,
     dateRange,
     employeePhotos,
   ]);

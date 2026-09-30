@@ -94,13 +94,17 @@ export function dateFromWallClock(
   return new Date(utcMs);
 }
 
-function nextCalendarDate(isoDate: string): string {
+export function addCalendarDays(isoDate: string, dayOffset: number): string {
   const [year, month, day] = isoDate.split('-').map(Number);
-  const next = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + 1, 12));
+  const next = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + dayOffset, 12));
   const y = next.getUTCFullYear();
   const m = String(next.getUTCMonth() + 1).padStart(2, '0');
   const d = String(next.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+function nextCalendarDate(isoDate: string): string {
+  return addCalendarDays(isoDate, 1);
 }
 
 /**
@@ -114,4 +118,16 @@ export function zonedDayBounds(
   const start = dateFromWallClock(isoDate, '00:00', ianaTimeZone);
   const nextStart = dateFromWallClock(nextCalendarDate(isoDate), '00:00', ianaTimeZone);
   return { start, end: new Date(nextStart.getTime() - 1) };
+}
+
+/** Inclusive instants from the start of `startIsoDate` through the end of `endIsoDate`. */
+export function zonedRangeBounds(
+  startIsoDate: string,
+  endIsoDate: string,
+  ianaTimeZone: string,
+): { start: Date; end: Date } {
+  return {
+    start: zonedDayBounds(startIsoDate, ianaTimeZone).start,
+    end: zonedDayBounds(endIsoDate, ianaTimeZone).end,
+  };
 }

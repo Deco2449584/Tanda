@@ -2,7 +2,9 @@
 
 import { useMemo } from 'react';
 import { formatRecordDate } from '@/lib/attendance/format';
-import { compareInputDates, toInputDate } from '@/lib/dates/input-date';
+import { compareInputDates } from '@/lib/dates/input-date';
+import { addCalendarDays, toInputDateInTimeZone } from '@/lib/dates/timezone';
+import { DEFAULT_COMPANY_SETTINGS } from '@/lib/types/company-settings';
 import { useEmployeeAttendanceContext } from '@/providers/EmployeeAttendanceProvider';
 import type { AttendanceRecord } from '@/lib/types/attendance';
 
@@ -14,14 +16,13 @@ interface UseEmployeeAttendanceOptions {
 }
 
 function getSevenDaysStartDate(): string {
-  const start = new Date();
-  start.setDate(start.getDate() - 6);
-  return toInputDate(start);
+  const today = toInputDateInTimeZone(DEFAULT_COMPANY_SETTINGS.timeZone);
+  return addCalendarDays(today, -6);
 }
 
 function getMonthStartDate(): string {
-  const now = new Date();
-  return toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  const today = toInputDateInTimeZone(DEFAULT_COMPANY_SETTINGS.timeZone);
+  return `${today.slice(0, 8)}01`;
 }
 
 function filterRecordsByRange(

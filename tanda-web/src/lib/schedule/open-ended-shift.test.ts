@@ -95,8 +95,8 @@ test('scheduledHoursForShift: open without punch is 0', () => {
 test('scheduledHoursForShift: open with complete punch uses worked hours', () => {
   const open = shift({ endTime: '' });
   const records = [
-    record('check_in', new Date(2026, 8, 28, 9, 0, 0)),
-    record('check_out', new Date(2026, 8, 28, 14, 0, 0)),
+    record('check_in', new Date('2026-09-27T23:00:00.000Z')),
+    record('check_out', new Date('2026-09-28T04:00:00.000Z')),
   ];
   const worked = workedHoursByEmployeeDate(records, noBreak);
   assert.equal(scheduledHoursForShift(open, worked), 5);
@@ -104,8 +104,8 @@ test('scheduledHoursForShift: open with complete punch uses worked hours', () =>
 
 test('sumScheduledHours: does not double-count two open shifts on the same day', () => {
   const records = [
-    record('check_in', new Date(2026, 8, 28, 9, 0, 0)),
-    record('check_out', new Date(2026, 8, 28, 14, 0, 0)),
+    record('check_in', new Date('2026-09-27T23:00:00.000Z')),
+    record('check_out', new Date('2026-09-28T04:00:00.000Z')),
   ];
   const worked = workedHoursByEmployeeDate(records, noBreak);
   const hours = sumScheduledHours(

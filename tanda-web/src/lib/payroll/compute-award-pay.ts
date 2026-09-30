@@ -112,7 +112,7 @@ export function computeAwardPay(input: {
   const rules = resolvePayRules(input.payRules, input.payrollAccounting);
   const sessions =
     input.sessions ??
-    buildWorkSessionsFromRecords(input.records ?? [], input.attendanceBreak);
+    buildWorkSessionsFromRecords(input.records ?? [], input.attendanceBreak, input.timeZone);
 
   const report = buildAwardReport({
     rules,

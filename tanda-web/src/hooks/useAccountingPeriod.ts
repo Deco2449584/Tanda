@@ -18,6 +18,7 @@ import type { Shift } from '@/lib/types/shift';
 export function useAccountingPeriod(
   dateRange: DateRange,
   attendanceBreak: AttendanceBreakSettings,
+  timeZone: string,
 ) {
   const [sessions, setSessions] = useState<ReturnType<typeof buildWorkSessionsFromRecords>>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -31,7 +32,7 @@ export function useAccountingPeriod(
       return;
     }
     setLoading(true);
-    const { start, end } = toFirestoreRangeBounds(dateRange);
+    const { start, end } = toFirestoreRangeBounds(dateRange, timeZone);
     try {
       const [attendanceSnapshot, shiftsSnapshot, leaveSnapshot, periodLock] = await Promise.all([
         getDocs(
@@ -54,7 +55,7 @@ export function useAccountingPeriod(
         fetchPeriodLockRequest({ start: dateRange.start, end: dateRange.end }).catch(() => null),
       ]);
       const records = attendanceSnapshot.docs.map((doc) => mapAttendanceDoc(doc.id, doc.data()));
-      setSessions(buildWorkSessionsFromRecords(records, attendanceBreak));
+      setSessions(buildWorkSessionsFromRecords(records, attendanceBreak, timeZone));
       setShifts(shiftsSnapshot.docs.map((doc) => mapShiftDoc(doc.id, doc.data())));
       setLeaveRequests(
         leaveSnapshot.docs.map((doc) => mapLeaveRequestDoc(doc.id, doc.data())),
@@ -63,7 +64,7 @@ export function useAccountingPeriod(
     } finally {
       setLoading(false);
     }
-  }, [dateRange, attendanceBreak]);
+  }, [dateRange, attendanceBreak, timeZone]);
 
   useEffect(() => {
     void loadPeriod();

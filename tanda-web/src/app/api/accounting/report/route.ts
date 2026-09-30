@@ -14,6 +14,7 @@ import {
 } from '@/lib/payroll/award-calc';
 import { mapPayRules } from '@/lib/payroll/map-pay-rules';
 import { mapShiftDoc } from '@/lib/schedule/map-shift';
+import { zonedRangeBounds } from '@/lib/dates/timezone';
 import { DEFAULT_PAYROLL_ACCOUNTING } from '@/lib/types/company-settings';
 import { isPayrollEligibleEmployee } from '@/lib/employees/is-payroll-eligible-employee';
 
@@ -50,8 +51,7 @@ export async function GET(request: Request) {
     const timeZone =
       typeof settingsData.timeZone === 'string' ? settingsData.timeZone : 'Australia/Sydney';
 
-    const startDate = new Date(`${start}T00:00:00`);
-    const endDate = new Date(`${end}T23:59:59.999`);
+    const { start: startDate, end: endDate } = zonedRangeBounds(start, end, timeZone);
 
     const [employeesSnap, locationsSnap, attendanceSnap, shiftsSnap] = await Promise.all([
       db.collection(COLLECTIONS.EMPLOYEES).get(),
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       mapShiftDoc(doc.id, doc.data() as Record<string, unknown>),
     );
 
-    const sessions = buildWorkSessionsFromRecords(records);
+    const sessions = buildWorkSessionsFromRecords(records, undefined, timeZone);
     const leaveSnap = await db.collection(COLLECTIONS.LEAVE_REQUESTS).get();
     const leaveRequests = leaveSnap.docs.map((doc) =>
       mapLeaveRequestDoc(doc.id, doc.data() as Record<string, unknown>),

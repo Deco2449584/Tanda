@@ -1,5 +1,11 @@
 import { Timestamp } from 'firebase/firestore';
+import {
+  dateFromWallClock,
+  formatClockTimeInTimeZone,
+  toInputDateInTimeZone,
+} from '@/lib/dates/timezone';
 import type { AttendanceType } from '@/lib/types/attendance';
+import { DEFAULT_COMPANY_SETTINGS } from '@/lib/types/company-settings';
 
 export function formatAttendanceType(type: AttendanceType | string): string {
   if (type === 'check_in') return 'Check-in';
@@ -9,33 +15,38 @@ export function formatAttendanceType(type: AttendanceType | string): string {
   return type;
 }
 
-export function formatRecordDate(timestamp: Timestamp | null): string {
+export function formatRecordDate(
+  timestamp: Timestamp | null,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
+): string {
   if (!timestamp) return '—';
-
-  const date = timestamp.toDate();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
+  return toInputDateInTimeZone(timeZone, timestamp.toDate());
 }
 
-export function formatRecordDateShort(timestamp: Timestamp | null): string {
+export function formatRecordDateShort(
+  timestamp: Timestamp | null,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
+): string {
   if (!timestamp) return '—';
 
   return timestamp.toDate().toLocaleDateString('en-AU', {
     day: 'numeric',
     month: 'short',
+    timeZone,
   });
 }
 
-export function formatRecordTime(timestamp: Timestamp | null): string {
+export function formatRecordTime(
+  timestamp: Timestamp | null,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
+): string {
   if (!timestamp) return '—';
 
   return timestamp.toDate().toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
+    timeZone,
   });
 }
 
@@ -45,31 +56,26 @@ export function formatRecordTimestamp(timestamp: Timestamp | null): string {
   return `${formatRecordDate(timestamp)} ${formatRecordTime(timestamp)}`;
 }
 
-function toInputTime(date: Date): string {
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-export function timestampToFormValues(timestamp: Timestamp | null): {
+export function timestampToFormValues(
+  timestamp: Timestamp | null,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
+): {
   date: string;
   time: string;
 } {
   const date = timestamp?.toDate() ?? new Date();
 
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
   return {
-    date: `${year}-${month}-${day}`,
-    time: toInputTime(date),
+    date: toInputDateInTimeZone(timeZone, date),
+    time: formatClockTimeInTimeZone(timeZone, date),
   };
 }
 
-export function formValuesToTimestamp(date: string, time: string): Timestamp {
-  const [hours, minutes] = time.split(':').map(Number);
-  const parsed = new Date(`${date}T00:00:00`);
-  parsed.setHours(hours || 0, minutes || 0, 0, 0);
-  return Timestamp.fromDate(parsed);
+export function formValuesToTimestamp(
+  date: string,
+  time: string,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
+): Timestamp {
+  const clock = /^\d{1,2}:\d{2}/.test(time) ? time : '00:00';
+  return Timestamp.fromDate(dateFromWallClock(date, clock, timeZone));
 }

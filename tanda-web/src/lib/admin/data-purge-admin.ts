@@ -5,6 +5,9 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
+import { zonedDayBounds } from '@/lib/dates/timezone';
+import { loadCompanyTimeZone } from '@/lib/settings/server/load-company-time-zone';
+import { DEFAULT_COMPANY_SETTINGS } from '@/lib/types/company-settings';
 import { getAdminAuth, getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
 import {
   createEmptyPurgeResult,
@@ -33,12 +36,14 @@ function normalizeRange(range?: DataPurgeDateRange | null): {
   return { startDate, endDate };
 }
 
+let companyTimeZone = DEFAULT_COMPANY_SETTINGS.timeZone;
+
 function toStartTimestamp(dateKey: string): Timestamp {
-  return Timestamp.fromDate(new Date(`${dateKey}T00:00:00.000Z`));
+  return Timestamp.fromDate(zonedDayBounds(dateKey, companyTimeZone).start);
 }
 
 function toEndTimestamp(dateKey: string): Timestamp {
-  return Timestamp.fromDate(new Date(`${dateKey}T23:59:59.999Z`));
+  return Timestamp.fromDate(zonedDayBounds(dateKey, companyTimeZone).end);
 }
 
 function fileTimeInRange(
@@ -50,11 +55,11 @@ function fileTimeInRange(
   const ms = Date.parse(timeCreated);
   if (!Number.isFinite(ms)) return false;
   if (startDate) {
-    const startMs = Date.parse(`${startDate}T00:00:00.000Z`);
+    const startMs = zonedDayBounds(startDate, companyTimeZone).start.getTime();
     if (ms < startMs) return false;
   }
   if (endDate) {
-    const endMs = Date.parse(`${endDate}T23:59:59.999Z`);
+    const endMs = zonedDayBounds(endDate, companyTimeZone).end.getTime();
     if (ms > endMs) return false;
   }
   return true;
@@ -472,6 +477,7 @@ export async function purgeOperationalDataAdmin(
   dateRange?: DataPurgeDateRange | null,
   actorEmail?: string,
 ): Promise<DataPurgeResult> {
+  companyTimeZone = await loadCompanyTimeZone();
   const result = createEmptyPurgeResult();
   const range = dateRange ?? null;
 

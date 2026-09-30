@@ -1,5 +1,7 @@
 import { formatRecordDate } from '@/lib/attendance/format';
 import { compareInputDates, toInputDate } from '@/lib/dates/input-date';
+import { toInputDateInTimeZone } from '@/lib/dates/timezone';
+import { DEFAULT_COMPANY_SETTINGS } from '@/lib/types/company-settings';
 import {
   DEFAULT_ATTENDANCE_BREAK,
   type AttendanceBreakSettings,
@@ -193,11 +195,12 @@ function groupRecordsByEmployee(
 export function buildWorkSessionsFromRecords(
   records: AttendanceRecord[],
   breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
 ): WorkSession[] {
   const sessions: WorkSession[] = [];
 
   groupRecordsByEmployee(records).forEach((employeeRecords) => {
-    sessions.push(...buildWorkSessions(employeeRecords, breakSettings));
+    sessions.push(...buildWorkSessions(employeeRecords, breakSettings, timeZone));
   });
 
   return sessions;
@@ -206,12 +209,13 @@ export function buildWorkSessionsFromRecords(
 export function buildWorkSessions(
   records: AttendanceRecord[],
   breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
 ): WorkSession[] {
   const sorted = [...records].sort(
     (a, b) => recordTimestamp(a) - recordTimestamp(b),
   );
   const sessions: WorkSession[] = [];
-  const today = toInputDate();
+  const today = toInputDateInTimeZone(timeZone);
   let pendingCheckIn: AttendanceRecord | null = null;
   let sessionRecords: AttendanceRecord[] = [];
 

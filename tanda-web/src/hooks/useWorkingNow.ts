@@ -53,7 +53,7 @@ export function useWorkingNow(input: {
 
     setLoading(true);
     const range = todayRangeInTimeZone(input.timeZone);
-    const { start, end } = toFirestoreRangeBounds(range);
+    const { start, end } = toFirestoreRangeBounds(range, input.timeZone);
 
     const recordsQuery = query(
       collection(db, COLLECTIONS.ATTENDANCE_RECORDS),

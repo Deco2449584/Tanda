@@ -20,7 +20,7 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
 
-export function useDashboardData(dateRange: DateRange) {
+export function useDashboardData(dateRange: DateRange, timeZone: string) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -46,7 +46,7 @@ export function useDashboardData(dateRange: DateRange) {
     }
 
     try {
-      const bounds = toFirestoreRangeBounds(dateRange);
+      const bounds = toFirestoreRangeBounds(dateRange, timeZone);
       const [shiftsSnapshot, leaveSnapshot, attendanceSnapshot] = await Promise.all([
         getDocs(
           query(
@@ -95,7 +95,7 @@ export function useDashboardData(dateRange: DateRange) {
       setRefreshing(false);
       initialLoadDoneRef.current = true;
     }
-  }, [dateRange.end, dateRange.start]);
+  }, [dateRange.end, dateRange.start, timeZone]);
 
   useEffect(() => {
     initialLoadDoneRef.current = false;

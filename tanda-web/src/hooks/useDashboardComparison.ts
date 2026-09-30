@@ -33,8 +33,8 @@ const cache = new Map<string, ComparisonData>();
  * fetched until the admin turns Compare on, and every range is cached so
  * toggling it back and forth costs no extra Firestore reads.
  */
-export function useDashboardComparison(range: DateRange, enabled: boolean) {
-  const cacheKey = `${range.start}|${range.end}`;
+export function useDashboardComparison(range: DateRange, enabled: boolean, timeZone: string) {
+  const cacheKey = `${timeZone}|${range.start}|${range.end}`;
   const [data, setData] = useState<ComparisonData>(
     () => cache.get(cacheKey) ?? EMPTY,
   );
@@ -64,7 +64,7 @@ export function useDashboardComparison(range: DateRange, enabled: boolean) {
 
     void (async () => {
       try {
-        const bounds = toFirestoreRangeBounds(range);
+        const bounds = toFirestoreRangeBounds(range, timeZone);
         const [shiftsSnapshot, attendanceSnapshot] = await Promise.all([
           getDocs(
             query(
@@ -107,7 +107,7 @@ export function useDashboardComparison(range: DateRange, enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, enabled, range]);
+  }, [cacheKey, enabled, range, timeZone]);
 
   return {
     shifts: data.shifts,

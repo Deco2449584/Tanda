@@ -130,7 +130,7 @@ export function buildPayrollReport(
     recordsByEmployee.set(record.employeeId, existing);
   });
 
-  const sessions = buildWorkSessionsFromRecords(records, attendanceBreak);
+  const sessions = buildWorkSessionsFromRecords(records, attendanceBreak, timeZone);
   const award = buildAwardReport({
     rules,
     timeZone: timeZone,

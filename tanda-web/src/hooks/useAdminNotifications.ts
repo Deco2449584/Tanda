@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Timestamp,
   collection,
   doc,
   getDoc,
@@ -23,8 +22,7 @@ import {
   listNoShowShifts,
 } from '@/lib/dashboard/compute-metrics';
 import { COLLECTIONS } from '@/lib/constants';
-import { toInputDateInTimeZone } from '@/lib/dates/timezone';
-import { toInputDate } from '@/lib/dates/input-date';
+import { addCalendarDays, toInputDateInTimeZone, zonedDayBounds } from '@/lib/dates/timezone';
 import { db } from '@/lib/firebase';
 import {
   DEFAULT_ATTENDANCE_POLICY,
@@ -54,15 +52,11 @@ const ATTENDANCE_FETCH_LIMIT = 2000;
 const BADGE_POLL_INTERVAL_MS = 60 * 1000;
 const MAX_DETAIL_LINES = 4;
 
-function getRecentAttendanceRange() {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - ATTENDANCE_LOOKBACK_DAYS);
+function getRecentAttendanceRange(timeZone: string) {
+  const end = toInputDateInTimeZone(timeZone);
+  const start = addCalendarDays(end, -ATTENDANCE_LOOKBACK_DAYS);
 
-  return toFirestoreRangeBounds({
-    start: toInputDate(start),
-    end: toInputDate(end),
-  });
+  return toFirestoreRangeBounds({ start, end }, timeZone);
 }
 
 interface AdminNotificationData {
@@ -159,7 +153,7 @@ async function fetchAdminNotificationData(): Promise<AdminNotificationData> {
   const [{ attendancePolicy, timeZone }, { employeeNameByCode, pendingProfiles }] =
     await Promise.all([loadAttendancePolicy(), loadEmployeeNameMap()]);
   const today = toInputDateInTimeZone(timeZone);
-  const { start, end } = getRecentAttendanceRange();
+  const { start, end } = getRecentAttendanceRange(timeZone);
 
   const [leaveSnapshot, shiftsSnapshot, attendanceSnapshot] = await Promise.all([
     getDocs(
@@ -219,8 +213,7 @@ function buildNotificationItems(
 ): AdminNotificationItem[] {
   const todayKey = toInputDateInTimeZone(data.timeZone);
   const todayShifts = filterTodayShifts(data.shifts, todayKey);
-  const todayStart = Timestamp.fromDate(new Date(`${todayKey}T00:00:00`));
-  const todayEnd = Timestamp.fromDate(new Date(`${todayKey}T23:59:59.999`));
+  const todayBounds = zonedDayBounds(todayKey, data.timeZone);
   const metricsOptions = {
     policy: data.attendancePolicy,
     timeZone: data.timeZone,
@@ -229,10 +222,8 @@ function buildNotificationItems(
   const todayAttendance = data.attendanceRecords.filter((record) => {
     const ts = record.timestampServer;
     if (!ts) return false;
-    return (
-      ts.toMillis() >= todayStart.toMillis() &&
-      ts.toMillis() <= todayEnd.toMillis()
-    );
+    const ms = ts.toMillis();
+    return ms >= todayBounds.start.getTime() && ms <= todayBounds.end.getTime();
   });
 
   const pendingLeaves = data.leaveRequests.filter(

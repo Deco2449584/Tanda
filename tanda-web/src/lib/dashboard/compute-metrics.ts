@@ -16,6 +16,7 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 import {
   DEFAULT_ATTENDANCE_BREAK,
   DEFAULT_ATTENDANCE_POLICY,
+  DEFAULT_COMPANY_SETTINGS,
   type AttendanceBreakSettings,
   type AttendancePolicySettings,
 } from '@/lib/types/company-settings';
@@ -55,13 +56,14 @@ export function employeeDateHoursKey(employeeId: string, date: string): string {
 export function workedHoursByEmployeeDate(
   records: AttendanceRecord[],
   breakSettings: AttendanceBreakSettings = DEFAULT_ATTENDANCE_BREAK,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
 ): Map<string, number> {
   const map = new Map<string, number>();
-  const sessions = buildWorkSessionsFromRecords(records, breakSettings);
+  const sessions = buildWorkSessionsFromRecords(records, breakSettings, timeZone);
 
   for (const session of sessions) {
     if (session.status !== 'complete' || session.billableHours == null) continue;
-    const date = formatRecordDate(session.checkIn.timestampServer);
+    const date = formatRecordDate(session.checkIn.timestampServer, timeZone);
     if (!date || date === '—') continue;
     const key = employeeDateHoursKey(session.checkIn.employeeId, date);
     map.set(key, (map.get(key) ?? 0) + session.billableHours);

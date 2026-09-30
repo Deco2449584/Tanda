@@ -151,9 +151,10 @@ function aggregateByKey(
 function filterRecordsForDay(
   records: AttendanceRecord[],
   day: string,
+  timeZone: string,
 ): AttendanceRecord[] {
   return records.filter(
-    (record) => formatRecordDate(record.timestampServer) === day,
+    (record) => formatRecordDate(record.timestampServer, timeZone) === day,
   );
 }
 
@@ -172,7 +173,7 @@ function computeLateAlertsInRange(
     const dayShifts = shifts.filter(
       (shift) => normalizeInputDate(shift.date) === day,
     );
-    const dayRecords = filterRecordsForDay(attendance, day);
+    const dayRecords = filterRecordsForDay(attendance, day, options.timeZone);
     total += computeLateAlerts(dayShifts, dayRecords, options);
   });
 
@@ -194,7 +195,7 @@ function computeNoShowsInRange(
     const dayShifts = shifts.filter(
       (shift) => normalizeInputDate(shift.date) === day,
     );
-    const dayRecords = filterRecordsForDay(attendance, day);
+    const dayRecords = filterRecordsForDay(attendance, day, options.timeZone);
     total += computeNoShowsToday(dayShifts, dayRecords, options);
   });
 
@@ -217,7 +218,7 @@ function buildLateArrivalsByLocation(
     const dayShifts = shifts.filter(
       (shift) => normalizeInputDate(shift.date) === day,
     );
-    const dayRecords = filterRecordsForDay(attendance, day);
+    const dayRecords = filterRecordsForDay(attendance, day, options.timeZone);
 
     dayShifts.forEach((shift) => {
       const dayShiftRecords = dayRecords.filter(
@@ -252,7 +253,7 @@ function buildNoShowsByLocation(
     const dayShifts = shifts.filter(
       (shift) => normalizeInputDate(shift.date) === day,
     );
-    const dayRecords = filterRecordsForDay(attendance, day);
+    const dayRecords = filterRecordsForDay(attendance, day, options.timeZone);
 
     dayShifts.forEach((shift) => {
       const dayShiftRecords = dayRecords.filter(
@@ -291,7 +292,7 @@ function buildAttendanceComplianceByLocation(
     const dayShifts = shifts.filter(
       (shift) => normalizeInputDate(shift.date) === day,
     );
-    const dayRecords = filterRecordsForDay(attendance, day);
+    const dayRecords = filterRecordsForDay(attendance, day, options.timeZone);
 
     dayShifts.forEach((shift) => {
       const site = getSiteKeyForShift(shift, locations);
@@ -341,7 +342,7 @@ function buildDailyPayrollTrend(
 
   return days
     .map((day) => {
-      const dayRecords = filterRecordsForDay(attendance, day);
+      const dayRecords = filterRecordsForDay(attendance, day, options.timeZone);
       const report = buildPayrollReport(dayRecords, employees, {
         start: day,
         end: day,
@@ -372,6 +373,7 @@ function buildScheduledVsActualByLocation(
   locations: Location[],
   groups: LocationGroup[],
   attendanceBreak: AttendanceBreakSettings,
+  timeZone: string,
 ): GroupedBarDatum[] {
   const scheduled = new Map<string, number>();
   const actual = new Map<string, number>();
@@ -379,6 +381,7 @@ function buildScheduledVsActualByLocation(
   const workedByEmployeeDate = workedHoursByEmployeeDate(
     attendance,
     attendanceBreak,
+    timeZone,
   );
   const consumed = new Set<string>();
 
@@ -533,6 +536,7 @@ export function computeDashboardAnalytics(
     input.locations,
     input.groups,
     input.attendanceBreak,
+    input.timeZone,
   );
 
   const dailyPayrollTrend = buildDailyPayrollTrend(
@@ -549,6 +553,7 @@ export function computeDashboardAnalytics(
   const workedByEmployeeDate = workedHoursByEmployeeDate(
     attendance,
     input.attendanceBreak,
+    input.timeZone,
   );
   const weeklyHours: WeeklyHoursDatum[] = days.map((day) => {
     const dayShifts = shifts.filter(

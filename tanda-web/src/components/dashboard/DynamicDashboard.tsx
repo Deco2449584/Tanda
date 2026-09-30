@@ -201,11 +201,11 @@ export function DynamicDashboard({
   });
 
   const { shifts, leaveRequests, attendance, loading, refreshing, refresh } =
-    useDashboardData(dateRange);
+    useDashboardData(dateRange, settings.timeZone);
   const ops = useDashboardOpsMetrics(dateRange);
 
   const previousRange = useMemo(() => getPreviousRange(dateRange), [dateRange]);
-  const comparison = useDashboardComparison(previousRange, compareEnabled);
+  const comparison = useDashboardComparison(previousRange, compareEnabled, settings.timeZone);
 
   const workingNow = useWorkingNow({
     timeZone: settings.timeZone,

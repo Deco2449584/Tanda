@@ -22,6 +22,7 @@ import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
 import { mapAttendanceDoc } from '@/lib/attendance/map-attendance';
 import { COLLECTIONS } from '@/lib/constants';
 import { db } from '@/lib/firebase';
+import { useCompanySettings } from '@/providers/CompanySettingsProvider';
 import { useEmployees } from '@/providers/EmployeesProvider';
 import { useLocationGroups } from '@/providers/LocationGroupsProvider';
 import { useLocations } from '@/providers/LocationsProvider';
@@ -48,6 +49,7 @@ export default function SchedulePage() {
   const canAssignShifts = canPerformAction('schedule', 'create');
   const canUpdateShifts = canPerformAction('schedule', 'update');
   const canDeleteShifts = canPerformAction('schedule', 'delete');
+  const { settings } = useCompanySettings();
   const { employees, loading: employeesLoading } = useEmployees();
   const { locations } = useLocations();
   const { departmentNames } = useDepartments();
@@ -105,10 +107,13 @@ export default function SchedulePage() {
       setLoading(true);
     }
 
-    const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds({
-      start: rangeStart,
-      end: rangeEnd,
-    });
+    const { start: attendanceStart, end: attendanceEnd } = toFirestoreRangeBounds(
+      {
+        start: rangeStart,
+        end: rangeEnd,
+      },
+      settings.timeZone,
+    );
 
     const shiftsQuery = query(
       collection(db, COLLECTIONS.SHIFTS),
@@ -173,7 +178,7 @@ export default function SchedulePage() {
       unsubscribeShifts();
       unsubscribeAttendance();
     };
-  }, [rangeEnd, rangeStart]);
+  }, [rangeEnd, rangeStart, settings.timeZone]);
 
   const pageLoading = loading || employeesLoading;
 
@@ -222,8 +227,8 @@ export default function SchedulePage() {
     );
     const base = shifts.filter((shift) => allowedIds.has(shift.employeeId));
 
-    return applyResolvedShiftStatuses(base, attendanceRecords);
-  }, [attendanceRecords, filteredEmployees, shifts]);
+    return applyResolvedShiftStatuses(base, attendanceRecords, settings.timeZone);
+  }, [attendanceRecords, filteredEmployees, settings.timeZone, shifts]);
 
   const employeeNames = useMemo(() => {
     const map: Record<string, string> = {};

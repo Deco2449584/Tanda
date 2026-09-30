@@ -87,7 +87,7 @@ export default function PayrollPage() {
     }
 
     try {
-      const { start, end } = toFirestoreRangeBounds(dateRange);
+      const { start, end } = toFirestoreRangeBounds(dateRange, settings.timeZone);
       const [attendanceSnapshot, leaveSnapshot, shiftsSnapshot] = await Promise.all([
         getDocs(
           query(
@@ -135,7 +135,7 @@ export default function PayrollPage() {
       setRefreshing(false);
       initialLoadDoneRef.current = true;
     }
-  }, [dateRange]);
+  }, [dateRange, settings.timeZone]);
 
   useEffect(() => {
     initialLoadDoneRef.current = false;
@@ -204,6 +204,7 @@ export default function PayrollPage() {
     const sessions = buildWorkSessionsFromRecords(
       records,
       settings.attendanceBreak,
+      settings.timeZone,
     );
     const inRange = filterSessionsByDateRange(
       sessions,
@@ -215,7 +216,7 @@ export default function PayrollPage() {
       settings.attendanceBreak,
       employeePhotos,
     );
-  }, [records, settings.attendanceBreak, dateRange, employeePhotos]);
+  }, [records, settings.attendanceBreak, settings.timeZone, dateRange, employeePhotos]);
 
   const pageLoading = loading || employeesLoading || locationsLoading;
 

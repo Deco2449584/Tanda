@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Timestamp,
   collection,
   getDocs,
   orderBy,
   query,
   where,
 } from 'firebase/firestore';
+import { toFirestoreRangeBounds } from '@/lib/attendance/date-range';
 import {
   buildShiftLoadByDepartment,
   buildWeeklyHoursData,
@@ -29,13 +29,6 @@ import type { AttendanceRecord } from '@/lib/types/attendance';
 import type { LeaveRequest } from '@/lib/types/leave-request';
 import type { Shift } from '@/lib/types/shift';
 import type { ShiftLoadDatum, WeeklyHoursDatum } from '@/lib/dashboard/types';
-
-function getRangeTimestampBounds(startDate: string, endDate: string) {
-  return {
-    start: Timestamp.fromDate(new Date(`${startDate}T00:00:00`)),
-    end: Timestamp.fromDate(new Date(`${endDate}T23:59:59.999`)),
-  };
-}
 
 export function useAdminDashboardData() {
   const { settings } = useCompanySettings();
@@ -65,7 +58,10 @@ export function useAdminDashboardData() {
       setRefreshing(true);
     }
 
-    const { start, end } = getRangeTimestampBounds(week.start, week.end);
+    const { start, end } = toFirestoreRangeBounds(
+      { start: week.start, end: week.end },
+      settings.timeZone,
+    );
 
     try {
       const [shiftsSnapshot, leaveSnapshot, attendanceSnapshot] = await Promise.all([
@@ -115,7 +111,7 @@ export function useAdminDashboardData() {
       setRefreshing(false);
       initialLoadDoneRef.current = true;
     }
-  }, [week.end, week.start]);
+  }, [settings.timeZone, week.end, week.start]);
 
   useEffect(() => {
     initialLoadDoneRef.current = false;
@@ -157,9 +153,13 @@ export function useAdminDashboardData() {
       buildWeeklyHoursData(
         shifts,
         week.days,
-        workedHoursByEmployeeDate(weekAttendance, settings.attendanceBreak),
+        workedHoursByEmployeeDate(
+          weekAttendance,
+          settings.attendanceBreak,
+          settings.timeZone,
+        ),
       ),
-    [settings.attendanceBreak, shifts, week.days, weekAttendance],
+    [settings.attendanceBreak, settings.timeZone, shifts, week.days, weekAttendance],
   );
 
   const shiftLoadByDepartment: ShiftLoadDatum[] = useMemo(

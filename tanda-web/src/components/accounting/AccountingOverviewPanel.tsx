@@ -39,6 +39,7 @@ export function AccountingOverviewPanel({
   const { sessions, shifts, leaveRequests, lock, loading } = useAccountingPeriod(
     dateRange,
     attendanceBreak,
+    timeZone,
   );
 
   const staff = useMemo(() => employees.filter(isPayrollEligibleEmployee), [employees]);

@@ -1,7 +1,9 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
 import { mapAuditLogDoc } from '@/lib/audit/map-audit-log';
+import { zonedRangeBounds } from '@/lib/dates/timezone';
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import { loadCompanyTimeZone } from '@/lib/settings/server/load-company-time-zone';
 import type {
   AuditLog,
   ListAuditLogsInput,
@@ -50,11 +52,12 @@ export async function listAuditLogs(input: ListAuditLogsInput = {}): Promise<Aud
   const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
 
   const snapshot = await auditCollection().orderBy('createdAt', 'desc').limit(limit).get();
+  const timeZone = await loadCompanyTimeZone();
   const startMs = input.startDate
-    ? new Date(`${input.startDate}T00:00:00`).getTime()
+    ? zonedRangeBounds(input.startDate, input.startDate, timeZone).start.getTime()
     : null;
   const endMs = input.endDate
-    ? new Date(`${input.endDate}T23:59:59.999`).getTime()
+    ? zonedRangeBounds(input.endDate, input.endDate, timeZone).end.getTime()
     : null;
   const search = input.search?.trim().toLowerCase() ?? '';
   const actorEmail = input.actorEmail?.trim().toLowerCase() ?? '';

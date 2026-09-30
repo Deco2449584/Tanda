@@ -1,5 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
+import { zonedRangeBounds } from '@/lib/dates/timezone';
 import { buildWeekRange, formatWeekRangeLabel } from '@/lib/schedule/week';
+import { DEFAULT_COMPANY_SETTINGS } from '@/lib/types/company-settings';
 
 export interface DateRange {
   start: string;
@@ -90,16 +92,18 @@ export function formatDateRangeLabel(range: DateRange): string {
   return `${formatter.format(start)} - ${formatter.format(end)}`;
 }
 
-export function toFirestoreRangeBounds(range: DateRange): {
+export function toFirestoreRangeBounds(
+  range: DateRange,
+  timeZone: string = DEFAULT_COMPANY_SETTINGS.timeZone,
+): {
   start: Timestamp;
   end: Timestamp;
 } {
-  const startDate = new Date(`${range.start}T00:00:00`);
-  const endDate = new Date(`${range.end}T23:59:59.999`);
+  const { start, end } = zonedRangeBounds(range.start, range.end, timeZone);
 
   return {
-    start: Timestamp.fromDate(startDate),
-    end: Timestamp.fromDate(endDate),
+    start: Timestamp.fromDate(start),
+    end: Timestamp.fromDate(end),
   };
 }
 

@@ -100,7 +100,7 @@ export default function AttendancePage() {
       setLoading(true);
     }
 
-    const { start, end } = toFirestoreRangeBounds(dateRange);
+    const { start, end } = toFirestoreRangeBounds(dateRange, settings.timeZone);
     const recordsQuery = query(
       collection(db, COLLECTIONS.ATTENDANCE_RECORDS),
       where('timestampServer', '>=', start),
@@ -127,7 +127,7 @@ export default function AttendancePage() {
     );
 
     return () => unsubscribe();
-  }, [dateRange]);
+  }, [dateRange, settings.timeZone]);
 
   const pageLoading = loading || employeesLoading;
 
