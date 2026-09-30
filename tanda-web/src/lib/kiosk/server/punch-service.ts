@@ -18,7 +18,7 @@ import {
 } from '@/lib/attendance/server/validate-attendance-restrictions';
 import {
   isAttendanceType,
-  resolveAllowedAttendanceActions,
+  resolvePunchChoices,
   resolveAttendanceState,
 } from '@/lib/attendance/resolve-attendance-action';
 import { COLLECTIONS } from '@/lib/constants';
@@ -97,9 +97,11 @@ export async function lookupKioskEmployee(input: {
     records,
     timeZone: settings.timeZone,
   });
-  const allowedActions = resolveAllowedAttendanceActions({
+  const allowedActions = resolvePunchChoices({
     records,
     timeZone: settings.timeZone,
+    breaksEnabled: settings.attendanceBreak.enabled,
+    breakAllowanceMinutes: settings.attendanceBreak.durationMinutes,
   });
   const actionType = allowedActions[0] ?? 'check_in';
 
@@ -218,7 +220,12 @@ export async function recordKioskPunch(input: {
     const employeeData = employeeSnapshot.data() ?? {};
     const expectedVersion = presenceVersionFromEmployeeData(employeeData);
     state = resolveAttendanceState({ records, timeZone });
-    allowedActions = resolveAllowedAttendanceActions({ records, timeZone });
+    allowedActions = resolvePunchChoices({
+      records,
+      timeZone,
+      breaksEnabled: settings.attendanceBreak.enabled,
+      breakAllowanceMinutes: settings.attendanceBreak.durationMinutes,
+    });
 
     if (input.actionType && isAttendanceType(input.actionType)) {
       if (!allowedActions.includes(input.actionType)) {
@@ -317,7 +324,12 @@ export async function recordKioskPunch(input: {
           throw new KioskPunchConflictError();
         }
 
-        const currentAllowed = resolveAllowedAttendanceActions({ records, timeZone });
+        const currentAllowed = resolvePunchChoices({
+          records,
+          timeZone,
+          breaksEnabled: settings.attendanceBreak.enabled,
+          breakAllowanceMinutes: settings.attendanceBreak.durationMinutes,
+        });
         if (!currentAllowed.includes(actionType)) {
           throw new KioskPunchConflictError();
         }

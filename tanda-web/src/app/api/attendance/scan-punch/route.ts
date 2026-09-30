@@ -4,6 +4,7 @@ import {
   ScanPunchError,
 } from '@/lib/attendance/server/scan-punch-service';
 import { loadEmployeeContext } from '@/lib/auth/load-employee-context';
+import { isAttendanceType } from '@/lib/attendance/resolve-attendance-action';
 import { parseScanPunchVia } from '@/lib/attendance/scan-punch-token';
 
 export async function POST(request: Request) {
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       token?: unknown;
       via?: unknown;
+      actionType?: unknown;
       latitude?: unknown;
       longitude?: unknown;
       geoAccuracy?: unknown;
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
       employee,
       token,
       via,
+      actionType: isAttendanceType(body.actionType) ? body.actionType : undefined,
       latitude: typeof body.latitude === 'number' ? body.latitude : undefined,
       longitude: typeof body.longitude === 'number' ? body.longitude : undefined,
       geoAccuracy:
@@ -42,6 +45,18 @@ export async function POST(request: Request) {
       geoCapturedAt:
         typeof body.geoCapturedAt === 'string' ? body.geoCapturedAt : undefined,
     });
+
+    if (result.needsChoice) {
+      return NextResponse.json({
+        ok: true,
+        needsChoice: true,
+        allowedActions: result.allowedActions,
+        employeeName: result.employeeName,
+        locationName: result.locationName,
+        locationCity: result.locationCity,
+        state: result.state,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

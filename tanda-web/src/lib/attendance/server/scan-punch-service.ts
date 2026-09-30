@@ -17,9 +17,9 @@ import {
   validateEmployeeCheckInRestrictions,
 } from '@/lib/attendance/server/validate-attendance-restrictions';
 import {
-  resolveAllowedAttendanceActions,
-  resolveAttendanceAction,
+  isAttendanceType,
   resolveAttendanceState,
+  resolvePunchChoices,
   type AttendanceWorkState,
 } from '@/lib/attendance/resolve-attendance-action';
 import type { EmployeeContext } from '@/lib/auth/load-employee-context';
@@ -43,6 +43,7 @@ import type { AttendanceType } from '@/lib/types/attendance';
 const PUNCH_MAX_ATTEMPTS = 3;
 
 export interface ScanPunchResult {
+  needsChoice?: false;
   employeeDocId: string;
   employeeId: string;
   employeeName: string;
@@ -56,16 +57,27 @@ export interface ScanPunchResult {
   recordedAt: string;
 }
 
+export interface ScanPunchChoice {
+  needsChoice: true;
+  employeeName: string;
+  locationName: string;
+  locationCity: string;
+  allowedActions: AttendanceType[];
+  state: AttendanceWorkState;
+}
+
 export async function recordScanPunch(input: {
   employee: EmployeeContext;
   token: string;
   /** How the staff opened the link: QR printout vs NFC tag. */
   via?: 'qr' | 'nfc';
+  /** Set when the employee picked an action. Omitted when the scan should decide. */
+  actionType?: AttendanceType;
   latitude?: number;
   longitude?: number;
   geoAccuracy?: number;
   geoCapturedAt?: string;
-}): Promise<ScanPunchResult> {
+}): Promise<ScanPunchResult | ScanPunchChoice> {
   const token = input.token.trim();
   if (!token) {
     throw new ScanPunchError('Scan token is required.', 400);
@@ -122,8 +134,35 @@ export async function recordScanPunch(input: {
     const employeeData = employeeSnapshot.data() ?? {};
     const expectedVersion = presenceVersionFromEmployeeData(employeeData);
     state = resolveAttendanceState({ records, timeZone });
-    allowedActions = resolveAllowedAttendanceActions({ records, timeZone });
-    actionType = resolveAttendanceAction({ records, timeZone });
+    allowedActions = resolvePunchChoices({
+      records,
+      timeZone,
+      breaksEnabled: settings.attendanceBreak.enabled,
+      breakAllowanceMinutes: settings.attendanceBreak.durationMinutes,
+    });
+
+    if (!input.actionType && allowedActions.length > 1) {
+      return {
+        needsChoice: true,
+        employeeName,
+        locationName: location.name,
+        locationCity: location.city,
+        allowedActions,
+        state,
+      };
+    }
+
+    if (input.actionType && isAttendanceType(input.actionType)) {
+      if (!allowedActions.includes(input.actionType)) {
+        throw new ScanPunchError(
+          'That action is not available right now. Scan again.',
+          409,
+        );
+      }
+      actionType = input.actionType;
+    } else {
+      actionType = allowedActions[0] ?? 'check_in';
+    }
 
     if (!allowedActions.includes(actionType)) {
       throw new ScanPunchError(
@@ -211,9 +250,11 @@ export async function recordScanPunch(input: {
           throw new ScanPunchConflictError();
         }
 
-        const currentAllowed = resolveAllowedAttendanceActions({
+        const currentAllowed = resolvePunchChoices({
           records,
           timeZone,
+          breaksEnabled: settings.attendanceBreak.enabled,
+          breakAllowanceMinutes: settings.attendanceBreak.durationMinutes,
         });
         if (!currentAllowed.includes(actionType)) {
           throw new ScanPunchConflictError();

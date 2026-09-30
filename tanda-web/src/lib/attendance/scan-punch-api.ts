@@ -27,6 +27,7 @@ export function isRetryableGeoError(error: unknown): boolean {
 
 export interface ScanPunchResponse {
   ok: true;
+  needsChoice?: false;
   actionType: AttendanceType;
   recordedAt: string;
   employeeName: string;
@@ -34,6 +35,18 @@ export interface ScanPunchResponse {
   locationCity: string;
   state: AttendanceWorkState;
 }
+
+export interface ScanPunchChoiceResponse {
+  ok: true;
+  needsChoice: true;
+  allowedActions: AttendanceType[];
+  employeeName: string;
+  locationName: string;
+  locationCity: string;
+  state: AttendanceWorkState;
+}
+
+export type ScanPunchApiResponse = ScanPunchResponse | ScanPunchChoiceResponse;
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const user = auth?.currentUser;
@@ -51,11 +64,12 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 export async function submitScanPunchRequest(input: {
   token: string;
   via?: 'qr' | 'nfc';
+  actionType?: AttendanceType;
   latitude?: number;
   longitude?: number;
   geoAccuracy?: number;
   geoCapturedAt?: string;
-}): Promise<ScanPunchResponse> {
+}): Promise<ScanPunchApiResponse> {
   const headers = await getAuthHeaders();
   const response = await fetch('/api/attendance/scan-punch', {
     method: 'POST',
@@ -63,6 +77,7 @@ export async function submitScanPunchRequest(input: {
     body: JSON.stringify({
       token: input.token,
       via: input.via ?? 'qr',
+      actionType: input.actionType,
       latitude: input.latitude,
       longitude: input.longitude,
       geoAccuracy: input.geoAccuracy,
@@ -73,7 +88,7 @@ export async function submitScanPunchRequest(input: {
   const payload = (await response.json().catch(() => ({}))) as {
     error?: string;
     reason?: GeofenceFailureReason;
-  } & Partial<ScanPunchResponse>;
+  } & Partial<ScanPunchApiResponse>;
 
   if (!response.ok) {
     throw new ScanPunchRequestError(
@@ -82,5 +97,5 @@ export async function submitScanPunchRequest(input: {
     );
   }
 
-  return payload as ScanPunchResponse;
+  return payload as ScanPunchApiResponse;
 }

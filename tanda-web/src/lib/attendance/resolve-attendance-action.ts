@@ -99,6 +99,77 @@ export function resolveAllowedAttendanceActions(input: {
   }
 }
 
+/** Closed break minutes on the open shift for today. An open break is not included. */
+export function completedBreakMinutesThisShift(input: {
+  records: AttendanceActionRecord[];
+  timeZone: string;
+  at?: Date;
+}): number {
+  const today = toInputDateInTimeZone(input.timeZone, input.at ?? new Date());
+  const sorted = sortedRecords(input.records);
+
+  let pendingCheckIn: AttendanceActionRecord | null = null;
+  let pendingBreak: AttendanceActionRecord | null = null;
+  let totalMinutes = 0;
+
+  for (const record of sorted) {
+    if (record.type === 'check_in') {
+      pendingCheckIn = record;
+      pendingBreak = null;
+      totalMinutes = 0;
+      continue;
+    }
+
+    if (record.type === 'check_out' && pendingCheckIn) {
+      pendingCheckIn = null;
+      pendingBreak = null;
+      totalMinutes = 0;
+      continue;
+    }
+
+    if (!pendingCheckIn) continue;
+
+    if (record.type === 'break_start') {
+      pendingBreak = record;
+      continue;
+    }
+
+    if (record.type === 'break_end' && pendingBreak) {
+      const minutes = (record.timestampMs - pendingBreak.timestampMs) / 60_000;
+      if (minutes > 0) totalMinutes += minutes;
+      pendingBreak = null;
+    }
+  }
+
+  if (!pendingCheckIn) return 0;
+  const checkInDate = recordDateInTimeZone(input.timeZone, pendingCheckIn.timestampMs);
+  if (compareInputDates(checkInDate, today) < 0) return 0;
+  return totalMinutes;
+}
+
+/**
+ * What a scan or kiosk may offer.
+ * Off duty → clock in. On break → end break only.
+ * Working → start break and clock out, until closed breaks pass the allowance.
+ */
+export function resolvePunchChoices(input: {
+  records: AttendanceActionRecord[];
+  timeZone: string;
+  at?: Date;
+  breaksEnabled: boolean;
+  breakAllowanceMinutes: number;
+}): AttendanceType[] {
+  const state = resolveAttendanceState(input);
+
+  if (state === 'off_duty') return ['check_in'];
+  if (state === 'on_break') return ['break_end'];
+
+  const used = completedBreakMinutesThisShift(input);
+  const allowance = input.breakAllowanceMinutes;
+  if (!input.breaksEnabled || used > allowance) return ['check_out'];
+  return ['break_start', 'check_out'];
+}
+
 /**
  * Next punch when there is exactly one allowed action.
  * Prefer break_end when on break, check_in when off duty.

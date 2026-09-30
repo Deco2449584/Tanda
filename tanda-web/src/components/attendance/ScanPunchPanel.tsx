@@ -15,8 +15,11 @@ import {
   isRetryableGeoError,
   ScanPunchRequestError,
   submitScanPunchRequest,
+  type ScanPunchApiResponse,
   type ScanPunchResponse,
 } from '@/lib/attendance/scan-punch-api';
+import { formatKioskActionLabel } from '@/lib/kiosk/kiosk-action-labels';
+import type { AttendanceType } from '@/lib/types/attendance';
 import type { ScanPunchVia } from '@/lib/attendance/scan-punch-token';
 import {
   captureGeofencePositionResult,
@@ -27,9 +30,9 @@ import { useAuthRole } from '@/hooks/useAuthRole';
 import { getHomeRouteForRole } from '@/lib/auth/roles';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 
-type PunchPhase = 'auth' | 'punching' | 'locating' | 'success' | 'error';
+type PunchPhase = 'auth' | 'punching' | 'locating' | 'choose' | 'success' | 'error';
 
-const pendingPunches = new Map<string, Promise<ScanPunchResponse>>();
+const pendingPunches = new Map<string, Promise<ScanPunchApiResponse>>();
 const recentPunchResults = new Map<
   string,
   { result: ScanPunchResponse; at: number }
@@ -58,13 +61,15 @@ export function ScanPunchPanel({
   const [geoBlocked, setGeoBlocked] = useState(false);
   const [outsideGeofence, setOutsideGeofence] = useState(false);
   const [result, setResult] = useState<ScanPunchResponse | null>(null);
+  const [choices, setChoices] = useState<AttendanceType[]>([]);
+  const [choiceName, setChoiceName] = useState('');
   const startedRef = useRef(false);
   const onCompletedRef = useRef(onCompleted);
 
   const returnPath =
     loginReturnPath ?? `/punch/s/${token}?via=${via === 'nfc' ? 'nfc' : 'qr'}`;
 
-  const runPunch = useCallback(async (lockKey: string) => {
+  const runPunch = useCallback(async (lockKey: string, actionType?: AttendanceType) => {
     setPhase('punching');
     setError('');
     setGeoBlocked(false);
@@ -92,6 +97,7 @@ export function ScanPunchPanel({
           return await submitScanPunchRequest({
             token,
             via,
+            actionType,
             latitude: geo?.latitude,
             longitude: geo?.longitude,
             geoAccuracy: geo?.accuracy,
@@ -113,6 +119,7 @@ export function ScanPunchPanel({
           return await submitScanPunchRequest({
             token,
             via,
+            actionType,
             latitude: precise.position.latitude,
             longitude: precise.position.longitude,
             geoAccuracy: precise.position.accuracy,
@@ -125,6 +132,12 @@ export function ScanPunchPanel({
 
     try {
       const response = await request;
+      if (response.needsChoice) {
+        setChoices(response.allowedActions);
+        setChoiceName(response.employeeName);
+        setPhase('choose');
+        return;
+      }
       recentPunchResults.set(lockKey, { result: response, at: Date.now() });
       setResult(response);
       setPhase('success');
@@ -175,6 +188,32 @@ export function ScanPunchPanel({
             title="Checking session…"
             body="You need to be signed in to clock in with this link."
           />
+        ) : null}
+
+        {phase === 'choose' ? (
+          <div className="space-y-4 text-center">
+            <div>
+              <p className="text-lg font-semibold text-foreground">Choose action</p>
+              <p className="mt-1 text-sm text-muted">{choiceName}</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {choices.map((action) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => {
+                    const lockKey = user
+                      ? `${user.uid}:${token}:${via}:${action}`
+                      : `${token}:${action}`;
+                    void runPunch(lockKey, action);
+                  }}
+                  className="inline-flex min-h-12 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:opacity-90"
+                >
+                  {formatKioskActionLabel(action)}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         {phase === 'punching' ? (
