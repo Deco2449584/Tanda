@@ -1,6 +1,6 @@
 import { FieldValue, type Timestamp } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@/lib/constants';
-import { toInputDateInTimeZone } from '@/lib/dates/timezone';
+import { toInputDateInTimeZone, zonedDayBounds } from '@/lib/dates/timezone';
 import {
   getLateMinutes,
   isCheckInLate,
@@ -232,6 +232,12 @@ async function markShiftAbsent(shiftId: string): Promise<void> {
   });
 }
 
+async function clearShiftAbsent(shiftId: string): Promise<void> {
+  await getAdminFirestore().collection(COLLECTIONS.SHIFTS).doc(shiftId).update({
+    status: 'scheduled',
+  });
+}
+
 /**
  * Deletes no-show / late notifications and justifications tied to a shift.
  * Call when the shift is removed so employees are not left with unsupported alerts.
@@ -324,8 +330,7 @@ export async function pruneOrphanAttendanceAlerts(): Promise<{
     const cached = lateEvidenceCache.get(cacheKey);
     if (cached !== undefined) return cached;
 
-    const dayStart = new Date(`${dateKey}T00:00:00`);
-    const dayEnd = new Date(`${dateKey}T23:59:59.999`);
+    const { start: dayStart, end: dayEnd } = zonedDayBounds(dateKey, settings.timeZone);
     const attendanceSnap = await db
       .collection(COLLECTIONS.ATTENDANCE_RECORDS)
       .where('employeeId', '==', employeeId)
@@ -448,8 +453,8 @@ export async function cleanupStaleLateAlertsForEmployeeDay(
   }
 
   const db = getAdminFirestore();
-  const dayStart = new Date(`${date}T00:00:00`);
-  const dayEnd = new Date(`${date}T23:59:59.999`);
+  const settings = await loadCompanySettings();
+  const { start: dayStart, end: dayEnd } = zonedDayBounds(date, settings.timeZone);
 
   const [attendanceSnap, shiftsSnap, employee] = await Promise.all([
     db
@@ -581,6 +586,7 @@ export async function evaluateDailyAttendanceAlerts(): Promise<{
   const now = new Date();
   const todayKey = toInputDateInTimeZone(settings.timeZone, now);
   const nowMinutes = getMinutesInTimeZone(settings.timeZone, now);
+  const todayBounds = zonedDayBounds(todayKey, settings.timeZone);
 
   const [shiftsSnapshot, attendanceSnapshot] = await Promise.all([
     getAdminFirestore()
@@ -589,8 +595,8 @@ export async function evaluateDailyAttendanceAlerts(): Promise<{
       .get(),
     getAdminFirestore()
       .collection(COLLECTIONS.ATTENDANCE_RECORDS)
-      .where('timestampServer', '>=', new Date(`${todayKey}T00:00:00`))
-      .where('timestampServer', '<=', new Date(`${todayKey}T23:59:59.999`))
+      .where('timestampServer', '>=', todayBounds.start)
+      .where('timestampServer', '<=', todayBounds.end)
       .get(),
   ]);
 
@@ -647,6 +653,10 @@ export async function evaluateDailyAttendanceAlerts(): Promise<{
       const staleSnap = await staleRef.get();
       if (staleSnap.exists) {
         await staleRef.delete();
+      }
+
+      if (data.status === 'absent') {
+        await clearShiftAbsent(shift.id);
       }
     }
 
