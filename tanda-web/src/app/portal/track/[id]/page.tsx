@@ -65,7 +65,7 @@ function PortalTrackDetailContent() {
   }, [load]);
 
   if (loading) {
-    return <p className="text-sm text-zinc-500">Loading inspection…</p>;
+    return <p className="text-sm font-normal text-white/55">Loading inspection…</p>;
   }
 
   if (error || !inspection) {

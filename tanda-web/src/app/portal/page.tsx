@@ -2,31 +2,51 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Camera,
-  Lock,
-  PackageSearch,
-  ShieldCheck,
-  Thermometer,
-  User,
-} from 'lucide-react';
+import { Camera, Lock, PackageSearch, ShieldCheck, User } from 'lucide-react';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { PortalFooter } from '@/components/portal/PortalFooter';
+import { PortalHeroPhoto } from '@/components/portal/PortalHeroPhoto';
 import {
   loginPortalAccount,
   verifyPortalAccess,
 } from '@/lib/portal/client-api';
-import {
-  PORTAL_COMPANY_TAGLINE,
-  PORTAL_HIGHLIGHTS,
-  PORTAL_TRUST_STATS,
-} from '@/lib/portal/portal-brand';
+import { PORTAL_HIGHLIGHTS } from '@/lib/portal/portal-brand';
 import { savePortalSession } from '@/lib/portal/client-session';
 import { COMPANY_NAME } from '@/lib/types/company-settings';
 
 const HIGHLIGHT_ICONS = [PackageSearch, Camera, ShieldCheck] as const;
 
+const PORTAL_SERVICES = [
+  'Airfreight',
+  'Seafreight',
+  'Warehouse operations',
+  'Cargo screeners',
+] as const;
+
 type PortalLoginMode = 'awb' | 'account';
+
+function HighlightCard({
+  item,
+  icon: Icon,
+}: {
+  item: (typeof PORTAL_HIGHLIGHTS)[number];
+  icon: (typeof HIGHLIGHT_ICONS)[number];
+}) {
+  return (
+    <li className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-sm">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
+        <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+      </span>
+      <p className="mt-3 text-sm font-bold text-white">{item.title}</p>
+      <p className="mt-1 text-xs font-normal leading-relaxed text-white/70">
+        {item.description}
+      </p>
+    </li>
+  );
+}
+
+const fieldClass =
+  'w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[#F51EA0] focus:ring-2 focus:ring-[#F51EA0]/15';
 
 export default function PortalLoginPage() {
   const router = useRouter();
@@ -73,120 +93,50 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#262626]">
-      <div className="flex flex-1 flex-col lg:flex-row">
-        <section className="relative flex flex-1 flex-col justify-between overflow-hidden bg-gradient-to-r from-[#262626] to-[#606060] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-12">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -right-20 top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -bottom-16 left-10 h-48 w-48 rounded-full bg-[#F51EA0]/20 blur-3xl"
-            aria-hidden
-          />
+    <div className="relative flex min-h-screen flex-col text-white">
+      <PortalHeroPhoto priority veil="left" />
 
-          <div className="relative">
+      <div className="relative flex min-h-screen flex-col">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-10 px-4 py-8 lg:flex-row lg:items-center lg:gap-16 lg:px-8 lg:py-12">
+          <section className="flex-1">
             <CompanyLogo
               variant="horizontal"
               priority
-              className="h-20 w-auto max-w-[280px] object-contain sm:h-24"
+              className="h-16 w-auto max-w-[240px] object-contain object-left mix-blend-screen sm:h-20"
             />
-            <p className="mt-2 text-xs font-light uppercase tracking-[0.25em] text-white/60">
-              {PORTAL_COMPANY_TAGLINE}
-            </p>
-
-            <h1 className="font-display mt-10 max-w-lg text-3xl font-normal leading-tight tracking-wide sm:text-4xl">
-              Cargo visibility for{' '}
-              <span className="text-[#F51EA0]">forwarder partners.</span>
+            <h1 className="mt-8 max-w-xl text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
+              Keeping your cargo{' '}
+              <span className="text-[#F51EA0]">in sight.</span>
             </h1>
-            <p className="mt-4 max-w-md text-base font-light leading-relaxed text-white/75">
+            <p className="mt-4 max-w-md text-base font-normal leading-relaxed text-white/80">
               {COMPANY_NAME} client portal — monitor perishable inspections,
-              review evidence, and stay aligned with warehouse operations in
-              real time.
+              review evidence, and stay aligned with warehouse operations.
             </p>
 
-            <div className="mt-8 grid grid-cols-3 gap-3 sm:max-w-lg">
-              {PORTAL_TRUST_STATS.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm"
-                >
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                    {stat.label}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-white">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+            <ul className="mt-8 hidden gap-3 lg:grid lg:grid-cols-3">
+              {PORTAL_HIGHLIGHTS.map((item, index) => {
+                const Icon = HIGHLIGHT_ICONS[index] ?? PackageSearch;
+                return (
+                  <HighlightCard key={item.title} item={item} icon={Icon} />
+                );
+              })}
+            </ul>
+          </section>
 
-          <ul className="relative mt-10 hidden space-y-3 lg:block">
-            {PORTAL_HIGHLIGHTS.map((item, index) => {
-              const Icon = HIGHLIGHT_ICONS[index] ?? PackageSearch;
-              return (
-                <li
-                  key={item.title}
-                  className="flex gap-4 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[#CBCBCB]">
-                    <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="mt-0.5 text-sm font-light text-white/65">{item.description}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <section className="w-full shrink-0 lg:w-[400px]">
+            <div className="rounded-2xl bg-white p-6 text-zinc-900 shadow-2xl shadow-black/40 sm:p-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                Client portal
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight">
+                Track your cargo
+              </h2>
+              <p className="mt-2 text-sm font-normal text-zinc-500">
+                Use a shipment AWB and company PIN, or sign in with your client
+                account.
+              </p>
 
-          <div className="relative mt-8 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 lg:hidden">
-            <Thermometer className="h-5 w-5 shrink-0 text-[#CBCBCB]" aria-hidden />
-            <p className="text-sm font-light text-white/80">
-              Temperature-controlled perishables · Sydney air cargo hub
-            </p>
-          </div>
-        </section>
-
-        <section className="relative flex flex-1 flex-col justify-center overflow-hidden bg-[#3A3A3A] px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.08]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -left-16 bottom-10 h-56 w-56 rounded-full bg-[#F51EA0]/15 blur-3xl"
-            aria-hidden
-          />
-          <div className="relative mx-auto w-full max-w-md">
-            <div className="mb-8 lg:hidden">
-              <CompanyLogo variant="mark-light" className="mx-auto h-16 w-16" />
-            </div>
-
-            <div className="rounded-2xl border border-white/15 bg-[#2A2A2A] p-6 shadow-2xl shadow-black/40 sm:p-8">
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                  Client portal
-                </p>
-                <h2 className="font-display mt-2 text-2xl font-normal text-white">
-                  Track your cargo
-                </h2>
-                <p className="mt-2 text-sm font-light text-white/65">
-                  Use a shipment AWB and company PIN, or sign in with your
-                  client account to see every enabled inspection.
-                </p>
-              </div>
-
-              <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-[#1F1F1F] p-1">
+              <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -196,7 +146,7 @@ export default function PortalLoginPage() {
                   className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                     mode === 'awb'
                       ? 'bg-[#F51EA0] text-white'
-                      : 'text-white/60 hover:text-white'
+                      : 'text-zinc-500 hover:text-zinc-800'
                   }`}
                 >
                   AWB + PIN
@@ -210,73 +160,73 @@ export default function PortalLoginPage() {
                   className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                     mode === 'account'
                       ? 'bg-[#F51EA0] text-white'
-                      : 'text-white/60 hover:text-white'
+                      : 'text-zinc-500 hover:text-zinc-800'
                   }`}
                 >
-                  Username
+                  Client login
                 </button>
               </div>
 
-              <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+              <form onSubmit={(e) => void handleSubmit(e)} className="mt-5 space-y-4">
                 {mode === 'awb' ? (
                   <>
-                <div>
-                  <label
-                    htmlFor="awb"
-                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
-                  >
-                    AWB number
-                  </label>
-                  <input
-                    id="awb"
-                    type="text"
-                    value={awbNumber}
-                    onChange={(e) => setAwbNumber(e.target.value)}
-                    placeholder="e.g. 045-12345678"
-                    autoComplete="off"
-                    required={mode === 'awb'}
-                    className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
-                  />
-                </div>
+                    <div>
+                      <label
+                        htmlFor="awb"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                      >
+                        AWB number
+                      </label>
+                      <input
+                        id="awb"
+                        type="text"
+                        value={awbNumber}
+                        onChange={(e) => setAwbNumber(e.target.value)}
+                        placeholder="e.g. 045-12345678"
+                        autoComplete="off"
+                        required
+                        className={fieldClass}
+                      />
+                    </div>
 
-                <div>
-                  <label
-                    htmlFor="pin"
-                    className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
-                  >
-                    Company PIN
-                  </label>
-                  <div className="relative">
-                    <Lock
-                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
-                      aria-hidden
-                    />
-                    <input
-                      id="pin"
-                      type="password"
-                      inputMode="numeric"
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value)}
-                      placeholder="6–8 digits"
-                      autoComplete="off"
-                      required={mode === 'awb'}
-                      className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <label
+                        htmlFor="pin"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                      >
+                        Company PIN
+                      </label>
+                      <div className="relative">
+                        <Lock
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                          aria-hidden
+                        />
+                        <input
+                          id="pin"
+                          type="password"
+                          inputMode="numeric"
+                          value={pin}
+                          onChange={(e) => setPin(e.target.value)}
+                          placeholder="6–8 digits"
+                          autoComplete="off"
+                          required
+                          className={`${fieldClass} pl-11`}
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>
                     <div>
                       <label
                         htmlFor="portal-username"
-                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
                       >
                         Username
                       </label>
                       <div className="relative">
                         <User
-                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
                           aria-hidden
                         />
                         <input
@@ -286,21 +236,21 @@ export default function PortalLoginPage() {
                           onChange={(e) => setUsername(e.target.value)}
                           placeholder="Your client username"
                           autoComplete="username"
-                          required={mode === 'account'}
-                          className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
+                          required
+                          className={`${fieldClass} pl-11`}
                         />
                       </div>
                     </div>
                     <div>
                       <label
                         htmlFor="portal-password"
-                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
                       >
                         Password
                       </label>
                       <div className="relative">
                         <Lock
-                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
                           aria-hidden
                         />
                         <input
@@ -310,8 +260,8 @@ export default function PortalLoginPage() {
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="At least 8 characters"
                           autoComplete="current-password"
-                          required={mode === 'account'}
-                          className="w-full rounded-xl border border-white/15 bg-[#1F1F1F] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#F51EA0]/50 focus:ring-2 focus:ring-[#F51EA0]/15"
+                          required
+                          className={`${fieldClass} pl-11`}
                         />
                       </div>
                     </div>
@@ -320,7 +270,7 @@ export default function PortalLoginPage() {
 
                 {error ? (
                   <p
-                    className="rounded-xl border border-red-400/40 bg-red-950/50 px-3 py-2.5 text-sm text-red-200"
+                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
                     role="alert"
                   >
                     {error}
@@ -330,7 +280,7 @@ export default function PortalLoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-[#F51EA0] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#F51EA0]/25 transition hover:bg-[#d4198a] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl bg-[#F51EA0] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#d4198a] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading
                     ? 'Verifying…'
@@ -340,15 +290,27 @@ export default function PortalLoginPage() {
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-xs font-light leading-relaxed text-white/50">
+              <p className="mt-6 text-center text-xs font-normal leading-relaxed text-zinc-500">
                 Need a PIN or account? Contact your {COMPANY_NAME} representative.
               </p>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
 
-      <PortalFooter />
+          <ul className="grid gap-3 lg:hidden">
+            {PORTAL_HIGHLIGHTS.map((item, index) => {
+              const Icon = HIGHLIGHT_ICONS[index] ?? PackageSearch;
+              return <HighlightCard key={item.title} item={item} icon={Icon} />;
+            })}
+          </ul>
+        </div>
+
+        <p className="mx-auto flex w-full max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 pb-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/75 lg:px-8">
+          {PORTAL_SERVICES.map((service) => (
+            <span key={service}>{service}</span>
+          ))}
+        </p>
+        <PortalFooter />
+      </div>
     </div>
   );
 }
