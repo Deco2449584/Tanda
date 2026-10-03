@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ClipboardList, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
@@ -25,8 +26,21 @@ export function PortalShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-black text-white">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-white/10 bg-black lg:flex">
+    <div className="relative z-0 flex min-h-screen text-white">
+      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
+        <Image
+          src="/portal/port-night.webp"
+          alt=""
+          fill
+          priority
+          unoptimized
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="portal-detail-veil absolute inset-0" />
+      </div>
+      <aside className="relative z-10 hidden w-60 shrink-0 flex-col border-r border-white/15 bg-black/35 lg:flex">
         <PortalNav
           onList={onList}
           onNavigate={close}
@@ -38,11 +52,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-40 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/35"
             aria-label="Close menu"
             onClick={close}
           />
-          <aside className="relative flex h-full w-64 flex-col border-r border-white/10 bg-black">
+          <aside className="relative flex h-full w-64 flex-col border-r border-white/10 bg-black/25 backdrop-blur-md">
             <div className="flex justify-end px-3 pt-3">
               <button
                 type="button"
@@ -64,7 +78,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div className="relative z-10 flex min-h-full min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 lg:hidden">
+        <div className="relative z-20 flex items-center gap-3 border-b border-white/10 px-4 py-3 lg:hidden">
           <button
             type="button"
             onClick={() => setOpen(true)}

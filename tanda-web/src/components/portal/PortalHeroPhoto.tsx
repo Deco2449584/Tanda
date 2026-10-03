@@ -32,7 +32,7 @@ export function PortalHeroPhoto({
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
         </>
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
       )}
     </div>
   );

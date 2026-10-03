@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   CheckCircle2,
   ClipboardList,
-  ChevronRight,
   LogOut,
   RefreshCw,
   ScanSearch,
@@ -31,6 +30,15 @@ import {
 
 const POLL_MS = 60_000;
 
+type StatusFilter = 'all' | 'identification' | 'processed' | 'loaded';
+
+const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'identification', label: 'Identification' },
+  { id: 'processed', label: 'Processed' },
+  { id: 'loaded', label: 'On truck' },
+];
+
 export default function PortalTrackPage() {
   return (
     <PortalAuthGuard>
@@ -45,6 +53,7 @@ function PortalTrackContent() {
   const [awbNumber, setAwbNumber] = useState('');
   const [clientName, setClientName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [inspections, setInspections] = useState<PortalInspectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -101,7 +110,7 @@ function PortalTrackContent() {
     router.replace('/portal');
   }
 
-  const visibleInspections = useMemo(() => {
+  const searchedInspections = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return inspections;
     return inspections.filter((item) => {
@@ -112,13 +121,20 @@ function PortalTrackContent() {
     });
   }, [inspections, searchQuery]);
 
-  const identificationCount = visibleInspections.filter(
+  const visibleInspections = useMemo(() => {
+    if (statusFilter === 'all') return searchedInspections;
+    return searchedInspections.filter(
+      (item) => normalizeInspectionStatus(item.status) === statusFilter,
+    );
+  }, [searchedInspections, statusFilter]);
+
+  const identificationCount = searchedInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'identification',
   ).length;
-  const processedCount = visibleInspections.filter(
+  const processedCount = searchedInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'processed',
   ).length;
-  const loadedCount = visibleInspections.filter(
+  const loadedCount = searchedInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'loaded',
   ).length;
 
@@ -199,20 +215,59 @@ function PortalTrackContent() {
           label="Identification"
           value={identificationCount}
           hint="Pending"
+          active={statusFilter === 'identification'}
+          onSelect={() =>
+            setStatusFilter((current) =>
+              current === 'identification' ? 'all' : 'identification',
+            )
+          }
         />
         <PortalStatCard
           icon={CheckCircle2}
           label="Processed"
           value={processedCount}
           hint="Completed"
+          active={statusFilter === 'processed'}
+          onSelect={() =>
+            setStatusFilter((current) =>
+              current === 'processed' ? 'all' : 'processed',
+            )
+          }
         />
         <PortalStatCard
           icon={Truck}
           label="On truck"
           value={loadedCount}
           hint="In transit"
+          active={statusFilter === 'loaded'}
+          onSelect={() =>
+            setStatusFilter((current) => (current === 'loaded' ? 'all' : 'loaded'))
+          }
         />
       </div>
+
+      {!loading && inspections.length > 0 ? (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+          {STATUS_FILTERS.map((filter) => {
+            const selected = statusFilter === filter.id;
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setStatusFilter(filter.id)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  selected
+                    ? 'bg-[#F51EA0] text-white'
+                    : 'portal-glass text-white/75 hover:text-white'
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {kind === 'account' && !loading && inspections.length > 0 ? (
         <div className="relative">
@@ -251,7 +306,13 @@ function PortalTrackContent() {
       ) : visibleInspections.length === 0 ? (
         <PortalEmptyCard
           title="No matching inspections"
-          body={`Nothing matches “${searchQuery.trim()}”.`}
+          body={
+            searchQuery.trim() && statusFilter !== 'all'
+              ? 'Nothing matches this status and search.'
+              : statusFilter !== 'all'
+                ? 'No inspections in this status.'
+                : `Nothing matches “${searchQuery.trim()}”.`
+          }
         />
       ) : (
         <div className="grid gap-4">
@@ -269,14 +330,25 @@ function PortalStatCard({
   label,
   value,
   hint,
+  active,
+  onSelect,
 }: {
   icon: LucideIcon;
   label: string;
   value: number;
   hint: string;
+  active: boolean;
+  onSelect: () => void;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl portal-glass px-5 py-5">
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      className={`flex w-full items-center gap-4 rounded-2xl portal-glass px-5 py-5 text-left transition ${
+        active ? 'ring-2 ring-[#F51EA0]' : 'hover:border-white/40'
+      }`}
+    >
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
         <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
       </span>
@@ -287,8 +359,7 @@ function PortalStatCard({
         <p className="mt-2 text-3xl font-bold leading-none">{value}</p>
         <p className="mt-1.5 text-xs font-normal leading-4 text-white/55">{hint}</p>
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-white/30" aria-hidden />
-    </div>
+    </button>
   );
 }
 
