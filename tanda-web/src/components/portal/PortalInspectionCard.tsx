@@ -58,7 +58,7 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
   return (
     <Link
       href={`/portal/track/${inspection.id}`}
-      className="group flex overflow-hidden rounded-[22px] bg-[#2F2F2F] text-white shadow-md transition hover:shadow-lg"
+      className="portal-glass group flex overflow-hidden rounded-[22px] text-white transition hover:border-white/25"
     >
       <div className="w-[3px] shrink-0" style={{ backgroundColor: status.color }} aria-hidden />
 

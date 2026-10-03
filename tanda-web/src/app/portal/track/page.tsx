@@ -193,7 +193,7 @@ function PortalTrackContent() {
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <PortalStatCard
           icon={ScanSearch}
           label="Identification"
@@ -224,7 +224,7 @@ function PortalTrackContent() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Filter by AWB, ULD, or product…"
-            className="w-full rounded-xl border border-[#262626]/20 bg-[#2F2F2F] py-3 pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#F51EA0]/50"
+            className="w-full rounded-xl portal-glass py-3 pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#F51EA0]/50"
           />
         </div>
       ) : null}
@@ -276,16 +276,16 @@ function PortalStatCard({
   hint: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[#242424] px-5 py-4">
+    <div className="flex items-center gap-4 rounded-2xl portal-glass px-5 py-5">
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
         <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
+        <p className="pr-[0.12em] text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/45">
           {label}
         </p>
-        <p className="text-3xl font-bold leading-none tracking-tight">{value}</p>
-        <p className="mt-1 text-xs font-normal text-white/55">{hint}</p>
+        <p className="mt-2 text-3xl font-bold leading-none">{value}</p>
+        <p className="mt-1.5 text-xs font-normal leading-4 text-white/55">{hint}</p>
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-white/30" aria-hidden />
     </div>
@@ -294,7 +294,7 @@ function PortalStatCard({
 
 function PortalEmptyCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#242424] px-6 py-16 text-center">
+    <div className="rounded-2xl portal-glass px-6 py-16 text-center">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
         <ClipboardList className="h-5 w-5" strokeWidth={1.75} aria-hidden />
       </span>

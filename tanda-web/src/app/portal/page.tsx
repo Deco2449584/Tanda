@@ -93,7 +93,7 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="bg-[#141414] text-white">
+    <div className="bg-black text-white">
       <section className="relative flex min-h-screen flex-col">
       <PortalHeroPhoto src="/portal/cargo-landing.webp" priority veil="left" />
 

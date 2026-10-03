@@ -16,6 +16,7 @@ import {
   User,
 } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import {
   InspectionIssuesBadge,
   InspectionLifecycleBadge,
@@ -63,15 +64,39 @@ function DetailIconRow({
   }
 
   return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/8 text-[#93C5FD]">
-        <Icon className="h-4 w-4" aria-hidden />
+    <div className="flex items-center gap-4 rounded-2xl portal-glass px-4 py-4">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
+        <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-white/45">
+        <p className="pr-[0.12em] text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/45">
           {label}
         </p>
-        <p className="mt-0.5 text-base font-semibold text-white">{value}</p>
+        <p className="mt-1.5 text-base font-bold leading-5 text-white">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-4 rounded-2xl portal-glass px-5 py-5">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
+        <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+      </span>
+      <div className="min-w-0">
+        <p className="pr-[0.12em] text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/45">
+          {label}
+        </p>
+        <p className="mt-2 text-2xl font-bold leading-tight">{value}</p>
       </div>
     </div>
   );
@@ -84,99 +109,119 @@ export function PortalInspectionDetailView({
   const mapsUrl = resolveInspectionMapsUrl(inspection);
   const unitLabel = getUnitTypeLabel(resolveUnitType(inspection.unitType, inspection.uldId));
   const conservation = CONSERVATION_COLORS[inspection.conservationType];
+  const coverPhoto = inspection.photoEvidence[0];
 
   return (
     <div className="space-y-5">
       <div>
         <Link
           href="/portal/track"
-          className="inline-flex items-center gap-2 text-sm font-medium text-white/65 transition hover:text-white"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 transition hover:text-[#F51EA0]"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to list
         </Link>
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-[#262626]/15 bg-gradient-to-br from-[#262626] to-[#4A4A4A] p-5 text-white shadow-lg md:p-6">
-        <LifecycleStepper
-          inspection={inspection}
-          mutedBarClass="bg-white/15"
-          mutedLabelClass="text-white/35"
-        />
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">
-          Cargo inspection
-        </p>
-        <div className="mt-2 flex min-w-0 items-center gap-2">
-          <h1 className="font-display truncate text-2xl font-normal tracking-wide md:text-3xl">
-            {getInspectionDisplayTitle(inspection)}
-          </h1>
-          <CopyAwbButton
-            value={inspection.uldId.trim() || inspection.awbNumber}
-            label="Copy identification number"
-            iconOnly
-            variant="onDark"
+      <section className="overflow-hidden rounded-2xl portal-glass">
+        {coverPhoto ? (
+          <div className="relative h-44 md:h-56">
+            <FirebaseImage
+              src={coverPhoto}
+              alt=""
+              width={1200}
+              height={420}
+              priority
+              className="h-full w-full object-cover"
+              sizes="(max-width: 768px) 100vw, 960px"
+              quality={80}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/10" />
+          </div>
+        ) : null}
+        <div className="px-5 py-6 md:px-6">
+          <LifecycleStepper
+            inspection={inspection}
+            mutedBarClass="bg-white/15"
+            mutedLabelClass="text-white/35"
           />
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <p className="text-sm text-white/70">
-            {unitLabel} · AWB {inspection.awbNumber}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#F51EA0]">
+            Cargo inspection
           </p>
-          <CopyAwbButton awbNumber={inspection.awbNumber} variant="onDark" />
-        </div>
+          <div className="mt-2 flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-3xl font-bold tracking-tight md:text-4xl">
+              {getInspectionDisplayTitle(inspection)}
+            </h1>
+            <CopyAwbButton
+              value={inspection.uldId.trim() || inspection.awbNumber}
+              label="Copy identification number"
+              iconOnly
+              variant="onDark"
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-sm font-normal text-white/75">
+              {unitLabel} · AWB {inspection.awbNumber}
+            </p>
+            <CopyAwbButton awbNumber={inspection.awbNumber} variant="onDark" />
+          </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <InspectionLifecycleBadge inspection={inspection} />
-          {detailStatus.hasIssues ? <InspectionIssuesBadge /> : null}
-        </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <InspectionLifecycleBadge inspection={inspection} />
+            {detailStatus.hasIssues ? <InspectionIssuesBadge /> : null}
+          </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {inspection.weightKg > 0 ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                <Dumbbell className="h-3.5 w-3.5 text-[#93C5FD]" aria-hidden />
-                Weight
-              </p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {inspection.weightKg} kg
-              </p>
-            </div>
-          ) : null}
-          {inspection.boxCount > 0 ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                <Package className="h-3.5 w-3.5 text-[#93C5FD]" aria-hidden />
-                {getCountUnitLabel(inspection.countUnit, inspection.boxCount)}
-              </p>
-              <p className="mt-1 text-lg font-semibold text-white">{inspection.boxCount}</p>
-            </div>
-          ) : null}
-          <div
-            className="rounded-xl border px-3 py-2.5"
-            style={{
-              backgroundColor: conservation.bg,
-              borderColor: `${conservation.text}33`,
-              color: conservation.text,
-            }}
+          <p className="mt-4 flex items-center gap-2 text-xs font-normal text-white/50">
+            <Calendar className="h-3.5 w-3.5 text-[#F51EA0]" aria-hidden />
+            Registered {formatInspectionDate(inspection.registeredAt)}
+            {inspection.updatedAt
+              ? ` · Updated ${formatInspectionDate(inspection.updatedAt)}`
+              : ''}
+          </p>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {inspection.weightKg > 0 ? (
+          <MetricCard
+            icon={Dumbbell}
+            label="Weight"
+            value={`${inspection.weightKg} kg`}
+          />
+        ) : null}
+        {inspection.boxCount > 0 ? (
+          <MetricCard
+            icon={Package}
+            label={getCountUnitLabel(inspection.countUnit, inspection.boxCount)}
+            value={String(inspection.boxCount)}
+          />
+        ) : null}
+        <div
+          className="flex min-w-0 items-center gap-4 rounded-2xl border px-5 py-5"
+          style={{
+            backgroundColor: conservation.bg,
+            borderColor: `${conservation.text}55`,
+            color: conservation.text,
+          }}
+        >
+          <span
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border"
+            style={{ borderColor: `${conservation.text}88` }}
           >
-            <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide">
-              <Snowflake className="h-3.5 w-3.5" aria-hidden />
+            <Snowflake className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="pr-[0.12em] text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] opacity-70">
               Cold chain
             </p>
-            <p className="mt-1 text-sm font-semibold">
+            <p className="mt-2 text-2xl font-bold leading-tight">
               {getConservationLabel(inspection.conservationType)}
             </p>
           </div>
         </div>
+      </div>
 
-        <p className="mt-4 text-xs text-white/50">
-          Registered {formatInspectionDate(inspection.registeredAt)}
-          {inspection.updatedAt
-            ? ` · Updated ${formatInspectionDate(inspection.updatedAt)}`
-            : ''}
-        </p>
-      </section>
-
-      <section className="grid gap-4 rounded-2xl border border-[#262626]/12 bg-[#2F2F2F] p-5 shadow-md sm:grid-cols-2 md:p-6">
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <DetailIconRow icon={Package} label="Cargo type" value={unitLabel} />
         <DetailIconRow icon={Package} label="Product name" value={inspection.foodType} />
         {typeof inspection.temperatureCelsius === 'number' ? (
@@ -211,19 +256,19 @@ export function PortalInspectionDetailView({
           />
         ) : null}
         {mapsUrl ? (
-          <div className="flex items-start gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/8 text-[#93C5FD]">
-              <MapPin className="h-4 w-4" aria-hidden />
+          <div className="flex items-center gap-4 rounded-2xl portal-glass px-4 py-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
+              <MapPin className="h-4 w-4" strokeWidth={1.75} aria-hidden />
             </span>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-white/45">
+              <p className="pr-[0.12em] text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/45">
                 Registration location
               </p>
               <a
                 href={mapsUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#F51EA0] underline-offset-2 hover:underline"
+                className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-bold leading-5 text-[#F51EA0] underline-offset-2 hover:underline"
               >
                 View on map
                 <ExternalLink className="h-3 w-3" aria-hidden />
@@ -255,18 +300,25 @@ export function PortalInspectionDetailView({
         </section>
       )}
 
-      <section className="rounded-2xl border border-[#262626]/12 bg-[#2F2F2F] p-5 shadow-md md:p-6">
-        <h2 className="text-sm font-semibold text-white">
-          Photo evidence ({inspection.photoEvidence.length})
+      <section className="rounded-2xl portal-glass p-5 md:p-6">
+        <h2 className="text-lg font-bold">
+          Photo <span className="text-[#F51EA0]">evidence</span>
+          <span className="ml-2 text-sm font-normal text-white/45">
+            ({inspection.photoEvidence.length})
+          </span>
         </h2>
         <div className="mt-4 portal-gallery">
           <InspectionPhotoGallery photos={inspection.photoEvidence} />
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#262626]/12 bg-[#2F2F2F] p-5 shadow-md md:p-6">
-        <h2 className="text-sm font-semibold text-white">
-          Video evidence ({inspection.videoEvidence.length})
+      {inspection.videoEvidence.length > 0 ? (
+      <section className="rounded-2xl portal-glass p-5 md:p-6">
+        <h2 className="text-lg font-bold">
+          Video <span className="text-[#F51EA0]">evidence</span>
+          <span className="ml-2 text-sm font-normal text-white/45">
+            ({inspection.videoEvidence.length})
+          </span>
         </h2>
         <div className="mt-4">
           <InspectionVideoGallery
@@ -276,6 +328,7 @@ export function PortalInspectionDetailView({
           />
         </div>
       </section>
+      ) : null}
     </div>
   );
 }

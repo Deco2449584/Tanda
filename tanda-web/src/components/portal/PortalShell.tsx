@@ -25,8 +25,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#1A1A1A] text-white">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-white/10 bg-[#141414] md:flex">
+    <div className="flex min-h-screen bg-black text-white">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-white/10 bg-black lg:flex">
         <PortalNav
           onList={onList}
           onNavigate={close}
@@ -35,14 +35,14 @@ export function PortalShell({ children }: { children: ReactNode }) {
       </aside>
 
       {open ? (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-black/60"
             aria-label="Close menu"
             onClick={close}
           />
-          <aside className="relative flex h-full w-64 flex-col border-r border-white/10 bg-[#141414]">
+          <aside className="relative flex h-full w-64 flex-col border-r border-white/10 bg-black">
             <div className="flex justify-end px-3 pt-3">
               <button
                 type="button"
@@ -62,8 +62,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 md:hidden">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <div className="relative z-10 flex min-h-full min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 lg:hidden">
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -82,6 +83,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           {children}
         </main>
         <PortalFooter />
+        </div>
       </div>
     </div>
   );
