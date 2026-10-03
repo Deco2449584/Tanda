@@ -46,7 +46,7 @@ function HighlightCard({
 }
 
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[#F51EA0] focus:ring-2 focus:ring-[#F51EA0]/15';
+  'w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-[#F51EA0] focus:ring-2 focus:ring-[#F51EA0]/25';
 
 export default function PortalLoginPage() {
   const router = useRouter();
@@ -93,9 +93,9 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="bg-black text-white">
-      <section className="relative flex min-h-screen flex-col">
-      <PortalHeroPhoto src="/portal/cargo-landing.webp" priority veil="left" />
+    <div className="relative z-0 text-white">
+      <PortalHeroPhoto src="/portal/cargo-landing.webp" priority veil="left" fixed className="z-0" />
+      <section className="relative z-10 flex min-h-screen flex-col">
 
       <div className="relative flex min-h-screen flex-col">
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-10 px-4 py-8 lg:flex-row lg:items-center lg:gap-16 lg:px-8 lg:py-12">
@@ -125,19 +125,19 @@ export default function PortalLoginPage() {
           </section>
 
           <section className="w-full shrink-0 lg:w-[400px]">
-            <div className="rounded-2xl bg-white p-6 text-zinc-900 shadow-2xl shadow-black/40 sm:p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+            <div className="rounded-2xl border border-white/25 bg-black/40 p-6 text-white sm:p-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">
                 Client portal
               </p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight">
                 Track your cargo
               </h2>
-              <p className="mt-2 text-sm font-normal text-zinc-500">
+              <p className="mt-2 text-sm font-normal text-white/70">
                 Use a shipment AWB and company PIN, or sign in with your client
                 account.
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
+              <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-black/25 p-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -147,7 +147,7 @@ export default function PortalLoginPage() {
                   className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                     mode === 'awb'
                       ? 'bg-[#F51EA0] text-white'
-                      : 'text-zinc-500 hover:text-zinc-800'
+                      : 'text-white/60 hover:text-white'
                   }`}
                 >
                   AWB + PIN
@@ -161,7 +161,7 @@ export default function PortalLoginPage() {
                   className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                     mode === 'account'
                       ? 'bg-[#F51EA0] text-white'
-                      : 'text-zinc-500 hover:text-zinc-800'
+                      : 'text-white/60 hover:text-white'
                   }`}
                 >
                   Client login
@@ -174,7 +174,7 @@ export default function PortalLoginPage() {
                     <div>
                       <label
                         htmlFor="awb"
-                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
                       >
                         AWB number
                       </label>
@@ -193,13 +193,13 @@ export default function PortalLoginPage() {
                     <div>
                       <label
                         htmlFor="pin"
-                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
                       >
                         Company PIN
                       </label>
                       <div className="relative">
                         <Lock
-                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
                           aria-hidden
                         />
                         <input
@@ -221,13 +221,13 @@ export default function PortalLoginPage() {
                     <div>
                       <label
                         htmlFor="portal-username"
-                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
                       >
                         Username
                       </label>
                       <div className="relative">
                         <User
-                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
                           aria-hidden
                         />
                         <input
@@ -245,13 +245,13 @@ export default function PortalLoginPage() {
                     <div>
                       <label
                         htmlFor="portal-password"
-                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                        className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/55"
                       >
                         Password
                       </label>
                       <div className="relative">
                         <Lock
-                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
                           aria-hidden
                         />
                         <input
@@ -271,7 +271,7 @@ export default function PortalLoginPage() {
 
                 {error ? (
                   <p
-                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
+                    className="rounded-xl border border-red-300/40 bg-red-500/15 px-3 py-2.5 text-sm text-red-100"
                     role="alert"
                   >
                     {error}
@@ -291,7 +291,7 @@ export default function PortalLoginPage() {
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-xs font-normal leading-relaxed text-zinc-500">
+              <p className="mt-6 text-center text-xs font-normal leading-relaxed text-white/55">
                 Need a PIN or account? Contact your {COMPANY_NAME} representative.
               </p>
             </div>
@@ -312,7 +312,9 @@ export default function PortalLoginPage() {
         </p>
       </div>
       </section>
-      <PortalFooter />
+      <div className="relative z-10">
+        <PortalFooter />
+      </div>
     </div>
   );
 }

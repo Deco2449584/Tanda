@@ -6,6 +6,8 @@ interface PortalHeroPhotoProps {
   priority?: boolean;
   /** Darken the side that holds the headline, or the bottom of a banner. */
   veil?: 'left' | 'bottom';
+  /** Cover the viewport, including content that scrolls past the first screen. */
+  fixed?: boolean;
   className?: string;
 }
 
@@ -13,10 +15,18 @@ export function PortalHeroPhoto({
   src,
   priority = false,
   veil = 'left',
+  fixed = false,
   className,
 }: PortalHeroPhotoProps) {
   return (
-    <div className={cn('absolute inset-0 overflow-hidden', className)} aria-hidden>
+    <div
+      className={cn(
+        fixed ? 'fixed' : 'absolute',
+        'inset-0 overflow-hidden',
+        className,
+      )}
+      aria-hidden
+    >
       <Image
         src={src}
         alt=""
