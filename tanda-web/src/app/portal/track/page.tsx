@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Plane, RefreshCw, Search } from 'lucide-react';
+import {
+  CheckCircle2,
+  ClipboardList,
+  LogOut,
+  RefreshCw,
+  ScanSearch,
+  Search,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react';
+import { PortalHeroPhoto } from '@/components/portal/PortalHeroPhoto';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
 import { PortalInspectionCard } from '@/components/portal/PortalInspectionCard';
 import { PortalAuthGuard } from '@/components/portal/PortalAuthGuard';
@@ -20,6 +30,15 @@ import {
 
 const POLL_MS = 60_000;
 
+type StatusFilter = 'all' | 'identification' | 'processed' | 'loaded';
+
+const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'identification', label: 'Identification' },
+  { id: 'processed', label: 'Processed' },
+  { id: 'loaded', label: 'On truck' },
+];
+
 export default function PortalTrackPage() {
   return (
     <PortalAuthGuard>
@@ -34,6 +53,7 @@ function PortalTrackContent() {
   const [awbNumber, setAwbNumber] = useState('');
   const [clientName, setClientName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [inspections, setInspections] = useState<PortalInspectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -90,7 +110,7 @@ function PortalTrackContent() {
     router.replace('/portal');
   }
 
-  const visibleInspections = useMemo(() => {
+  const searchedInspections = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return inspections;
     return inspections.filter((item) => {
@@ -101,110 +121,153 @@ function PortalTrackContent() {
     });
   }, [inspections, searchQuery]);
 
-  const identificationCount = visibleInspections.filter(
+  const visibleInspections = useMemo(() => {
+    if (statusFilter === 'all') return searchedInspections;
+    return searchedInspections.filter(
+      (item) => normalizeInspectionStatus(item.status) === statusFilter,
+    );
+  }, [searchedInspections, statusFilter]);
+
+  const identificationCount = searchedInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'identification',
   ).length;
-  const processedCount = visibleInspections.filter(
+  const processedCount = searchedInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'processed',
   ).length;
-  const loadedCount = visibleInspections.filter(
+  const loadedCount = searchedInspections.filter(
     (item) => normalizeInspectionStatus(item.status) === 'loaded',
   ).length;
 
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-2xl border border-[#262626]/10 bg-gradient-to-r from-[#262626] to-[#606060] text-white shadow-lg">
-        <div className="relative px-6 py-8 md:px-8 md:py-10">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.06]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-            aria-hidden
-          />
-          <div className="relative flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-sky-200">
-                <Plane className="h-4 w-4" aria-hidden />
-                <p className="text-xs font-semibold uppercase tracking-[0.2em]">
-                  Shipment overview
+    <div className="space-y-6">
+      <section className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/10">
+        <PortalHeroPhoto src="/portal/cargo-dashboard.webp" veil="bottom" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4 px-6 py-8 md:px-8 md:py-10">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
+              Client portal
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
+              {kind === 'account' ? (
+                <>
+                  Your <span className="text-[#F51EA0]">inspections</span>
+                </>
+              ) : (
+                <>
+                  Your cargo <span className="text-[#F51EA0]">status</span>
+                </>
+              )}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-normal text-white/80">
+              {kind === 'account' ? (
+                <p>
+                  {clientName ? (
+                    <>
+                      Client{' '}
+                      <span className="font-semibold text-white">{clientName}</span>
+                    </>
+                  ) : (
+                    'All portal-enabled inspections for your account'
+                  )}
                 </p>
-              </div>
-              <h1 className="mt-2 text-2xl font-bold md:text-3xl">
-                {kind === 'account' ? 'Your inspections' : 'Your cargo status'}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/75">
-                {kind === 'account' ? (
+              ) : (
+                <>
                   <p>
-                    {clientName ? (
-                      <>
-                        Client{' '}
-                        <span className="font-semibold text-white">{clientName}</span>
-                      </>
-                    ) : (
-                      'All portal-enabled inspections for your account'
-                    )}
+                    AWB{' '}
+                    <span className="font-mono font-semibold text-white">
+                      {awbNumber}
+                    </span>
                   </p>
-                ) : (
-                  <>
-                    <p>
-                      AWB{' '}
-                      <span className="font-mono font-semibold text-white">
-                        {awbNumber}
-                      </span>
-                    </p>
-                    <CopyAwbButton awbNumber={awbNumber} variant="onDark" />
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => void load(true)}
-                disabled={refreshing}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`}
-                  aria-hidden
-                />
-                Refresh
-              </button>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
-              >
-                <LogOut className="h-3.5 w-3.5" aria-hidden />
-                Sign out
-              </button>
+                  <CopyAwbButton awbNumber={awbNumber} variant="onDark" />
+                </>
+              )}
             </div>
           </div>
 
-          <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                Identification
-              </p>
-              <p className="mt-1 text-2xl font-bold">{identificationCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                Processed
-              </p>
-              <p className="mt-1 text-2xl font-bold">{processedCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-                On truck
-              </p>
-              <p className="mt-1 text-2xl font-bold">{loadedCount}</p>
-            </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void load(true)}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-black/45 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`}
+                aria-hidden
+              />
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/30 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-black/45"
+            >
+              <LogOut className="h-3.5 w-3.5" aria-hidden />
+              Sign out
+            </button>
           </div>
         </div>
       </section>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <PortalStatCard
+          icon={ScanSearch}
+          label="Identification"
+          value={identificationCount}
+          hint="Pending"
+          active={statusFilter === 'identification'}
+          onSelect={() =>
+            setStatusFilter((current) =>
+              current === 'identification' ? 'all' : 'identification',
+            )
+          }
+        />
+        <PortalStatCard
+          icon={CheckCircle2}
+          label="Processed"
+          value={processedCount}
+          hint="Completed"
+          active={statusFilter === 'processed'}
+          onSelect={() =>
+            setStatusFilter((current) =>
+              current === 'processed' ? 'all' : 'processed',
+            )
+          }
+        />
+        <PortalStatCard
+          icon={Truck}
+          label="On truck"
+          value={loadedCount}
+          hint="In transit"
+          active={statusFilter === 'loaded'}
+          onSelect={() =>
+            setStatusFilter((current) => (current === 'loaded' ? 'all' : 'loaded'))
+          }
+        />
+      </div>
+
+      {!loading && inspections.length > 0 ? (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+          {STATUS_FILTERS.map((filter) => {
+            const selected = statusFilter === filter.id;
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setStatusFilter(filter.id)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  selected
+                    ? 'bg-[#F51EA0] text-white'
+                    : 'portal-glass text-white/75 hover:text-white'
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {kind === 'account' && !loading && inspections.length > 0 ? (
         <div className="relative">
@@ -216,7 +279,7 @@ function PortalTrackContent() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Filter by AWB, ULD, or product…"
-            className="w-full rounded-xl border border-[#262626]/20 bg-[#2F2F2F] py-3 pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#F51EA0]/50"
+            className="w-full rounded-xl portal-glass py-3 pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#F51EA0]/50"
           />
         </div>
       ) : null}
@@ -228,15 +291,29 @@ function PortalTrackContent() {
           {error}
         </p>
       ) : inspections.length === 0 ? (
-        <p className="rounded-xl border border-[#262626]/20 bg-[#2F2F2F] px-4 py-10 text-center text-sm text-white/70 shadow-md">
-          {kind === 'account'
-            ? 'No portal-enabled inspections are available for this account yet.'
-            : 'No inspections are available for this AWB on the portal.'}
-        </p>
+        <PortalEmptyCard
+          title={
+            kind === 'account'
+              ? 'No portal-enabled inspections yet'
+              : 'No inspections for this AWB yet'
+          }
+          body={
+            kind === 'account'
+              ? 'Inspections for this account will appear here once they are available.'
+              : 'Nothing for this air waybill is shared on the portal yet.'
+          }
+        />
       ) : visibleInspections.length === 0 ? (
-        <p className="rounded-xl border border-[#262626]/20 bg-[#2F2F2F] px-4 py-10 text-center text-sm text-white/70 shadow-md">
-          No inspections match “{searchQuery.trim()}”.
-        </p>
+        <PortalEmptyCard
+          title="No matching inspections"
+          body={
+            searchQuery.trim() && statusFilter !== 'all'
+              ? 'Nothing matches this status and search.'
+              : statusFilter !== 'all'
+                ? 'No inspections in this status.'
+                : `Nothing matches “${searchQuery.trim()}”.`
+          }
+        />
       ) : (
         <div className="grid gap-4">
           {visibleInspections.map((inspection) => (
@@ -244,6 +321,56 @@ function PortalTrackContent() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function PortalStatCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  active,
+  onSelect,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  hint: string;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      className={`flex w-full items-center gap-4 rounded-2xl portal-glass px-5 py-5 text-left transition ${
+        active ? 'ring-2 ring-[#F51EA0]' : 'hover:border-white/40'
+      }`}
+    >
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
+        <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="pr-[0.12em] text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-white/45">
+          {label}
+        </p>
+        <p className="mt-2 text-3xl font-bold leading-none">{value}</p>
+        <p className="mt-1.5 text-xs font-normal leading-4 text-white/55">{hint}</p>
+      </div>
+    </button>
+  );
+}
+
+function PortalEmptyCard({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-2xl portal-glass px-6 py-16 text-center">
+      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
+        <ClipboardList className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+      </span>
+      <p className="mt-4 text-lg font-bold">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm font-normal text-white/55">{body}</p>
     </div>
   );
 }

@@ -178,9 +178,36 @@ select,
   }
 }
 
+.portal-detail-veil {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 30, 160, 0.16), transparent 36%),
+    radial-gradient(circle at 0% 100%, rgba(245, 30, 160, 0.1), transparent 32%);
+}
+
+.portal-glass,
+.portal-detail-panel {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .portal-gallery .overflow-hidden.rounded-xl {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: #1f1f1f;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #1a1a1a;
+}
+
+.portal-gallery .text-subtle {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.portal-gallery .border-border {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.portal-gallery .bg-surface-base {
+  background-color: #1a1a1a;
 }
 
 .portal-gallery .border-zinc-800 {

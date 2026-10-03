@@ -4,10 +4,8 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Dumbbell, Package } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
-import {
-  InspectionIssuesBadge,
-  InspectionLifecycleBadge,
-} from '@/components/inspections/InspectionLifecycleBadge';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
+import { InspectionIssuesBadge } from '@/components/inspections/InspectionLifecycleBadge';
 import {
   getUnitTypeIcon,
   getUnitTypeLabel,
@@ -15,29 +13,17 @@ import {
 } from '@/lib/inspections/cargo-unit-type';
 import { formatCountLabel } from '@/lib/inspections/count-unit';
 import { formatInspectionDate } from '@/lib/inspections/format';
-import {
-  CONSERVATION_COLORS,
-  getConservationLabel,
-} from '@/lib/inspections/normalize-conservation';
-import { getInspectionListStatus, statusTint } from '@/lib/inspections/status';
+import { getConservationLabel } from '@/lib/inspections/normalize-conservation';
+import { getInspectionListStatus } from '@/lib/inspections/status';
 import type { PortalInspectionSummary } from '@/lib/portal/client-api';
 
 interface PortalInspectionCardProps {
   inspection: PortalInspectionSummary;
 }
 
-function Chip({
-  children,
-  color,
-}: {
-  children: ReactNode;
-  color?: string;
-}) {
+function Chip({ children }: { children: ReactNode }) {
   return (
-    <span
-      className="inline-flex max-w-full items-center gap-1 rounded-md bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold text-white/65"
-      style={color ? { color } : undefined}
-    >
+    <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold text-white">
       {children}
     </span>
   );
@@ -47,7 +33,6 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
   const status = getInspectionListStatus(inspection);
   const unitType = resolveUnitType(inspection.unitType, inspection.uldId);
   const UnitIcon = getUnitTypeIcon(unitType);
-  const conservation = CONSERVATION_COLORS[inspection.conservationType];
   const dateLabel = inspection.updatedAt
     ? formatInspectionDate(inspection.updatedAt)
     : formatInspectionDate(inspection.registeredAt);
@@ -57,17 +42,26 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
   return (
     <Link
       href={`/portal/track/${inspection.id}`}
-      className="group flex overflow-hidden rounded-[22px] bg-[#2F2F2F] text-white shadow-md transition hover:shadow-lg"
+      className="portal-glass group flex overflow-hidden rounded-[22px] text-white transition hover:border-white/25"
     >
-      <div className="w-[3px] shrink-0" style={{ backgroundColor: status.color }} aria-hidden />
+      <div className="w-[3px] shrink-0 bg-white/30" aria-hidden />
 
       <div className="flex min-w-0 flex-1 gap-4 p-5">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-          style={{ backgroundColor: statusTint(status.color) }}
-        >
-          <Package className="h-5 w-5" style={{ color: status.color }} aria-hidden />
-        </div>
+        {inspection.photoUrl ? (
+          <FirebaseImage
+            src={inspection.photoUrl}
+            alt=""
+            width={52}
+            height={52}
+            className="h-[52px] w-[52px] shrink-0 rounded-xl object-cover"
+            sizes="52px"
+            quality={75}
+          />
+        ) : (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
+            <Package className="h-5 w-5 text-white" aria-hidden />
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -90,16 +84,12 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
           </div>
 
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Chip color={status.color}>
+            <Chip>
               <UnitIcon className="h-3 w-3" aria-hidden />
               {getUnitTypeLabel(unitType)}
             </Chip>
-            {inspection.foodType.trim() ? (
-              <Chip color={status.color}>{inspection.foodType}</Chip>
-            ) : null}
-            <Chip color={conservation.text}>
-              {getConservationLabel(inspection.conservationType)}
-            </Chip>
+            {inspection.foodType.trim() ? <Chip>{inspection.foodType}</Chip> : null}
+            <Chip>{getConservationLabel(inspection.conservationType)}</Chip>
             <Chip>
               <Dumbbell className="h-3 w-3" aria-hidden />
               {inspection.weightKg} kg
@@ -112,7 +102,9 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <span className="flex flex-wrap items-center gap-2">
-              <InspectionLifecycleBadge inspection={inspection} />
+              <span className="inline-flex rounded-md bg-white/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white ring-1 ring-white/25">
+                {status.label}
+              </span>
               {inspection.hasIssues ? <InspectionIssuesBadge /> : null}
             </span>
             <span className="text-[10px] text-white/45">{dateLabel}</span>

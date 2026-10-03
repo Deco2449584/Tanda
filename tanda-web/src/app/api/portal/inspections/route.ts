@@ -7,6 +7,7 @@ import {
   enrichInspectionWithSignedMedia,
   fetchPortalInspectionById,
   fetchPortalInspections,
+  signMediaUrls,
 } from '@/lib/portal/server-inspections';
 
 export async function GET(request: Request) {
@@ -36,27 +37,36 @@ export async function GET(request: Request) {
     }
 
     const inspections = await fetchPortalInspections(session);
+    const thumbSources = inspections
+      .map((inspection) => inspection.photoEvidence[0])
+      .filter((url): url is string => Boolean(url));
+    const signedThumbs =
+      thumbSources.length > 0 ? await signMediaUrls(thumbSources) : {};
 
     return NextResponse.json({
       kind: session.kind,
       awbNumber: session.awbNumber ?? '',
       clientName: session.clientName ?? '',
-      inspections: inspections.map((inspection) => ({
-        id: inspection.id,
-        uldId: inspection.uldId,
-        awbNumber: inspection.awbNumber,
-        status: inspection.status,
-        hasIssues: inspection.hasIssues,
-        conservationType: inspection.conservationType,
-        foodType: inspection.foodType,
-        unitType: inspection.unitType,
-        weightKg: inspection.weightKg,
-        boxCount: inspection.boxCount,
-        countUnit: inspection.countUnit,
-        registeredAt: inspection.registeredAt,
-        updatedAt: inspection.updatedAt,
-        clientLocationName: inspection.clientLocationName,
-      })),
+      inspections: inspections.map((inspection) => {
+        const source = inspection.photoEvidence[0] ?? '';
+        return {
+          id: inspection.id,
+          uldId: inspection.uldId,
+          awbNumber: inspection.awbNumber,
+          status: inspection.status,
+          hasIssues: inspection.hasIssues,
+          conservationType: inspection.conservationType,
+          foodType: inspection.foodType,
+          unitType: inspection.unitType,
+          weightKg: inspection.weightKg,
+          boxCount: inspection.boxCount,
+          countUnit: inspection.countUnit,
+          registeredAt: inspection.registeredAt,
+          updatedAt: inspection.updatedAt,
+          clientLocationName: inspection.clientLocationName,
+          photoUrl: source ? (signedThumbs[source] ?? source) : '',
+        };
+      }),
     });
   } catch (error) {
     console.error('GET /api/portal/inspections', error);
