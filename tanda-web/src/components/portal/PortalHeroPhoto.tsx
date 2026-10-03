@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/cn';
 
 interface PortalHeroPhotoProps {
+  src: string;
   priority?: boolean;
   /** Darken the side that holds the headline, or the bottom of a banner. */
   veil?: 'left' | 'bottom';
@@ -9,6 +10,7 @@ interface PortalHeroPhotoProps {
 }
 
 export function PortalHeroPhoto({
+  src,
   priority = false,
   veil = 'left',
   className,
@@ -16,17 +18,18 @@ export function PortalHeroPhoto({
   return (
     <div className={cn('absolute inset-0 overflow-hidden', className)} aria-hidden>
       <Image
-        src="/portal/cargo-hero.webp"
+        src={src}
         alt=""
         fill
         priority={priority}
+        unoptimized
         sizes="100vw"
-        className="object-cover object-[center_40%]"
+        className="object-cover object-center"
       />
       {veil === 'left' ? (
         <>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
         </>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-black/35 to-black/15" />

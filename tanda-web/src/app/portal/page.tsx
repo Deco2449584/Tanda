@@ -93,8 +93,9 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col text-white">
-      <PortalHeroPhoto priority veil="left" />
+    <div className="bg-[#141414] text-white">
+      <section className="relative flex min-h-screen flex-col">
+      <PortalHeroPhoto src="/portal/cargo-landing.webp" priority veil="left" />
 
       <div className="relative flex min-h-screen flex-col">
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-10 px-4 py-8 lg:flex-row lg:items-center lg:gap-16 lg:px-8 lg:py-12">
@@ -304,13 +305,14 @@ export default function PortalLoginPage() {
           </ul>
         </div>
 
-        <p className="mx-auto flex w-full max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 pb-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/75 lg:px-8">
+        <p className="mx-auto mt-auto flex w-full max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 pb-8 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/75 lg:px-8">
           {PORTAL_SERVICES.map((service) => (
             <span key={service}>{service}</span>
           ))}
         </p>
-        <PortalFooter />
       </div>
+      </section>
+      <PortalFooter />
     </div>
   );
 }

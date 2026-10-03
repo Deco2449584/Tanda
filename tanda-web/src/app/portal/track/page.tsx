@@ -125,7 +125,7 @@ function PortalTrackContent() {
   return (
     <div className="space-y-6">
       <section className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/10">
-        <PortalHeroPhoto veil="bottom" />
+        <PortalHeroPhoto src="/portal/cargo-dashboard.webp" veil="bottom" />
         <div className="relative flex flex-wrap items-start justify-between gap-4 px-6 py-8 md:px-8 md:py-10">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">

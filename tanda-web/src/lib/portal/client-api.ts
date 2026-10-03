@@ -29,6 +29,7 @@ export interface PortalInspectionSummary {
   registeredAt: string;
   updatedAt?: string;
   clientLocationName?: string;
+  photoUrl?: string;
 }
 
 export async function verifyPortalAccess(

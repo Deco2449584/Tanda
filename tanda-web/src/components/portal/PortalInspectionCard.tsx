@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Dumbbell, Package } from 'lucide-react';
 import { CopyAwbButton } from '@/components/inspections/CopyAwbButton';
+import { FirebaseImage } from '@/components/ui/FirebaseImage';
 import {
   InspectionIssuesBadge,
   InspectionLifecycleBadge,
@@ -62,12 +63,24 @@ export function PortalInspectionCard({ inspection }: PortalInspectionCardProps) 
       <div className="w-[3px] shrink-0" style={{ backgroundColor: status.color }} aria-hidden />
 
       <div className="flex min-w-0 flex-1 gap-4 p-5">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-          style={{ backgroundColor: statusTint(status.color) }}
-        >
-          <Package className="h-5 w-5" style={{ color: status.color }} aria-hidden />
-        </div>
+        {inspection.photoUrl ? (
+          <FirebaseImage
+            src={inspection.photoUrl}
+            alt=""
+            width={52}
+            height={52}
+            className="h-[52px] w-[52px] shrink-0 rounded-xl object-cover"
+            sizes="52px"
+            quality={75}
+          />
+        ) : (
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+            style={{ backgroundColor: statusTint(status.color) }}
+          >
+            <Package className="h-5 w-5" style={{ color: status.color }} aria-hidden />
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
