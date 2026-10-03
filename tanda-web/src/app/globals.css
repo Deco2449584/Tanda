@@ -184,28 +184,13 @@ select,
     radial-gradient(circle at 0% 100%, rgba(245, 30, 160, 0.1), transparent 32%);
 }
 
-.portal-glass {
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(0, 0, 0, 0.1) 100%
-  );
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
-}
-
+.portal-glass,
 .portal-detail-panel {
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(0, 0, 0, 0.04) 100%
-  );
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.4);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: none;
 }
 
 .portal-gallery .overflow-hidden.rounded-xl {

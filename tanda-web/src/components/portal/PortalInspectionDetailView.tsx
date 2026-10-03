@@ -47,7 +47,7 @@ interface PortalInspectionDetailViewProps {
 }
 
 const innerCell =
-  'flex min-w-0 items-center gap-4 rounded-xl border border-white/20 bg-white/[0.04] px-4 py-4';
+  'flex min-w-0 items-center gap-4 rounded-xl border border-white/25 bg-black/40 px-4 py-4';
 
 function hasDetailValue(value: string | null | undefined): boolean {
   const text = value?.trim();
@@ -322,7 +322,7 @@ function PortalEvidenceGrid({
       : null;
 
   return (
-    <div className="mt-6 rounded-2xl border border-white/15 bg-white/[0.03] p-4 sm:p-5">
+    <div className="mt-6 rounded-2xl border border-white/25 bg-black/40 p-4 sm:p-5">
       <h2 className="text-sm font-bold uppercase tracking-[0.14em]">
         Detailed evidence
       </h2>

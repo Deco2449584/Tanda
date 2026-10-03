@@ -46,7 +46,7 @@ function HighlightCard({
 }
 
 const fieldClass =
-  'w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-[#F51EA0] focus:ring-2 focus:ring-[#F51EA0]/25';
+  'w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/60 focus:border-[#F51EA0] focus:ring-2 focus:ring-[#F51EA0]/25';
 
 export default function PortalLoginPage() {
   const router = useRouter();
