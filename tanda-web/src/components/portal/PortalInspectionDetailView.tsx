@@ -60,23 +60,15 @@ function InnerRow({
   icon: Icon,
   label,
   value,
-  tone = 'default',
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
-  tone?: 'default' | 'light';
 }) {
   if (!hasDetailValue(value)) return null;
 
   return (
-    <div
-      className={
-        tone === 'light'
-          ? 'flex min-w-0 items-center gap-4 rounded-xl border border-white/30 bg-white/15 px-4 py-4'
-          : innerCell
-      }
-    >
+    <div className={innerCell}>
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#F51EA0]/60 text-[#F51EA0]">
         <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
       </span>
@@ -526,7 +518,6 @@ export function PortalInspectionDetailView({
               icon={Snowflake}
               label="Cold chain"
               value={getConservationLabel(inspection.conservationType)}
-              tone="light"
             />
           </div>
 
